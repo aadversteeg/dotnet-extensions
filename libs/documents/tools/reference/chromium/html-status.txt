@@ -13,80 +13,80 @@ a1-paragraph-own-margin equal
 a1-paragraph-own-margin-fits equal
 a1-table-own-margin equal
 a1-text-before equal
-a2-blank-part refused Documents.Html.Unsupported.Rendering br at 3:73
+a2-blank-part open box td 'x' height 164.625, Chromium 456.75 (boxes.txt)
 a2-cells-end open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
 a2-cells-end-header open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
 a2-cells-end-page-top refused Documents.Layout.DoesNotFit 180 at 3
 a2-cells-end-text open page 1 painted area: the pixel at (12, 175.5): Chromium paints it and the engine does not; the engine paints 1293 px #000000, Chromium 1661 px (print.txt)
-a2-line-breaks refused Documents.Html.Unsupported.Rendering br at 3:62
+a2-line-breaks open box td '' height 164.625, Chromium 285.75 (boxes.txt)
 a2-padded-blocks open box td '' height 164.625, Chromium 200.438 (boxes.txt)
 a2-padded-blocks-px open box td '' height 164.625, Chromium 180.75 (boxes.txt)
-a2-row-end refused Documents.Html.Unsupported.Rendering br at 3:37
-a2-row-end-6pt refused Documents.Html.Unsupported.Rendering br at 3:37
-a2-row-end-6pt-after refused Documents.Html.Unsupported.Rendering br at 3:37
-a2-row-end-after refused Documents.Html.Unsupported.Rendering br at 3:37
-a2-row-end-background refused Documents.Html.Unsupported.Rendering br at 3:37
-a2-row-end-below-paragraph refused Documents.Html.Unsupported.Rendering br at 3:74
-a2-row-end-bottom-padding-30 refused Documents.Html.Unsupported.Rendering br at 3:6
-a2-row-end-first-row refused Documents.Html.Unsupported.Rendering br at 3:65
-a2-row-end-first-row-cut refused Documents.Html.Unsupported.Rendering br at 3:59
-a2-row-end-first-row-half-2col refused Documents.Html.Unsupported.Rendering br at 3:66
-a2-row-end-first-row-half-alone refused Documents.Html.Unsupported.Rendering br at 3:66
-a2-row-end-first-row-half-block refused Documents.Html.Unsupported.Rendering br at 3:80
-a2-row-end-first-row-half-break refused Documents.Html.Unsupported.Rendering br at 3:112
-a2-row-end-first-row-half-emptyblock refused Documents.Html.Unsupported.Rendering br at 3:86
-a2-row-end-first-row-half-page2 refused Documents.Html.Unsupported.Rendering br at 3:6
-a2-row-end-first-row-half-second-row refused Documents.Html.Unsupported.Rendering br at 3:66
-a2-row-end-first-row-half-top refused Documents.Html.Unsupported.Rendering br at 3:66
-a2-row-end-nested-under-header refused Documents.Html.Unsupported.Rendering br at 3:91
-a2-row-end-nested-under-header-13875 refused Documents.Html.Unsupported.Rendering br at 3:91
-a2-row-end-nested-under-header-end refused Documents.Html.Unsupported.Rendering br at 3:91
-a2-row-end-span refused Documents.Html.Unsupported.Rendering br at 3:49
-a2-row-end-span-after refused Documents.Html.Unsupported.Rendering br at 3:49
+a2-row-end open 2 pages, Chromium 3 (print.txt)
+a2-row-end-6pt open 2 pages, Chromium 3 (print.txt)
+a2-row-end-6pt-after open page 3 'after' baseline 24 (laid out at 24), Chromium 30 (print.txt)
+a2-row-end-after open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-background open 2 pages, Chromium 3 (print.txt)
+a2-row-end-below-paragraph equal
+a2-row-end-bottom-padding-30 equal
+a2-row-end-first-row refused Documents.Layout.DoesNotFit 180 at 3
+a2-row-end-first-row-cut open box td 'x0x1x2x3x4x5x6x7x8x9x10x' height 179.625, Chromium 180.047 (boxes.txt)
+a2-row-end-first-row-half-2col open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-first-row-half-alone open 1 pages, Chromium 2 (print.txt)
+a2-row-end-first-row-half-block open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-first-row-half-break open page 3 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-first-row-half-emptyblock open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-first-row-half-page2 open page 3 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-first-row-half-second-row open page 1 painted area: the pixel at (12, 192): Chromium paints it and the engine does not; the engine paints 846 px #000000, Chromium 1214 px (print.txt)
+a2-row-end-first-row-half-top open page 2 'below' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a2-row-end-nested-under-header open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
+a2-row-end-nested-under-header-13875 open page 1 painted area: the pixel at (12.75, 180): the engine paints it and Chromium does not; the engine paints 2376 px #000000, Chromium 2344 px (print.txt)
+a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
+a2-row-end-span open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 553 px #000000, Chromium 601 px (print.txt)
+a2-row-end-span-after open page 3 painted area: the pixel at (12, 0): Chromium paints it and the engine does not; the engine paints 553 px #000000, Chromium 601 px (print.txt)
 a2-rowspan-blocks open box td 's' height 163.875, Chromium 281.063 (boxes.txt)
 a2-split-line-1px equal
 a3-mirror open box td 't1' height 15.141, Chromium 16.734 (boxes.txt)
 a3-mirror-px open box td 't1' height 16.875, Chromium 18.75 (boxes.txt)
-a3-pad-kept refused Documents.Html.Unsupported.Rendering br at 3:48
-a3-pad-kept-lower refused Documents.Html.Unsupported.Rendering br at 3:60
+a3-pad-kept equal
+a3-pad-kept-lower equal
 a3-pad-line equal
-a4-cell-image-179-5 refused Documents.Html.Unsupported.Rendering img at 3:23
-a4-cell-pad3-image-177 refused Documents.Html.Unsupported.Rendering img at 3:56
+a4-cell-image-179-5 open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
+a4-cell-pad3-image-177 open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
 a4-cell-pad3-line-177 open page 3 'after' baseline 24 (laid out at 24), Chromium 24.75 (print.txt)
-a4-continued-cell-pad-bottom-30 refused Documents.Html.Unsupported.Rendering br at 3:179
+a4-continued-cell-pad-bottom-30 open page 2 reads 't34 t35 t36 t37', Chromium 't34 t35 t36 t37 t39 t40 t41 t42' (print.txt)
 a4-continued-cell-pad-bottom-30-under-header listed A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header: 2 pages, Chromium 3 (print.txt)
-a4-header-cut-row-image-row refused Documents.Html.Unsupported.Rendering br at 4:29
-a4-header-empty-rowspan-line-image refused Documents.Html.Unsupported.Rendering img at 5:9
-a4-header-image-150-image refused Documents.Html.Unsupported.Rendering img at 4:24
-a4-header-image-360-image refused Documents.Html.Unsupported.Rendering img at 4:24
-a4-header-image-row refused Documents.Html.Unsupported.Rendering img at 4:24
-a4-header-image-row-image refused Documents.Html.Unsupported.Rendering img at 4:24
-a4-header-row-image-row refused Documents.Html.Unsupported.Rendering img at 5:9
-a4-header-rows-fill-image-row refused Documents.Html.Unsupported.Rendering img at 14:9
-a4-header-rows-image-row refused Documents.Html.Unsupported.Rendering img at 16:9
+a4-header-cut-row-image-row open page 2 painted area: the pixel at (12, 103.5): Chromium paints it and the engine does not; the engine paints 976 px #000000, Chromium 1344 px (print.txt)
+a4-header-empty-rowspan-line-image open page 2 painted area: the pixel at (12, 13.5): Chromium paints it and the engine does not; the engine paints 736 px #000000, Chromium 1450 px (print.txt)
+a4-header-image-150-image open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-image-360-image open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-image-row open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-image-row-image open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-row-image-row open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-rows-fill-image-row open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-header-rows-image-row open page 3 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-header-tall-line open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-two-image-rows refused Documents.Html.Unsupported.Rendering img at 4:24
-a4-image-177-block-padding-3 refused Documents.Html.Unsupported.Rendering img at 3:50
-a4-image-after-text refused Documents.Html.Unsupported.Rendering img at 3:13
-a4-image-beside-lines refused Documents.Html.Unsupported.Rendering img at 3:23
-a4-image-block-padding-133 refused Documents.Html.Unsupported.Rendering img at 3:35
-a4-image-block-padding-60 refused Documents.Html.Unsupported.Rendering img at 3:34
-a4-image-first refused Documents.Html.Unsupported.Rendering img at 3:1
-a4-image-in-cell refused Documents.Html.Unsupported.Rendering img at 3:26
-a4-image-nested-table refused Documents.Html.Unsupported.Rendering img at 3:45
-a4-image-rowspan refused Documents.Html.Unsupported.Rendering img at 3:35
-a4-image-single-cell refused Documents.Html.Unsupported.Rendering img at 3:23
-a4-intro-header-image-row refused Documents.Html.Unsupported.Rendering img at 4:24
+a4-header-two-image-rows open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
+a4-image-177-block-padding-3 equal
+a4-image-after-text equal
+a4-image-beside-lines open page 2 painted area: the pixel at (12, 192): Chromium paints it and the engine does not; the engine paints 720 px #000000, Chromium 768 px (print.txt)
+a4-image-block-padding-133 equal
+a4-image-block-padding-60 equal
+a4-image-first equal
+a4-image-in-cell open page 2 painted area: the pixel at (12, 192): Chromium paints it and the engine does not; the engine paints 720 px #000000, Chromium 768 px (print.txt)
+a4-image-nested-table open page 2 painted area: the pixel at (12, 192): Chromium paints it and the engine does not; the engine paints 960 px #000000, Chromium 1024 px (print.txt)
+a4-image-rowspan open page 1 reads 'a b', Chromium 'a' (print.txt)
+a4-image-single-cell open page 2 painted area: the pixel at (12, 192): Chromium paints it and the engine does not; the engine paints 480 px #000000, Chromium 512 px (print.txt)
+a4-intro-header-image-row open page 2 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
 a4-line-after-text equal
-a4-line-beside-lines refused Documents.Html.Unsupported.Rendering br at 3:88
-a4-nested-padded-image-160 refused Documents.Html.Unsupported.Rendering img at 3:113
-a4-row-image-row refused Documents.Html.Unsupported.Rendering img at 4:9
-a4-two-image-rows refused Documents.Html.Unsupported.Rendering img at 3:23
-a5-cell-in-row refused Documents.Html.Unsupported.Rendering br at 3:63
-a5-kept-cell-by-box refused Documents.Html.Unsupported.Rendering br at 3:63
-a5-kept-cell-in-row refused Documents.Html.Unsupported.Rendering br at 3:90
-a5-kept-row refused Documents.Html.Unsupported.Rendering br at 3:90
-a5-kept-taller-than-page refused Documents.Html.Unsupported.Rendering br at 3:50
+a4-line-beside-lines open 3 pages, Chromium 4 (print.txt)
+a4-nested-padded-image-160 open box td '' height 179.625, Chromium 192.246 (boxes.txt)
+a4-row-image-row open page 3 painted area: the pixel at (12, 192): Chromium paints it and the engine does not; the engine paints 480 px #000000, Chromium 512 px (print.txt)
+a4-two-image-rows open page 2 painted area: the pixel at (12, 192): Chromium paints it and the engine does not; the engine paints 480 px #000000, Chromium 512 px (print.txt)
+a5-cell-in-row open box td 'a0a1a2' height 108.375, Chromium 129 (boxes.txt)
+a5-kept-cell-by-box open box td 'a0a1' height 179.625, Chromium 285.75 (boxes.txt)
+a5-kept-cell-in-row equal
+a5-kept-row equal
+a5-kept-taller-than-page equal
 a6-header-quarter-180-4500 equal
 a6-header-quarter-180-4575 open page 2 painted area: the pixel at (12, 185.25): Chromium paints it and the engine does not; the engine paints 4488 px #000000, Chromium 4856 px (print.txt)
 a6-header-quarter-360-9000 equal
@@ -110,100 +110,100 @@ a6-nested-late6-h1850 open box td 'Hr0r1r2r3r4r5r6r7r8r9r10' height 93, Chromium
 a6-nested-under-header-h2400 open page 2 painted area: the pixel at (12.75, 178.5): Chromium paints it and the engine does not; the engine paints 4524 px #000000, Chromium 4890 px (print.txt)
 a6-nested-under-header-h2700 open page 2 painted area: the pixel at (13.5, 28.5): Chromium paints it and the engine does not; the engine paints 5272 px #000000, Chromium 5636 px (print.txt)
 a6-nested-under-header-h2700-n16 open page 2 painted area: the pixel at (13.5, 28.5): Chromium paints it and the engine does not; the engine paints 5176 px #000000, Chromium 5540 px (print.txt)
-b-into-block refused Documents.Html.Unsupported.Rendering br at 3:11
-b-into-paragraph refused Documents.Html.Unsupported.Rendering br at 3:19
-b-into-table refused Documents.Html.Unsupported.Rendering br at 3:241
-b-three-deep refused Documents.Html.Unsupported.Rendering br at 3:21
+b-into-block equal
+b-into-paragraph equal
+b-into-table equal
+b-three-deep equal
 b1-repeat open page 1 painted area: the pixel at (20.25, 171): Chromium paints it and the engine does not; the engine paints 3699 px #000000, Chromium 4046 px (print.txt)
-b2-split-row refused Documents.Html.Unsupported.Rendering br at 8:27
+b2-split-row open box td 'r05' height 76.453, Chromium 304.734 (boxes.txt)
 b3-keep-group open page 1 painted area: the pixel at (20.25, 154.5): Chromium paints it and the engine does not; the engine paints 3289 px #000000, Chromium 3636 px (print.txt)
 b4-row-span open page 1 painted area: the pixel at (101.25, 171): Chromium paints it and the engine does not; the engine paints 2957 px #000000, Chromium 3196 px (print.txt)
 b5-row-span-kept-cell open page 1 painted area: the pixel at (20.25, 120.75): Chromium paints it and the engine does not; the engine paints 1936 px #000000, Chromium 2283 px (print.txt)
 c-cell-first-line refused Documents.Html.Unsupported.Value width: 50% at 3:58
-c-cell-orphan refused Documents.Html.Unsupported.Rendering br at 3:103
-c-cell-orphan-moves refused Documents.Html.Unsupported.Rendering br at 3:112
-c-custom refused Documents.Html.Unsupported.Rendering br at 3:51
-c-few-lines refused Documents.Html.Unsupported.Rendering br at 3:78
-c-orphan refused Documents.Html.Unsupported.Rendering br at 3:87
-c-orphans-one refused Documents.Html.Unsupported.Rendering br at 3:114
-c-widow refused Documents.Html.Unsupported.Rendering br at 3:51
-d-length refused Documents.Html.Unsupported.Rendering br at 3:31
-d-number refused Documents.Html.Unsupported.Rendering br at 3:30
-d-number-inherits refused Documents.Html.Unsupported.Rendering br at 3:58
-d-percent refused Documents.Html.Unsupported.Rendering br at 3:31
-d-percent-inherits refused Documents.Html.Unsupported.Rendering br at 3:59
-d-strut refused Documents.Html.Unsupported.Rendering br at 3:75
-d-strut-normal refused Documents.Html.Unsupported.Rendering br at 3:58
-d-typo-lato refused Documents.Html.Unsupported.Rendering br at 4:6
-d-typo-theano refused Documents.Html.Unsupported.Rendering br at 4:33
-dl-end refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-fraction refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-height refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-image refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-join refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-lato refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-lato-bold refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-lato-italic refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-lines refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-nest refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-skip refused Documents.Css.Unsupported.Property text-decoration-skip-ink: auto at 4:87
-dl-space refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-theano refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-dl-whose refused Documents.Css.Unsupported.Property text-decoration-skip-ink: none at 4:87
-f-lato-10 refused Documents.Html.Unsupported.Rendering br at 4:29
-f-lato-11 refused Documents.Html.Unsupported.Rendering br at 4:29
-f-lato-13 refused Documents.Html.Unsupported.Rendering br at 4:29
-f-lato-9 refused Documents.Html.Unsupported.Rendering br at 4:28
-f-length refused Documents.Html.Unsupported.Rendering br at 4:48
-f-length-15004 refused Documents.Html.Unsupported.Rendering br at 3:50
-f-length-floor refused Documents.Html.Unsupported.Rendering br at 3:50
-f-length-nine refused Documents.Html.Unsupported.Rendering br at 3:46
+c-cell-orphan open box td 'a' height 35.625, Chromium 57.75 (boxes.txt)
+c-cell-orphan-moves equal
+c-custom equal
+c-few-lines equal
+c-orphan equal
+c-orphans-one equal
+c-widow equal
+d-length equal
+d-number equal
+d-number-inherits equal
+d-percent equal
+d-percent-inherits equal
+d-strut equal
+d-strut-normal equal
+d-typo-lato equal
+d-typo-theano equal
+dl-end refused Documents.Html.Unsupported.Value width: 40pt at 5:1
+dl-fraction refused Documents.Html.Unsupported.Value height: 7.875pt at 5:1
+dl-height equal
+dl-image equal
+dl-join equal
+dl-lato equal
+dl-lato-bold equal
+dl-lato-italic equal
+dl-lines equal
+dl-nest open page 1 painted area: the pixel at (39.75, 26.25): the engine paints it #000000, Chromium #cc0000; the engine paints 518 px #000000, Chromium 519 px (print.txt)
+dl-skip equal
+dl-space refused Documents.Html.Unsupported.Value width: 40pt at 6:1
+dl-theano equal
+dl-whose equal
+f-lato-10 equal
+f-lato-11 equal
+f-lato-13 equal
+f-lato-9 equal
+f-length equal
+f-length-15004 equal
+f-length-floor equal
+f-length-nine equal
 f-length-three equal
-f-letter-length refused Documents.Html.Unsupported.Rendering br at 3:48
-f-letter-number refused Documents.Html.Unsupported.Rendering br at 3:45
-f-letter-percent refused Documents.Html.Unsupported.Rendering br at 3:46
-f-mixed refused Documents.Html.Unsupported.Rendering br at 4:116
-f-mixed-lato refused Documents.Html.Unsupported.Rendering br at 3:122
-f-number refused Documents.Html.Unsupported.Rendering br at 4:45
-f-number-1501 refused Documents.Html.Unsupported.Rendering br at 3:47
-f-number-theano refused Documents.Html.Unsupported.Rendering br at 4:55
-f-theano-10 refused Documents.Html.Unsupported.Rendering br at 4:39
-f-theano-11 refused Documents.Html.Unsupported.Rendering br at 4:39
-f-theano-13 refused Documents.Html.Unsupported.Rendering br at 4:39
+f-letter-length equal
+f-letter-number equal
+f-letter-percent equal
+f-mixed equal
+f-mixed-lato equal
+f-number equal
+f-number-1501 equal
+f-number-theano equal
+f-theano-10 equal
+f-theano-11 equal
+f-theano-13 equal
 f-theano-13-ab equal
-f-theano-9 refused Documents.Html.Unsupported.Rendering br at 4:38
-f-tiny refused Documents.Html.Unsupported.Rendering br at 3:31
-f-tiny-038 refused Documents.Html.Unsupported.Rendering br at 3:31
-font-sizes refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap at 6:6
-fr-border-continued refused Documents.Html.Unsupported.Rendering br at 3:77
+f-theano-9 equal
+f-tiny listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does: page 1 reads 't0t1t2t3t4t5t6t7t8t9t10t11t12t13t14t15t16t17t18t19t20t21t22t23t24t25t26t27t28t29t30t31t32t33t34t35t36t37t38t39t40t41t42t43t44t45t46t47t48t49 after', Chromium 'after' (print.txt)
+f-tiny-038 listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does: page 1 reads 't0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34 t35 t36 t37 t38 t39 t40 t41 t42 t43 t44 t45 t46 t47 t48 t49 after', Chromium 'after' (print.txt)
+font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
+fr-border-continued equal
 fr-border-top-and-bottom equal
 fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value width: 50% at 3:58
 fr-empty-span equal
 fr-empty-span-trailing-space equal
-fr-f4-grid-line-second-row refused Documents.Html.Unsupported.Rendering br at 8:183
-fr-f4-one-line-cell-beside-cut-cell refused Documents.Html.Unsupported.Rendering br at 8:181
-fr-f4-one-line-cell-beside-cut-cell-control refused Documents.Html.Unsupported.Rendering br at 8:178
-fr-f4-one-line-cell-widows3 refused Documents.Html.Unsupported.Rendering br at 8:181
-fr-f4-padding-page-start refused Documents.Html.Unsupported.Rendering br at 8:99
-fr-f4-padding-second-row refused Documents.Html.Unsupported.Rendering br at 8:216
-fr-f4-padding-two-cells refused Documents.Html.Unsupported.Rendering br at 8:288
-fr-f5-continued-box-table-padding refused Documents.Html.Unsupported.Rendering br at 8:113
-fr-f5-continued-table refused Documents.Html.Unsupported.Rendering br at 8:750
-fr-f6-kept-group-kept-row-fits-a-page refused Documents.Html.Unsupported.Rendering br at 8:114
-fr-f6-kept-group-orphans3 refused Documents.Html.Unsupported.Rendering br at 8:114
-fr-f6-kept-table-orphans3-control refused Documents.Html.Unsupported.Rendering br at 8:114
+fr-f4-grid-line-second-row equal
+fr-f4-one-line-cell-beside-cut-cell equal
+fr-f4-one-line-cell-beside-cut-cell-control open box td 'a' height 20.625, Chromium 54.75 (boxes.txt)
+fr-f4-one-line-cell-widows3 equal
+fr-f4-padding-page-start open 2 pages, Chromium 3 (print.txt)
+fr-f4-padding-second-row equal
+fr-f4-padding-two-cells equal
+fr-f5-continued-box-table-padding open box td 'b0b1b2b3b4b5b6b7' height 34.875, Chromium 144.75 (boxes.txt)
+fr-f5-continued-table equal
+fr-f6-kept-group-kept-row-fits-a-page equal
+fr-f6-kept-group-orphans3 equal
+fr-f6-kept-table-orphans3-control equal
 fr-f7-rows-of-spanning-cells open page 2 painted area: the pixel at (12.75, 12): the engine paints it and Chromium does not; the engine paints 626 px #000000, Chromium 443 px (print.txt)
-fr-f7-span-cut-at-row-boundary refused Documents.Html.Unsupported.Rendering br at 8:139
-fr-f7-span-fits-control refused Documents.Html.Unsupported.Rendering br at 8:276
-fr-f7-span-orphans-moves-table refused Documents.Html.Unsupported.Rendering br at 8:139
-fr-f8-kept-row-with-spanning-cell refused Documents.Html.Unsupported.Rendering br at 8:275
-fr-f8-kept-spanning-cell-control refused Documents.Html.Unsupported.Rendering br at 8:267
-fr-f8-row-not-kept-control refused Documents.Html.Unsupported.Rendering br at 8:248
-fr-f9-box-orphans3 refused Documents.Html.Unsupported.Rendering br at 8:72
-fr-f9-cell-orphans3 refused Documents.Html.Unsupported.Rendering br at 8:148
-fr-f9-cell-orphans3-second-row refused Documents.Html.Unsupported.Rendering br at 8:207
-fr-f9-padded-box-in-cell-orphans3 refused Documents.Html.Unsupported.Rendering br at 8:172
-fr-f9-padded-box-orphans3 refused Documents.Html.Unsupported.Rendering br at 8:91
+fr-f7-span-cut-at-row-boundary open page 2 painted area: the pixel at (150.75, 12): the engine paints it and Chromium does not; the engine paints 769 px #000000, Chromium 587 px (print.txt)
+fr-f7-span-fits-control open page 2 painted area: the pixel at (150.75, 12): the engine paints it and Chromium does not; the engine paints 769 px #000000, Chromium 587 px (print.txt)
+fr-f7-span-orphans-moves-table open page 2 painted area: the pixel at (150.75, 12): the engine paints it and Chromium does not; the engine paints 769 px #000000, Chromium 587 px (print.txt)
+fr-f8-kept-row-with-spanning-cell equal
+fr-f8-kept-spanning-cell-control equal
+fr-f8-row-not-kept-control open box td 's' height 59.625, Chromium 73.5 (boxes.txt)
+fr-f9-box-orphans3 equal
+fr-f9-cell-orphans3 open box td 'a0a1a2q0q1q2q3' height 71.625, Chromium 126.75 (boxes.txt)
+fr-f9-cell-orphans3-second-row open box td 'a0a1a2q0q1q2q3' height 70.875, Chromium 126.75 (boxes.txt)
+fr-f9-padded-box-in-cell-orphans3 open box td 'a0a1a2' height 68.625, Chromium 74.25 (boxes.txt)
+fr-f9-padded-box-orphans3 equal
 fr-forced-margin equal
 fr-forced-margin-a4 equal
 fr-forced-padded equal
@@ -216,26 +216,26 @@ fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header
 fr-header-pad-grid-36 open page 2 painted area: the pixel at (12.75, 32.25): the engine paints it and Chromium does not; the engine paints 1374 px #000000, Chromium 1290 px (print.txt)
 fr-header-pad-none-36 open page 1 painted area: the pixel at (12, 31.5): the engine paints it and Chromium does not; the engine paints 920 px #000000, Chromium 832 px (print.txt)
 fr-header-pad-top-36 open box td 'a' height 36, Chromium 57 (boxes.txt)
-fr-keep-continued-box refused Documents.Html.Unsupported.Rendering br at 3:64
-fr-keep-continued-paragraph refused Documents.Html.Unsupported.Rendering br at 3:51
-fr-keep-inside-box refused Documents.Html.Unsupported.Rendering br at 3:64
-fr-kwn-pad-no-kwn-control refused Documents.Html.Unsupported.Rendering br at 8:72
-fr-kwn-pad-no-padding-control refused Documents.Html.Unsupported.Rendering br at 8:59
-fr-kwn-pad-on-inner-box refused Documents.Html.Unsupported.Rendering br at 8:90
-fr-kwn-pad-on-outer-box refused Documents.Html.Unsupported.Rendering br at 8:90
-fr-kwn-pad-on-outer-box-then-bordered-box refused Documents.Html.Unsupported.Rendering br at 8:90
-fr-kwn-pad-one-box refused Documents.Html.Unsupported.Rendering br at 8:65
-fr-kwn-pad-orphans1 refused Documents.Html.Unsupported.Rendering br at 8:98
-fr-kwn-pad-then-bordered-box-widows4 refused Documents.Html.Unsupported.Rendering br at 8:98
-fr-kwn-pad-then-kept-para refused Documents.Html.Unsupported.Rendering br at 8:98
-fr-kwn-pad-then-para refused Documents.Html.Unsupported.Rendering br at 8:98
-fr-lh-first-baseline refused Documents.Html.Unsupported.Rendering br at 12:38
-fr-lh-mixed-sizes refused Documents.Html.Unsupported.Rendering br at 12:94
-fr-moved-para-widows-3-control refused Documents.Html.Unsupported.Rendering br at 8:6
-fr-moved-para-widows-4 refused Documents.Html.Unsupported.Rendering br at 8:6
+fr-keep-continued-box equal
+fr-keep-continued-paragraph equal
+fr-keep-inside-box equal
+fr-kwn-pad-no-kwn-control equal
+fr-kwn-pad-no-padding-control equal
+fr-kwn-pad-on-inner-box listed Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own: 4 pages, Chromium 5 (print.txt)
+fr-kwn-pad-on-outer-box equal
+fr-kwn-pad-on-outer-box-then-bordered-box equal
+fr-kwn-pad-one-box equal
+fr-kwn-pad-orphans1 equal
+fr-kwn-pad-then-bordered-box-widows4 listed Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own: 4 pages, Chromium 5 (print.txt)
+fr-kwn-pad-then-kept-para listed Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own: 4 pages, Chromium 5 (print.txt)
+fr-kwn-pad-then-para listed Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own: 4 pages, Chromium 5 (print.txt)
+fr-lh-first-baseline listed Under_an_explicit_line_height_the_first_baseline_is_within_the_measured_difference_of_Chromium_s: page 1 'a0' baseline 23.25 (laid out at 23.25), Chromium 22.5 (print.txt)
+fr-lh-mixed-sizes equal
+fr-moved-para-widows-3-control equal
+fr-moved-para-widows-4 listed A_paragraph_that_moved_to_a_new_page_whole_counts_only_its_orphans_before_a_break_there: page 2 reads 'a0 a1', Chromium 'a0 a1 a2' (print.txt)
 fr-old-blank-last-page listed An_empty_box_past_the_end_of_the_last_page_adds_no_page: 1 pages, Chromium 2 (print.txt)
-fr-old-cut-cell-bottom refused Documents.Html.Unsupported.Rendering br at 8:149
-fr-old-cut-cell-middle refused Documents.Html.Unsupported.Rendering br at 8:149
+fr-old-cut-cell-bottom open page 2 reads 'b3 b4 b5 b6 a3 b7 z', Chromium 'a3 b3 b4 b5 b6 b7 z' (print.txt)
+fr-old-cut-cell-middle open page 2 reads 'b3 b4 a3 b5 b6 b7 z', Chromium 'a3 b3 b4 b5 b6 b7 z' (print.txt)
 fr-old-empty-box-past-end listed An_empty_box_whose_margin_carries_it_past_the_page_end_stays_on_the_page: page 1 reads 'a0 b0 head0', Chromium 'a0 b0' (print.txt)
 fr-old-forced-after-empty listed A_forced_break_after_only_empty_boxes_is_not_taken: 1 pages, Chromium 2 (print.txt)
 fr-old-forced-in-keep-together listed A_forced_break_inside_a_box_kept_together_moves_the_whole_box_first: 3 pages, Chromium 2 (print.txt)
@@ -245,26 +245,26 @@ fr-old-header-quarter-180-at equal
 fr-old-header-quarter-180-over equal
 fr-old-header-quarter-240-at equal
 fr-old-header-quarter-240-over equal
-fr-old-header-taller-than-page refused Documents.Html.Unsupported.Rendering br at 8:87
-fr-old-keep-together-hides refused Documents.Html.Unsupported.Rendering br at 3:32
-fr-old-margin-at-row-cut refused Documents.Html.Unsupported.Rendering br at 8:161
+fr-old-header-taller-than-page refused Documents.Layout.DoesNotFit 42 at 8
+fr-old-keep-together-hides listed A_box_kept_together_does_not_hide_a_better_breakpoint_before_it: page 1 reads 'n0', Chromium 'n0 n1 o0 o1' (print.txt)
+fr-old-margin-at-row-cut open page 2 'z' baseline 62.25 (laid out at 62.25), Chromium 74.25 (print.txt)
 fr-old-row-taller-by-padding listed A_row_taller_than_the_page_only_through_its_cell_padding_is_refused: 4 pages, Chromium 3 (print.txt)
 fr-old-row-without-cells equal
-fr-own-avoid-early-break refused Documents.Html.Unsupported.Rendering br at 3:70
+fr-own-avoid-early-break equal
 fr-pad-after-content equal
 fr-pad-against-keep equal
-fr-pad-figure refused Documents.Html.Unsupported.Rendering img at 3:63
+fr-pad-figure equal
 fr-pad-line equal
-fr-pad-line-does-not-fit refused Documents.Html.Unsupported.Rendering br at 3:58
+fr-pad-line-does-not-fit equal
 fr-pad-line-in-block equal
 fr-pad-margin-inside equal
-fr-pad-own-break refused Documents.Html.Unsupported.Rendering br at 3:75
-fr-pad-own-break-paragraph refused Documents.Html.Unsupported.Rendering br at 3:62
-fr-pad-three-lines refused Documents.Html.Unsupported.Rendering br at 3:33
+fr-pad-own-break equal
+fr-pad-own-break-paragraph equal
+fr-pad-three-lines equal
 fr-pad-top-and-bottom equal
 fr-positions equal
-fr-row-later-page-padding-overflows refused Documents.Html.Unsupported.Rendering br at 8:95
-fr-row-later-page-padding-overflows-two-cells refused Documents.Html.Unsupported.Rendering br at 8:100
+fr-row-later-page-padding-overflows open page 1 painted area: the pixel at (12, 157.5): the engine paints it and Chromium does not; the engine paints 1084 px #000000, Chromium 1072 px (print.txt)
+fr-row-later-page-padding-overflows-two-cells open page 1 painted area: the pixel at (12, 157.5): the engine paints it and Chromium does not; the engine paints 1258 px #000000, Chromium 1240 px (print.txt)
 h-break-after-last equal
 h-break-after-last-nested equal
 h-char-cr equal
@@ -310,60 +310,77 @@ h-page-size-mm equal
 h-root-display-none equal
 h-wide-word-little listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.022, Chromium 290.241 (print.txt)
 h-wide-word-much listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 reads 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after', Chromium 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after' (print.txt)
+hb-anonymous equal
+hb-display-none equal
+hb-empty-block equal
+hb-first-last equal
+hb-justify equal
+hb-sizes-between equal
+hb-sizes-inside equal
+hb-two-three equal
+hb-white-space equal
+hi-attributes equal
+hi-inline equal
+hi-stretch refused Documents.Html.Unsupported.Value width: 40pt 10pt at 4:10
+hw-nowrap listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aa' x1 23.928, Chromium 21.335 (print.txt)
+hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
+hw-pre-line equal
+hw-pre-wrap equal
+hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 ii-align refused Documents.Html.Unsupported.Value width: 100pt at 3:1
-ii-baseline refused Documents.Html.Unsupported.Rendering img at 3:7
+ii-baseline equal
 ii-breaks refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ii-height refused Documents.Html.Unsupported.Rendering img at 3:7
+ii-height equal
 ii-hyphen refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ii-joiners refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ii-page refused Documents.Html.Unsupported.Rendering img at 4:9
-ii-table refused Documents.Html.Unsupported.Rendering img at 3:19
+ii-page equal
+ii-table refused Documents.Html.Unsupported.Value width: 60pt at 4:1
 ii-wrap refused Documents.Html.Unsupported.Value width: 100pt at 3:1
-kb-m1-kept-box-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:133
-kb-m2-kept-para-margin-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:120
-kb-n1-kept-box-padding refused Documents.Html.Unsupported.Rendering br at 8:85
-kb-n10-kept-para-padding-bottom refused Documents.Html.Unsupported.Rendering br at 8:87
+kb-m1-kept-box-margin-in-padded-box equal
+kb-m2-kept-para-margin-in-padded-box equal
+kb-n1-kept-box-padding equal
+kb-n10-kept-para-padding-bottom equal
 kb-n11-kept-table-in-padded-box equal
-kb-n12-kept-box-orphans2-default refused Documents.Html.Unsupported.Rendering br at 8:85
-kb-n1c-kept-box-padding-fits-control refused Documents.Html.Unsupported.Rendering br at 8:85
-kb-n2-kept-para-in-padded-box refused Documents.Html.Unsupported.Rendering br at 8:93
-kb-n3-kept-box-padding-bottom-3 refused Documents.Html.Unsupported.Rendering br at 8:92
-kb-n4-kept-box-border-bottom-6 refused Documents.Html.Unsupported.Rendering br at 8:102
-kb-n5-kept-padded-box-in-cell refused Documents.Html.Unsupported.Rendering br at 8:166
-kb-n6-kept-para-in-padded-box-in-cell refused Documents.Html.Unsupported.Rendering br at 8:174
+kb-n12-kept-box-orphans2-default equal
+kb-n1c-kept-box-padding-fits-control equal
+kb-n2-kept-para-in-padded-box equal
+kb-n3-kept-box-padding-bottom-3 equal
+kb-n4-kept-box-border-bottom-6 equal
+kb-n5-kept-padded-box-in-cell equal
+kb-n6-kept-para-in-padded-box-in-cell equal
 kb-n7-kept-box-three-paragraphs equal
-kb-n8-kept-box-around-padded-box refused Documents.Html.Unsupported.Rendering br at 8:98
-kb-n9-padded-box-not-kept-control refused Documents.Html.Unsupported.Rendering br at 8:66
-kb-s0-base refused Documents.Html.Unsupported.Rendering br at 8:42
-kb-s1-outer-box-not-kept refused Documents.Html.Unsupported.Rendering br at 8:42
-kb-s2-b-not-kept refused Documents.Html.Unsupported.Rendering br at 8:42
-kb-s3-d-kept-only refused Documents.Html.Unsupported.Rendering br at 8:42
-kb-s4-a-keep-with-next-only refused Documents.Html.Unsupported.Rendering br at 8:32
-kb-s5-perfect-break-two-before refused Documents.Html.Unsupported.Rendering br at 8:6
-kb-s7-perfect-break-before-kept-box refused Documents.Html.Unsupported.Rendering br at 8:6
-kb-s8-no-keeps-but-inner-keep-with-next refused Documents.Html.Unsupported.Rendering br at 8:6
-kb-s9-a-orphans-no-kept-box refused Documents.Html.Unsupported.Rendering br at 8:24
+kb-n8-kept-box-around-padded-box equal
+kb-n9-padded-box-not-kept-control equal
+kb-s0-base equal
+kb-s1-outer-box-not-kept equal
+kb-s2-b-not-kept equal
+kb-s3-d-kept-only equal
+kb-s4-a-keep-with-next-only equal
+kb-s5-perfect-break-two-before equal
+kb-s7-perfect-break-before-kept-box equal
+kb-s8-no-keeps-but-inner-keep-with-next equal
+kb-s9-a-orphans-no-kept-box equal
 kb-t1-kept-row-group-in-padded-box equal
 kb-t2-kept-row-group-after-a-row equal
 kb-t3-row-group-not-kept-control equal
-kb-v8-padded-box-kept-para refused Documents.Html.Unsupported.Rendering br at 8:118
+kb-v8-padded-box-kept-para equal
 kb-v9-padded-box-kept-table-row equal
 mf4-line-0 equal
 mf4-line-075 equal
 mf4-line-150 equal
 mf4-line-225 equal
-sk-extreme refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:46
-sk-lato refused Documents.Css.Unsupported.Value text-decoration: overline at 6:66
-sk-lato-bold refused Documents.Css.Unsupported.Value text-decoration: overline at 6:84
-sk-lato-italic refused Documents.Css.Unsupported.Value text-decoration: overline at 6:86
-sk-misc refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:18
-sk-nest refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
-sk-part refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
-sk-size refused Documents.Css.Unsupported.Value text-decoration: overline at 4:167
+sk-extreme open page 1 'gạọụ' x1 53.504, Chromium 54.417 (print.txt)
+sk-lato equal
+sk-lato-bold equal
+sk-lato-italic equal
+sk-misc refused Documents.Html.Unsupported.Value width: 60pt at 6:1
+sk-nest equal
+sk-part equal
+sk-size equal
 sk-space refused Documents.Html.Unsupported.Value width: 120pt at 5:1
-sk-theano refused Documents.Css.Unsupported.Value text-decoration: overline at 6:76
-sk-touch refused Documents.Html.Unsupported.Value text-decoration-line: underline at 5:18
-sk-whose refused Documents.Css.Unsupported.Property text-decoration-skip-ink: auto at 4:299
+sk-theano equal
+sk-touch equal
+sk-whose equal
 sr-counter refused Documents.Css.Unsupported.Selector The selector '::after' is not supported. at 2:98
 sr-font-changes equal
 sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
@@ -380,27 +397,27 @@ tw-pref refused Documents.Html.Unsupported.Value width: 300pt at 6:1
 tw-span refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
-ws-border refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:6
-ws-break-spaces refused Documents.Css.Unsupported.Value white-space: break-spaces at 3:11
-ws-forced refused Documents.Css.Unsupported.Value white-space: pre-line at 11:23
-ws-hang-break-spaces refused Documents.Css.Unsupported.Value white-space: break-spaces at 3:21
+ws-border refused Documents.Html.Unsupported.Value width: 6pt at 6:1
+ws-break-spaces equal
+ws-forced refused Documents.Html.Unsupported.Value width: 40pt at 3:1
+ws-hang-break-spaces refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-normal refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-pre refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-pre-wrap refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-image refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-image refused Documents.Html.Unsupported.Value width: 6pt at 4:1
 ws-image-border refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ws-intrinsic refused Documents.Css.Unsupported.Value white-space: pre-line at 7:23
-ws-justify refused Documents.Css.Unsupported.Value white-space: break-spaces at 5:21
+ws-intrinsic refused Documents.Html.Unsupported.Value width: 20pt at 3:1
+ws-justify refused Documents.Html.Unsupported.Value width: 60pt at 3:1
 ws-justify-nbsp refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-kern refused Documents.Css.Unsupported.Value white-space: pre-line at 8:28
+ws-kern equal
 ws-lead refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ws-longhands refused Documents.Css.Unsupported.Value white-space-collapse: preserve-spaces at 5:11
 ws-normal equal
-ws-nowrap refused Documents.Html.Unsupported.Value text-wrap-mode: nowrap at 3:1
+ws-nowrap equal
 ws-overflow refused Documents.Html.Unsupported.Value width: 100pt at 3:1
-ws-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
-ws-pre-line refused Documents.Css.Unsupported.Value white-space: pre-line at 3:11
-ws-pre-wrap refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
+ws-pre equal
+ws-pre-line equal
+ws-pre-wrap equal
 ws-soft refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:1
-ws-table refused Documents.Css.Unsupported.Value white-space: break-spaces at 12:23
+ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
+ws-table refused Documents.Html.Unsupported.Value width: 20pt at 4:1

@@ -174,17 +174,14 @@ public class BoxGenerationTests
     [Theory]
     [InlineData("<ul><li>a</li></ul>", "display")]
     [InlineData("<table><tr><td>a</td></tr></table>", "border-collapse")]
-    [InlineData("<pre>a</pre>", "white-space-collapse")]
+    [InlineData("<pre>a\tb</pre>", "white-space-collapse")]
     [InlineData("<hr>", "border-top-style")]
-    [InlineData("<p><a href=\"x\">a</a></p>", "text-decoration-line")]
     [InlineData("<p><span style=\"vertical-align:top\">a</span></p>", "vertical-align")]
     public void An_element_whose_user_agent_rendering_is_not_drawn_is_refused_through_its_values(string body, string property) =>
         Refusals(Doc(body)).Select(Property).Should().Contain(property);
 
     [Theory]
-    [InlineData("br")]
     [InlineData("wbr")]
-    [InlineData("img")]
     [InlineData("q")]
         public void An_element_whose_rendering_no_property_says_is_refused_by_its_own_rule_at_its_start_tag(string element)
     {
@@ -210,7 +207,7 @@ public class BoxGenerationTests
     [InlineData("<div style=\"color:rgba(0,0,0,0.5)\"><p style=\"color:black\">a</p></div>", null)]
     [InlineData("<div style=\"color:rgba(0,0,0,0.5)\">a</div>", "color")]
     [InlineData("<div style=\"text-wrap-mode:nowrap\"><p style=\"text-wrap-mode:wrap\">a</p></div>", null)]
-    [InlineData("<p style=\"text-wrap-mode:nowrap\">a</p>", "text-wrap-mode")]
+    [InlineData("<p style=\"text-wrap-mode:nowrap\">a</p>", null)]
     [InlineData("<div style=\"box-decoration-break:clone\">a</div>", null)]
     [InlineData("<div style=\"box-decoration-break:clone;padding:1pt\">a</div>", "box-decoration-break")]
     [InlineData("<p><span style=\"overflow-x:clip\">a</span></p>", null)]
@@ -257,7 +254,7 @@ public class BoxGenerationTests
     [Fact]
     public void Under_warn_a_refused_value_takes_the_model_s_initial_value_a_refused_display_is_a_block_and_an_element_refused_by_its_own_rule_is_left_out()
     {
-        var html = Doc("<div style=\"padding:5%;background-color:rgba(0,0,0,0.5)\">a</div><ul><li>b</li></ul><p>c<br>d</p>");
+        var html = Doc("<div style=\"padding:5%;background-color:rgba(0,0,0,0.5)\">a</div><ul><li>b</li></ul><p>c<wbr>d</p>");
         var warned = Boxes(html, UnsupportedPolicy.Warn);
         warned.IsSuccess.Should().BeTrue(warned.IsFailure ? warned.Error.ToString() : string.Empty);
         var body = (Box)warned.Value.Document.Root.Children.Single();

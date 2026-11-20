@@ -609,21 +609,29 @@ start tag, with the property and the value) only where it would change the print
 | padding, border widths | lengths on a block box | percentages; any on an inline box |
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
 | `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
-| `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply) | other values on a block box |
+| `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `width` and `height`, `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
 | `box-sizing`, `border-spacing`, `empty-cells`, `caption-side`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, collapsed borders, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
-| `white-space-collapse`, `text-wrap-mode` | `collapse`, `wrap`; any on an element without text | `preserve`, `nowrap` where text is |
-| `text-decoration-line` | `none`; any on an element without content | underline (links: the next packages) |
+| `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
+| `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-decoration-skip-ink` | every line and combination, applied to the element's text and the text of every element inside it, through block boxes, not into an image: the parent's lines, then the element's own in the order underline, overline, line-through, each in the element's font and its decoration colour (`currentcolor` its `color`; `TextStyle.Decorations`); `solid`; `auto`, `none` from the element the text lies in (`TextStyle.DecorationSkipInk`) | a decoration colour of another alpha than 1; a text with more than 16 lines (at the start tag of the element it lies in); `blink`, `spelling-error`, `grammar-error`, other styles, a thickness, an underline offset or position other than `auto` and `skip-ink: all` (refused by the registry) |
 | `vertical-align` | `baseline`; any on a block box | other values on an inline box |
 | `box-decoration-break` | `slice`; `clone` on a box without border, padding or background | `clone` where it would draw |
 | `font-kerning` | `auto`, `normal` (Chromium kerns with both: cases `h-kerning-*`) | `none` (refused by the registry) |
 | break properties, `orphans`, `widows`, `text-align`, font family, size, weight and style, `line-height` | every value (`avoid-page` as `avoid`; `break-after: page` as a forced break before the next box, none after the last box, as Chromium prints it) but a font size of 0 | a font size of 0; a family without a face (`Font`) |
 | the properties supported only at their initial value | the initial value | any other (the registry already refuses it) |
 
-Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`): `br`,
-`wbr`, `img`, `q`. The others are refused through their values: lists by `display`, a table without collapsed borders
-by `border-collapse`, `pre` by
-`white-space-collapse`, `hr` by its `inset` border, a link by its underline, `sub` and `sup` by `vertical-align`
+Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`):
+`wbr`, `q`. A `br` is the model's forced line break, the line separator U+2028, in its own text style (a block-level
+`br` is refused); Chromium adds no line for a `br` that ends a block's content and an empty line for one that starts it
+(cases `hb-*`). A block-level `img` is a box of the image algorithm: its file from a `data:` URL or through the resource
+resolver against the document's base URL, its computed width and height (the attributes are presentational hints), its
+alt text as the figure's description and an empty alt as decorative (case `hi-attributes`); an image that does not come
+or does not decode is refused (`Rendering`), and so is a width and a height in another ratio than the image's own, which
+Chromium stretches the image to and the image algorithm does not (`Value`, case `hi-stretch`). An `img` inside a line of text (`display: inline`) is the same image box
+among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
+in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
+break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: lists by `display`, a table without collapsed borders by
+`border-collapse`, `hr` by its `inset` border, `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
 at its text, once per text with the first such character, its offset and their count (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed
@@ -715,8 +723,9 @@ Each is documented next to its code as well.
 
 - **Content wider than the page area (HTML):** Chromium shrinks the whole print by the widest page's overflow, up to a
   factor of 1.5, and clips past it (`CalculateOverflowShrinkForPrinting`, pagination_utils.cc); the engine has no page
-  scale and lets the content stick out (cases `h-wide-word-little`, `h-wide-word-much`, listed;
-  `HtmlListedDifferenceTests`).
+  scale and lets the content stick out (cases `h-wide-word-little`, `h-wide-word-much` and `hw-nowrap`, a line that does
+  not wrap, listed; `HtmlListedDifferenceTests`: below the limit Chromium's print taken back through its scale is the
+  engine's).
 - **The page area past the sheet (HTML):** Chromium rounds the page area up to whole pixels even where it then reaches
   past the printed sheet, as on A4 without margins, the default page (794 × 1123 px, 595.5 × 842.25 pt, on a sheet of
   594.96 × 841.92 pt); the model holds no page area larger than its sheet, so the engine's ends at the sheet: 0.54 pt

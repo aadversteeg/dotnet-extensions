@@ -119,6 +119,7 @@
 /html[1] text-align-last auto
 /html[1] text-decoration-color rgb(0, 0, 0)
 /html[1] text-decoration-line none
+/html[1] text-decoration-skip-ink auto
 /html[1] text-decoration-style solid
 /html[1] text-decoration-thickness auto
 /html[1] text-indent 0px
@@ -127,6 +128,8 @@
 /html[1] text-rendering auto
 /html[1] text-shadow none
 /html[1] text-transform none
+/html[1] text-underline-offset auto
+/html[1] text-underline-position auto
 /html[1] text-wrap-mode wrap
 /html[1] text-wrap-style auto
 /html[1] top auto
@@ -263,6 +266,7 @@
 /html[1]/head[1] text-align-last auto
 /html[1]/head[1] text-decoration-color rgb(0, 0, 0)
 /html[1]/head[1] text-decoration-line none
+/html[1]/head[1] text-decoration-skip-ink auto
 /html[1]/head[1] text-decoration-style solid
 /html[1]/head[1] text-decoration-thickness auto
 /html[1]/head[1] text-indent 0px
@@ -271,6 +275,8 @@
 /html[1]/head[1] text-rendering auto
 /html[1]/head[1] text-shadow none
 /html[1]/head[1] text-transform none
+/html[1]/head[1] text-underline-offset auto
+/html[1]/head[1] text-underline-position auto
 /html[1]/head[1] text-wrap-mode wrap
 /html[1]/head[1] text-wrap-style auto
 /html[1]/head[1] top auto
@@ -407,6 +413,7 @@
 /html[1]/head[1]/meta[1] text-align-last auto
 /html[1]/head[1]/meta[1] text-decoration-color rgb(0, 0, 0)
 /html[1]/head[1]/meta[1] text-decoration-line none
+/html[1]/head[1]/meta[1] text-decoration-skip-ink auto
 /html[1]/head[1]/meta[1] text-decoration-style solid
 /html[1]/head[1]/meta[1] text-decoration-thickness auto
 /html[1]/head[1]/meta[1] text-indent 0px
@@ -415,6 +422,8 @@
 /html[1]/head[1]/meta[1] text-rendering auto
 /html[1]/head[1]/meta[1] text-shadow none
 /html[1]/head[1]/meta[1] text-transform none
+/html[1]/head[1]/meta[1] text-underline-offset auto
+/html[1]/head[1]/meta[1] text-underline-position auto
 /html[1]/head[1]/meta[1] text-wrap-mode wrap
 /html[1]/head[1]/meta[1] text-wrap-style auto
 /html[1]/head[1]/meta[1] top auto
@@ -551,6 +560,7 @@
 /html[1]/head[1]/title[2] text-align-last auto
 /html[1]/head[1]/title[2] text-decoration-color rgb(0, 0, 0)
 /html[1]/head[1]/title[2] text-decoration-line none
+/html[1]/head[1]/title[2] text-decoration-skip-ink auto
 /html[1]/head[1]/title[2] text-decoration-style solid
 /html[1]/head[1]/title[2] text-decoration-thickness auto
 /html[1]/head[1]/title[2] text-indent 0px
@@ -559,6 +569,8 @@
 /html[1]/head[1]/title[2] text-rendering auto
 /html[1]/head[1]/title[2] text-shadow none
 /html[1]/head[1]/title[2] text-transform none
+/html[1]/head[1]/title[2] text-underline-offset auto
+/html[1]/head[1]/title[2] text-underline-position auto
 /html[1]/head[1]/title[2] text-wrap-mode wrap
 /html[1]/head[1]/title[2] text-wrap-style auto
 /html[1]/head[1]/title[2] top auto
@@ -695,6 +707,7 @@
 /html[1]/head[1]/style[3] text-align-last auto
 /html[1]/head[1]/style[3] text-decoration-color rgb(0, 0, 0)
 /html[1]/head[1]/style[3] text-decoration-line none
+/html[1]/head[1]/style[3] text-decoration-skip-ink auto
 /html[1]/head[1]/style[3] text-decoration-style solid
 /html[1]/head[1]/style[3] text-decoration-thickness auto
 /html[1]/head[1]/style[3] text-indent 0px
@@ -703,6 +716,8 @@
 /html[1]/head[1]/style[3] text-rendering auto
 /html[1]/head[1]/style[3] text-shadow none
 /html[1]/head[1]/style[3] text-transform none
+/html[1]/head[1]/style[3] text-underline-offset auto
+/html[1]/head[1]/style[3] text-underline-position auto
 /html[1]/head[1]/style[3] text-wrap-mode wrap
 /html[1]/head[1]/style[3] text-wrap-style auto
 /html[1]/head[1]/style[3] top auto
@@ -839,6 +854,7 @@
 /html[1]/head[1]/style[4] text-align-last auto
 /html[1]/head[1]/style[4] text-decoration-color rgb(0, 0, 0)
 /html[1]/head[1]/style[4] text-decoration-line none
+/html[1]/head[1]/style[4] text-decoration-skip-ink auto
 /html[1]/head[1]/style[4] text-decoration-style solid
 /html[1]/head[1]/style[4] text-decoration-thickness auto
 /html[1]/head[1]/style[4] text-indent 0px
@@ -847,6 +863,8 @@
 /html[1]/head[1]/style[4] text-rendering auto
 /html[1]/head[1]/style[4] text-shadow none
 /html[1]/head[1]/style[4] text-transform none
+/html[1]/head[1]/style[4] text-underline-offset auto
+/html[1]/head[1]/style[4] text-underline-position auto
 /html[1]/head[1]/style[4] text-wrap-mode wrap
 /html[1]/head[1]/style[4] text-wrap-style auto
 /html[1]/head[1]/style[4] top auto
@@ -983,6 +1001,7 @@
 /html[1]/head[1]/style[5] text-align-last auto
 /html[1]/head[1]/style[5] text-decoration-color rgb(0, 0, 0)
 /html[1]/head[1]/style[5] text-decoration-line none
+/html[1]/head[1]/style[5] text-decoration-skip-ink auto
 /html[1]/head[1]/style[5] text-decoration-style solid
 /html[1]/head[1]/style[5] text-decoration-thickness auto
 /html[1]/head[1]/style[5] text-indent 0px
@@ -991,6 +1010,8 @@
 /html[1]/head[1]/style[5] text-rendering auto
 /html[1]/head[1]/style[5] text-shadow none
 /html[1]/head[1]/style[5] text-transform none
+/html[1]/head[1]/style[5] text-underline-offset auto
+/html[1]/head[1]/style[5] text-underline-position auto
 /html[1]/head[1]/style[5] text-wrap-mode wrap
 /html[1]/head[1]/style[5] text-wrap-style auto
 /html[1]/head[1]/style[5] top auto
@@ -1127,6 +1148,7 @@
 /html[1]/body[2] text-align-last auto
 /html[1]/body[2] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2] text-decoration-line none
+/html[1]/body[2] text-decoration-skip-ink auto
 /html[1]/body[2] text-decoration-style solid
 /html[1]/body[2] text-decoration-thickness auto
 /html[1]/body[2] text-indent 0px
@@ -1135,6 +1157,8 @@
 /html[1]/body[2] text-rendering auto
 /html[1]/body[2] text-shadow none
 /html[1]/body[2] text-transform none
+/html[1]/body[2] text-underline-offset auto
+/html[1]/body[2] text-underline-position auto
 /html[1]/body[2] text-wrap-mode wrap
 /html[1]/body[2] text-wrap-style auto
 /html[1]/body[2] top auto
@@ -1271,6 +1295,7 @@
 /html[1]/body[2]/p[1] text-align-last auto
 /html[1]/body[2]/p[1] text-decoration-color rgb(1, 2, 3)
 /html[1]/body[2]/p[1] text-decoration-line none
+/html[1]/body[2]/p[1] text-decoration-skip-ink auto
 /html[1]/body[2]/p[1] text-decoration-style solid
 /html[1]/body[2]/p[1] text-decoration-thickness auto
 /html[1]/body[2]/p[1] text-indent 0px
@@ -1279,6 +1304,8 @@
 /html[1]/body[2]/p[1] text-rendering auto
 /html[1]/body[2]/p[1] text-shadow none
 /html[1]/body[2]/p[1] text-transform none
+/html[1]/body[2]/p[1] text-underline-offset auto
+/html[1]/body[2]/p[1] text-underline-position auto
 /html[1]/body[2]/p[1] text-wrap-mode wrap
 /html[1]/body[2]/p[1] text-wrap-style auto
 /html[1]/body[2]/p[1] top auto
@@ -1415,6 +1442,7 @@
 /html[1]/body[2]/p[2] text-align-last auto
 /html[1]/body[2]/p[2] text-decoration-color rgb(1, 2, 3)
 /html[1]/body[2]/p[2] text-decoration-line none
+/html[1]/body[2]/p[2] text-decoration-skip-ink auto
 /html[1]/body[2]/p[2] text-decoration-style solid
 /html[1]/body[2]/p[2] text-decoration-thickness auto
 /html[1]/body[2]/p[2] text-indent 0px
@@ -1423,6 +1451,8 @@
 /html[1]/body[2]/p[2] text-rendering auto
 /html[1]/body[2]/p[2] text-shadow none
 /html[1]/body[2]/p[2] text-transform none
+/html[1]/body[2]/p[2] text-underline-offset auto
+/html[1]/body[2]/p[2] text-underline-position auto
 /html[1]/body[2]/p[2] text-wrap-mode wrap
 /html[1]/body[2]/p[2] text-wrap-style auto
 /html[1]/body[2]/p[2] top auto
@@ -1559,6 +1589,7 @@
 /html[1]/body[2]/p[3] text-align-last auto
 /html[1]/body[2]/p[3] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2]/p[3] text-decoration-line none
+/html[1]/body[2]/p[3] text-decoration-skip-ink auto
 /html[1]/body[2]/p[3] text-decoration-style solid
 /html[1]/body[2]/p[3] text-decoration-thickness auto
 /html[1]/body[2]/p[3] text-indent 0px
@@ -1567,6 +1598,8 @@
 /html[1]/body[2]/p[3] text-rendering auto
 /html[1]/body[2]/p[3] text-shadow none
 /html[1]/body[2]/p[3] text-transform none
+/html[1]/body[2]/p[3] text-underline-offset auto
+/html[1]/body[2]/p[3] text-underline-position auto
 /html[1]/body[2]/p[3] text-wrap-mode wrap
 /html[1]/body[2]/p[3] text-wrap-style auto
 /html[1]/body[2]/p[3] top auto
@@ -1703,6 +1736,7 @@
 /html[1]/body[2]/p[4] text-align-last auto
 /html[1]/body[2]/p[4] text-decoration-color rgb(0, 100, 0)
 /html[1]/body[2]/p[4] text-decoration-line none
+/html[1]/body[2]/p[4] text-decoration-skip-ink auto
 /html[1]/body[2]/p[4] text-decoration-style solid
 /html[1]/body[2]/p[4] text-decoration-thickness auto
 /html[1]/body[2]/p[4] text-indent 0px
@@ -1711,6 +1745,8 @@
 /html[1]/body[2]/p[4] text-rendering auto
 /html[1]/body[2]/p[4] text-shadow none
 /html[1]/body[2]/p[4] text-transform none
+/html[1]/body[2]/p[4] text-underline-offset auto
+/html[1]/body[2]/p[4] text-underline-position auto
 /html[1]/body[2]/p[4] text-wrap-mode wrap
 /html[1]/body[2]/p[4] text-wrap-style auto
 /html[1]/body[2]/p[4] top auto
@@ -1847,6 +1883,7 @@
 /html[1]/body[2]/p[5] text-align-last auto
 /html[1]/body[2]/p[5] text-decoration-color rgb(0, 128, 0)
 /html[1]/body[2]/p[5] text-decoration-line none
+/html[1]/body[2]/p[5] text-decoration-skip-ink auto
 /html[1]/body[2]/p[5] text-decoration-style solid
 /html[1]/body[2]/p[5] text-decoration-thickness auto
 /html[1]/body[2]/p[5] text-indent 0px
@@ -1855,6 +1892,8 @@
 /html[1]/body[2]/p[5] text-rendering auto
 /html[1]/body[2]/p[5] text-shadow none
 /html[1]/body[2]/p[5] text-transform none
+/html[1]/body[2]/p[5] text-underline-offset auto
+/html[1]/body[2]/p[5] text-underline-position auto
 /html[1]/body[2]/p[5] text-wrap-mode wrap
 /html[1]/body[2]/p[5] text-wrap-style auto
 /html[1]/body[2]/p[5] top auto
@@ -1991,6 +2030,7 @@
 /html[1]/body[2]/p[6] text-align-last auto
 /html[1]/body[2]/p[6] text-decoration-color rgb(0, 128, 0)
 /html[1]/body[2]/p[6] text-decoration-line none
+/html[1]/body[2]/p[6] text-decoration-skip-ink auto
 /html[1]/body[2]/p[6] text-decoration-style solid
 /html[1]/body[2]/p[6] text-decoration-thickness auto
 /html[1]/body[2]/p[6] text-indent 0px
@@ -1999,6 +2039,8 @@
 /html[1]/body[2]/p[6] text-rendering auto
 /html[1]/body[2]/p[6] text-shadow none
 /html[1]/body[2]/p[6] text-transform none
+/html[1]/body[2]/p[6] text-underline-offset auto
+/html[1]/body[2]/p[6] text-underline-position auto
 /html[1]/body[2]/p[6] text-wrap-mode wrap
 /html[1]/body[2]/p[6] text-wrap-style auto
 /html[1]/body[2]/p[6] top auto
@@ -2135,6 +2177,7 @@
 /html[1]/body[2]/p[7] text-align-last auto
 /html[1]/body[2]/p[7] text-decoration-color rgb(0, 0, 200)
 /html[1]/body[2]/p[7] text-decoration-line none
+/html[1]/body[2]/p[7] text-decoration-skip-ink auto
 /html[1]/body[2]/p[7] text-decoration-style solid
 /html[1]/body[2]/p[7] text-decoration-thickness auto
 /html[1]/body[2]/p[7] text-indent 0px
@@ -2143,6 +2186,8 @@
 /html[1]/body[2]/p[7] text-rendering auto
 /html[1]/body[2]/p[7] text-shadow none
 /html[1]/body[2]/p[7] text-transform none
+/html[1]/body[2]/p[7] text-underline-offset auto
+/html[1]/body[2]/p[7] text-underline-position auto
 /html[1]/body[2]/p[7] text-wrap-mode wrap
 /html[1]/body[2]/p[7] text-wrap-style auto
 /html[1]/body[2]/p[7] top auto
@@ -2279,6 +2324,7 @@
 /html[1]/body[2]/p[8] text-align-last auto
 /html[1]/body[2]/p[8] text-decoration-color rgb(255, 0, 0)
 /html[1]/body[2]/p[8] text-decoration-line none
+/html[1]/body[2]/p[8] text-decoration-skip-ink auto
 /html[1]/body[2]/p[8] text-decoration-style solid
 /html[1]/body[2]/p[8] text-decoration-thickness auto
 /html[1]/body[2]/p[8] text-indent 0px
@@ -2287,6 +2333,8 @@
 /html[1]/body[2]/p[8] text-rendering auto
 /html[1]/body[2]/p[8] text-shadow none
 /html[1]/body[2]/p[8] text-transform none
+/html[1]/body[2]/p[8] text-underline-offset auto
+/html[1]/body[2]/p[8] text-underline-position auto
 /html[1]/body[2]/p[8] text-wrap-mode wrap
 /html[1]/body[2]/p[8] text-wrap-style auto
 /html[1]/body[2]/p[8] top auto
@@ -2423,6 +2471,7 @@
 /html[1]/body[2]/p[9] text-align-last auto
 /html[1]/body[2]/p[9] text-decoration-color rgb(0, 0, 100)
 /html[1]/body[2]/p[9] text-decoration-line none
+/html[1]/body[2]/p[9] text-decoration-skip-ink auto
 /html[1]/body[2]/p[9] text-decoration-style solid
 /html[1]/body[2]/p[9] text-decoration-thickness auto
 /html[1]/body[2]/p[9] text-indent 0px
@@ -2431,6 +2480,8 @@
 /html[1]/body[2]/p[9] text-rendering auto
 /html[1]/body[2]/p[9] text-shadow none
 /html[1]/body[2]/p[9] text-transform none
+/html[1]/body[2]/p[9] text-underline-offset auto
+/html[1]/body[2]/p[9] text-underline-position auto
 /html[1]/body[2]/p[9] text-wrap-mode wrap
 /html[1]/body[2]/p[9] text-wrap-style auto
 /html[1]/body[2]/p[9] top auto
@@ -2567,6 +2618,7 @@
 /html[1]/body[2]/div[10] text-align-last auto
 /html[1]/body[2]/div[10] text-decoration-color rgb(10, 10, 10)
 /html[1]/body[2]/div[10] text-decoration-line none
+/html[1]/body[2]/div[10] text-decoration-skip-ink auto
 /html[1]/body[2]/div[10] text-decoration-style solid
 /html[1]/body[2]/div[10] text-decoration-thickness auto
 /html[1]/body[2]/div[10] text-indent 0px
@@ -2575,6 +2627,8 @@
 /html[1]/body[2]/div[10] text-rendering auto
 /html[1]/body[2]/div[10] text-shadow none
 /html[1]/body[2]/div[10] text-transform none
+/html[1]/body[2]/div[10] text-underline-offset auto
+/html[1]/body[2]/div[10] text-underline-position auto
 /html[1]/body[2]/div[10] text-wrap-mode wrap
 /html[1]/body[2]/div[10] text-wrap-style auto
 /html[1]/body[2]/div[10] top auto
@@ -2711,6 +2765,7 @@
 /html[1]/body[2]/div[10]/div[1] text-align-last auto
 /html[1]/body[2]/div[10]/div[1] text-decoration-color rgb(10, 10, 10)
 /html[1]/body[2]/div[10]/div[1] text-decoration-line none
+/html[1]/body[2]/div[10]/div[1] text-decoration-skip-ink auto
 /html[1]/body[2]/div[10]/div[1] text-decoration-style solid
 /html[1]/body[2]/div[10]/div[1] text-decoration-thickness auto
 /html[1]/body[2]/div[10]/div[1] text-indent 0px
@@ -2719,6 +2774,8 @@
 /html[1]/body[2]/div[10]/div[1] text-rendering auto
 /html[1]/body[2]/div[10]/div[1] text-shadow none
 /html[1]/body[2]/div[10]/div[1] text-transform none
+/html[1]/body[2]/div[10]/div[1] text-underline-offset auto
+/html[1]/body[2]/div[10]/div[1] text-underline-position auto
 /html[1]/body[2]/div[10]/div[1] text-wrap-mode wrap
 /html[1]/body[2]/div[10]/div[1] text-wrap-style auto
 /html[1]/body[2]/div[10]/div[1] top auto
@@ -2855,6 +2912,7 @@
 /html[1]/body[2]/div[10]/div[2] text-align-last auto
 /html[1]/body[2]/div[10]/div[2] text-decoration-color rgb(10, 10, 10)
 /html[1]/body[2]/div[10]/div[2] text-decoration-line none
+/html[1]/body[2]/div[10]/div[2] text-decoration-skip-ink auto
 /html[1]/body[2]/div[10]/div[2] text-decoration-style solid
 /html[1]/body[2]/div[10]/div[2] text-decoration-thickness auto
 /html[1]/body[2]/div[10]/div[2] text-indent 0px
@@ -2863,6 +2921,8 @@
 /html[1]/body[2]/div[10]/div[2] text-rendering auto
 /html[1]/body[2]/div[10]/div[2] text-shadow none
 /html[1]/body[2]/div[10]/div[2] text-transform none
+/html[1]/body[2]/div[10]/div[2] text-underline-offset auto
+/html[1]/body[2]/div[10]/div[2] text-underline-position auto
 /html[1]/body[2]/div[10]/div[2] text-wrap-mode wrap
 /html[1]/body[2]/div[10]/div[2] text-wrap-style auto
 /html[1]/body[2]/div[10]/div[2] top auto
@@ -2999,6 +3059,7 @@
 /html[1]/body[2]/div[10]/div[2]/span[1] text-align-last auto
 /html[1]/body[2]/div[10]/div[2]/span[1] text-decoration-color rgb(10, 10, 10)
 /html[1]/body[2]/div[10]/div[2]/span[1] text-decoration-line none
+/html[1]/body[2]/div[10]/div[2]/span[1] text-decoration-skip-ink auto
 /html[1]/body[2]/div[10]/div[2]/span[1] text-decoration-style solid
 /html[1]/body[2]/div[10]/div[2]/span[1] text-decoration-thickness auto
 /html[1]/body[2]/div[10]/div[2]/span[1] text-indent 0px
@@ -3007,6 +3068,8 @@
 /html[1]/body[2]/div[10]/div[2]/span[1] text-rendering auto
 /html[1]/body[2]/div[10]/div[2]/span[1] text-shadow none
 /html[1]/body[2]/div[10]/div[2]/span[1] text-transform none
+/html[1]/body[2]/div[10]/div[2]/span[1] text-underline-offset auto
+/html[1]/body[2]/div[10]/div[2]/span[1] text-underline-position auto
 /html[1]/body[2]/div[10]/div[2]/span[1] text-wrap-mode wrap
 /html[1]/body[2]/div[10]/div[2]/span[1] text-wrap-style auto
 /html[1]/body[2]/div[10]/div[2]/span[1] top auto
@@ -3143,6 +3206,7 @@
 /html[1]/body[2]/p[11] text-align-last auto
 /html[1]/body[2]/p[11] text-decoration-color rgb(200, 0, 0)
 /html[1]/body[2]/p[11] text-decoration-line none
+/html[1]/body[2]/p[11] text-decoration-skip-ink auto
 /html[1]/body[2]/p[11] text-decoration-style solid
 /html[1]/body[2]/p[11] text-decoration-thickness auto
 /html[1]/body[2]/p[11] text-indent 0px
@@ -3151,6 +3215,8 @@
 /html[1]/body[2]/p[11] text-rendering auto
 /html[1]/body[2]/p[11] text-shadow none
 /html[1]/body[2]/p[11] text-transform none
+/html[1]/body[2]/p[11] text-underline-offset auto
+/html[1]/body[2]/p[11] text-underline-position auto
 /html[1]/body[2]/p[11] text-wrap-mode wrap
 /html[1]/body[2]/p[11] text-wrap-style auto
 /html[1]/body[2]/p[11] top auto
@@ -3287,6 +3353,7 @@
 /html[1]/body[2]/p[12] text-align-last auto
 /html[1]/body[2]/p[12] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2]/p[12] text-decoration-line none
+/html[1]/body[2]/p[12] text-decoration-skip-ink auto
 /html[1]/body[2]/p[12] text-decoration-style solid
 /html[1]/body[2]/p[12] text-decoration-thickness auto
 /html[1]/body[2]/p[12] text-indent 0px
@@ -3295,6 +3362,8 @@
 /html[1]/body[2]/p[12] text-rendering auto
 /html[1]/body[2]/p[12] text-shadow none
 /html[1]/body[2]/p[12] text-transform none
+/html[1]/body[2]/p[12] text-underline-offset auto
+/html[1]/body[2]/p[12] text-underline-position auto
 /html[1]/body[2]/p[12] text-wrap-mode wrap
 /html[1]/body[2]/p[12] text-wrap-style auto
 /html[1]/body[2]/p[12] top auto
@@ -3431,6 +3500,7 @@
 /html[1]/body[2]/div[13] text-align-last auto
 /html[1]/body[2]/div[13] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2]/div[13] text-decoration-line none
+/html[1]/body[2]/div[13] text-decoration-skip-ink auto
 /html[1]/body[2]/div[13] text-decoration-style solid
 /html[1]/body[2]/div[13] text-decoration-thickness auto
 /html[1]/body[2]/div[13] text-indent 0px
@@ -3439,6 +3509,8 @@
 /html[1]/body[2]/div[13] text-rendering auto
 /html[1]/body[2]/div[13] text-shadow none
 /html[1]/body[2]/div[13] text-transform none
+/html[1]/body[2]/div[13] text-underline-offset auto
+/html[1]/body[2]/div[13] text-underline-position auto
 /html[1]/body[2]/div[13] text-wrap-mode wrap
 /html[1]/body[2]/div[13] text-wrap-style auto
 /html[1]/body[2]/div[13] top auto
@@ -3575,6 +3647,7 @@
 /html[1]/body[2]/div[13]/span[1] text-align-last auto
 /html[1]/body[2]/div[13]/span[1] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2]/div[13]/span[1] text-decoration-line none
+/html[1]/body[2]/div[13]/span[1] text-decoration-skip-ink auto
 /html[1]/body[2]/div[13]/span[1] text-decoration-style solid
 /html[1]/body[2]/div[13]/span[1] text-decoration-thickness auto
 /html[1]/body[2]/div[13]/span[1] text-indent 0px
@@ -3583,6 +3656,8 @@
 /html[1]/body[2]/div[13]/span[1] text-rendering auto
 /html[1]/body[2]/div[13]/span[1] text-shadow none
 /html[1]/body[2]/div[13]/span[1] text-transform none
+/html[1]/body[2]/div[13]/span[1] text-underline-offset auto
+/html[1]/body[2]/div[13]/span[1] text-underline-position auto
 /html[1]/body[2]/div[13]/span[1] text-wrap-mode wrap
 /html[1]/body[2]/div[13]/span[1] text-wrap-style auto
 /html[1]/body[2]/div[13]/span[1] top auto
@@ -3719,6 +3794,7 @@
 /html[1]/body[2]/div[14] text-align-last auto
 /html[1]/body[2]/div[14] text-decoration-color rgb(9, 9, 9)
 /html[1]/body[2]/div[14] text-decoration-line none
+/html[1]/body[2]/div[14] text-decoration-skip-ink auto
 /html[1]/body[2]/div[14] text-decoration-style solid
 /html[1]/body[2]/div[14] text-decoration-thickness auto
 /html[1]/body[2]/div[14] text-indent 0px
@@ -3727,6 +3803,8 @@
 /html[1]/body[2]/div[14] text-rendering auto
 /html[1]/body[2]/div[14] text-shadow none
 /html[1]/body[2]/div[14] text-transform none
+/html[1]/body[2]/div[14] text-underline-offset auto
+/html[1]/body[2]/div[14] text-underline-position auto
 /html[1]/body[2]/div[14] text-wrap-mode wrap
 /html[1]/body[2]/div[14] text-wrap-style auto
 /html[1]/body[2]/div[14] top auto
@@ -3863,6 +3941,7 @@
 /html[1]/body[2]/div[14]/p[1] text-align-last auto
 /html[1]/body[2]/div[14]/p[1] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2]/div[14]/p[1] text-decoration-line none
+/html[1]/body[2]/div[14]/p[1] text-decoration-skip-ink auto
 /html[1]/body[2]/div[14]/p[1] text-decoration-style solid
 /html[1]/body[2]/div[14]/p[1] text-decoration-thickness auto
 /html[1]/body[2]/div[14]/p[1] text-indent 0px
@@ -3871,6 +3950,8 @@
 /html[1]/body[2]/div[14]/p[1] text-rendering auto
 /html[1]/body[2]/div[14]/p[1] text-shadow none
 /html[1]/body[2]/div[14]/p[1] text-transform none
+/html[1]/body[2]/div[14]/p[1] text-underline-offset auto
+/html[1]/body[2]/div[14]/p[1] text-underline-position auto
 /html[1]/body[2]/div[14]/p[1] text-wrap-mode wrap
 /html[1]/body[2]/div[14]/p[1] text-wrap-style auto
 /html[1]/body[2]/div[14]/p[1] top auto
@@ -4007,6 +4088,7 @@
 /html[1]/body[2]/div[14]/p[2] text-align-last auto
 /html[1]/body[2]/div[14]/p[2] text-decoration-color rgb(9, 9, 9)
 /html[1]/body[2]/div[14]/p[2] text-decoration-line none
+/html[1]/body[2]/div[14]/p[2] text-decoration-skip-ink auto
 /html[1]/body[2]/div[14]/p[2] text-decoration-style solid
 /html[1]/body[2]/div[14]/p[2] text-decoration-thickness auto
 /html[1]/body[2]/div[14]/p[2] text-indent 0px
@@ -4015,6 +4097,8 @@
 /html[1]/body[2]/div[14]/p[2] text-rendering auto
 /html[1]/body[2]/div[14]/p[2] text-shadow none
 /html[1]/body[2]/div[14]/p[2] text-transform none
+/html[1]/body[2]/div[14]/p[2] text-underline-offset auto
+/html[1]/body[2]/div[14]/p[2] text-underline-position auto
 /html[1]/body[2]/div[14]/p[2] text-wrap-mode wrap
 /html[1]/body[2]/div[14]/p[2] text-wrap-style auto
 /html[1]/body[2]/div[14]/p[2] top auto
@@ -4151,6 +4235,7 @@
 /html[1]/body[2]/div[14]/p[3] text-align-last auto
 /html[1]/body[2]/div[14]/p[3] text-decoration-color rgb(1, 2, 3)
 /html[1]/body[2]/div[14]/p[3] text-decoration-line none
+/html[1]/body[2]/div[14]/p[3] text-decoration-skip-ink auto
 /html[1]/body[2]/div[14]/p[3] text-decoration-style solid
 /html[1]/body[2]/div[14]/p[3] text-decoration-thickness auto
 /html[1]/body[2]/div[14]/p[3] text-indent 0px
@@ -4159,6 +4244,8 @@
 /html[1]/body[2]/div[14]/p[3] text-rendering auto
 /html[1]/body[2]/div[14]/p[3] text-shadow none
 /html[1]/body[2]/div[14]/p[3] text-transform none
+/html[1]/body[2]/div[14]/p[3] text-underline-offset auto
+/html[1]/body[2]/div[14]/p[3] text-underline-position auto
 /html[1]/body[2]/div[14]/p[3] text-wrap-mode wrap
 /html[1]/body[2]/div[14]/p[3] text-wrap-style auto
 /html[1]/body[2]/div[14]/p[3] top auto
@@ -4295,6 +4382,7 @@
 /html[1]/body[2]/div[14]/p[4] text-align-last auto
 /html[1]/body[2]/div[14]/p[4] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2]/div[14]/p[4] text-decoration-line none
+/html[1]/body[2]/div[14]/p[4] text-decoration-skip-ink auto
 /html[1]/body[2]/div[14]/p[4] text-decoration-style solid
 /html[1]/body[2]/div[14]/p[4] text-decoration-thickness auto
 /html[1]/body[2]/div[14]/p[4] text-indent 0px
@@ -4303,6 +4391,8 @@
 /html[1]/body[2]/div[14]/p[4] text-rendering auto
 /html[1]/body[2]/div[14]/p[4] text-shadow none
 /html[1]/body[2]/div[14]/p[4] text-transform none
+/html[1]/body[2]/div[14]/p[4] text-underline-offset auto
+/html[1]/body[2]/div[14]/p[4] text-underline-position auto
 /html[1]/body[2]/div[14]/p[4] text-wrap-mode wrap
 /html[1]/body[2]/div[14]/p[4] text-wrap-style auto
 /html[1]/body[2]/div[14]/p[4] top auto
@@ -4439,6 +4529,7 @@
 /html[1]/body[2]/div[14]/p[5] text-align-last auto
 /html[1]/body[2]/div[14]/p[5] text-decoration-color rgb(9, 9, 9)
 /html[1]/body[2]/div[14]/p[5] text-decoration-line none
+/html[1]/body[2]/div[14]/p[5] text-decoration-skip-ink auto
 /html[1]/body[2]/div[14]/p[5] text-decoration-style solid
 /html[1]/body[2]/div[14]/p[5] text-decoration-thickness auto
 /html[1]/body[2]/div[14]/p[5] text-indent 0px
@@ -4447,6 +4538,8 @@
 /html[1]/body[2]/div[14]/p[5] text-rendering auto
 /html[1]/body[2]/div[14]/p[5] text-shadow none
 /html[1]/body[2]/div[14]/p[5] text-transform none
+/html[1]/body[2]/div[14]/p[5] text-underline-offset auto
+/html[1]/body[2]/div[14]/p[5] text-underline-position auto
 /html[1]/body[2]/div[14]/p[5] text-wrap-mode wrap
 /html[1]/body[2]/div[14]/p[5] text-wrap-style auto
 /html[1]/body[2]/div[14]/p[5] top auto
@@ -4583,6 +4676,7 @@
 /html[1]/body[2]/div[14]/span[6] text-align-last auto
 /html[1]/body[2]/div[14]/span[6] text-decoration-color rgb(9, 9, 9)
 /html[1]/body[2]/div[14]/span[6] text-decoration-line none
+/html[1]/body[2]/div[14]/span[6] text-decoration-skip-ink auto
 /html[1]/body[2]/div[14]/span[6] text-decoration-style solid
 /html[1]/body[2]/div[14]/span[6] text-decoration-thickness auto
 /html[1]/body[2]/div[14]/span[6] text-indent 0px
@@ -4591,6 +4685,8 @@
 /html[1]/body[2]/div[14]/span[6] text-rendering auto
 /html[1]/body[2]/div[14]/span[6] text-shadow none
 /html[1]/body[2]/div[14]/span[6] text-transform none
+/html[1]/body[2]/div[14]/span[6] text-underline-offset auto
+/html[1]/body[2]/div[14]/span[6] text-underline-position auto
 /html[1]/body[2]/div[14]/span[6] text-wrap-mode wrap
 /html[1]/body[2]/div[14]/span[6] text-wrap-style auto
 /html[1]/body[2]/div[14]/span[6] top auto
@@ -4727,6 +4823,7 @@
 /html[1]/body[2]/div[15] text-align-last auto
 /html[1]/body[2]/div[15] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2]/div[15] text-decoration-line none
+/html[1]/body[2]/div[15] text-decoration-skip-ink auto
 /html[1]/body[2]/div[15] text-decoration-style solid
 /html[1]/body[2]/div[15] text-decoration-thickness auto
 /html[1]/body[2]/div[15] text-indent 0px
@@ -4735,6 +4832,8 @@
 /html[1]/body[2]/div[15] text-rendering auto
 /html[1]/body[2]/div[15] text-shadow none
 /html[1]/body[2]/div[15] text-transform none
+/html[1]/body[2]/div[15] text-underline-offset auto
+/html[1]/body[2]/div[15] text-underline-position auto
 /html[1]/body[2]/div[15] text-wrap-mode wrap
 /html[1]/body[2]/div[15] text-wrap-style auto
 /html[1]/body[2]/div[15] top auto
@@ -4871,6 +4970,7 @@
 /html[1]/body[2]/div[16] text-align-last auto
 /html[1]/body[2]/div[16] text-decoration-color rgb(0, 0, 0)
 /html[1]/body[2]/div[16] text-decoration-line none
+/html[1]/body[2]/div[16] text-decoration-skip-ink auto
 /html[1]/body[2]/div[16] text-decoration-style solid
 /html[1]/body[2]/div[16] text-decoration-thickness auto
 /html[1]/body[2]/div[16] text-indent 0px
@@ -4879,6 +4979,8 @@
 /html[1]/body[2]/div[16] text-rendering auto
 /html[1]/body[2]/div[16] text-shadow none
 /html[1]/body[2]/div[16] text-transform none
+/html[1]/body[2]/div[16] text-underline-offset auto
+/html[1]/body[2]/div[16] text-underline-position auto
 /html[1]/body[2]/div[16] text-wrap-mode wrap
 /html[1]/body[2]/div[16] text-wrap-style auto
 /html[1]/body[2]/div[16] top auto
@@ -5015,6 +5117,7 @@
 /html[1]/body[2]/p[17] text-align-last auto
 /html[1]/body[2]/p[17] text-decoration-color rgb(0, 128, 0)
 /html[1]/body[2]/p[17] text-decoration-line none
+/html[1]/body[2]/p[17] text-decoration-skip-ink auto
 /html[1]/body[2]/p[17] text-decoration-style solid
 /html[1]/body[2]/p[17] text-decoration-thickness auto
 /html[1]/body[2]/p[17] text-indent 0px
@@ -5023,6 +5126,8 @@
 /html[1]/body[2]/p[17] text-rendering auto
 /html[1]/body[2]/p[17] text-shadow none
 /html[1]/body[2]/p[17] text-transform none
+/html[1]/body[2]/p[17] text-underline-offset auto
+/html[1]/body[2]/p[17] text-underline-position auto
 /html[1]/body[2]/p[17] text-wrap-mode wrap
 /html[1]/body[2]/p[17] text-wrap-style auto
 /html[1]/body[2]/p[17] top auto
@@ -5159,6 +5264,7 @@
 /html[1]/body[2]/p[18] text-align-last auto
 /html[1]/body[2]/p[18] text-decoration-color rgb(1, 2, 3)
 /html[1]/body[2]/p[18] text-decoration-line none
+/html[1]/body[2]/p[18] text-decoration-skip-ink auto
 /html[1]/body[2]/p[18] text-decoration-style solid
 /html[1]/body[2]/p[18] text-decoration-thickness auto
 /html[1]/body[2]/p[18] text-indent 0px
@@ -5167,6 +5273,8 @@
 /html[1]/body[2]/p[18] text-rendering auto
 /html[1]/body[2]/p[18] text-shadow none
 /html[1]/body[2]/p[18] text-transform none
+/html[1]/body[2]/p[18] text-underline-offset auto
+/html[1]/body[2]/p[18] text-underline-position auto
 /html[1]/body[2]/p[18] text-wrap-mode wrap
 /html[1]/body[2]/p[18] text-wrap-style auto
 /html[1]/body[2]/p[18] top auto
@@ -5303,6 +5411,7 @@
 /html[1]/body[2]/p[19] text-align-last auto
 /html[1]/body[2]/p[19] text-decoration-color rgb(0, 128, 0)
 /html[1]/body[2]/p[19] text-decoration-line none
+/html[1]/body[2]/p[19] text-decoration-skip-ink auto
 /html[1]/body[2]/p[19] text-decoration-style solid
 /html[1]/body[2]/p[19] text-decoration-thickness auto
 /html[1]/body[2]/p[19] text-indent 0px
@@ -5311,6 +5420,8 @@
 /html[1]/body[2]/p[19] text-rendering auto
 /html[1]/body[2]/p[19] text-shadow none
 /html[1]/body[2]/p[19] text-transform none
+/html[1]/body[2]/p[19] text-underline-offset auto
+/html[1]/body[2]/p[19] text-underline-position auto
 /html[1]/body[2]/p[19] text-wrap-mode wrap
 /html[1]/body[2]/p[19] text-wrap-style auto
 /html[1]/body[2]/p[19] top auto

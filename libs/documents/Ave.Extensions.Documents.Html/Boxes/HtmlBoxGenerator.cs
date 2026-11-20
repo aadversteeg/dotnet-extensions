@@ -25,7 +25,8 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// </summary>
 /// <remarks>
 /// <para>Every computed value is checked against <see cref="BoxProperties"/>, one row per property of the registry; an
-/// element whose rendering no property says is refused by its own rule (br, wbr, img, q). A refusal names the
+/// element whose rendering no property says is refused by its own rule (wbr, q); br is a forced line break and a
+/// block-level img an image box (<c>HtmlBoxGenerator.LineBreaks.cs</c>, <c>HtmlBoxGenerator.Images.cs</c>). A refusal names the
 /// property and the value and points at the element's start tag. Under <see cref="UnsupportedPolicy.Refuse"/> a document
 /// with any refusal fails with all of them. Under <see cref="UnsupportedPolicy.Warn"/> the refusals are diagnostics
 /// and the document is laid out with each refused value replaced by the document model's initial value of what it
@@ -48,9 +49,7 @@ public static partial class HtmlBoxGenerator
     /// <summary>The elements whose rendering no property says, which box generation does not draw.</summary>
     internal static readonly IReadOnlyDictionary<string, string> RefusedRenderings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        ["br"] = "a forced line break",
         ["wbr"] = "a line break opportunity",
-        ["img"] = "a replaced element (an image)",
         ["q"] = "quotation marks generated before and after its content",
     };
 
@@ -126,6 +125,7 @@ public static partial class HtmlBoxGenerator
         private readonly string _sourceName = styled.SourceName;
         private readonly Dictionary<StyledElement, HashSet<string>> _refused = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<StyledElement, TextStyle?> _text = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<StyledElement, TextStyle?> _decorated = new(ReferenceEqualityComparer.Instance);
         private int _nextId;
         private bool _tooDeep;
 
@@ -258,7 +258,8 @@ public static partial class HtmlBoxGenerator
                 ReferenceEquals(element, styled.Root) || (html.Namespace == ElementNamespace.Html && html.LocalName == "body"),
                 element.Children.Any(child => child is StyledText),
                 element.Children.Any(child => child is StyledText && !IsCollapsibleOnly(child)),
-                element.Children.Count > 0);
+                element.Children.Count > 0,
+                IsReplaced: IsHtml(element, "img"));
             var refused = new HashSet<string>(StringComparer.Ordinal);
             foreach (var (property, reason) in BoxProperties.Refusals(facts))
             {
@@ -380,6 +381,7 @@ public static partial class HtmlBoxGenerator
             var node = block.Element.Children[index];
             if (block.Dropped[index] || (node is StyledElement hidden && Display(hidden) == "none") || TableChild(stack, block, node))
             {
+                RefuseBreakBetweenBlocks(block.Dropped[index] ? node : null);
                 return;
             }
 
@@ -387,6 +389,18 @@ public static partial class HtmlBoxGenerator
             {
                 var element = (StyledElement)node;
                 CloseAnonymous(block);
+                if (IsHtml(element, "img"))
+                {
+                    Image(block, element);
+                    return;
+                }
+
+                if (IsHtml(element, "br"))
+                {
+                    BlockLineBreak(element);
+                    return;
+                }
+
                 if (!Check(element, isBlock: true) || Deeper(block.Depth + 1, element.Element.Position))
                 {
                     return;
@@ -440,13 +454,21 @@ public static partial class HtmlBoxGenerator
                         return;
                     }
 
+                    var preservedTab = RefusePreservedTab(text);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        frame.Target.Add(new TextRun(NewId(), Characters(text.Text), style, Source(text.Text.Position)));
+                        var data = Characters(text.Text);
+                        frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, Source(text.Text.Position)));
                     }
 
                     break;
                 case StyledElement element when Display(element) == "none":
+                    break;
+                case StyledElement element when IsHtml(element, "br") && Display(element) == "inline":
+                    LineBreak(frame, element);
+                    break;
+                case StyledElement element when IsHtml(element, "img"):
+                    InlineImage(frame, element);
                     break;
                 case StyledElement element when Display(element) == "inline":
                     if (Check(element, isBlock: false) && !Deeper(frame.Depth, element.Element.Position))
@@ -486,9 +508,10 @@ public static partial class HtmlBoxGenerator
                 children, Source(block.Element.Element.Position)));
         }
 
-        /// <summary>Lines for inline content with something to draw; else an empty block (white space only).</summary>
+        /// <summary>Lines for inline content with something to draw; else an empty block (white space that collapses away,
+        /// CSS 2.1 §9.4.2: a line box with no text and no preserved white space is treated as not there).</summary>
         private static (LayoutAlgorithmId Layout, ValueList<Node> Children) Content(List<Node> runs) =>
-            runs.All(run => run is TextRun text && text.Text.All(IsCollapsible))
+            runs.All(run => run is TextRun text && text.Text.All(c => CollapsesUnder(c, text.Style.WhiteSpaceCollapse)))
                 ? (LayoutAlgorithmId.Flow, [])
                 : (LayoutAlgorithmId.Inline, [.. runs]);
 
@@ -578,9 +601,24 @@ public static partial class HtmlBoxGenerator
             return value is CssColorValue { Color: var color } && color.Alpha == 1 ? new Color(Channel(color.Red), Channel(color.Green), Channel(color.Blue)) : null;
         }
 
-        /// <summary>The text style of an element's text and of its lines' strut: its face (<see cref="FontMatcher"/>), size,
-        /// colour and line height; null after a missing face was reported.</summary>
+        /// <summary>The text style of an element's text and of its lines' strut: its face, size, colour, line height and
+        /// white space (<see cref="FaceStyleOf"/>), the decorations applied to it (<see cref="Decorations"/>) and whether
+        /// they skip the glyphs' ink; null after a missing face was reported.</summary>
         private TextStyle? TextStyleOf(StyledElement element)
+        {
+            if (_decorated.TryGetValue(element, out var known))
+            {
+                return known;
+            }
+
+            var style = FaceStyleOf(element) is { } face ? face with { Decorations = Decorations(element), DecorationSkipInk = SkipInkOf(element) } : null;
+            _decorated[element] = style;
+            return style;
+        }
+
+        /// <summary>An element's face (<see cref="FontMatcher"/>), size, colour, line height and how its white space
+        /// collapses and wraps, without decorations; null after a missing face was reported.</summary>
+        private TextStyle? FaceStyleOf(StyledElement element)
         {
             if (_text.TryGetValue(element, out var known))
             {
@@ -601,6 +639,8 @@ public static partial class HtmlBoxGenerator
                     face.Value.Metrics.IsItalic ? CoreFontStyle.Italic : CoreFontStyle.Normal)
                 {
                     LineHeight = LineHeightOf(element.Style[PropertyRegistry.LineHeight], size),
+                    WhiteSpaceCollapse = CollapseOf(element.Style),
+                    TextWrapMode = WrapOf(element.Style),
                 };
             }
 
