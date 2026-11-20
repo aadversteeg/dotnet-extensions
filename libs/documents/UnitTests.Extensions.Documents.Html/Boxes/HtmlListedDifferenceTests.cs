@@ -154,6 +154,28 @@ public class HtmlListedDifferenceTests
         engine.Words.Single(other => other.Text == word.Text).X0.Should().BeApproximately(word.X0, 0.01);
     }
 
+    /// <summary>
+    /// A footer group that is at most a quarter of the page area and does not break inside (<c>break-inside: avoid</c>,
+    /// which the user-agent style sheet gives <c>tfoot</c>) is repeated by Chromium at the end of every page its table
+    /// is on, as it repeats a header group (CSS Tables 3, <c>#repeated-headers</c>; Chromium:
+    /// <c>TableLayoutAlgorithm::Layout</c>, the repeatable header and footer check). The document model's table has
+    /// no footer group, so the engine draws the footer's rows once, after the last body row. With
+    /// <c>break-inside: auto</c> on the footer group Chromium does not repeat it either (case <c>tf-pages-auto</c>), and
+    /// on one page both print the same (<c>tf-after</c>).
+    /// </summary>
+    [Fact]
+    public void A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page()
+    {
+        var (engine, chromium) = (Engine("tf-pages"), Chromium("tf-pages"));
+        static string[] Ends(PrintedPages pages) => [.. pages.Pages.Select(page => string.Join(" ", page.Words.Where(word => word.Text != "after").TakeLast(2).Select(word => word.Text)))];
+
+        chromium.Pages.Should().HaveCount(4);
+        Ends(chromium).Should().AllBe("total footer", "Chromium ends every page with the footer row");
+        Ends(engine)[..^1].Should().NotContain("total footer", "the engine draws the footer only after the last body row");
+        Ends(engine)[^1].Should().Be("total footer");
+        engine.Pages.SelectMany(page => page.Words).Count(word => word.Text == "total").Should().Be(1);
+    }
+
     /// <summary>Chromium's print with each word's text read through <paramref name="text"/>.</summary>
     private static PrintedPages Read(PrintedPages pages, Func<string, string> text) =>
         new([.. pages.Pages.Select(page => page with { Words = [.. page.Words.Select(word => word with { Text = text(word.Text) })] })]);

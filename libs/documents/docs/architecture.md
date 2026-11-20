@@ -648,7 +648,11 @@ cells keep padding, background and `vertical-align` `top`, `middle` or `bottom`;
 rows and groups no padding (§17.5), the table no padding (§17.6.2); `colspan` and `rowspan` are read by the rules for
 non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1); at a page break between rows the
 engine splits the grid line there at its centre, its upper half ending one page and its lower half starting the next
-(`BoxDecorationBreak.Slice`), where Chromium paints that line whole on one page: not yet equal. Column sizes, as Chromium lays them out: in the automatic layout a
+(`BoxDecorationBreak.Slice`), where Chromium paints that line whole on one page: not yet equal. A footer group (`tfoot`) is drawn after the other row groups wherever it stands in the source; only
+the first is the table's footer, a later one is a row group in its place (CSS 2.1 §17.2; Chromium's
+`TableGroupedChildren`; cases `tf-after`, `tf-before`, `tf-head`, `tf-two`, `tf-top-border`, equal). The model's table
+has no footer group, so its rows are the last body rows: the tagged PDF has them in a `TBody`, not a `TFoot`, and
+Chromium's repetition of the footer on every page is not drawn (Known limits). Column sizes, as Chromium lays them out: in the automatic layout a
 column element's length is the column's preferred width (`TrackSize.Preferred`) and a column without one is sized by
 its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only for a table whose width is not `auto`
 (`ComputedStyle::IsFixedTableLayout`; case `tl-fixed-width-auto`, where a 30 pt column element under
@@ -660,7 +664,7 @@ layout: a fill column is never narrower than its content's min-content width, wh
 it; the two agree while the content fits its column (case `tl-fixed-fill-wide-word`, listed;
 `HtmlListedDifferenceTests`). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
-(§17.2.1); a table part on another element than its HTML element; captions, footer groups, a header group after a row
+(§17.2.1); a table part on another element than its HTML element; captions, a header group after a row
 group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
 a column in which no cell starts; percent columns, a width on a cell or a column group, a table width other than
 `auto` and `100%`, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
@@ -738,6 +742,12 @@ Each is documented next to its code as well.
 - **A ligature across the border of an inline element:** the engine's text keeps every character the glyph
   shows, Chromium's print maps it to the first run's characters only (`f<span>i</span>x` reads "fx"; the rule for shaping
   across runs above; case `sr-same-font`, listed; `HtmlListedDifferenceTests`).
+- **A repeated table footer (HTML):** Chromium repeats a footer group at the end of every page its table is on when the
+  group is at most a quarter of the page area and does not break inside (`break-inside: avoid`, which the user-agent
+  style sheet gives `tfoot`), as it repeats a header group (`TableLayoutAlgorithm::Layout`); the model's table has no
+  footer group, so the engine draws the footer once, after the last body row (case `tf-pages`, listed;
+  `HtmlListedDifferenceTests`). With `break-inside: auto` on the footer group Chromium does not repeat it either
+  (case `tf-pages-auto`), and a table on one page prints the same in both (case `tf-after`).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
 

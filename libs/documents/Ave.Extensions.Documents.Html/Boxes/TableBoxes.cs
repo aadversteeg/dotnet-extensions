@@ -54,7 +54,8 @@ internal enum TablePart
 /// <c>Value</c> for a computed value, <see cref="TableProperties"/>): a part outside the part it belongs in, which CSS
 /// wraps in anonymous table boxes (§17.2.1), as text or an inline box directly in a row; a part made by another element
 /// than the HTML element of its display type (HTML Standard §15.3.8), which would have no structure role of its own; a
-/// caption, a footer group, a header group after a row group; a table, group or row group without rows.</para>
+/// caption, a header group after a row group; a table, group or row group without rows. A footer group is drawn after
+/// the other row groups, as the table's last body rows (<c>DrawOrder</c>).</para>
 /// <para>Column widths (§17.5.2), as Chromium lays them out: in the fixed table layout (<c>table-layout: fixed</c> on a
 /// table of width <c>100%</c>; at width <c>auto</c> Chromium lays the table out automatically) the lengths of the column
 /// elements as fixed columns, and the width left shared equally over the columns without one (fill columns of weight
@@ -90,7 +91,8 @@ public static partial class HtmlBoxGenerator
     private static bool IsElementOf(TablePart part, HtmlElement element) =>
         element.Namespace == ElementNamespace.Html && (part, element.LocalName) switch
         {
-            (TablePart.Table, "table") or (TablePart.HeaderGroup, "thead") or (TablePart.RowGroup, "tbody") or (TablePart.Row, "tr")
+            (TablePart.Table, "table") or (TablePart.HeaderGroup, "thead") or (TablePart.RowGroup, "tbody") or (TablePart.FooterGroup, "tfoot")
+                or (TablePart.Row, "tr")
                 or (TablePart.Cell, "td" or "th") or (TablePart.Column, "col") or (TablePart.ColumnGroup, "colgroup") => true,
             _ => false,
         };
@@ -114,6 +116,9 @@ public static partial class HtmlBoxGenerator
         /// <summary>Per table: per column, the width its column element gives, or null for none (auto).</summary>
         private readonly Dictionary<StyledElement, List<(CssValue? Width, int Span)>> _columns = new(ReferenceEqualityComparer.Instance);
 
+        /// <summary>The boxes of the footer groups, which their table draws after its other row groups.</summary>
+        private readonly HashSet<NodeId> _footers = [];
+
         private static TablePart PartOf(StyledElement element) => HtmlBoxGenerator.PartOf(element.Style[PropertyRegistry.Display]);
 
         private void RefuseTable(string message, string value, TextPosition position) =>
@@ -131,7 +136,7 @@ public static partial class HtmlBoxGenerator
             var element = node as StyledElement;
             var part = element is null ? TablePart.None : PartOf(element);
             var position = Position(node);
-            if (parent is not (TablePart.Table or TablePart.HeaderGroup or TablePart.RowGroup or TablePart.Row))
+            if (parent is not (TablePart.Table or TablePart.HeaderGroup or TablePart.RowGroup or TablePart.FooterGroup or TablePart.Row))
             {
                 if (part == TablePart.None || (part == TablePart.Table && IsElementOf(part, element!.Element)))
                 {
@@ -148,7 +153,7 @@ public static partial class HtmlBoxGenerator
             var host = block.Element.Element.LocalName;
             var belongs = parent switch
             {
-                TablePart.Table => part is TablePart.HeaderGroup or TablePart.RowGroup or TablePart.Column or TablePart.ColumnGroup,
+                TablePart.Table => part is TablePart.HeaderGroup or TablePart.RowGroup or TablePart.FooterGroup or TablePart.Column or TablePart.ColumnGroup,
                 TablePart.Row => part == TablePart.Cell,
                 _ => part == TablePart.Row,
             };
@@ -158,12 +163,11 @@ public static partial class HtmlBoxGenerator
                 var message = part switch
                 {
                     TablePart.Caption => $"The table caption <{element!.Element.LocalName}> is not drawn in this version.",
-                    TablePart.FooterGroup => $"The footer row group <{element!.Element.LocalName}> is not drawn in this version: the document model's table has no footer rows.",
                     _ => $"The {what} directly inside the <{host}> ({DisplayName(parent)}) is not drawn in this version: CSS would wrap it in an anonymous table box (CSS 2.1 §17.2.1).",
                 };
                 var value = part switch
                 {
-                    TablePart.Caption or TablePart.FooterGroup => element!.Element.LocalName,
+                    TablePart.Caption => element!.Element.LocalName,
                     _ => $"{element?.Element.LocalName ?? "text"} in {host}",
                 };
                 RefuseTable(message, value, position);
@@ -277,6 +281,7 @@ public static partial class HtmlBoxGenerator
         {
             TablePart.Table => TableBox(block.Element, box),
             TablePart.HeaderGroup or TablePart.RowGroup => GroupBox(block.Element, box),
+            TablePart.FooterGroup => Footer(GroupBox(block.Element, box)),
             TablePart.Row => box with
             {
                 Role = SemanticRole.TableRow,
@@ -347,12 +352,39 @@ public static partial class HtmlBoxGenerator
             };
         }
 
+        private Box Footer(Box group)
+        {
+            _footers.Add(group.Id);
+            return group;
+        }
+
+        /// <summary>
+        /// The table's row groups in the order they are drawn: the first footer group last, wherever it stands in the
+        /// source; a later footer group is a row group in its place (CSS 2.1 §17.2, <c>table-footer-group</c>: "always
+        /// displayed after all other rows and row groups"; Chromium: <c>TableGroupedChildren</c>, which takes the first
+        /// footer group as the table's footer and the others as bodies). The model's table has no footer group, so the
+        /// footer's rows are its last body rows: drawn once, after the body.
+        /// </summary>
+        private List<Box> DrawOrder(List<Box> groups)
+        {
+            var footer = groups.FindIndex(group => _footers.Contains(group.Id));
+            if (footer < 0)
+            {
+                return groups;
+            }
+
+            var ordered = new List<Box>(groups);
+            ordered.RemoveAt(footer);
+            ordered.Add(groups[footer]);
+            return ordered;
+        }
+
         private Box TableBox(StyledElement element, Box box)
         {
             var html = element.Element;
             // A row group without rows was refused (GroupBox); under Warn it is left out, and a table without rows is an
             // empty block.
-            var groups = box.Children.OfType<Box>().Where(group => group.Children.Count > 0).ToList();
+            var groups = DrawOrder([.. box.Children.OfType<Box>().Where(group => group.Children.Count > 0)]);
             if (groups.Count == 0)
             {
                 RefuseTable($"The table <{html.LocalName}> without rows is not drawn in this version.", "table without rows", html.Position);

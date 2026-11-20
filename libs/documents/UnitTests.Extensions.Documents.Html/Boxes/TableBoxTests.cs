@@ -63,6 +63,20 @@ public class TableBoxTests
     }
 
     [Fact]
+    public void The_first_footer_group_is_drawn_after_the_body_rows_and_a_later_one_in_its_place()
+    {
+        // CSS 2.1 §17.2: a footer group is displayed after all other row groups; Chromium takes only the first as the
+        // table's footer (cases tf-before, tf-two). The model's table has no footer group: its rows are body rows.
+        var table = Table("<table><thead><tr><th>h</th></tr></thead><tfoot><tr><td>f</td></tr></tfoot><tbody><tr><td>a</td></tr></tbody>"
+            + "<tfoot><tr><td>g</td></tr></tfoot><tbody><tr><td>b</td></tr></tbody></table>");
+
+        Parts(table).Select(group => (group.Role, group.Style.TableDisplay)).Should().Equal(
+            (SemanticRole.TableHead, TableDisplay.HeaderGroup), (SemanticRole.TableBody, TableDisplay.RowGroup), (SemanticRole.TableBody, TableDisplay.RowGroup),
+            (SemanticRole.TableBody, TableDisplay.RowGroup), (SemanticRole.TableBody, TableDisplay.RowGroup));
+        Parts(table).Select(group => Parts(Parts(group).Single()).Single().Children.OfType<TextRun>().Single().Text).Should().Equal("h", "a", "g", "b", "f");
+    }
+
+    [Fact]
     public void A_table_lays_out()
     {
         var result = Boxes(Doc("<table><tr><td>a</td><td>b</td></tr><tr><td colspan=2>c</td></tr></table>"));
@@ -152,7 +166,8 @@ public class TableBoxTests
     {
         // Structure the model's table does not have (CSS 2.1 §17.2.1 anonymous boxes; captions, footers).
         { "<table><caption>c</caption><tr><td>a</td></tr></table>", "", "caption" },
-        { "<table><tfoot><tr><td>a</td></tr></tfoot><tr><td>b</td></tr></table>", "", "tfoot" },
+        { "<table><tbody><tr><td>a</td></tr></tbody><tfoot></tfoot></table>", "", "tfoot without rows" },
+        { "<table><tfoot><tr><td>f</td></tr></tfoot><thead><tr><td>h</td></tr></thead><tr><td>a</td></tr></table>", "", "thead after a row group" },
         { "<table><tbody><tr><td>a</td></tr></tbody><thead><tr><td>h</td></tr></thead></table>", "", "thead after a row group" },
         { "<table><thead><tr><td>h</td></tr></thead><thead><tr><td>i</td></tr></thead><tr><td>a</td></tr></table>", "", "thead after a row group" },
         { "<div style=\"display:table\"><div style=\"display:table-row\">a</div></div>", "", "display: table on div" },
