@@ -713,7 +713,10 @@ included, cases `pm-inherit` and `pm-inherit-family`); any other declaration, an
 `@page :first` are refused (`PageRule`). A generated margin box gives every page a header area as high as the top margin
 and a footer area as high as the bottom one, each a row of the margin-boxes algorithm that starts where Chromium starts
 it, at the smaller of the left margin cut to 1/64 px and the page area's start (`PageArea.StartInMargin`; cases `pm-*`,
-`pm-start-25mm`, `pm-start-12pt`); the model's top and bottom margins are then 0. Box generation makes
+`pm-start-25mm`, `pm-start-12pt`); the model's top and bottom margins are then 0. An image in a margin box's `content`
+(`url()`, or `image-set()` of one URL and its resolution) is an image box among the runs of its line, as an `img` in a
+line of text is, at its natural size divided by the resolution, its URL resolved against the style sheet that holds the
+`content` declaration (CSS Values 4 §4.5.1; cases `pm-image-*`). Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
 leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4

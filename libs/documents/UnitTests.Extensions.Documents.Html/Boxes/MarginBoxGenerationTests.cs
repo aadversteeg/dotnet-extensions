@@ -27,9 +27,21 @@ public class MarginBoxGenerationTests
 
     private static readonly HtmlRenderOptions Options = new()
     {
-        Style = HtmlStyleOptions.Default with { Resources = url => url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : null },
+        Style = HtmlStyleOptions.Default with
+        {
+            Resources = url => url switch
+            {
+                "lato.ttf" => new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")),
+                "badge.png" => new HtmlResource(Badge),
+                "text.png" => new HtmlResource("not an image"u8.ToArray()),
+                _ => null,
+            },
+        },
         SourceName = "t.html",
     };
+
+    /// <summary>The image of the cases <c>pm-image-*</c>: 40 × 24 px of one colour.</summary>
+    private static byte[] Badge => System.IO.File.ReadAllBytes(System.IO.Path.Combine(AppContext.BaseDirectory, "chromium", "badge.png"));
 
     private static string Doc(string css, string body = "<p>one</p>") =>
         "<!doctype html><html lang=\"en\"><head><title>T</title><style>@font-face { font-family: Lato; src: url(lato.ttf) }\n"
@@ -141,17 +153,74 @@ public class MarginBoxGenerationTests
         printed.PageTexts.Should().Equal("one Page 1 of 3", "two Page 2 of 3", "three Page 3 of 3");
     }
 
-    [Fact]
-    public void An_image_in_the_content_is_refused_at_the_content_declaration_and_left_out_under_warn()
+    /// <summary>The images of the margin boxes of a page: each one's size in the model.</summary>
+    private static List<ImageNode> Images(PageArea? area) =>
+        ((Box)area!.Content).Children.OfType<Box>().SelectMany(box => box.Children.OfType<Box>()).SelectMany(box => box.Children.OfType<ImageNode>()).ToList();
+
+    /// <summary>Measured (cases <c>pm-image-url</c>, <c>pm-image-set</c>): the 40 × 24 px image at its natural size
+    /// divided by the resolution.</summary>
+    [Theory]
+    [InlineData("url(badge.png)", 30.0, 18.0)]
+    [InlineData("image-set(url(badge.png) 2x)", 15.0, 9.0)]
+    [InlineData("image-set(url(badge.png) 144dpi)", 20.0, 12.0)]
+    [InlineData("image-set(\"badge.png\" 60dpcm)", 30 * 96 / (60 * 2.54), 18 * 96 / (60 * 2.54))]
+    public void An_image_in_the_content_is_an_inline_image_of_its_natural_size_divided_by_its_resolution(string image, double width, double height)
     {
-        var html = Doc($"@page {{ {Page}\n@top-left {{ content: \"Logo\" url(logo.png) }} }}");
+        var page = Model(Doc($"@page {{ {Page} @top-left {{ content: \"Aa\" {image} \"Bb\" }} }}"));
+
+        var node = Images(page.Template.Header).Single();
+        node.Width!.Value.Points.Should().BeApproximately(width, 1e-9);
+        node.Height!.Value.Points.Should().BeApproximately(height, 1e-9);
+        var box = ((Box)page.Template.Header!.Content).Children.OfType<Box>().Single();
+        box.Children.Select(child => child.GetType().Name).Should().Equal(new[] { nameof(TextRun), nameof(Box), nameof(TextRun) }, "an atomic inline between the strings");
+    }
+
+    /// <summary>CSS Values 4 §4.5.1: a URL in a style sheet is resolved against that sheet's URL, a URL in the document's
+    /// own style element against the document's.</summary>
+    [Fact]
+    public void The_url_of_an_image_is_resolved_against_the_style_sheet_that_holds_the_content_declaration()
+    {
+        var asked = new List<string>();
+        HtmlResource? Resolver(string url)
+        {
+            asked.Add(url);
+            return url switch
+            {
+                "file:///doc/sheets/page.css" => new HtmlResource(System.Text.Encoding.UTF8.GetBytes("@page { @top-left { content: url(../images/badge.png) } }")),
+                "file:///doc/images/badge.png" or "file:///doc/own/badge.png" => new HtmlResource(Badge),
+                "file:///doc/lato.ttf" => new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")),
+                _ => null,
+            };
+        }
+
+        var html = "<!doctype html><html lang=\"en\"><head><title>T</title><link rel=\"stylesheet\" href=\"sheets/page.css\"><style>@font-face { font-family: Lato; src: url(lato.ttf) }"
+                   + $" html, body {{ margin: 0; font-family: Lato; font-size: 10pt }} @page {{ {Page} @bottom-left {{ content: url(own/badge.png) }} }}</style></head><body><p>one</p></body></html>";
+        var result = HtmlParser.Parse(html, new HtmlParseOptions("doc.html"))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, BaseUrl = "file:///doc/doc.html" }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resolver, BaseUrl = "file:///doc/doc.html" }));
+
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        asked.Should().Contain(["file:///doc/images/badge.png", "file:///doc/own/badge.png"]);
+        asked.Should().NotContain(["file:///doc/sheets/images/badge.png", "file:///images/badge.png"]);
+        Images(result.Value.Document.Page.Template.Header).Should().ContainSingle();
+        Images(result.Value.Document.Page.Template.Footer).Should().ContainSingle();
+    }
+
+    [Theory]
+    [InlineData("url(nowhere.png)", "is not there")]
+    [InlineData("image-set(url(text.png) 2x)", "does not decode")]
+    public void An_image_that_does_not_come_or_does_not_decode_is_refused_at_the_content_declaration_and_left_out_under_warn(string image, string reason)
+    {
+        var html = Doc($"@page {{ {Page}\n@top-left {{ content: \"Logo\" {image} }} }}");
 
         var refusal = Boxes(html).Error.Parts().Single();
-        refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.PageRule);
+        refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Rendering);
+        refusal.Message.Should().Contain(reason);
         (refusal.Metadata![ErrorMetadataKeys.SourceLine], refusal.Metadata[ErrorMetadataKeys.SourceColumn]).Should().Be((4, 13));
+        refusal.Metadata[ErrorMetadataKeys.Property].Should().Be("content");
 
         var warned = Boxes(html, UnsupportedPolicy.Warn);
-        warned.Value.Diagnostics.Should().ContainSingle(error => error.Code == HtmlStyleErrorCodes.Unsupported.PageRule);
+        warned.Value.Diagnostics.Should().ContainSingle(error => error.Code == HtmlStyleErrorCodes.Unsupported.Rendering);
         Texts(warned.Value.Document.Page.Template.Header).Should().Be("Logo");
     }
 
@@ -244,5 +313,35 @@ public class MarginBoxGenerationTests
         pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);
         var outline = PdfStructureReadBack.Outline(PdfStructureReadBack.Read(pdf.Value.Output));
         outline.Should().Contain("one").And.NotContain("Heading").And.NotContain("Footing");
+    }
+
+    [Fact]
+    public void An_image_in_a_margin_box_is_part_of_the_pagination_artifact_and_asks_no_alternative_text()
+    {
+        var html = Doc($"@page {{ {Page} @top-left {{ content: url(badge.png) \"Heading\" }} }}");
+
+        var page = HtmlRendering.ToPages(html, Options).Value.Output.Pages.Single();
+        ArtifactKind? open = null;
+        var kinds = new List<ArtifactKind?>();
+        foreach (var item in page.Items)
+        {
+            if (item is ArtifactStart start)
+            {
+                open = start.Kind;
+            }
+            else if (item is ArtifactEnd)
+            {
+                open = null;
+            }
+            else if (item is DrawImage)
+            {
+                kinds.Add(open);
+            }
+        }
+
+        kinds.Should().Equal(ArtifactKind.PageHeader);
+        var pdf = HtmlRendering.ToPdf(html, Options, new PdfRenderOptions(new DateTimeOffset(2026, 11, 20, 10, 0, 0, TimeSpan.Zero)) { Profile = PdfProfile.PdfA3a });
+        pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);
+        PdfStructureReadBack.Outline(PdfStructureReadBack.Read(pdf.Value.Output)).Should().NotContain("Figure");
     }
 }

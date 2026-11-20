@@ -396,8 +396,7 @@ public class PageContextTests
     // ---- the documents ----
 
     /// <summary>The timesheets' page rules give no refusal in the page-context cascade: page 1 has the empty
-    /// <c>@top-right</c> of <c>:first</c>, every page five boxes; the logo is an image item (box generation refuses it
-    /// until images in margin boxes are drawn).</summary>
+    /// <c>@top-right</c> of <c>:first</c>, every page five boxes; the logo is an image item.</summary>
     [Theory]
     [InlineData("timesheet-normal")]
     [InlineData("timesheet-one-page")]

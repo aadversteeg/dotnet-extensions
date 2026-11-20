@@ -450,11 +450,14 @@ Pseudo-elements never draw in an accepted document and are ignored by rule: `::p
 Page-margin boxes (CSS Paged Media 3 §5) are drawn for `@page` and `@page :first`: the top and bottom rows
 (`@top-left`, `@top-center`, `@top-right`, `@bottom-left`, `@bottom-center`, `@bottom-right`), their widths as
 §5.3.2 shares them, each box with its margin, padding, solid borders, background colour, text alignment and
-vertical alignment (top, middle, bottom), and its content: strings and `counter(page)`, `counter(pages)`. The
+vertical alignment (top, middle, bottom), and its content: strings, `counter(page)`, `counter(pages)` and images
+(`url()`, or `image-set()` of one URL and its resolution) on the baseline as an `img` in a line, at their natural
+size divided by the resolution, the URL resolved against the style sheet that holds the `content` declaration;
+an image that does not come or does not decode is refused there. The
 page context inherits from the root element, `font-family` too; a face that only a margin box uses is drawn,
 where Chromium prints its fallback serif face (it has not loaded the face then; case `pm-family-unused`). Refused at their
-place: the corner and side boxes, other page selectors, `width` and `height` on a margin box, an image in
-`content`, the size and margins of `@page :first`, and content wider or taller than its box
+place: the corner and side boxes, other page selectors, `width` and `height` on a margin box, the size and
+margins of `@page :first`, and content wider or taller than its box
 (`Documents.Layout.MarginBoxOverflow`), which Chromium draws over its neighbours.
 
 ## HTML

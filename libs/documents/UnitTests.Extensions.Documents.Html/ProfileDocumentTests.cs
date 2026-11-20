@@ -172,11 +172,14 @@ public class ProfileDocumentTests
         Line("Page-margin boxes (CSS Paged Media 3 §5) are drawn for `@page` and `@page :first`: the top and bottom rows");
         Line("(`@top-left`, `@top-center`, `@top-right`, `@bottom-left`, `@bottom-center`, `@bottom-right`), their widths as");
         Line("§5.3.2 shares them, each box with its margin, padding, solid borders, background colour, text alignment and");
-        Line("vertical alignment (top, middle, bottom), and its content: strings and `counter(page)`, `counter(pages)`. The");
+        Line("vertical alignment (top, middle, bottom), and its content: strings, `counter(page)`, `counter(pages)` and images");
+        Line("(`url()`, or `image-set()` of one URL and its resolution) on the baseline as an `img` in a line, at their natural");
+        Line("size divided by the resolution, the URL resolved against the style sheet that holds the `content` declaration;");
+        Line("an image that does not come or does not decode is refused there. The");
         Line("page context inherits from the root element, `font-family` too; a face that only a margin box uses is drawn,");
         Line("where Chromium prints its fallback serif face (it has not loaded the face then; case `pm-family-unused`). Refused at their");
-        Line("place: the corner and side boxes, other page selectors, `width` and `height` on a margin box, an image in");
-        Line("`content`, the size and margins of `@page :first`, and content wider or taller than its box");
+        Line("place: the corner and side boxes, other page selectors, `width` and `height` on a margin box, the size and");
+        Line("margins of `@page :first`, and content wider or taller than its box");
         Line("(`Documents.Layout.MarginBoxOverflow`), which Chromium draws over its neighbours.");
         Line();
         Line("## HTML");
