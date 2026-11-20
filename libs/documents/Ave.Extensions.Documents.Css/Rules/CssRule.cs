@@ -73,7 +73,13 @@ public sealed record ImportRule(string Url, MediaQueryList Media, SupportsCondit
 /// <param name="Style">The font-style descriptor: normal, italic or oblique.</param>
 /// <param name="UnicodeRanges">The unicode-range descriptor; empty for all of Unicode.</param>
 /// <param name="Position">Where the @ is.</param>
-public sealed record FontFaceRule(string Family, ValueList<FontFaceSource> Sources, (int Low, int High) WeightRange, string Style, ValueList<(int First, int Last)> UnicodeRanges, TextPosition Position) : CssRule(Position);
+public sealed record FontFaceRule(string Family, ValueList<FontFaceSource> Sources, (int Low, int High) WeightRange, string Style, ValueList<(int First, int Last)> UnicodeRanges, TextPosition Position) : CssRule(Position)
+{
+    /// <summary>The URL its sources are resolved against (CSS Values 4 §4.5.1: the URL of the style sheet that declares
+    /// it; for a style element, the document's base URL), set by the cascade (<see cref="Cascade.CascadeIndex"/>); null
+    /// when the caller gives none.</summary>
+    public string? BaseUrl { get; init; }
+}
 
 /// <summary>One source of a <c>@font-face</c> src descriptor.</summary>
 /// <param name="Url">The URL as written (the caller resolves it).</param>

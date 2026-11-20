@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
@@ -94,6 +95,7 @@ public static class DocumentModelText
             style.Text is { } strut ? $"strut=({StyleText(strut)})" : null,
             style.VerticalAlign != initial.VerticalAlign ? $"vertical-align={style.VerticalAlign.ToString().ToLowerInvariant()}" : null,
             style.Columns.Count > 0 ? $"columns={string.Join(",", style.Columns)}" : null,
+            style.Width != initial.Width ? $"width={style.Width.ToString().ToLowerInvariant()}" : null,
             style.Span != initial.Span ? $"span={style.Span}" : null,
             $"@{box.Source}",
         ];
@@ -102,7 +104,17 @@ public static class DocumentModelText
 
     private static string StyleText(TextStyle style) =>
         $"{style.FontFamily} {style.FontSize} w{style.FontWeight}{(style.FontStyle == FontStyle.Italic ? " italic" : string.Empty)} {style.Color}"
-        + (style.LineHeight is LineHeight.Normal ? string.Empty : $" line-height={style.LineHeight}");
+        + (style.LineHeight is LineHeight.Normal ? string.Empty : $" line-height={style.LineHeight}")
+        + (style.WhiteSpaceCollapse == WhiteSpaceCollapse.Collapse ? string.Empty : $" white-space-collapse={Kebab(style.WhiteSpaceCollapse)}")
+        + (style.TextWrapMode == TextWrapMode.Wrap ? string.Empty : $" text-wrap-mode={Kebab(style.TextWrapMode).Replace("-", string.Empty, StringComparison.Ordinal)}")
+        + string.Concat(style.Decorations.Select(decoration =>
+            $" text-decoration=({Kebab(decoration.Line)} {decoration.Color} {decoration.FontFamily} {decoration.FontSize} w{decoration.FontWeight}{(decoration.FontStyle == FontStyle.Italic ? " italic" : string.Empty)})"))
+        + (style.DecorationSkipInk == TextDecorationSkipInk.Auto ? string.Empty : $" text-decoration-skip-ink={Kebab(style.DecorationSkipInk)}");
+
+    /// <summary>A value's CSS keyword: <c>PreserveBreaks</c> is <c>preserve-breaks</c>.</summary>
+    private static string Kebab<T>(T value)
+        where T : struct, Enum =>
+        string.Concat(value.ToString().Select((character, index) => char.IsUpper(character) && index > 0 ? $"-{char.ToLowerInvariant(character)}" : char.ToLowerInvariant(character).ToString()));
 
     private static string CounterName(PageCounter counter) => counter == PageCounter.PageNumber ? "page" : "pages";
 

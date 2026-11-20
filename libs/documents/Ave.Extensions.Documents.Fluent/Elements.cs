@@ -241,6 +241,13 @@ public static class Elements
     /// <returns>The column size.</returns>
     public static TrackSize Fill(double weight = 1) => new TrackSize.Fill(weight);
 
+    /// <summary>A column of this width that its content may widen and a narrow table may shrink down to its content, as a
+    /// browser lays out a <c>col</c> width in an HTML table: wider when a word of a cell is wider than the width, narrower
+    /// when the table cannot give every such column its width. A plain length is a fixed width instead.</summary>
+    /// <param name="width">The preferred width, zero or more.</param>
+    /// <returns>The column size.</returns>
+    public static TrackSize Preferred(Length width) => new TrackSize.Preferred(width);
+
     /// <summary>A column as wide as its content needs, up to its widest content.</summary>
     public static TrackSize Auto => TrackSize.Auto.Instance;
 
@@ -326,4 +333,22 @@ public static class Elements
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int callerLine = 0) =>
         new(new ImageFile(file), null, null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>
+    /// An image in a line of text, as a span of a paragraph (an atomic inline, CSS Display 3, Appendix A, as HTML's <c>img</c> in
+    /// a line): <c>Paragraph([Text("Signed "), InlineImage(Image(file).Alt("Signature").Height(12.Pt())), Text(" today")])</c>.
+    /// The image is made and checked as any image (size, alternative text, margins, padding, border); its margin box sits
+    /// on the baseline, it never breaks, and a line may break before and after it. The span itself takes no formatting:
+    /// format the image. Page break modifiers on the image are refused when the document is laid out (they apply to
+    /// blocks only).
+    /// </summary>
+    /// <param name="image">The image.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The span.</returns>
+    public static Span InlineImage(
+        ImageElement image,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(string.Empty, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine)) { Image = image };
 }

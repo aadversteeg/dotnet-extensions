@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Tables of width 100% in a 300pt (400px) container under table-layout: fixed, every column of a given length that
+     add up to less than the table, 10.5pt. -->
+<style>body { font-size: 10.5pt; } table { width: 100%; table-layout: fixed; }</style></head><body>
+<div id="w-fixed" style="width:300pt"><table id="fixed"><colgroup><col style="width:60pt"><col style="width:90pt"></colgroup><tr><td>short</td><td>a longer text</td></tr></table></div>
+<div id="w-fixed-three" style="width:300pt"><table id="fixed-three"><colgroup><col style="width:45pt"><col style="width:60pt"><col style="width:75pt"></colgroup><tr><td>a</td><td>b</td><td>c</td></tr></table></div>
+<div id="w-fixed-zero" style="width:300pt"><table id="fixed-zero"><colgroup><col style="width:60pt"><col style="width:0"></colgroup><tr><td>short</td><td>a longer text</td></tr></table></div>
+</body></html>

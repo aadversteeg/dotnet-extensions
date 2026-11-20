@@ -180,4 +180,18 @@ public class ModelCheckTests
         DocumentLayout.Run(Document(Inside(ModelLimits.MaxNestingDepth - 2, Table(Paragraph(1, "x")))), TestFonts.Set).IsSuccess.Should().BeTrue();
         Refused(Document(Inside(ModelLimits.MaxNestingDepth - 1, Table(Paragraph(1, "x"))))).Code.Should().Be(DocumentErrorCodes.Input.Invalid.TooDeep);
     }
+
+    [Theory]
+    [InlineData(-1.0)]
+    [InlineData(double.NaN)]
+    [InlineData(14400.01)]
+    public void A_preferred_column_width_out_of_range_is_refused(double points)
+    {
+        var table = new Box(new NodeId(500), SemanticRole.Table, LayoutAlgorithmId.Tracks, BoxStyle.Initial with { Columns = [new TrackSize.Preferred(points.Pt())] },
+            [new Box(new NodeId(501), SemanticRole.TableBody, LayoutAlgorithmId.Flow, BoxStyle.Initial with { TableDisplay = TableDisplay.RowGroup },
+                [new Box(new NodeId(502), SemanticRole.TableRow, LayoutAlgorithmId.Flow, BoxStyle.Initial with { TableDisplay = TableDisplay.Row },
+                    [new Box(new NodeId(503), SemanticRole.TableCell, LayoutAlgorithmId.Flow, BoxStyle.Initial, [Paragraph(1, "x")], At(0))], At(0))], At(0))], At(0));
+
+        Refused(Document(table)).Code.Should().Be(DocumentErrorCodes.Input.Invalid.Columns);
+    }
 }

@@ -47,6 +47,7 @@ names nothing.
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
 | `empty-cells` | yes | `show` | `show` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
+| `font-kerning` | yes | `auto` | `auto \| normal` | CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured) |
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |
 | `font-style` | yes | `normal` | `normal \| italic` | CSS Fonts 4 §2.4 |
 | `font-synthesis-small-caps` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
@@ -77,12 +78,13 @@ names nothing.
 | `table-layout` | no | `auto` | `auto \| fixed` | CSS 2.1 §17.5.2 |
 | `text-align` | yes | `start` | `start \| end \| left \| right \| center \| justify \| -webkit-left \| -webkit-right \| -webkit-center` | CSS Text 3 §6.1 |
 | `text-decoration-color` | no | `currentcolor` | `<color>` | CSS Text Decoration 3 §2.3 |
-| `text-decoration-line` | no | `none` | `none \| underline` | CSS Text Decoration 3 §2.1 |
+| `text-decoration-line` | no | `none` | `none \| [ underline \|\| overline \|\| line-through ]` | CSS Text Decoration 3 §2.1 |
+| `text-decoration-skip-ink` | yes | `auto` | `auto \| none` | CSS Text Decoration 4 §2.10.4 |
 | `text-decoration-style` | no | `solid` | `solid` | CSS Text Decoration 3 §2.2 |
 | `text-wrap-mode` | yes | `wrap` | `wrap \| nowrap` | CSS Text 4 §6.1 |
 | `unicode-bidi` | no | `normal` | `normal \| isolate` | CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text |
 | `vertical-align` | no | `baseline` | `baseline \| top \| middle \| bottom` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
-| `white-space-collapse` | yes | `collapse` | `collapse \| preserve` | CSS Text 4 §3.1 |
+| `white-space-collapse` | yes | `collapse` | `collapse \| preserve \| preserve-breaks \| break-spaces` | CSS Text 4 §3.1 |
 | `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
 
@@ -132,7 +134,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `filter` | `none` | `none` | Filter Effects 1 §5 |
 | `float` | `none` | `none` | CSS 2.1 §9.5.1 |
 | `font-feature-settings` | `normal` | `normal` | CSS Fonts 4 §7.1 |
-| `font-kerning` | `auto` | `auto` | CSS Fonts 4 §6.3 |
 | `font-language-override` | `normal` | `normal` | CSS Fonts 4 §7.4 |
 | `font-optical-sizing` | `auto` | `auto` | CSS Fonts 4 §2.6 |
 | `font-size-adjust` | `none` | `none` | CSS Fonts 5 §2.1 |
@@ -173,6 +174,8 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `text-rendering` | `auto` | `auto` | SVG 2 §11.9 |
 | `text-shadow` | `none` | `none` | CSS Text Decoration 3 §4 |
 | `text-transform` | `none` | `none` | CSS Text 3 §2.1 |
+| `text-underline-offset` | `auto` | `auto` | CSS Text Decoration 4 §2.8 |
+| `text-underline-position` | `auto` | `auto` | CSS Text Decoration 3 §2.5 |
 | `text-wrap-style` | `auto` | `auto` | CSS Text 4 §6.2 |
 | `top` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
 | `transform` | `none` | `none` | CSS Transforms 1 §5 |

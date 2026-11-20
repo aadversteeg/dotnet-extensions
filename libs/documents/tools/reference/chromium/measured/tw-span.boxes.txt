@@ -1,0 +1,14 @@
+div 300.000 35.719 w-span
+table 300.000 35.719 span
+td 179.402 17.484 a heading over both
+td 119.848 17.484 third
+td 56.156 17.484 one
+td 123.246 17.484 two words
+td 119.848 17.484 third column
+div 300.000 35.719 w-span-wide
+table 300.000 35.719 span-wide
+td 263.531 17.484 a much wider heading tha
+td 35.719 17.484 third
+td 130.441 17.484 one
+td 133.090 17.484 two
+td 35.719 17.484 x

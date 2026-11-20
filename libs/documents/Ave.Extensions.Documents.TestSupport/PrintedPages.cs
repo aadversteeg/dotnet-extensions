@@ -15,11 +15,24 @@ namespace Ave.Extensions.Documents.TestSupport;
 /// <param name="Baseline">The baseline's y.</param>
 /// <param name="FontSize">The font size.</param>
 /// <param name="Text">The characters.</param>
-public sealed record PrintedWord(int Page, double X0, double X1, double Baseline, double FontSize, string Text);
+/// <param name="Colour">The text's fill colour as <c>#rrggbb</c> (<c>#rrggbbaa</c> where it is not opaque).</param>
+/// <param name="Face">The PostScript name of the font the word is drawn with (without a subset tag): it names the font
+/// file, and with it the weight and the style.</param>
+public sealed record PrintedWord(int Page, double X0, double X1, double Baseline, double FontSize, string Text, string? Colour = null, string? Face = null);
 
-/// <summary>A rectangle on a printed page: a filled rectangle (a background, a border, a grid line) or the area an image
-/// is drawn into (which may reach past the page when the page shows only a slice of it). Points, origin top left, y down.</summary>
-public sealed record PrintedBox(int Page, double X0, double Y0, double X1, double Y1)
+/// <summary>A rectangle on a printed page: a painted rectangle (a background, a border, a grid line; filled, or one band
+/// of a stroked rectangle) or the area an image is drawn into (which may reach past the page when the page shows only a
+/// slice of it). Points, origin top left, y down.</summary>
+/// <param name="Page">The page, from 1.</param>
+/// <param name="X0">The left edge.</param>
+/// <param name="Y0">The top edge.</param>
+/// <param name="X1">The right edge.</param>
+/// <param name="Y1">The bottom edge.</param>
+/// <param name="Colour">A painted rectangle's colour as <c>#rrggbb</c> (<c>#rrggbbaa</c> where it is not opaque); null for
+/// an image.</param>
+/// <param name="Stroked">Whether a stroke paints it (a band of a stroked rectangle, read back as what the stroke paints),
+/// not a fill.</param>
+public sealed record PrintedBox(int Page, double X0, double Y0, double X1, double Y1, string? Colour = null, bool Stroked = false)
 {
     /// <summary>The height.</summary>
     public double Height => Y1 - Y0;
@@ -30,7 +43,7 @@ public sealed record PrintedBox(int Page, double X0, double Y0, double X1, doubl
 /// <param name="Width">The page width.</param>
 /// <param name="Height">The page height.</param>
 /// <param name="Words">The words, sorted by baseline and then by <see cref="PrintedWord.X0"/>.</param>
-/// <param name="Rectangles">The filled rectangles, in drawing order.</param>
+/// <param name="Rectangles">The painted rectangles, filled and stroked, in drawing order.</param>
 /// <param name="Images">The images, in drawing order.</param>
 public sealed record PrintedPage(int Number, double Width, double Height, ImmutableArray<PrintedWord> Words, ImmutableArray<PrintedBox> Rectangles, ImmutableArray<PrintedBox> Images)
 {
@@ -42,6 +55,37 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
     public ImmutableArray<(double Baseline, string Text)> Lines =>
         [.. Words.GroupBy(word => Math.Round(word.Baseline, 3))
             .Select(line => (line.First().Baseline, string.Join(" ", line.Select(word => word.Text))))];
+
+    /// <summary>The widest gap between two pieces of text on one baseline that still counts as no white space between
+    /// them, in points: a pair kerned across the border of two runs overlaps, and a space leaves 2.7 pt or more at the
+    /// sizes of the cases. Both rules that join pieces into words use it (<see cref="JoinedWords"/>, and the HTML case
+    /// comparison's join of PyMuPDF's words).</summary>
+    public const double WordGap = 0.5;
+
+    /// <summary>The words as poppler's pdftotext reads the page (<c>words.txt</c>): the pieces that PyMuPDF (and the engine,
+    /// one glyph run per run) gives where a word's colour or font changes are joined again where nothing lies between them
+    /// (<see cref="WordGap"/>) on one baseline at one font size; pdftotext starts a new word at a change of size, not of
+    /// face or colour. The joined word keeps its first piece's colour and face. Each word comes with the number of pieces
+    /// it was made of.</summary>
+    public ImmutableArray<(PrintedWord Word, int Pieces)> JoinedWords
+    {
+        get
+        {
+            var words = ImmutableArray.CreateBuilder<(PrintedWord Word, int Pieces)>();
+            foreach (var piece in Words)
+            {
+                if (words.Count > 0 && words[^1] is var (last, pieces) && Math.Abs(last.Baseline - piece.Baseline) < 0.01 && last.FontSize == piece.FontSize && piece.X0 - last.X1 < WordGap)
+                {
+                    words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text }, pieces + 1);
+                    continue;
+                }
+
+                words.Add((piece, 1));
+            }
+
+            return words.ToImmutable();
+        }
+    }
 }
 
 /// <summary>
@@ -65,27 +109,31 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
 
     /// <summary>
     /// Reads the text form <c>positions.py</c> writes: one line per item, <c>page n width height</c>, <c>word page x0 x1
-    /// baseline size text</c>, <c>rect page x0 y0 x1 y1</c>, <c>image page x0 y0 x1 y1</c>.
+    /// baseline size text colour face</c>, <c>rect page x0 y0 x1 y1 colour</c>, <c>stroke page x0 y0 x1 y1 colour</c> (a
+    /// band a stroke paints), <c>image page x0 y0 x1 y1</c>.
     /// </summary>
     /// <param name="text">The file's text.</param>
     /// <returns>The pages.</returns>
-    /// <exception cref="FormatException">A line is not one of the four forms.</exception>
+    /// <exception cref="FormatException">A line is not one of the five forms, with exactly the fields of its form.</exception>
     public static PrintedPages Parse(string text)
     {
         var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(line => line.Split(' ', 7))
+            .Select(line => line.Split(' '))
             .ToImmutableArray();
         static double Number(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
-        static PrintedBox Box(string[] fields) => new(int.Parse(fields[1], CultureInfo.InvariantCulture), Number(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]));
-        foreach (var fields in lines.Where(fields => fields[0] is not ("page" or "word" or "rect" or "image")))
+        static PrintedBox Box(string[] fields) =>
+            new(int.Parse(fields[1], CultureInfo.InvariantCulture), Number(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]),
+                fields.Length > 6 ? fields[6] : null, fields[0] == "stroke");
+        foreach (var fields in lines.Where(fields => fields.Length != fields[0] switch { "page" => 4, "word" => 9, "rect" or "stroke" => 7, "image" => 6, _ => -1 }))
         {
             throw new FormatException($"Not a line of positions.py: '{string.Join(' ', fields)}'.");
         }
 
         var words = lines.Where(fields => fields[0] == "word")
-            .Select(fields => new PrintedWord(int.Parse(fields[1], CultureInfo.InvariantCulture), Number(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]), fields[6]))
+            .Select(fields => new PrintedWord(int.Parse(fields[1], CultureInfo.InvariantCulture), Number(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]), fields[6],
+                fields[7], fields[8]))
             .ToImmutableArray();
-        var rectangles = lines.Where(fields => fields[0] == "rect").Select(Box).ToImmutableArray();
+        var rectangles = lines.Where(fields => fields[0] is "rect" or "stroke").Select(Box).ToImmutableArray();
         var images = lines.Where(fields => fields[0] == "image").Select(Box).ToImmutableArray();
         return new([.. lines.Where(fields => fields[0] == "page").Select(fields =>
         {
@@ -100,7 +148,8 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     /// <summary>
     /// The engine's page model in the same form. A word is a run of glyphs whose text has no white space; a glyph with no
     /// text of its own continues the word before it (the later glyphs of a one-to-many substitution). Its baseline is its
-    /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance.
+    /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance; its colour
+    /// and face are its run's. A rectangle's colour is its fill's.
     /// </summary>
     /// <param name="document">The page model.</param>
     /// <returns>The pages.</returns>
@@ -110,9 +159,11 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             var number = index + 1;
             return new PrintedPage(number, page.Size.Width, page.Size.Height,
                 Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run))),
-                [.. page.Items.OfType<FillRectangle>().Select(fill => Box(number, fill.Area))],
+                [.. page.Items.OfType<FillRectangle>().Select(fill => Box(number, fill.Area) with { Colour = Hex(fill.Color) })],
                 [.. page.Items.OfType<DrawImage>().Select(image => Box(number, image.Area))]);
         })]);
+
+    private static string Hex(Core.Color color) => FormattableString.Invariant($"#{color.Red:x2}{color.Green:x2}{color.Blue:x2}");
 
     private static PrintedBox Box(int page, Core.Rect area) =>
         new(page, area.Origin.X, area.Origin.Y, area.Origin.X + area.Size.Width, area.Origin.Y + area.Size.Height);
@@ -149,6 +200,6 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     {
         var advance = run.Font.Metrics.ToPoints(run.Font.AdvanceWidth(glyphs[^1].Glyph), run.FontSize);
         return new PrintedWord(page, run.Origin.X + glyphs[0].X, run.Origin.X + glyphs[^1].X + advance, run.Origin.Y, run.FontSize,
-            string.Concat(glyphs.Select(glyph => glyph.Text)));
+            string.Concat(glyphs.Select(glyph => glyph.Text)), Hex(run.Color), run.Font.Names.PostScriptName);
     }
 }

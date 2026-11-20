@@ -123,7 +123,7 @@ public static class HtmlStyleResolver
             var tree = StyleElement.Tree(document);
             var elements = Descendants(tree).ToList();
             _body = elements.Select(item => item.Element).FirstOrDefault(element => element.IsHtml("body"));
-            _documentBase = DocumentBase(elements);
+            _documentBase = Urls.DocumentBase(document, options.BaseUrl);
 
             var sheets = new List<CascadeSheet> { new(UserAgentStyleSheet.Sheet, CascadeOrigin.UserAgent) };
             sheets.AddRange(AuthorSheets(elements).Select(sheet => new CascadeSheet(sheet, CascadeOrigin.Author)));
@@ -132,7 +132,7 @@ public static class HtmlStyleResolver
                 return null;
             }
 
-            if (ReadOrNull(CascadeIndex.Build(sheets, options.Media, Import)) is not { } index)
+            if (ReadOrNull(CascadeIndex.Build(sheets, options.Media, Import, sheet => _baseOf.GetValueOrDefault(sheet, _documentBase))) is not { } index)
             {
                 return null;
             }
@@ -146,7 +146,7 @@ public static class HtmlStyleResolver
             }
 
             Keep(computer.Diagnostics.Where((_, i) => !_renamed.Contains(i)));
-            return Limit is null ? new StyledHtmlDocument(document, root, index.FontFaces, index.PageRules, Capped(_diagnostics), _sourceName) : null;
+            return Limit is null ? new StyledHtmlDocument(document, root, index.FontFaces, index.PageRules, Capped(_diagnostics), _sourceName) { Page = options.Page } : null;
         }
 
         /// <summary>Keeps a diagnostic, at most <see cref="HtmlInputLimits.MaxDiagnostics"/> in all (the parts are capped
@@ -498,7 +498,7 @@ public static class HtmlStyleResolver
                     : ImageState.Missing;
             }
 
-            if (Absolute(source, _documentBase) is not { } url)
+            if (Urls.Absolute(source, _documentBase) is not { } url)
             {
                 return ImageState.Missing;
             }
@@ -718,40 +718,6 @@ public static class HtmlStyleResolver
 
         // ---- style sheets ----
 
-        /// <summary>The document base URL (§2.4.1): the first base element with an href, resolved against the
-        /// document's URL; else the document's URL.</summary>
-        private string? DocumentBase(List<StyleElement> elements)
-        {
-            var href = elements.Select(item => item.Element).FirstOrDefault(element => element.IsHtml("base") && element.Attribute("href") is not null)?.Attribute("href");
-            return href is null ? options.BaseUrl : Absolute(href.Trim(), options.BaseUrl) ?? options.BaseUrl;
-        }
-
-        /// <summary>A URL resolved against a base; null when it does not parse. Without a base, an absolute URL stays as
-        /// it is and a relative one is passed on as written.</summary>
-        private static string? Absolute(string url, string? baseUrl)
-        {
-            // Only a URL with a scheme is absolute: on Unix, Uri takes "/other.css" for an absolute file path.
-            if (HasScheme(url) && Uri.TryCreate(url, UriKind.Absolute, out var absolute))
-            {
-                return absolute.AbsoluteUri;
-            }
-
-            if (baseUrl is null)
-            {
-                return url;
-            }
-
-            return HasScheme(baseUrl) && Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) && Uri.TryCreate(baseUri, url, out var resolved) ? resolved.AbsoluteUri : null;
-        }
-
-        /// <summary>Whether a URL starts with a scheme (URL Standard §4.4: an ASCII alpha, then alphanumerics, +, - or .,
-        /// then a colon).</summary>
-        private static bool HasScheme(string url)
-        {
-            var colon = url.IndexOf(':', StringComparison.Ordinal);
-            return colon > 0 && char.IsAsciiLetter(url[0]) && url[..colon].All(c => char.IsAsciiLetterOrDigit(c) || c is '+' or '-' or '.');
-        }
-
         /// <summary>The style sheets of the document in tree order (§4.2.6 style, §4.2.4 link with rel stylesheet; the
         /// style element of SVG too, as in Chromium 159). A sheet that does not apply leaves a diagnostic of class
         /// Ignored that says why, so a caller sees what was left out.</summary>
@@ -922,7 +888,7 @@ public static class HtmlStyleResolver
             [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(InfraAscii.ToLower)];
 
         /// <summary>The document's own address without its fragment, or null when it has none.</summary>
-        private string? DocumentAddress => options.BaseUrl is { } address && Absolute(address, null) is { } absolute ? WithoutFragment(absolute) : null;
+        private string? DocumentAddress => options.BaseUrl is { } address && Urls.Absolute(address, null) is { } absolute ? WithoutFragment(absolute) : null;
 
         private static string WithoutFragment(string url) => url.IndexOf('#') is var hash and >= 0 ? url[..hash] : url;
 
@@ -937,7 +903,7 @@ public static class HtmlStyleResolver
         /// empty style sheet, and the resolver is not asked.</summary>
         private StyleSheet? Fetch(string url, string? baseUrl, string referrer, TextPosition position)
         {
-            var absolute = Absolute(url, baseUrl);
+            var absolute = Urls.Absolute(url, baseUrl);
             if (url.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || (absolute is not null && WithoutFragment(absolute) == DocumentAddress))
             {
                 return ReadOrNull(CssParser.ParseStyleSheet(ReadOnlyMemory<byte>.Empty, new CssSourceOptions(absolute ?? referrer)));

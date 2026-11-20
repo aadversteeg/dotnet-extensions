@@ -2,8 +2,9 @@
 through libjpeg), so the engine's own decoder is never tested against files it produced itself.
 
 Run from the repository root:  python tools/generate-test-images.py
-Writes UnitTests.Extensions.Documents.Images/Assets/*.png|*.jpg, samples/Ave.Extensions.Documents.Samples/assets/logo.png
-and tools/reference/chromium/cases/tall.png (the image of the Chromium reference cases for content taller than a page).
+Writes UnitTests.Extensions.Documents.Images/Assets/*.png|*.jpg, samples/Ave.Extensions.Documents.Samples/assets/logo.png,
+tools/reference/chromium/cases/tall.png (the image of the Chromium reference cases for content taller than a page) and
+cases/wide.png (the wide image of the cases of an image in a line).
 The pixel pattern is a formula (see pattern()), repeated in the C# tests, so every decoded pixel can be checked.
 Only test and sample assets are made here; nothing of this runs in the engine.
 """
@@ -151,7 +152,10 @@ def main():
     logo.resize((100 * scale, 100 * scale), Image.LANCZOS).save(os.path.join(SAMPLE_ASSETS, "logo.png"))
     with open(os.path.join(CHROMIUM_CASES, "tall.png"), "wb") as tall:
         tall.write(solid_png(4, 16, (200, 60, 60)))
-    print("written:", sorted(os.listdir(ASSETS)), "samples/.../assets/logo.png and tools/reference/chromium/cases/tall.png")
+    # A wide image for the cases of an image in a line of text (ii-*).
+    with open(os.path.join(CHROMIUM_CASES, "wide.png"), "wb") as wide:
+        wide.write(solid_png(16, 4, (60, 90, 160)))
+    print("written:", sorted(os.listdir(ASSETS)), "samples/.../assets/logo.png and tools/reference/chromium/cases/tall.png and wide.png")
 
 
 if __name__ == "__main__":

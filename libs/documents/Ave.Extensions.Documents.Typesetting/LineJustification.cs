@@ -60,10 +60,17 @@ public static class LineJustification
         };
     }
 
-    /// <summary>Widens every word separator of the line by an equal share of <paramref name="free"/>.</summary>
+    /// <summary>Widens every word separator of the line by an equal share of <paramref name="free"/>, except a separator that
+    /// is the line's last glyph: nothing follows it to move, and Chromium gives it no share (case <c>ws-hang-break-spaces</c>,
+    /// justified lines of <c>break-spaces</c>, whose spaces stay at a line's end: "aa bb" and three spaces share the free space
+    /// three ways; case <c>ws-justify</c>), nor to a no-break space that ends a line (case <c>ws-justify-nbsp</c>: with one
+    /// no-break space at the end the space before it takes all the free space, with two the first of them shares it).
+    /// Collapsible spaces never end a line (they are removed there), and preserved ones that hang have no share either.</summary>
     private static TextLine Justify(TextLine line, double free)
     {
-        var separators = line.Segments.Sum(segment => segment.Glyphs.Count(IsWordSeparator));
+        var (lastSegment, lastGlyph) = (line.Segments.Count - 1, line.Segments.Count == 0 ? -1 : line.Segments[^1].Glyphs.Count - 1);
+        bool Widens(int segment, int glyph, ShapedGlyph shaped) => IsWordSeparator(shaped) && !(segment == lastSegment && glyph == lastGlyph);
+        var separators = line.Segments.Select((segment, index) => segment.Glyphs.Where((glyph, at) => Widens(index, at, glyph)).Count()).Sum();
         if (separators == 0)
         {
             return line;
@@ -72,12 +79,16 @@ public static class LineJustification
         var share = free / separators;
         return line with
         {
-            Segments = [.. line.Segments.Select(segment => segment with
+            Segments = [.. line.Segments.Select((segment, index) => segment with
             {
-                Glyphs = [.. segment.Glyphs.Select(glyph => IsWordSeparator(glyph) ? glyph with { Advance = glyph.Advance + share } : glyph)],
+                Glyphs = [.. segment.Glyphs.Select((glyph, at) => Widens(index, at, glyph) ? glyph with { Advance = glyph.Advance + share } : glyph)],
             })],
         };
     }
 
-    private static bool IsWordSeparator(ShapedGlyph glyph) => WordSeparators.Contains(glyph.Text);
+    /// <summary>A word separator that does not hang at the line's end (<see cref="ShapedGlyph.Hangs"/>): a hanging space is
+    /// outside the line, so it does not widen (case <c>ws-hang-pre-wrap</c>, justified lines: the word before it ends at
+    /// the right edge). A preserved space inside the line widens as any space (case
+    /// <c>ws-justify</c>: both spaces of a double space widen).</summary>
+    private static bool IsWordSeparator(ShapedGlyph glyph) => !glyph.Hangs && WordSeparators.Contains(glyph.Text);
 }

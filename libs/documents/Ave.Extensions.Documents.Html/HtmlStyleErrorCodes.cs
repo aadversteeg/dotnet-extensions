@@ -40,6 +40,52 @@ public static class HtmlStyleErrorCodes
         /// <summary>A document in quirks mode (no doctype, or a legacy one): its rendering has rules the engine does not
         /// implement (HTML Standard §15.3.9 margin collapsing, the quirks of CSS). Metadata: SourceFile.</summary>
         public static readonly ErrorCode QuirksMode = _ / "QuirksMode";
+
+        /// <summary>A computed value box generation does not draw (<c>Boxes/BoxProperties.cs</c>, one row per property):
+        /// the print would differ from Chromium's. Metadata: Property, Value, SourceFile, SourceLine, SourceColumn (the
+        /// element's start tag).</summary>
+        public static readonly ErrorCode Value = _ / "Value";
+
+        /// <summary>A rendered element whose rendering no property says and box generation does not draw (br, wbr, img,
+        /// q). Metadata: Value (the element's name), SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode Rendering = _ / "Rendering";
+
+        /// <summary>A block-level box inside an inline box (CSS 2.1 §9.2.1.1, the inline box broken around it). Metadata:
+        /// Value (the element's name), SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode BlockInInline = _ / "BlockInInline";
+
+        /// <summary>A table whose structure the document model's table does not have in the same form (CSS 2.1 §17.2,
+        /// <c>Boxes/TableBoxes.cs</c>): a table part outside the part it belongs in, which CSS would wrap in anonymous
+        /// table boxes (§17.2.1); a caption or a footer group; a header group after a body group; a table, group or row
+        /// without rows or cells; column sizes the model cannot give. Metadata: Value (what is refused), SourceFile,
+        /// SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode Table = _ / "Table";
+
+        /// <summary>A background on the root or body element, which Chromium paints on the page canvas (CSS Backgrounds 3
+        /// §2.11.2); the document model has no page background. Metadata: Property, Value, SourceFile, SourceLine,
+        /// SourceColumn.</summary>
+        public static readonly ErrorCode CanvasBackground = _ / "CanvasBackground";
+
+        /// <summary>An <c>@page</c> rule with a page selector or a page-margin rule, or a declaration in it other than
+        /// <c>size</c> and the margins, or a value of those not drawn. Metadata: Value, SourceFile, SourceLine,
+        /// SourceColumn.</summary>
+        public static readonly ErrorCode PageRule = _ / "PageRule";
+
+        /// <summary>Text or a box whose font no family of its <c>font-family</c> list gives at its weight and style: no
+        /// <c>@font-face</c> rule and no font of the caller's set (there are no system fonts and no fallback per
+        /// character). Metadata: Value (the family list), SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode Font = _ / "Font";
+
+        /// <summary>Boxes nested deeper than the document model allows (<c>ModelLimits.MaxNestingDepth</c>). Metadata:
+        /// Value (the limit), SourceFile, SourceLine, SourceColumn (the first element too deep).</summary>
+        public static readonly ErrorCode TooDeep = _ / "TooDeep";
+
+        /// <summary>A character in the text that is not drawn: a control character other than tab, line feed and carriage
+        /// return (Chromium draws form feed and next line, U+0085, as a missing glyph one em wide), the line and
+        /// paragraph separators (a space that does not collapse), a noncharacter or half of a surrogate pair. One
+        /// per text that holds any: Value (the first such code point), Offset (its place in the text), Count (how many
+        /// the text holds), SourceFile, SourceLine, SourceColumn (where the text starts).</summary>
+        public static readonly ErrorCode Character = _ / "Character";
     }
 
     /// <summary>A document with no element (made in code; the parser always makes the html element): there is nothing to

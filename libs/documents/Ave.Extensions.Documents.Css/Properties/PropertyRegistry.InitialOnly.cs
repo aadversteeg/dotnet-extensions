@@ -94,6 +94,8 @@ public static partial class PropertyRegistry
         yield return InitialKeyword("text-wrap-style", true, "auto", ["balance", "stable", "pretty", "avoid-orphans"], false, "block containers", "CSS Text 4 §6.2");
         yield return InitialKeyword("text-rendering", true, "auto", ["optimizespeed", "optimizelegibility", "geometricprecision"], false, "text", "SVG 2 §11.9");
         yield return InitialKeyword("text-decoration-thickness", false, "auto", ["from-font"], true, "all elements", "CSS Text Decoration 4 §2.4");
+        yield return InitialKeyword("text-underline-position", true, "auto", ["from-font", "under", "left", "right"], true, "all elements", "CSS Text Decoration 3 §2.5");
+        yield return InitialKeyword("text-underline-offset", true, "auto", [], true, "all elements", "CSS Text Decoration 4 §2.8");
         yield return InitialKeyword("quotes", true, "auto", ["none", "match-parent"], true, "all elements", "CSS Generated Content 3 §3");
         yield return InitialKeyword("content", false, "normal", ["none"], true, "all elements, ::before, ::after, ::marker, page-margin boxes", "CSS Generated Content 3 §1");
         yield return InitialKeyword("counter-reset", false, "none", [], true, "all elements", "CSS Lists 3 §4.2");
@@ -118,7 +120,6 @@ public static partial class PropertyRegistry
                 : ParsedValue.Refused("'font-stretch' is supported only at its initial value, normal (100%)"),
             AsSpecified);
         yield return InitialKeyword("font-size-adjust", true, "none", [], true, "all elements and text", "CSS Fonts 5 §2.1");
-        yield return InitialKeyword("font-kerning", true, "auto", ["normal", "none"], false, "all elements and text", "CSS Fonts 4 §6.3");
         yield return InitialKeyword("font-optical-sizing", true, "auto", ["none"], false, "all elements and text", "CSS Fonts 4 §2.6");
         yield return InitialKeyword("font-language-override", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.4");
         yield return Keywords("font-synthesis-weight", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");

@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Tables of width 100% in a 300pt (400px) container, automatic layout, collapsed borders, 10.5pt (14px, a size
+     Chromium keeps exact): the width left over the columns' maximums is shared over the auto columns. -->
+<style>body { font-size: 10.5pt; } table { width: 100%; } .bare td { padding: 0; border: none; }</style></head><body>
+<div id="w-two" style="width:300pt"><table id="two"><tr><td>short</td><td>a longer text</td></tr></table></div>
+<div id="w-three" style="width:300pt"><table id="three"><tr><td>one</td><td>two words</td><td>three words here</td></tr></table></div>
+<div id="w-wrap" style="width:300pt"><table id="wrap"><tr><td>alpha beta gamma delta epsilon zeta eta theta</td><td>one two</td><td>iota kappa lambda mu nu xi omicron pi rho</td></tr></table></div>
+<div id="w-empty" style="width:300pt"><table id="empty"><tr><td>short</td><td></td><td>a longer text</td></tr></table></div>
+<div id="w-zero" style="width:300pt"><table id="zero" class="bare"><tr><td>short</td><td></td><td>a longer text</td></tr></table></div>
+<div id="w-allzero" style="width:300pt"><table id="allzero" class="bare"><tr><td></td><td></td><td></td></tr></table></div>
+</body></html>

@@ -37,4 +37,52 @@ public class DocumentModelTextTests
         page.AreaWidth.Points.Should().BeApproximately(210.Mm().Points - 2 * 2.Cm().Points, 1e-9);
         page.AreaHeight.Points.Should().BeApproximately(297.Mm().Points - 2 * 2.Cm().Points, 1e-9);
     }
+
+    [Fact]
+    public void A_run_whose_white_space_does_not_collapse_or_wrap_says_so_and_one_with_the_initial_values_says_nothing()
+    {
+        var text = new TextStyle("Lato", 11.Pt(), FontWeight.Regular, Color.Black);
+        var paragraph = new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
+            [new TextRun(new NodeId(2), "a", text with { WhiteSpaceCollapse = WhiteSpaceCollapse.PreserveBreaks, TextWrapMode = TextWrapMode.NoWrap }, Here),
+             new TextRun(new NodeId(3), "b", text, Here)], Here);
+        var written = DocumentModelText.Write(new StyledDocument(new DocumentMetadata("T", null), new PageStyle(210.Mm(), 297.Mm(), Edges.All(2.Cm())),
+            new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [paragraph], Here)));
+
+        written.Split('\n').Where(line => line.Contains("white-space-collapse=preserve-breaks", StringComparison.Ordinal)).Should().ContainSingle()
+            .Which.Should().Contain("\"a\"").And.Contain("text-wrap-mode=nowrap");
+        written.Should().NotContain("text-wrap-mode=wrap");
+    }
+
+    [Fact]
+    public void A_run_with_decorations_writes_each_in_its_order_and_one_without_writes_none()
+    {
+        var text = new TextStyle("Lato", 11.Pt(), FontWeight.Regular, Color.Black);
+        ValueList<TextDecoration> decorations =
+        [
+            new(TextDecorationLine.Underline, Color.Black, "Lato", 11.Pt(), FontWeight.Regular),
+            new(TextDecorationLine.LineThrough, new Color(0xCC, 0, 0), "Theano", 22.Pt(), FontWeight.Bold, FontStyle.Italic),
+        ];
+        var paragraph = new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
+            [new TextRun(new NodeId(2), "a", text with { Decorations = decorations }, Here), new TextRun(new NodeId(3), "b", text, Here)], Here);
+        var written = DocumentModelText.Write(new StyledDocument(new DocumentMetadata("T", null), new PageStyle(210.Mm(), 297.Mm(), Edges.All(2.Cm())),
+            new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [paragraph], Here)));
+
+        var line = written.Split('\n').Should().ContainSingle(line => line.Contains("text-decoration=", StringComparison.Ordinal)).Which;
+        line.Should().Contain("\"a\"");
+        line.IndexOf("text-decoration=(underline", StringComparison.Ordinal).Should().BeLessThan(line.IndexOf("text-decoration=(line-through", StringComparison.Ordinal));
+        line.Should().Contain("Theano 22pt w700 italic");
+    }
+
+    [Fact]
+    public void A_run_that_draws_its_lines_whole_writes_its_skip_ink_value_and_one_with_the_initial_value_writes_none()
+    {
+        var text = new TextStyle("Lato", 11.Pt(), FontWeight.Regular, Color.Black);
+        var paragraph = new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial,
+            [new TextRun(new NodeId(2), "a", text with { DecorationSkipInk = TextDecorationSkipInk.None }, Here), new TextRun(new NodeId(3), "b", text, Here)], Here);
+        var written = DocumentModelText.Write(new StyledDocument(new DocumentMetadata("T", null), new PageStyle(210.Mm(), 297.Mm(), Edges.All(2.Cm())),
+            new Box(new NodeId(0), SemanticRole.Generic, LayoutAlgorithmId.Flow, BoxStyle.Initial, [paragraph], Here)));
+
+        written.Split('\n').Should().ContainSingle(line => line.Contains("text-decoration-skip-ink=none", StringComparison.Ordinal)).Which.Should().Contain("\"a\"");
+        written.Should().NotContain("text-decoration-skip-ink=auto");
+    }
 }

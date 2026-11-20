@@ -1,0 +1,6 @@
+page 1 300.000 100.080
+word 1 9.750 21.678 21.750 12.000 aa #000000 Lato-Regular
+word 1 33.678 47.118 21.750 12.000 bb #000000 Lato-Regular
+word 1 50.190 61.548 21.750 12.000 cc #000000 Lato-Regular
+word 1 9.750 23.190 36.000 12.000 dd #000000 Lato-Regular
+word 1 41.334 54.006 36.000 12.000 ee #000000 Lato-Regular

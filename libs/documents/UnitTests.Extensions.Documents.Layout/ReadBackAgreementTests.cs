@@ -9,7 +9,7 @@ namespace UnitTests.Extensions.Documents.Layout;
 /// Every measured Chromium case is read by a test (the <c>words</c>, <c>lines</c> and <c>boxes</c> files and
 /// eleven old <c>print</c> files were read by none before). The three read-backs of one print must agree: the words that
 /// poppler's <c>pdftotext -bbox</c> finds (<c>words.txt</c>) are the words PyMuPDF finds (<c>print.txt</c>), page by
-/// page (pdftotext writes them as HTML text, so <c>&amp;apos;</c> is an apostrophe); the filled rectangles of <c>rectangles.py</c> (<c>lines.txt</c>) are the rectangles of <c>positions.py</c>; and
+/// page (pdftotext writes them as HTML text, so <c>&amp;apos;</c> is an apostrophe); the filled rectangles of <c>rectangles.py</c> (<c>lines.txt</c>) are the filled rectangles of <c>positions.py</c> (not the bands a stroke paints, which only <c>positions.py</c> reads); and
 /// every box measured in the page (<c>boxes.txt</c>) has a size, and a cell that holds a word holds a word the print
 /// shows. A file damaged in an edit, or measured from another print, fails here. pdftotext leaves out a word that passes the
 /// page's edge, which only content taller than the page does.
@@ -44,18 +44,21 @@ public class ReadBackAgreementTests
             // pdftotext leaves out a word whose glyphs pass the page's edge (a slice of a line taller than the page, cases
             // a4-*): it finds every word inside the page, and no word PyMuPDF does not.
             var poppler = lines.Where(fields => int.Parse(fields[0], CultureInfo.InvariantCulture) == page.Number).Select(fields => System.Net.WebUtility.HtmlDecode(fields[5])).Order(StringComparer.Ordinal).ToList();
-            var inside = page.Words.Where(word => word.Baseline <= page.Height && word.Baseline - word.FontSize >= 0).Select(word => word.Text).Order(StringComparer.Ordinal);
+            // pdftotext joins the pieces of a word that PyMuPDF splits where its colour or font changes (cases sr-*).
+            var inside = page.JoinedWords.Select(joined => joined.Word).Where(word => word.Baseline <= page.Height && word.Baseline - word.FontSize >= 0).Select(word => word.Text).Order(StringComparer.Ordinal);
             poppler.Should().Equal(inside, $"{caseName}, page {page.Number}: the words of pdftotext and PyMuPDF inside the page");
-            poppler.Except(page.Words.Select(word => word.Text), StringComparer.Ordinal).Should().BeEmpty($"{caseName}, page {page.Number}: pdftotext finds no word PyMuPDF does not");
+            poppler.Except(page.JoinedWords.Select(joined => joined.Word.Text), StringComparer.Ordinal).Should().BeEmpty($"{caseName}, page {page.Number}: pdftotext finds no word PyMuPDF does not");
         }
 
-        lines.Select(fields => int.Parse(fields[0], CultureInfo.InvariantCulture)).Should().OnlyContain(number => number >= 1 && number <= print.Pages.Length, caseName);
+        // No word of pdftotext is on a page the print does not have (also when it finds none: case h-default-page has
+        // its text at the top edge of the page, where neither read-back counts a word as inside).
+        lines.Select(fields => int.Parse(fields[0], CultureInfo.InvariantCulture)).Where(number => number < 1 || number > print.Pages.Length).Should().BeEmpty(caseName);
 
         static string Key(int page, double x0, double y0, double x1, double y1) =>
             FormattableString.Invariant($"{page} {x0:0.00} {y0:0.00} {x1:0.00} {y1:0.00}");
         var rectangles = File.ReadAllLines(Path.Combine(Measured(), caseName + ".lines.txt")).Where(line => line.Length > 0).Select(line => line.Split(' '))
             .Select(fields => Key(int.Parse(fields[0], CultureInfo.InvariantCulture), Number(fields[1]), Number(fields[2]), Number(fields[3]), Number(fields[4]))).Order(StringComparer.Ordinal);
-        rectangles.Should().Equal(print.Pages.SelectMany(page => page.Rectangles).Select(box => Key(box.Page, box.X0, box.Y0, box.X1, box.Y1)).Order(StringComparer.Ordinal),
+        rectangles.Should().Equal(print.Pages.SelectMany(page => page.Rectangles).Where(box => !box.Stroked).Select(box => Key(box.Page, box.X0, box.Y0, box.X1, box.Y1)).Order(StringComparer.Ordinal),
             $"{caseName}: the rectangles of rectangles.py and positions.py");
 
         var words = print.Pages.SelectMany(page => page.Words).Select(word => word.Text).ToHashSet();
