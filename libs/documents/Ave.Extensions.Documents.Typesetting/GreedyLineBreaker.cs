@@ -182,13 +182,24 @@ public static class GreedyLineBreaker
     /// <param name="reshape">Shapes a piece of a run again as a line shows it.</param>
     /// <param name="atSpace">What is done at a line end at a collapsible space, per run, in order (a run without an entry
     /// keeps the paragraph's glyphs).</param>
+    /// <param name="textItemStep">The step each text item's width is rounded up to, in points; 0 (the default) keeps the
+    /// widths exact. THE RULE FOR THE TEXT ITEM WIDTH: a text item is the part of one run that lies on one line, its
+    /// <see cref="LineSegment"/>; with a positive step its width is its glyphs' advances rounded up to the step
+    /// (<see cref="LineSegment.Width"/>), and a line fits when the sum of its items' widths fits, as Blink's line breaker
+    /// sums each item's <c>ShapeResult::SnappedWidth</c> (<c>LayoutUnit::FromFloatCeil</c>, 1/64 px;
+    /// <c>core/layout/inline/line_breaker.cc</c>, <c>LineBreaker::HandleText</c>). An atomic inline is not a text item: its
+    /// width stays as it is. The running sum that finds the first piece that no longer fits stays exact; the line it
+    /// finds is checked with the rounded widths, and an earlier break is tried when that does not fit (WHERE THE LINE
+    /// ENDS). Cases <c>ta-items</c>, <c>ta-items-right</c> and <c>ta-items-fit</c> of <c>tools/reference/chromium</c>.</param>
     /// <returns>The lines, top to bottom (empty when the paragraph has no visible text), or a shaping error.</returns>
     public static Result<ValueList<TextLine>, Error> BreakLines(
-        IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper reshape, IReadOnlyList<LineEndShaping> atSpace) =>
-        Break(runs, modes, availableWidth, reshape, run => run < atSpace.Count ? atSpace[run] : LineEndShaping.KeepParagraphGlyphs);
+        IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper reshape, IReadOnlyList<LineEndShaping> atSpace,
+        double textItemStep = 0) =>
+        Break(runs, modes, availableWidth, reshape, run => run < atSpace.Count ? atSpace[run] : LineEndShaping.KeepParagraphGlyphs, textItemStep);
 
     private static Result<ValueList<TextLine>, Error> Break(
-        IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper? reshape, Func<int, LineEndShaping> atSpace)
+        IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper? reshape, Func<int, LineEndShaping> atSpace,
+        double textItemStep = 0)
     {
         var paragraph = BreakableSegments.Split(runs, modes, canShapeAgain: reshape is not null);
         var shaping = new LineEnds(paragraph, reshape, reshape is null ? null : new LineShapingBudget(paragraph.Text.Length), atSpace, availableWidth);
@@ -210,13 +221,13 @@ public static class GreedyLineBreaker
                 candidates.Add(index);
                 if (!Fitting.Fits(shaping.Width(lineStart, segment.End), availableWidth))
                 {
-                    var taken = shaping.LineBefore(lineStart, candidates, availableWidth);
+                    var taken = shaping.LineBefore(lineStart, candidates, availableWidth, textItemStep);
                     if (taken.IsFailure)
                     {
                         return Result<ValueList<TextLine>, Error>.Failure(taken.Error);
                     }
 
-                    Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false);
+                    Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false, textItemStep);
                     lineStart = segments[taken.Value.Segment].Start;
                     occupied = false;
                     candidates.Clear();
@@ -239,15 +250,15 @@ public static class GreedyLineBreaker
 
                 // The line before a forced break, shaped as it is, may not fit where its glyphs in the paragraph did: then it
                 // breaks before one of its pieces, as any other line.
-                if (candidates.Count > 0 && candidates[^1] == index && !Fitting.Fits(line.Value.Sum(glyph => glyph.Glyph.Advance), availableWidth))
+                if (candidates.Count > 0 && candidates[^1] == index && !Fitting.Fits(WidthOf(line.Value, textItemStep), availableWidth))
                 {
-                    var taken = shaping.LineBefore(lineStart, candidates, availableWidth);
+                    var taken = shaping.LineBefore(lineStart, candidates, availableWidth, textItemStep);
                     if (taken.IsFailure)
                     {
                         return Result<ValueList<TextLine>, Error>.Failure(taken.Error);
                     }
 
-                    Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false);
+                    Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false, textItemStep);
                     lineStart = segments[taken.Value.Segment].Start;
                     occupied = false;
                     candidates.Clear();
@@ -255,7 +266,7 @@ public static class GreedyLineBreaker
                     continue;
                 }
 
-                Add(lines, paragraph.Rules, line.Value, forced: true);
+                Add(lines, paragraph.Rules, line.Value, forced: true, textItemStep);
                 lineStart = segment.End;
                 occupied = false;
                 candidates.Clear();
@@ -273,20 +284,20 @@ public static class GreedyLineBreaker
                 return Result<ValueList<TextLine>, Error>.Failure(last.Error);
             }
 
-            if (candidates.Count == 0 || Fitting.Fits(last.Value.Sum(glyph => glyph.Glyph.Advance), availableWidth))
+            if (candidates.Count == 0 || Fitting.Fits(WidthOf(last.Value, textItemStep), availableWidth))
             {
-                Add(lines, paragraph.Rules, last.Value, forced: false);
+                Add(lines, paragraph.Rules, last.Value, forced: false, textItemStep);
                 return Result<ValueList<TextLine>, Error>.Success(lines.ToImmutable());
             }
 
             // Too wide: break before one of its pieces, and lay out the rest as the last line again.
-            var taken = shaping.LineBefore(lineStart, candidates, availableWidth);
+            var taken = shaping.LineBefore(lineStart, candidates, availableWidth, textItemStep);
             if (taken.IsFailure)
             {
                 return Result<ValueList<TextLine>, Error>.Failure(taken.Error);
             }
 
-            Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false);
+            Add(lines, paragraph.Rules, taken.Value.Glyphs, forced: false, textItemStep);
             var restart = taken.Value.Segment;
             lineStart = segments[restart].Start;
             candidates.RemoveAll(candidate => candidate <= restart);
@@ -295,9 +306,49 @@ public static class GreedyLineBreaker
 
     private static bool EndsWithSoftHyphen(BreakableSegments.Paragraph paragraph, int end) => end > 0 && paragraph.Text[end - 1] == SoftHyphen;
 
+    /// <summary>The width of a line's glyphs: per consecutive stretch of one run (a text item) its advances, rounded up to
+    /// <paramref name="textItemStep"/> unless it is an atomic inline (THE RULE FOR THE TEXT ITEM WIDTH), as
+    /// <see cref="Add"/> makes its segments.</summary>
+    private static double WidthOf(List<BreakableSegments.RunGlyph> line, double textItemStep)
+    {
+        if (textItemStep <= 0)
+        {
+            return line.Sum(glyph => glyph.Glyph.Advance);
+        }
+
+        var (width, item, first) = (0.0, 0.0, 0);
+        for (var index = 0; index < line.Count; index++)
+        {
+            item += line[index].Glyph.Advance;
+            if (index == line.Count - 1 || line[index + 1].Run != line[first].Run)
+            {
+                width += LineSegment.RoundedUp(item, StepOf(line, first, index + 1, textItemStep));
+                (item, first) = (0, index + 1);
+            }
+        }
+
+        return width;
+    }
+
+    /// <summary>The step of the stretch of one run from <paramref name="from"/> to <paramref name="to"/>: none for an atomic
+    /// inline, else <paramref name="textItemStep"/>.</summary>
+    private static double StepOf(List<BreakableSegments.RunGlyph> line, int from, int to, double textItemStep)
+    {
+        for (var index = from; index < to; index++)
+        {
+            if (line[index].Glyph.IsAtomicInline)
+            {
+                return 0;
+            }
+        }
+
+        return textItemStep;
+    }
+
     /// <summary>Adds a line, one segment per consecutive stretch of the same run, unless nothing visible, no preserved space
-    /// and no forced break is on it.</summary>
-    private static void Add(ImmutableArray<TextLine>.Builder lines, BreakableSegments.LineEndRules rules, List<BreakableSegments.RunGlyph> all, bool forced)
+    /// and no forced break is on it; each segment of text gets <paramref name="textItemStep"/> (THE RULE FOR THE TEXT ITEM
+    /// WIDTH).</summary>
+    private static void Add(ImmutableArray<TextLine>.Builder lines, BreakableSegments.LineEndRules rules, List<BreakableSegments.RunGlyph> all, bool forced, double textItemStep)
     {
         if (!all.Exists(glyph => glyph.Glyph.IsLineBreak || !rules.IsBlank(glyph.Run, glyph.Glyph)))
         {
@@ -310,7 +361,7 @@ public static class GreedyLineBreaker
         {
             if (index == all.Count || all[index].Run != all[first].Run)
             {
-                segments.Add(new LineSegment(all[first].Run, [.. all.Skip(first).Take(index - first).Select(placed => placed.Glyph)]));
+                segments.Add(new LineSegment(all[first].Run, [.. all.Skip(first).Take(index - first).Select(placed => placed.Glyph)], StepOf(all, first, index, textItemStep)));
                 first = index;
             }
         }
@@ -403,7 +454,7 @@ public static class GreedyLineBreaker
         /// <see cref="MaxEarlierBreaksTried"/> after the first; otherwise the first, which always may hold the line's
         /// first piece.
         /// </summary>
-        public Result<Taken, Error> LineBefore(int start, List<int> candidates, double availableWidth)
+        public Result<Taken, Error> LineBefore(int start, List<int> candidates, double availableWidth, double textItemStep)
         {
             var tried = 0;
             for (var position = candidates.Count - 1; position > 0 && tried <= MaxEarlierBreaksTried; position--, tried++)
@@ -414,7 +465,7 @@ public static class GreedyLineBreaker
                     return Result<Taken, Error>.Failure(line.Error);
                 }
 
-                if (Fitting.Fits(line.Value.Sum(glyph => glyph.Glyph.Advance), availableWidth))
+                if (Fitting.Fits(WidthOf(line.Value, textItemStep), availableWidth))
                 {
                     return Result<Taken, Error>.Success(new Taken(line.Value, candidates[position]));
                 }

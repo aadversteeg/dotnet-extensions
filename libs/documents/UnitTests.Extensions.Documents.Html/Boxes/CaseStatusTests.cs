@@ -13,25 +13,37 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// that lays out and differs otherwise fails, and so does a status that changes without the file changing: the file is
 /// the list of what the HTML front-end draws, and what it refuses is the work list of the packages after this one. With
 /// <c>DOCUMENTS_UPDATE_HTML_STATUS=1</c> the test writes the file instead; a case is <c>open</c> only where the committed
-/// file already says so, so a written file never accepts a new difference.
+/// file already says so, so a written file never accepts a new difference. The whole documents
+/// (<c>tools/reference/chromium/documents</c>) have a status file of their own, compared and written the same way.
 /// </summary>
 public class CaseStatusTests(ITestOutputHelper output)
 {
     [Fact]
-    public void Every_case_is_equal_to_Chromium_or_refused_as_the_status_file_says()
+    public void Every_case_is_equal_to_Chromium_or_refused_as_the_status_file_says() => StatusesAreCommitted(HtmlCases.Cases);
+
+    /// <summary>The timesheets (one page, a normal month, a long month) and the invoice, each compared whole, with the
+    /// same comparison as a case, against <c>documents/html-status.txt</c>.</summary>
+    [Fact]
+    public void Every_document_is_equal_to_Chromium_or_refused_as_its_status_file_says()
     {
-        var committed = File.ReadAllLines(HtmlCases.StatusFile).Select(HtmlCases.Fields).ToDictionary(fields => fields.Name, fields => fields.Status, StringComparer.Ordinal);
-        var statuses = HtmlCases.Names.Select(name => $"{name} {HtmlCases.Status(name, committed.GetValueOrDefault(name))}").ToList();
+        HtmlCases.Documents.Names.Should().Equal("invoice", "timesheet-normal", "timesheet-one-page", "timesheet-pages");
+        StatusesAreCommitted(HtmlCases.Documents);
+    }
+
+    private void StatusesAreCommitted(CaseFolder folder)
+    {
+        var committed = File.ReadAllLines(folder.StatusFile).Select(HtmlCases.Fields).ToDictionary(fields => fields.Name, fields => fields.Status, StringComparer.Ordinal);
+        var statuses = folder.Names.Select(name => $"{name} {HtmlCases.Status(folder, name, committed.GetValueOrDefault(name))}").ToList();
         if (Environment.GetEnvironmentVariable("DOCUMENTS_UPDATE_HTML_STATUS") == "1")
         {
-            File.WriteAllText(HtmlCases.StatusFile, string.Join("\n", statuses) + "\n");
+            File.WriteAllText(folder.StatusFile, string.Join("\n", statuses) + "\n");
         }
 
         var open = statuses.Where(status => HtmlCases.Fields(status).Status == "open").ToList();
         output.WriteLine($"{open.Count} open: {string.Join("; ", open)}");
         statuses.Where(status => !HtmlCases.Accepted.Contains(HtmlCases.Fields(status).Status))
-            .Should().BeEmpty("a case that lays out is laid out as Chromium prints it");
-        File.ReadAllLines(HtmlCases.StatusFile).Should().Equal(statuses, "the status of each case is the committed one");
+            .Should().BeEmpty("a file that lays out is laid out as Chromium prints it");
+        File.ReadAllLines(folder.StatusFile).Should().Equal(statuses, "the status of each file is the committed one");
     }
 
     [Fact]

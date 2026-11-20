@@ -78,14 +78,18 @@ public class MonolithicSliceTests
     public void A_sliced_image_is_drawn_whole_on_each_page_shifted_by_the_page_area_as_Chromium_draws_it(string caseName, int firstPage)
     {
         // Chromium starts the image on the page it starts (moved to a fresh page first after "intro") and draws it there
-        // and on each later page, one page-area height higher each time; the engine draws the same rectangles, clipped.
+        // and on each later page, one page-area height higher each time, under its clip to the page area, so each page
+        // shows the next part (the measured files hold what shows: 12–192, 12–192, then the last 48 pt). The engine draws
+        // the same rectangles, each clipped to its slice, and shows the same parts.
         var engine = Printed(Body(caseName));
         var chromium = PrintedPages.Chromium(caseName);
 
         var images = engine.Pages.SelectMany(page => page.Images).ToList();
         images.Should().Equal(chromium.Pages.SelectMany(page => page.Images));
         images.Select(box => box.Page).Should().Equal(firstPage + 1, firstPage + 2, firstPage + 3);
-        images.Select(box => box.Y0).Should().Equal(12, 12 - AreaHeight, 12 - 2 * AreaHeight);
+        images.Select(box => (box.Y0, box.Y1)).Should().Equal((12, 192), (12, 192), (12, 60));
+        Run(Doc(MonolithicOverflow.Slice, Body(caseName))).Value.Pages.SelectMany(page => page.Items.OfType<DrawImage>()).Select(image => image.Area.Origin.Y)
+            .Should().Equal(12, 12 - AreaHeight, 12 - 2 * AreaHeight);
     }
 
     [Theory]

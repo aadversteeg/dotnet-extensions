@@ -76,6 +76,12 @@ internal static class HtmlCases
         ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_is_refused",
         ["fr-header-pad-box-72"] = "The_same_on_a_page_where_Chromium_repeats_the_header_is_printed",
         ["tl-fixed-fill-wide-word"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
+        ["tf-pages"] = "A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page",
+        ["pm-family-unused"] = "A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face",
+        ["a4-image-in-cell"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
+        ["a4-row-image-row"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
+        ["a4-two-image-rows"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
+        ["a4-slice4-cell-row-after"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -87,7 +93,9 @@ internal static class HtmlCases
     /// <summary>The codes that are a refusal of the HTML path, by their exact code: what the CSS stage and the HTML
     /// front-end refuse to draw (<see cref="CssErrorCodes.Unsupported"/>, <see cref="HtmlStyleErrorCodes.Unsupported"/>),
     /// and content layout cannot place on any page (<see cref="LayoutErrorCodes.DoesNotFit"/>: it names the room it had
-    /// and the source line of the box, where Chromium prints the content past the page end). Any other error, also
+    /// and the source line of the box, where Chromium prints the content past the page end) or that is wider than its
+    /// page-margin box (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration,
+    /// where Chromium draws it over its box). Any other error, also
     /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
@@ -112,25 +120,36 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
+        LayoutErrorCodes.MarginBoxOverflow.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
     public static string Folder([CallerFilePath] string thisFile = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, "..", "..", "tools", "reference", "chromium", "cases"));
 
-    /// <summary>The committed status file: one line per case, <c>name status rest</c> (<see cref="Accepted"/>).</summary>
-    public static string StatusFile => Path.Combine(Folder(), "..", "html-status.txt");
+    /// <summary>The reference cases: <c>cases</c>, their measured files in <c>measured</c> and their status file
+    /// <c>html-status.txt</c>, beside the folder.</summary>
+    public static CaseFolder Cases { get; } = new(Folder(), Path.Combine(Folder(), "..", "measured"), Path.Combine(Folder(), "..", "html-status.txt"));
+
+    /// <summary>The whole documents (<c>tools/reference/chromium/documents</c>: the timesheets and the invoice), compared as
+    /// the cases are: their measured files in the folder's <c>measured</c>, their status file <c>html-status.txt</c> in the
+    /// folder.</summary>
+    public static CaseFolder Documents { get; } = new(
+        Path.Combine(Folder(), "..", "documents"), Path.Combine(Folder(), "..", "documents", "measured"), Path.Combine(Folder(), "..", "documents", "html-status.txt"));
+
+    /// <summary>The committed status file of the cases: one line per case, <c>name status rest</c> (<see cref="Accepted"/>).</summary>
+    public static string StatusFile => Cases.StatusFile;
 
     /// <summary>Every case, by name, in ordinal order.</summary>
-    public static IReadOnlyList<string> Names =>
-        [.. Directory.GetFiles(Folder(), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal)!];
+    public static IReadOnlyList<string> Names => Cases.Names;
 
     /// <summary>The family folder: what the cases' relative URLs may reach.</summary>
     private static string Family => Path.GetFullPath(Path.Combine(Folder(), "..", "..", "..", ".."));
 
     /// <summary>The measured files of a case, without their extension.</summary>
-    private static string Measured(string name) => Path.Combine(Folder(), "..", "measured", name);
+    private static string Measured(CaseFolder folder, string name) => Path.Combine(folder.Measured, name);
 
     /// <summary>A status line by its fields: the case's name, its status (the second field) and the rest.</summary>
     /// <param name="line">The line.</param>
@@ -154,17 +173,20 @@ internal static class HtmlCases
     }
 
     /// <summary>The parsed HTML of a case.</summary>
-    private static Result<HtmlParseResult, Error> Parsed(string name) =>
-        HtmlParser.Parse(File.ReadAllText(Path.Combine(Folder(), name + ".html")), new HtmlParseOptions(name + ".html"));
+    private static Result<HtmlParseResult, Error> Parsed(CaseFolder folder, string name) =>
+        HtmlParser.Parse(File.ReadAllText(Path.Combine(folder.Html, name + ".html")), new HtmlParseOptions(name + ".html"));
 
     /// <summary>The paper the reference tool prints on (Playwright's default for a PDF): US Letter, no margins.</summary>
     public static PageStyle Letter { get; } = new(Length.FromPoints(612), Length.FromPoints(792), default);
 
     /// <summary>The boxes of a case, on the reference tool's paper (<see cref="Letter"/>).</summary>
-    public static Result<HtmlBoxes, Error> Boxes(string name, UnsupportedPolicy policy = UnsupportedPolicy.Refuse)
+    public static Result<HtmlBoxes, Error> Boxes(string name, UnsupportedPolicy policy = UnsupportedPolicy.Refuse) => Boxes(Cases, name, policy);
+
+    /// <summary>The boxes of an HTML file of a folder, on the reference tool's paper (<see cref="Letter"/>).</summary>
+    public static Result<HtmlBoxes, Error> Boxes(CaseFolder folder, string name, UnsupportedPolicy policy = UnsupportedPolicy.Refuse)
     {
-        var baseUrl = new Uri(Path.Combine(Folder(), name + ".html")).AbsoluteUri;
-        return Parsed(name)
+        var baseUrl = new Uri(Path.GetFullPath(Path.Combine(folder.Html, name + ".html"))).AbsoluteUri;
+        return Parsed(folder, name)
             .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }))
             .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }));
     }
@@ -178,9 +200,16 @@ internal static class HtmlCases
     /// <param name="name">The case.</param>
     /// <param name="committed">The status the committed file gives the case (its second field), or null.</param>
     /// <returns>The status, without the name.</returns>
-    public static string Status(string name, string? committed = null)
+    public static string Status(string name, string? committed = null) => Status(Cases, name, committed);
+
+    /// <summary>The status of an HTML file of a folder, by the same rules as a case's (<see cref="Status(string, string?)"/>).</summary>
+    /// <param name="folder">The folder of the file, its measured files and its status file.</param>
+    /// <param name="name">The file, without its extension.</param>
+    /// <param name="committed">The status the folder's committed file gives it (its second field), or null.</param>
+    /// <returns>The status, without the name.</returns>
+    public static string Status(CaseFolder folder, string name, string? committed = null)
     {
-        var boxes = Boxes(name);
+        var boxes = Boxes(folder, name);
         if (boxes.IsFailure)
         {
             return Refusal(boxes.Error);
@@ -192,22 +221,22 @@ internal static class HtmlCases
             return Refusal(pages.Error);
         }
 
-        if (!File.Exists(Measured(name) + ".print.txt"))
+        if (!File.Exists(Measured(folder, name) + ".print.txt"))
         {
             return "failed no print of the case";
         }
 
         var engine = PrintedPages.Engine(pages.Value);
-        var clips = Clips(name);
-        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(name) + ".print.txt"));
+        var clips = Clips(folder, name);
+        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt"));
         var unused = clips.ToList();
         chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
-        var lines = Cut(Rows(name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
+        var lines = Cut(Rows(folder, name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
         var missed = unused.Count > 0 ? $"page {unused[0].Line.Page} the line clipped at y {Of(unused[0].Line.Y0)} is no rectangle of the print (ink.txt)" : null;
         var difference = missed ?? Difference(engine, chromium, LineTops(boxes.Value))
             ?? RectangleDifference(engine, chromium, lines)
-            ?? PopplerDifference(pages.Value, engine, Rows(name, "words"), LineTops(boxes.Value))
-            ?? BoxDifference(name, boxes.Value, Rows(name, "boxes"));
+            ?? PopplerDifference(pages.Value, engine, Rows(folder, name, "words"), LineTops(boxes.Value))
+            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"));
         return (difference, Listed.TryGetValue(name, out var listed)) switch
         {
             (null, false) => "equal",
@@ -224,9 +253,9 @@ internal static class HtmlCases
     /// line's rows between two gaps; <c>part</c>: a rectangle of its own, where a clip cuts only part of the line's height).
     /// Each clipped line with the pieces it leaves; none for a case without the file.
     /// </summary>
-    private static List<(PrintedBox Line, List<PrintedBox> Pieces)> Clips(string name)
+    private static List<(PrintedBox Line, List<PrintedBox> Pieces)> Clips(CaseFolder folder, string name)
     {
-        var path = Measured(name) + ".ink.txt";
+        var path = Measured(folder, name) + ".ink.txt";
         var clips = new List<(PrintedBox Line, List<PrintedBox> Pieces)>();
         foreach (var parts in File.Exists(path) ? File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ')) : [])
         {
@@ -300,8 +329,8 @@ internal static class HtmlCases
     }
 
     /// <summary>The non-empty lines of a measured file of a case, split at spaces.</summary>
-    private static List<string[]> Rows(string name, string kind) =>
-        [.. File.ReadAllLines($"{Measured(name)}.{kind}.txt").Where(line => line.Length > 0).Select(line => line.Split(' '))];
+    private static List<string[]> Rows(CaseFolder folder, string name, string kind) =>
+        [.. File.ReadAllLines($"{Measured(folder, name)}.{kind}.txt").Where(line => line.Length > 0).Select(line => line.Split(' '))];
 
     private static double Number(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
 
@@ -494,29 +523,74 @@ internal static class HtmlCases
 
     /// <summary>
     /// The first difference between the engine's boxes and the sizes measured in the page (<c>boxes.txt</c>: <c>tag width
-    /// height label</c>, the label the element's id where it has one): the height of the box of the element, within
-    /// <see cref="Bound"/>, unsnapped (Chromium's <c>getBoundingClientRect</c>). The width is not compared:
-    /// <c>measure.mjs</c> measures the boxes in the browser window (1280 px wide) with print media, not in the printed
-    /// page, so a block is as wide as the window (960 pt in <c>fr-empty-span</c>, whose page is 300 pt wide). The box is
-    /// found by its source line: the first box written on the line of the element, which must be the first element that
-    /// starts on that line (an element later on the line, a span inside it, has no box before the element's own). A table
-    /// cell (<c>td</c>, <c>th</c>; <c>measure.mjs</c> writes every cell, in document order, with its id or the start of its
-    /// text) is found by the same rule among the cells: the file's n-th cell is the document's n-th cell element, and its
-    /// box the cell box written on its line in the same place among the cells that start on that line (a cell often shares
-    /// its line with its row and the cells beside it); its height is compared on every page it is on, since a header row
-    /// is repeated whole and a cell cut by a page break is a difference. A box the file names without an id that is not a
-    /// cell, one whose element does not start its line, and one on more than one page are differences: the comparison
-    /// does not skip them.
+    /// height label</c>, the label the element's id where it has one): the height and the width of the box of the
+    /// element, each within <see cref="Bound"/>, unsnapped (Chromium's <c>getBoundingClientRect</c>). <c>measure.mjs</c>
+    /// measures the boxes with print media in a browser window as wide as the print's page area, the width of the clip
+    /// around each page's body rounded up to a whole pixel (README of <c>tools/reference/chromium</c>, "Box sizes"), so a
+    /// box is as wide as in the print, and a height that depends on the width, text that wraps, is the print's.
+    /// <para>What is compared with what. The window is one layout without page breaks, so the file holds one size per
+    /// element, the whole box (case <c>a2-row-end</c>: a cell of 22 lines, 330.75 pt, over two pages). A box the engine
+    /// prints in one part is compared on every page it is on: that part, and each copy of it in a header row a table
+    /// repeats (<see cref="BoxFragment.IsRepeated"/>), which is repeated whole. A box the engine cuts over pages has no
+    /// part of that height: each part ends where its page ends, with the room left empty above the break, and a table
+    /// repeats its header rows inside it. Its height and width are compared in the engine's layout of the same boxes
+    /// without breaks (<see cref="Unbroken"/>), and its copies in repeated header rows as above; its parts are what the print shows, and
+    /// <c>print.txt</c>, <c>lines.txt</c> and <c>words.txt</c> compare them.</para>
+    /// <para>How a box is found. A table cell (<c>td</c>, <c>th</c>; <c>measure.mjs</c> writes every cell, in document
+    /// order, with its id or the start of its text): the file's n-th cell is the document's n-th cell element, and its box
+    /// the cell box written on its line in the same place among the cells that start on that line (a cell often shares its
+    /// line with its row and the cells beside it). Another element, by its id (<see cref="IdBox"/>): by the same rule
+    /// among the elements of its kind on its line. A row the file names that is not one element of that tag, or whose box
+    /// the rule does not find on a page, is a difference: the comparison does not skip it.</para>
     /// </summary>
-    private static string? BoxDifference(string name, HtmlBoxes boxes, List<string[]> rows)
+    private static string? BoxDifference(CaseFolder folder, string name, HtmlBoxes boxes, List<string[]> rows) =>
+        BoxDifference(Parsed(folder, name).Value.Document, boxes, rows);
+
+    /// <summary>The first difference between the boxes of a case of a folder and the given rows of a <c>boxes.txt</c>
+    /// (<see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>), or null; the refusal where the case
+    /// has no boxes.</summary>
+    public static string? BoxDifference(CaseFolder folder, string name, IReadOnlyList<string> rows)
+    {
+        var boxes = Boxes(folder, name);
+        return boxes.IsFailure
+            ? Refusal(boxes.Error)
+            : BoxDifference(Parsed(folder, name).Value.Document, boxes.Value, [.. rows.Where(row => row.Length > 0).Select(row => row.Split(' '))]);
+    }
+
+    /// <summary>The first difference between the boxes of an HTML text, read as a file of the cases folder (its relative
+    /// URLs, <c>common.css</c> and the fonts, resolve there), and the given rows of a <c>boxes.txt</c>, or null; the
+    /// refusal where it has no boxes.</summary>
+    public static string? BoxDifference(string html, IReadOnlyList<string> rows)
+    {
+        var baseUrl = new Uri(Path.Combine(Folder(), "text.html")).AbsoluteUri;
+        var parsed = HtmlParser.Parse(html, new HtmlParseOptions("text.html"));
+        var boxes = parsed
+            .OnSuccessBind(document => HtmlStyleResolver.Resolve(document, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl }));
+        return boxes.IsFailure
+            ? Refusal(boxes.Error)
+            : BoxDifference(parsed.Value.Document, boxes.Value, [.. rows.Where(row => row.Length > 0).Select(row => row.Split(' '))]);
+    }
+
+    /// <summary>The measured <c>boxes.txt</c> of a case of a folder, line by line.</summary>
+    public static IReadOnlyList<string> BoxRows(CaseFolder folder, string name) => File.ReadAllLines(Measured(folder, name) + ".boxes.txt");
+
+    /// <summary>The first difference between the boxes of a document and the rows of its <c>boxes.txt</c>, by the rules of
+    /// <see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>, or null.</summary>
+    /// <param name="document">The parsed document.</param>
+    /// <param name="boxes">Its boxes.</param>
+    /// <param name="rows">The rows of the file, split at spaces.</param>
+    /// <returns>The difference, ending in <c>(boxes.txt)</c>, or null.</returns>
+    public static string? BoxDifference(HtmlDocument document, HtmlBoxes boxes, IReadOnlyList<string[]> rows)
     {
         if (rows.Count == 0)
         {
             return null;
         }
 
-        var elements = Elements(Parsed(name).Value.Document).ToList();
-        var pages = Paginator.Paginate(LayoutEnvironment.Create(boxes.Fonts), boxes.Document);
+        var elements = Elements(document).ToList();
+        var environment = LayoutEnvironment.Create(boxes.Fonts);
+        var pages = Paginator.Paginate(environment, boxes.Document);
         if (pages.IsFailure)
         {
             return $"the pages for the boxes failed: {pages.Error.Code} (boxes.txt)";
@@ -529,36 +603,15 @@ internal static class HtmlCases
             return $"{cellRows} cells, the document {cells.Count} (boxes.txt)";
         }
 
+        var unbroken = new Lazy<Result<ValueList<PageFragment>, Error>>(() => Paginator.Paginate(environment, Unbroken(boxes.Document)));
         var cellIndex = 0;
         foreach (var row in rows)
         {
             var label = row.Length > 3 ? string.Join(' ', row[3..]) : string.Empty;
-            if (row[0] is "td" or "th")
+            var (box, missing) = row[0] is "td" or "th" ? CellBox(boxes.Document.Root, cells, cells[cellIndex++], row, label) : IdBox(boxes.Document.Root, elements, row, label);
+            if ((missing ?? SizeDifference(box!, pages.Value, unbroken, row, label)) is { } different)
             {
-                if (CellDifference(boxes.Document.Root, pages.Value, cells, cells[cellIndex++], row, label) is { } different)
-                {
-                    return different + " (boxes.txt)";
-                }
-
-                continue;
-            }
-
-            var element = elements.Where(element => element.Attribute("id") == label).ToList();
-            if (element.Count != 1 || elements.First(other => other.Position.Line == element[0].Position.Line) != element[0])
-            {
-                return $"box {row[0]} '{label}' is not one element with that id that starts its line (boxes.txt)";
-            }
-
-            var line = element[0].Position.Line;
-            var fragments = pages.Value.Select(page => First(page.Root.Fragment, line)).Where(fragment => fragment is not null).ToList();
-            if (fragments.Count != 1)
-            {
-                return $"box '{label}' is on {fragments.Count} pages (boxes.txt)";
-            }
-
-            if (Far($"box '{label}'", "height", fragments[0]!.Size.Height, Number(row[2])) is { } found)
-            {
-                return found + " (boxes.txt)";
+                return different + " (boxes.txt)";
             }
         }
 
@@ -567,27 +620,148 @@ internal static class HtmlCases
 
     private static bool IsCell(HtmlElement element) => element.Namespace == ElementNamespace.Html && element.LocalName is "td" or "th";
 
-    /// <summary>The difference of one cell of <c>boxes.txt</c> (<see cref="BoxDifference"/>): the same tag and, where the
-    /// element has an id, the same label; the cell box in the same place among the cells written on the element's line,
-    /// on at least one page, of the measured height on each.</summary>
-    private static string? CellDifference(Box root, IReadOnlyList<PageFragment> pages, List<HtmlElement> cells, HtmlElement cell, string[] row, string label)
+    /// <summary>The cell box of one cell row of <c>boxes.txt</c> (<see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>):
+    /// the same tag and, where the element has an id, the same label; the cell box in the same place among the cells
+    /// written on the element's line. Else the difference.</summary>
+    private static (Box? Box, string? Difference) CellBox(Box root, List<HtmlElement> cells, HtmlElement cell, string[] row, string label)
     {
         var at = $"box {row[0]} '{label}'";
         if (cell.LocalName != row[0] || (cell.Attribute("id") is { } id && id != label))
         {
-            return $"{at} is the document's <{cell.LocalName}> '{cell.Attribute("id")}' at line {cell.Position.Line}";
+            return (null, $"{at} is the document's <{cell.LocalName}> '{cell.Attribute("id")}' at line {cell.Position.Line}");
         }
 
         var line = cell.Position.Line;
         var place = cells.Where(other => other.Position.Line == line).ToList().IndexOf(cell);
         var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role == SemanticRole.TableHeaderCell)).ElementAtOrDefault(place);
-        var fragments = box is null ? [] : pages.Select(page => Find(page.Root.Fragment, box.Id)).OfType<BoxFragment>().ToList();
-        if (fragments.Count == 0)
+        return box is null ? (null, $"{at} has no cell box on any page") : (box, null);
+    }
+
+    /// <summary>
+    /// The box of an element <c>boxes.txt</c> names by its id: the one element with that id, of the row's tag; the role
+    /// its tag gives its box (<see cref="RoleOf"/>: a <c>table</c> a table, a <c>p</c> a paragraph, a heading its level,
+    /// any other element a generic box); and its box found as a cell's is: in the same place among the boxes of that role
+    /// written on its line as the element among the elements of that role that start on the line (case <c>te-top</c>:
+    /// <c>&lt;div&gt;&lt;table id="t"&gt;</c> on one line, the table's box is the line's one table box, not the div's box
+    /// before it). A box carries its source line only, so where the line holds more or fewer boxes of the role than
+    /// elements (an element of the role that makes no box, an inline element, an anonymous box of a block written on the
+    /// line) the place is not known, and that is the difference. Else the difference.
+    /// </summary>
+    internal static (Box? Box, string? Difference) IdBox(Box root, IReadOnlyList<HtmlElement> elements, string[] row, string label)
+    {
+        var at = $"box {row[0]} '{label}'";
+        var named = elements.Where(element => element.Attribute("id") == label).ToList();
+        if (named.Count != 1 || named[0].LocalName != row[0])
         {
-            return $"{at} has no cell box on any page";
+            return (null, $"{at} is not one <{row[0]}> with that id");
         }
 
-        return fragments.Select(fragment => Far(at, "height", fragment.Size.Height, Number(row[2]))).FirstOrDefault(found => found is not null);
+        var (element, role) = (named[0], RoleOf(named[0]));
+        var line = element.Position.Line;
+        var peers = elements.Where(other => other.Position.Line == line && RoleOf(other) == role).ToList();
+        var candidates = Boxes(root).Where(box => box.Source.Line == line && box.Role == role).ToList();
+        return candidates.Count == peers.Count
+            ? (candidates[peers.IndexOf(element)], null)
+            : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role");
+    }
+
+    /// <summary>The role the HTML front-end gives the box of an element by its tag, for <see cref="IdBox"/>: a table, a
+    /// table cell, a paragraph, a heading, a row group or a row; any other element a generic box.</summary>
+    private static SemanticRole RoleOf(HtmlElement element) => element.Namespace != ElementNamespace.Html ? SemanticRole.Generic : element.LocalName switch
+    {
+        "table" => SemanticRole.Table,
+        "td" => SemanticRole.TableCell,
+        "th" => SemanticRole.TableHeaderCell,
+        "p" => SemanticRole.Paragraph,
+        ['h', >= '1' and <= '6'] name => SemanticRole.Heading(name[1] - '0'),
+        "thead" => SemanticRole.TableHead,
+        "tbody" or "tfoot" => SemanticRole.TableBody,
+        "tr" => SemanticRole.TableRow,
+        _ => SemanticRole.Generic,
+    };
+
+    /// <summary>
+    /// The size difference of one box, its height and then its width (<see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>): its
+    /// parts on the pages, a copy in a repeated header row not counted as a part. One part: that part and every copy.
+    /// More than one: the box in the layout without breaks (<see cref="Unbroken"/>), which must be one page, and every
+    /// copy. Else the difference.
+    /// </summary>
+    internal static string? SizeDifference(Box box, IReadOnlyList<PageFragment> pages, Lazy<Result<ValueList<PageFragment>, Error>> unbroken, string[] row, string label)
+    {
+        var at = $"box {row[0]} '{label}'";
+        var found = pages.Select(page => Part(page.Root.Fragment, box.Id)).Where(part => part is not null).Select(part => part!.Value).ToList();
+        if (found.Count == 0)
+        {
+            return $"{at} has no box on any page";
+        }
+
+        var copies = found.Where(part => part.Repeated).Select(part => part.Fragment).ToList();
+        var parts = found.Where(part => !part.Repeated).Select(part => part.Fragment).ToList();
+        if (parts.Count <= 1)
+        {
+            return parts.Concat(copies).Select(fragment => Sized(at, string.Empty, fragment, row)).FirstOrDefault(difference => difference is not null);
+        }
+
+        if (unbroken.Value.IsFailure)
+        {
+            return $"{at}: the layout without breaks failed: {unbroken.Value.Error.Code}";
+        }
+
+        if (unbroken.Value.Value.Count != 1)
+        {
+            return $"{at}: the layout without breaks has {unbroken.Value.Value.Count} pages";
+        }
+
+        if (Part(unbroken.Value.Value[0].Root.Fragment, box.Id) is not { } whole)
+        {
+            return $"{at} has no box in the layout without breaks";
+        }
+
+        return Sized(at, $" without breaks (in {parts.Count} parts)", whole.Fragment, row)
+            ?? copies.Select(fragment => Sized(at, string.Empty, fragment, row)).FirstOrDefault(difference => difference is not null);
+    }
+
+    /// <summary>The height of a fragment against the row's height, then its width against the row's width (<c>tag width
+    /// height label</c>), each within <see cref="Bound"/>; or null.</summary>
+    private static string? Sized(string at, string where, BoxFragment fragment, string[] row) =>
+        Far(at, "height" + where, fragment.Size.Height, Number(row[2])) ?? Far(at, "width" + where, fragment.Size.Width, Number(row[1]));
+
+    /// <summary>
+    /// The same boxes on one page tall enough that nothing in them breaks: the page as tall as the model allows
+    /// (<see cref="ModelLimits.MaxLength"/>, 14,400 pt; the longest document, <c>timesheet-pages</c>, is under 5,000 pt
+    /// laid out), as wide, with the same margins and the same templates. The window <c>boxes.txt</c> is measured in is such
+    /// a layout. That nothing broke is checked, not assumed: the layout must be one page
+    /// (<see cref="SizeDifference"/>); a break the document forces, which a window ignores, gives a second page and is
+    /// then the difference. The header and footer areas (the HTML front-end's rows of page-margin boxes) stay: no box of
+    /// <c>boxes.txt</c> is in them, and they take from the page area what they take on a printed first page, so the body
+    /// starts where it starts there and is as wide.
+    /// </summary>
+    internal static StyledDocument Unbroken(StyledDocument document) => document with { Page = document.Page with { Height = ModelLimits.MaxLength } };
+
+    /// <summary>The first fragment of a page of the box with the id, in document order, and whether it is inside a
+    /// repeated copy (<see cref="BoxFragment.IsRepeated"/>, set on the copy's row group, not on the boxes inside it); or
+    /// null.</summary>
+    private static (BoxFragment Fragment, bool Repeated)? Part(Fragment root, NodeId id)
+    {
+        var stack = new Stack<(Fragment Fragment, bool Repeated)>([(root, false)]);
+        while (stack.Count > 0)
+        {
+            var (fragment, repeated) = stack.Pop();
+            if (fragment is BoxFragment box)
+            {
+                if (box.Box.Id == id)
+                {
+                    return (box, repeated || box.IsRepeated);
+                }
+
+                foreach (var child in box.Children.Reverse())
+                {
+                    stack.Push((child.Fragment, repeated || box.IsRepeated));
+                }
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Every box of the model, in document order, with an explicit stack.</summary>
@@ -605,29 +779,6 @@ internal static class HtmlCases
         }
     }
 
-    /// <summary>The first fragment of a page of the box with the id, in document order, or null.</summary>
-    private static BoxFragment? Find(Fragment root, NodeId id)
-    {
-        var stack = new Stack<Fragment>([root]);
-        while (stack.Count > 0)
-        {
-            if (stack.Pop() is BoxFragment box)
-            {
-                if (box.Box.Id == id)
-                {
-                    return box;
-                }
-
-                foreach (var child in box.Children.Reverse())
-                {
-                    stack.Push(child.Fragment);
-                }
-            }
-        }
-
-        return null;
-    }
-
     /// <summary>Every element of a document, in document order, with an explicit stack (no recursion on input depth).</summary>
     private static IEnumerable<HtmlElement> Elements(HtmlDocument document)
     {
@@ -643,30 +794,6 @@ internal static class HtmlCases
                 }
             }
         }
-    }
-
-    /// <summary>The first box fragment in document order whose box was written on the line: the element's own box comes
-    /// before the anonymous boxes inside it, which carry the same line.</summary>
-    private static BoxFragment? First(Fragment root, int line)
-    {
-        var stack = new Stack<Fragment>([root]);
-        while (stack.Count > 0)
-        {
-            if (stack.Pop() is BoxFragment box)
-            {
-                if (box.Box.Source.Line == line)
-                {
-                    return box;
-                }
-
-                foreach (var child in box.Children.Reverse())
-                {
-                    stack.Push(child.Fragment);
-                }
-            }
-        }
-
-        return null;
     }
 
     /// <summary>The first image of a page whose edges after <see cref="WholePixel"/> are not within <see cref="Bound"/> of
@@ -721,7 +848,10 @@ internal static class HtmlCases
     private static double PaintedBaseline(double baseline, double? top) => top is { } lineTop ? WholePixel(lineTop) + (baseline - lineTop) : WholePixel(baseline);
 
     /// <summary>The top of the line each text of the engine's pages lies in, by page number and baseline (rounded to 1e-6
-    /// pt), from the fragments of the same layout: a line's offset, and a text's baseline its offset plus its ascent.</summary>
+    /// pt), from the fragments of the same layout: a line's offset, and a text's baseline its offset plus its ascent. The
+    /// lines of the page-margin boxes too: Chromium lays a margin box's margins and padding out in its unit of 1/64 px, as
+    /// in the body, and paints their lines by the same rule (cases <c>pm-len-sum</c>, <c>pm-len-margin</c>,
+    /// <c>pm-len-padding</c>, <c>pm-len-body</c>: 5pt + 5pt above a line puts its top at 13 px, not 14).</summary>
     private static Dictionary<(int Page, double Baseline), double> LineTops(HtmlBoxes boxes)
     {
         var tops = new Dictionary<(int Page, double Baseline), double>();
@@ -733,7 +863,14 @@ internal static class HtmlCases
 
         foreach (var (page, number) in pages.Value.Select((page, index) => (page, index + 1)))
         {
-            var pending = new Stack<(PlacedFragment Placed, double X, double Y, double? LineTop)>([(page.Root, 0, 0, null)]);
+            var pending = new Stack<(PlacedFragment Placed, double X, double Y, double? LineTop)>();
+            foreach (var area in new[] { page.Footer, page.Root, page.Header })
+            {
+                if (area is not null)
+                {
+                    pending.Push((area, 0, 0, null));
+                }
+            }
             while (pending.Count > 0)
             {
                 var (placed, x, y, lineTop) = pending.Pop();
@@ -814,4 +951,16 @@ internal static class HtmlCases
 
         return joined;
     }
+}
+
+/// <summary>A folder of HTML files compared with Chromium's prints of them (<see cref="HtmlCases.Status(CaseFolder, string, string?)"/>):
+/// the HTML files, the folder of their measured files and the committed status file, one line per file.</summary>
+/// <param name="Html">The folder of the HTML files.</param>
+/// <param name="Measured">The folder of the files measured for each (<c>&lt;name&gt;.print.txt</c> and the others).</param>
+/// <param name="StatusFile">The committed status file.</param>
+internal sealed record CaseFolder(string Html, string Measured, string StatusFile)
+{
+    /// <summary>Every HTML file of the folder, by name without its extension, in ordinal order.</summary>
+    public IReadOnlyList<string> Names =>
+        [.. Directory.GetFiles(Html, "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal)!];
 }

@@ -74,7 +74,7 @@ public class HtmlListedDifferenceTests
     {
         var (engine, chromium) = (Engine("h-page-a4-zero-right").Pages.Single(), Chromium("h-page-a4-zero-right").Pages.Single());
         (chromium.Width, engine.Width).Should().Be((594.96, 594.96));
-        chromium.Rectangles.Single().X1.Should().Be(595.5, "Chromium's page area is 794 px wide");
+        chromium.Rectangles.Single().X1.Should().Be(595.2, "Chromium draws it to 595.5, its page area 794 px wide, under a clip that ends at 595.2, past the sheet");
         engine.Rectangles.Single().X1.Should().BeApproximately(594.96, 1e-6, "the engine's ends at the sheet");
 
         LineEnds(Chromium("h-page-a4-zero-justify"))[0].Should().BeApproximately(595.5, 0.01);
@@ -152,6 +152,114 @@ public class HtmlListedDifferenceTests
         var lines = Lines(engine);
         (lines[2] - lines[1]).Should().BeApproximately(lines[3] - lines[2], 0.01, "the other two columns share what is left equally");
         engine.Words.Single(other => other.Text == word.Text).X0.Should().BeApproximately(word.X0, 0.01);
+    }
+
+    /// <summary>
+    /// A footer group that is at most a quarter of the page area and does not break inside (<c>break-inside: avoid</c>,
+    /// which the user-agent style sheet gives <c>tfoot</c>) is repeated by Chromium at the end of every page its table
+    /// is on, as it repeats a header group (CSS Tables 3, <c>#repeated-headers</c>; Chromium:
+    /// <c>TableLayoutAlgorithm::Layout</c>, the repeatable header and footer check). The document model's table has
+    /// no footer group, so the engine draws the footer's rows once, after the last body row. With
+    /// <c>break-inside: auto</c> on the footer group Chromium does not repeat it either (case <c>tf-pages-auto</c>), and
+    /// on one page both print the same (<c>tf-after</c>).
+    /// </summary>
+    [Fact]
+    public void A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page()
+    {
+        var (engine, chromium) = (Engine("tf-pages"), Chromium("tf-pages"));
+        static string[] Ends(PrintedPages pages) => [.. pages.Pages.Select(page => string.Join(" ", page.Words.Where(word => word.Text != "after").TakeLast(2).Select(word => word.Text)))];
+
+        chromium.Pages.Should().HaveCount(4);
+        Ends(chromium).Should().AllBe("total footer", "Chromium ends every page with the footer row");
+        Ends(engine)[..^1].Should().NotContain("total footer", "the engine draws the footer only after the last body row");
+        Ends(engine)[^1].Should().Be("total footer");
+        engine.Pages.SelectMany(page => page.Words).Count(word => word.Text == "total").Should().Be(1);
+    }
+
+    /// <summary>
+    /// A face of an <c>@font-face</c> family that only a page-margin box uses: Chromium has not loaded it when it prints
+    /// the margin boxes and prints that box's text in its fallback serif face, the engine draws the face (case
+    /// <c>pm-family-unused</c>: the body uses Lato Regular only, <c>@bottom-left</c> asks for Lato Bold; three prints of
+    /// the case were the same). Once the body uses the face too, Chromium prints it (case <c>pm-inherit-family</c>,
+    /// equal). With Chromium's word read as the engine's (face, end and baseline), the case is equal: the face is the
+    /// whole difference.
+    /// </summary>
+    [Fact]
+    public void A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face()
+    {
+        var (engine, chromium) = (Engine("pm-family-unused"), Chromium("pm-family-unused"));
+        var theirs = chromium.Pages.Single().Words.Single(word => word.Text == "Cc");
+        var mine = engine.Pages.Single().Words.Single(word => word.Text == "Cc");
+        (theirs.Face, mine.Face).Should().Be(("LiberationSerif-Bold", "Lato-Bold"));
+        chromium.Pages.Single().Words.Where(word => word.Text != "Cc").Should().OnlyContain(word => word.Face == "Lato-Regular");
+
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select(word => word == theirs ? word with { Face = mine.Face, X1 = mine.X1, Baseline = mine.Baseline } : word)],
+        })]);
+        HtmlCases.Difference(engine, read).Should().BeNull();
+    }
+
+    /// <summary>
+    /// What follows the row of an image sliced over pages in a table cell: Chromium lays the image out whole on the page
+    /// where it starts, ends the row on the next page as tall as the rest of the image, and starts what follows there:
+    /// in a row of two or more cells the next row, and after any table the content after it, below the row's end, or at
+    /// the top of the next page, drawn over the slices still to come. The engine starts what follows below the last
+    /// slice, so no text is drawn over an image (docs/architecture.md, "Known limits"). That place is the whole
+    /// difference: the engine's print with what follows the slice moved up to Chromium's place (from the engine's page
+    /// to Chromium's, by the difference of the first word's baseline) is Chromium's, compared as every case is
+    /// (<see cref="HtmlCases.Difference"/>). The engine draws a column's grid line as one rectangle down through the
+    /// next row; its part below the line that ends the sliced row moves with the row. Cases: a 408 pt image in the second
+    /// of two cells, then a row (<c>a4-image-in-cell</c>); in the last row of a one-column table, then a paragraph
+    /// (<c>a4-row-image-row</c>);
+    /// two such rows, then a paragraph (<c>a4-two-image-rows</c>); a 588 pt image in the second of two cells, then a row,
+    /// which Chromium draws over the third of four slices, a page before the engine's (<c>a4-slice4-cell-row-after</c>).
+    /// </summary>
+    /// <param name="name">The case.</param>
+    /// <param name="first">The first word after the sliced row.</param>
+    /// <param name="chromiumPage">The page Chromium draws it on.</param>
+    /// <param name="chromiumBaseline">Its baseline there, over the slice.</param>
+    /// <param name="enginePage">The page the engine draws it on.</param>
+    /// <param name="engineBaseline">Its baseline there, below the last slice.</param>
+    [Theory]
+    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.75)]
+    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.75)]
+    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.75)]
+    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 71.25)]
+    public void What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices(
+        string name, string first, int chromiumPage, double chromiumBaseline, int enginePage, double engineBaseline)
+    {
+        var (engine, chromium) = (Engine(name), Chromium(name));
+        var word = (PrintedPages pages, int page) => pages.Pages[page - 1].Words.First(candidate => candidate.Text == first);
+        var sliceEnd = (PrintedPages pages, int page) => pages.Pages[page - 1].Images.Max(image => image.Y1);
+
+        word(chromium, chromiumPage).Baseline.Should().Be(chromiumBaseline);
+        chromiumBaseline.Should().BeLessThan(sliceEnd(chromium, chromiumPage), "Chromium draws it over a slice");
+        word(engine, enginePage).Baseline.Should().Be(engineBaseline);
+        engineBaseline.Should().BeGreaterThan(sliceEnd(engine, enginePage), "the engine starts it below the last slice");
+        HtmlCases.Difference(engine, chromium).Should().NotBeNull();
+
+        // Every word below the last slice moves, and every rectangle below the line at the slice's bottom edge, which
+        // both draw (it ends the sliced row); a column's line that runs on through that edge is split there.
+        var from = sliceEnd(engine, enginePage);
+        var source = engine.Pages[enginePage - 1];
+        var cut = source.Rectangles.Where(line => Math.Abs(line.Y0 - from) < 0.01 && line.X1 - line.X0 > line.Height).Max(line => line.Y1);
+        var shift = engineBaseline - chromiumBaseline;
+        var stays = source.Rectangles.Where(item => item.Y0 < cut).Select(item => item with { Y1 = Math.Min(item.Y1, cut) });
+        var goes = source.Rectangles.Where(item => item.Y1 > cut).Select(item => item with { Page = chromiumPage, Y0 = Math.Max(item.Y0, cut) - shift, Y1 = item.Y1 - shift });
+        var moved = new PrintedPages([.. engine.Pages.Select(page =>
+        {
+            var words = page.Words.Where(item => page.Number != enginePage || item.Baseline <= from).ToList();
+            var rectangles = page.Number == enginePage ? [.. stays] : page.Rectangles.ToList();
+            if (page.Number == chromiumPage)
+            {
+                words.AddRange(source.Words.Where(item => item.Baseline > from).Select(item => item with { Page = chromiumPage, Baseline = item.Baseline - shift }));
+                rectangles.AddRange(goes);
+            }
+
+            return page with { Words = [.. words.OrderBy(item => item.Baseline).ThenBy(item => item.X0)], Rectangles = [.. rectangles] };
+        })]);
+        HtmlCases.Difference(moved, chromium).Should().BeNull("where what follows the sliced row starts is the whole difference");
     }
 
     /// <summary>Chromium's print with each word's text read through <paramref name="text"/>.</summary>

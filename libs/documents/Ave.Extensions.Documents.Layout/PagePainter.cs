@@ -23,13 +23,16 @@ public static class PagePainter
     /// <summary>
     /// A page: header area, body, footer area. The areas repeat on every page; in tagged PDF they are pagination
     /// artifacts (ISO 32000-1 §14.8.2.2.2: "running heads and folios"), so they are painted as artifacts, without
-    /// structure markers.
+    /// structure markers. The body is drawn under a clip to its area where the page has one
+    /// (<see cref="PageFragment.BodyClip"/>, <see cref="BodyClip.BodyArea"/>); the header and footer areas never are.
     /// </summary>
     private static Page PaintPage(PageFragment page) =>
         new(page.PageSize,
         [
             .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, page.PageSize.Width)) : [],
-            .. Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width),
+            .. page.BodyClip is { } body
+                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width))
+                : Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width),
             .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, page.PageSize.Width)) : [],
         ]);
 

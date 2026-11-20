@@ -4,4 +4,4 @@ word 1 264.708 290.244 21.750 12.000 edge #000000 Lato-Regular
 word 1 10.500 27.828 36.000 12.000 left #000000 Lato-Regular
 word 1 30.894 56.429 36.000 12.000 edge #000000 Lato-Regular
 word 1 10.500 23.034 50.250 12.000 fill #000000 Lato-Regular
-rect 1 10.500 38.250 290.250 52.500 #cccccc
+rect 1 10.500 38.250 289.922 52.500 #cccccc

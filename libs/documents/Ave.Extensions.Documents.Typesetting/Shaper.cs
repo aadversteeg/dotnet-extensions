@@ -62,11 +62,25 @@ public static class Shaper
     /// combined into <see cref="ErrorCodes.Aggregate"/>), or <see cref="DocumentErrorCodes.Input.Invalid.Text"/>
     /// for text that is not valid UTF-16.</returns>
     public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, double fontSize) =>
-        Shape(text, font, fontSize, shared: null);
+        Shape(text, font, ShapingSize.Exact(fontSize), shared: null);
 
-    /// <summary>As <see cref="Shape(string, TrueTypeFont, double)"/>, under <paramref name="shared"/> when it is given (the
+    /// <summary>
+    /// As <see cref="Shape(string, TrueTypeFont, double)"/>, with the font's own advances scaled at
+    /// <see cref="ShapingSize.Advances"/> and the positions (kerning, mark offsets, every other GPOS value) at
+    /// <see cref="ShapingSize.Positions"/>: a glyph's advance is its 'hmtx' advance at the one size plus what positioning
+    /// added to it at the other, and a mark is drawn on its base by the anchor difference at the positions' size. A mark
+    /// keeps no advance (HarfBuzz zeroes it). Measured against Chromium's print (<see cref="ShapingSize.FlooredToPixelFractions"/>).
+    /// </summary>
+    /// <param name="text">The text, already white-space collapsed.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="size">The two sizes, in points.</param>
+    /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
+    public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, ShapingSize size) =>
+        Shape(text, font, size, shared: null);
+
+    /// <summary>As <see cref="Shape(string, TrueTypeFont, ShapingSize)"/>, under <paramref name="shared"/> when it is given (the
     /// pieces of one paragraph, <see cref="LineShapingBudget"/>), else under a budget of the text's own.</summary>
-    internal static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, double fontSize, ShapingBudget? shared) =>
+    internal static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, ShapingSize size, ShapingBudget? shared) =>
         Characters(text).OnSuccessBind(characters =>
         {
             // Each piece is normalized for the font before its characters become glyphs (Unicode.Normalization), as
@@ -76,7 +90,7 @@ public static class Shaper
                 .TraverseAll(piece => Normalization.ForFont([.. characters.Skip(piece.Start).Take(piece.Length)], codePoint => font.GlyphFor(new Rune(codePoint)).HasValue)
                     .TraverseAll(normalized => InitialGlyph(normalized.Character, normalized.Text, font))
                     .OnSuccessMap(glyphs => (piece.Tag, Glyphs: glyphs.ToImmutableArray())))
-                .OnSuccessBind(shaped => ShapePieces([.. shaped], font, fontSize, shared));
+                .OnSuccessBind(shaped => ShapePieces([.. shaped], font, size, shared));
         });
 
     /// <summary>
@@ -97,10 +111,21 @@ public static class Shaper
     /// <param name="budget">The budget of the piece's paragraph, as the line breaker hands it to its <see cref="LineShaper"/>.</param>
     /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
     public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen, LineShapingBudget budget) =>
-        LinePiece(text, font, fontSize, showsHyphen, budget?.Shaping);
+        LinePiece(text, font, ShapingSize.Exact(fontSize), showsHyphen, budget?.Shaping);
 
-    private static Result<ValueList<ShapedGlyph>, Error> LinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen, ShapingBudget? shared) =>
-        Shape(text, font, fontSize, shared).OnSuccessMap(glyphs =>
+    /// <summary>As <see cref="ShapeLinePiece(string, TrueTypeFont, double, bool, LineShapingBudget)"/>, at the two sizes of
+    /// <see cref="Shape(string, TrueTypeFont, ShapingSize)"/>; the hyphen's advance is at <see cref="ShapingSize.Advances"/>.</summary>
+    /// <param name="text">The piece of text, already white-space collapsed.</param>
+    /// <param name="font">The run's font.</param>
+    /// <param name="size">The run's two sizes, in points.</param>
+    /// <param name="showsHyphen">True when the piece ends with a soft hyphen at which its line breaks.</param>
+    /// <param name="budget">The budget of the piece's paragraph.</param>
+    /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
+    public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, ShapingSize size, bool showsHyphen, LineShapingBudget budget) =>
+        LinePiece(text, font, size, showsHyphen, budget?.Shaping);
+
+    private static Result<ValueList<ShapedGlyph>, Error> LinePiece(string text, TrueTypeFont font, ShapingSize size, bool showsHyphen, ShapingBudget? shared) =>
+        Shape(text, font, size, shared).OnSuccessMap(glyphs =>
             showsHyphen && glyphs.Length > 0 && glyphs[^1].Text == SoftHyphen && glyphs[^1].BreakHyphen is { } hyphen
                 ? (ValueList<ShapedGlyph>)[.. glyphs.Take(glyphs.Length - 1), hyphen]
                 : [.. glyphs]);
@@ -158,25 +183,60 @@ public static class Shaper
     /// when it is given, else one made for the text. Once a limit is reached the later pieces stop at their first step,
     /// and the text gets the one error of that limit.</summary>
     private static Result<ImmutableArray<ShapedGlyph>, Error> ShapePieces(
-        ImmutableArray<(string Tag, ImmutableArray<GlyphItem> Glyphs)> shaping, TrueTypeFont font, double fontSize, ShapingBudget? shared)
+        ImmutableArray<(string Tag, ImmutableArray<GlyphItem> Glyphs)> shaping, TrueTypeFont font, ShapingSize size, ShapingBudget? shared)
     {
-        var hyphen = Hyphen(font, fontSize);
+        var hyphen = Hyphen(font, size);
         var budget = shared ?? new ShapingBudget(shaping.Sum(piece => piece.Glyphs.Length));
         var pieces = shaping.Select(piece => ShapeRun(piece.Glyphs, piece.Tag, font, budget)).ToList();
         return budget.Exceeded is { } limit
             ? Result<ImmutableArray<ShapedGlyph>, Error>.Failure(LimitReached(font, budget, limit))
-            : Result<ImmutableArray<ShapedGlyph>, Error>.Success([.. pieces.SelectMany(piece => piece!.Value).Select(glyph => new ShapedGlyph(
-                    glyph.Glyph,
-                    font.Metrics.ToPoints(glyph.XAdvance, fontSize),
-                    glyph.Text,
-                    font.Metrics.ToPoints(glyph.XOffset, fontSize),
-                    font.Metrics.ToPoints(glyph.YOffset, fontSize))
+            : Result<ImmutableArray<ShapedGlyph>, Error>.Success([.. pieces.SelectMany(piece => InPoints(piece!.Value, font, size)).Select(placed => new ShapedGlyph(
+                    placed.Glyph.Glyph,
+                    placed.Advance,
+                    placed.Glyph.Text,
+                    placed.XOffset,
+                    font.Metrics.ToPoints(placed.Glyph.YOffset, size.Positions))
                 {
-                    IsInvisible = glyph.IsDefaultIgnorable,
-                    IsLineBreak = glyph.IsLineBreak,
-                    BreakHyphen = glyph.Text == SoftHyphen ? hyphen : null,
-                    UnsafeToBreak = glyph.UnsafeToBreak,
+                    IsInvisible = placed.Glyph.IsDefaultIgnorable,
+                    IsLineBreak = placed.Glyph.IsLineBreak,
+                    BreakHyphen = placed.Glyph.Text == SoftHyphen ? hyphen : null,
+                    UnsafeToBreak = placed.Glyph.UnsafeToBreak,
                 })]);
+    }
+
+    /// <summary>
+    /// The advance and the horizontal offset of each glyph of one shaped run, in points. At one size, the design units
+    /// scaled to it. At two, or with advances in fixed point (<see cref="ShapingSize"/>): the 'hmtx' advance at
+    /// <see cref="ShapingSize.Advances"/> (<see cref="ShapingSize.AdvanceInPoints"/>) plus the
+    /// rest of the advance (kerning) at <see cref="ShapingSize.Positions"/>; a mark keeps its zero advance; a mark on a base
+    /// is drawn at the base's pen plus its anchor difference at <see cref="ShapingSize.Positions"/>, so the advances between
+    /// the two, which its offset holds in design units, are taken back at the sizes they were scaled at. As HarfBuzz in
+    /// Chromium: the advances are Skia's, the anchors and adjustments HarfBuzz's own at its scale.
+    /// </summary>
+    private static IEnumerable<(GlyphItem Glyph, double Advance, double XOffset)> InPoints(ImmutableArray<GlyphItem> glyphs, TrueTypeFont font, ShapingSize size)
+    {
+        var metrics = font.Metrics;
+        if (size.Positions == size.Advances && !size.FixedPointAdvances)
+        {
+            return glyphs.Select(glyph => (glyph, metrics.ToPoints(glyph.XAdvance, size.Advances), metrics.ToPoints(glyph.XOffset, size.Advances)));
+        }
+
+        // pens[i], units[i]: the pen before glyph i in points and in design units.
+        var pens = new double[glyphs.Length + 1];
+        var units = new long[glyphs.Length + 1];
+        var advances = new double[glyphs.Length];
+        for (var index = 0; index < glyphs.Length; index++)
+        {
+            var glyph = glyphs[index];
+            var own = glyph.IsDefaultIgnorable || glyph.Class == GlyphClass.Mark ? 0 : font.AdvanceWidth(glyph.Glyph);
+            advances[index] = size.AdvanceInPoints(own, metrics.UnitsPerEm) + metrics.ToPoints(glyph.XAdvance - own, size.Positions);
+            pens[index + 1] = pens[index] + advances[index];
+            units[index + 1] = units[index] + glyph.XAdvance;
+        }
+
+        return glyphs.Select((glyph, index) => (glyph, advances[index], glyph.Base is { } baseIndex
+            ? metrics.ToPoints(glyph.XOffset + (units[index] - units[baseIndex]), size.Positions) - (pens[index] - pens[baseIndex])
+            : metrics.ToPoints(glyph.XOffset, size.Positions)));
     }
 
     /// <summary>The soft hyphen U+00AD.</summary>
@@ -193,9 +253,9 @@ public static class Shaper
     /// Tagged PDF asks for exactly this: "such an incidental word division shall be represented by a soft hyphen
     /// character" (ISO 32000-1 §14.8.2.2.3, Hyphenation).
     /// </summary>
-    private static ShapedGlyph? Hyphen(TrueTypeFont font, double fontSize) =>
+    private static ShapedGlyph? Hyphen(TrueTypeFont font, ShapingSize size) =>
         HyphenCharacter(font) is { } character && font.GlyphFor(new Rune(character[0])) is { HasValue: true } glyph
-            ? new ShapedGlyph(glyph.Value, font.Metrics.ToPoints(font.AdvanceWidth(glyph.Value), fontSize), SoftHyphen)
+            ? new ShapedGlyph(glyph.Value, size.AdvanceInPoints(font.AdvanceWidth(glyph.Value), font.Metrics.UnitsPerEm), SoftHyphen)
             : null;
 
     /// <summary>The character whose glyph shows a hyphen at a soft hyphen (<see cref="Hyphen"/>): U+2010 HYPHEN when the

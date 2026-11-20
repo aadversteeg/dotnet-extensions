@@ -350,6 +350,7 @@ internal static class GlyphPositioning
                 XOffset = (int)(attachment.X + glyphs[attachment.BaseIndex].XOffset - (pens[index] - pens[attachment.BaseIndex])),
                 YOffset = attachment.Y + glyphs[attachment.BaseIndex].YOffset,
                 Attachment = null,
+                Base = attachment.BaseIndex,
             })];
     }
 

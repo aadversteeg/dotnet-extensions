@@ -142,7 +142,7 @@ public class TextCostTests(ITestOutputHelper output)
     {
         var budget = new ShapingBudget(text.Length);
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var shaped = Shaper.Shape(text, TestFonts.Regular, 12, budget);
+        var shaped = Shaper.Shape(text, TestFonts.Regular, ShapingSize.Exact(12), budget);
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         shaped.IsSuccess.Should().BeTrue(shaped.IsFailure ? shaped.Error.ToString() : string.Empty);
         return new Work(text.Length, 1, budget.Spent, bytes);

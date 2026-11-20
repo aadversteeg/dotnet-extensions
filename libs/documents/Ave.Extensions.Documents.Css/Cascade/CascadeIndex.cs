@@ -24,7 +24,18 @@ internal sealed record IndexedRule(ComplexSelector Selector, Specificity Specifi
 /// <summary>A <c>@page</c> rule with its origin, in order of appearance.</summary>
 /// <param name="Rule">The rule.</param>
 /// <param name="Origin">Its origin.</param>
-public sealed record CascadedPageRule(PageRule Rule, CascadeOrigin Origin);
+public sealed record CascadedPageRule(PageRule Rule, CascadeOrigin Origin)
+{
+    /// <summary>The name of the style sheet that holds the rule, for diagnostics.</summary>
+    public string SourceName { get; init; } = string.Empty;
+
+    /// <summary>The base URL of that style sheet, for the URLs in the rule (CSS Values 4 §4.5.1); null when the caller
+    /// gives none.</summary>
+    public string? BaseUrl { get; init; }
+
+    /// <summary>The cascade layer the rule is in; null for none.</summary>
+    internal LayerNode? Layer { get; init; }
+}
 
 /// <summary>
 /// The style sheets of one document made ready for the cascade (CSS Cascade 5 §6): every style rule whose
@@ -274,7 +285,7 @@ public sealed class CascadeIndex
                         FontFaces.Add(baseUrls is null ? fontFace : fontFace with { BaseUrl = baseUrls(current.Sheet) });
                         break;
                     case PageRule page:
-                        Pages.Add(new CascadedPageRule(page, current.Origin));
+                        Pages.Add(new CascadedPageRule(page, current.Origin) { SourceName = current.Sheet.SourceName, BaseUrl = baseUrls?.Invoke(current.Sheet), Layer = current.Layer });
                         break;
                 }
             }
