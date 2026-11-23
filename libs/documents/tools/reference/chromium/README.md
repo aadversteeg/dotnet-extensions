@@ -42,7 +42,7 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 - `<case>.boxes.txt`: width and height in points of every table cell, every element with an id and every grid item,
   laid out for print (1 CSS px = 0.75 pt);
 - `<case>.lines.txt`: every filled rectangle as `page x0 y0 x1 y1 height`, in points, origin top left
-  (`rectangles.py`, PyMuPDF): the pieces of the grid lines;
+  (`rectangles.py`, PyMuPDF): the pieces of the grid lines, each the part the print shows (see "Print positions");
 - `<case>.print.txt`: where the print put things, page by page, read from the PDF alone (`positions.py`, PyMuPDF; see
   "Print positions" below);
 - `<case>.ink.txt`, only for a print that has one: each underline or overline that Chromium cuts around the glyphs' ink
@@ -52,6 +52,8 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
   rectangle around one glyph's ink. A clip that cuts out a rectangle over only part of the line's height (the clip of an
   earlier line of the same text) is written as `gap page x0 x1 y0 y1`, and the line then as `part page x0 y0 x1 y1`, its
   visible rectangles, columns of equal rows joined; a clip that leaves out anything but one rectangle is written as `uneven`;
+  a clip that is one rectangle (the page area's) cuts no gap: the line is written as the part inside it, as `print.txt`
+  holds it;
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
@@ -82,7 +84,12 @@ A word is a run of characters without white space on one baseline. Its extent is
 first character to the origin of its last plus that character's advance), and its height is its baseline, so neither
 depends on the ascent and descent a PDF reader assumes for a font, as a bounding box does. `rect` is a filled rectangle
 (a background, a border, a grid line, or a marker box a case draws on purpose to show where a box is); `image` is the
-area an image is drawn into, which reaches past the page when the page shows only a slice of it. A colour is
+area an image is drawn into. A `rect`, `stroke` or `image` line is the part the print shows: the PDF draws each of
+them under the clips open around it, and Chromium opens one clip per page around the page's body (the page area, less
+the areas of the page-margin boxes, which it draws before it, outside any clip), yet draws what passes that clip all the
+same (a grid line past the page end, a cell's or an image's slice drawn again offset up by the page area's height). So
+each is cut to the rectangle its clips leave, and one that lies wholly outside it is not written (`visible.py`; `lines.txt`
+the same). Words are written whole. A colour is
 `#rrggbb`, with the opacity as a fourth byte (`#rrggbbaa`) where it is not 1. The face is the PostScript name of the
 font a word is drawn with, without the subset tag (`ABCDEF+`) of the PDF: it names the font file, and with it the
 weight and the style (synthetic bold or italic would not show). A `stroke` line is one of the four bands a stroked
@@ -129,9 +136,10 @@ from them:
 pwsh -NoProfile -File measure.ps1 -CaseFolder documents
 ```
 
-and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`. The timesheets' prints have an
-`ink.txt` too: Chromium clips the right end of the table's grey lines at x 567.105, 0.105 pt into the right border, and
-`ink.py` reads such a clip as it reads a decoration line cut around ink.
+and then `out/*.txt` of those documents (and `versions.txt`) over `documents/measured/`. In the timesheets Chromium
+clips the right end of the table's grey lines at x 567.105, 0.105 pt into the right border: the page area's own width
+from its start rounded to a whole pixel, where layout rounds the width up. `print.txt` and `lines.txt` hold those lines
+cut there (see "Print positions").
 
 The HTML front-end reads the documents as it reads the cases, with the same comparison (`CaseStatusTests`,
 `UnitTests.Extensions.Documents.Html`): one status line per document in `documents/html-status.txt`, in the form of
@@ -216,8 +224,9 @@ under `third_party/blink/renderer/`):
 
 ## Where Chromium is not exact
 
-At some font sizes Chromium's text is narrower than the font's advances, and the engine deliberately does not follow it.
-Before the advances are computed, the font size is rounded twice:
+At some font sizes Chromium's text is narrower than the font's advances. The engine follows it only under the layout
+policy `FontSizeRounding.FlooredToPixelFractions` (`Typesetting/ShapingSize.cs`), which the HTML front-end sets; by
+default it keeps the font's advances. Before the advances are computed, the font size is rounded twice:
 
 1. Blink floors the font size to 1/100 px: `third_party/blink/renderer/platform/fonts/font_description.cc:263–274`
    (`FontDescription::EffectiveFontSize`, precision multiplier 100 in `font_cache_key.h:54`);
@@ -227,7 +236,20 @@ Before the advances are computed, the font size is rounded twice:
    `platform/fonts/web_font_typeface_factory.cc`).
 
 At 10 pt (13.333 px) the advances are therefore computed for 13.33 px truncated to 853/64 = 13.328125 px: every advance
-is 0.039 % (a factor of 0.99960938) smaller. At 9 pt (12 px), 10.5 pt (14 px) and 12 pt (16 px) nothing is rounded.
+is 0.039 % (a factor of 0.99960938) smaller. The first size, 13.33 px, is the size of the font itself: the size in the PDF
+(`Tf`; `print.txt` gives 7.995 pt for 8 pt) and HarfBuzz's scale (`shaping/harfbuzz_face.cc`,
+`HarfBuzzFace::GetScaledFont`), so kerning and the place of a mark on its base are at it; only the font's own advances
+are at the second. Both are computed in single precision (8.4 px is the float 8.3999996 and floors to 8.39 px). Nothing
+is rounded per glyph, word or space: Skia writes a `Td` for every glyph, at the positions HarfBuzz gave (an "i" at 8 pt
+advances 2.5575256 px = 480 × 10.65625 / 2000). Measured: `ta-sizes` (one line at 8, 9, 10, 10.5, 11, 12 and 13 pt: the
+line is narrower by the ratio of the second size to the font size, constant along the line, 0.27 pt over 276 pt at
+8 pt), `ta-px` (10.667px and 10.66px print as 8 pt; 10.65625px, already a multiple of 1/64 px, prints at 10.65 px and
+advances at 10.640625 px), `ta-right` (right-aligned: the start of the line moves), `ta-kerning-scale` (the kerning of
+30 "AV" pairs is that of 10.5 pt scaled to the first size within 0.0002 pt, not to the second), `ta-marks` (combining
+marks on bases without a precomposed form at 8 pt, 10.65625px and 12 pt: x + U+0301 is drawn 4.7810059 px from x's
+origin, 897 units at 10.66 px, not 4.7793 at 10.65625 px). Under the
+policy every word of these cases is within 0.01 pt of Chromium's (`TextAdvanceTests`). `ta-kerning` and
+`ta-kerning-scale` are refused for `font-kerning: none`. At 9 pt (12 px), 10.5 pt (14 px) and 12 pt (16 px) nothing is rounded.
 Measured in the container (case `font-sizes`, widths in px; the text is "n", advance 1116 of 2000 units, no kerning):
 
 | Font size | 10 × "n": font's advances → Chromium | 100 × "n": font's advances → Chromium |
@@ -241,7 +263,22 @@ Measured in the container (case `font-sizes`, widths in px; the text is "n", adv
 At 12 pt the 100-glyph run is one layout unit under the ceiled value. skrifa holds its scale (pixels per em × 64 /
 units per em) as a 16.16 fixed-point number: at 16 px, 1024/2000 = 0.512 becomes 33554/65536, 0.0013 % small, and 100
 advances come to 892.7885 px instead of 892.8, which ceils to 892.796875. That stays within the one layout unit of the
-ceil; at 10.5 pt the same effect is smaller (0.00044 %) and does not show in these runs.
+ceil; at 10.5 pt the same effect is smaller (0.00044 %) and does not show in these runs. Each advance is that scale
+times the units, rounded to 1/65536 px (skrifa `src/metrics.rs`, `FixedScaleFactor::apply`, `Fixed::mul_div`): the "i"
+at 8 pt is 167610/65536 = 2.5575256 px, at 12 px 2.8800201 px, as the PDF's `Td` values show. The policy scales the
+advances so (`ShapingSize.AdvanceInPoints`). It decides a layout unit where a width lies near one: in `ta-right` the
+8 pt line is 23691.83 layout units with exact advances and starts one unit later than Chromium's, the 11 pt line
+32585.01 and starts one earlier; with the fixed-point advances all three lines start where Chromium's do.
+
+Chromium also rounds the width of every text item up to a layout unit (`ShapeResult::SnappedWidth`, "The comparison
+rule"): an item is a run of text between two element boundaries, so a line of many inline elements gains up to one
+layout unit per element. The engine follows it under the layout policy `LengthRounding.SixtyFourthPixels`, which the
+HTML front-end sets: the width of each run's part on a line (`LineSegment.Width`) is rounded up, for where the next
+part starts, for aligning the line and for whether it fits. Measured: `ta-items` (30 inline elements of two one-letter
+words at 8 and 10.5 pt): every word within 0.0005 pt of the item widths rounded up; unrounded the last word starts
+0.176 pt (8 pt) and 0.119 pt (10.5 pt) early, rounded per word 0.266 pt late. `ta-items-right` (the same line
+right-aligned: the start moves by the sum of the steps) and `ta-items-fit` (a block, narrowed by its right margin,
+wider than the unrounded widths and narrower than the rounded ones: the last word wraps at both sizes).
 
 How large the effect is follows from the two steps: the pixels per em lose less than 0.01 px (the floor to 1/100 px)
 plus less than 1/64 px (the truncation), so less than 0.0256 px in all. Relative to the font size that is 0.039 % at
@@ -323,6 +360,7 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `tf-*` | footer groups (`tfoot`) through the HTML front-end (Lato 10.5 pt, collapsed borders): after the body, before it in the source, with a header group, two footer groups (the first is drawn last, the second in its place), an empty one, the invoice's shape (a 1.5 pt top border on the footer row, grey bottom borders); a table that breaks over four pages (page area 276 × 150 pt), where Chromium repeats the footer at the end of every page (`tf-pages`, listed), and the same with `break-inside: auto` on the footer, which Chromium does not repeat (`tf-pages-auto`) | `CaseStatusTests`, `HtmlListedDifferenceTests` (`UnitTests.Extensions.Documents.Html`) |
 | `tp-*` | percent columns (`col` of `width: <percentage>`) under `table-layout: fixed`, collapsed borders, through the HTML front-end (page area 276 pt, 368 px; Lato 10.5 pt): percentages that sum to 100 (the timesheet's 14.29, 17.14, 57.14, 11.43), to 50 and to 130 (scaled to fill the table), 33.3 / 33.3 / 33.4; beside a column without a width (keeps its percentage, the other takes the rest) and beside a 60 pt column (Chromium widens the length column to what the percentages leave: refused); a `col` of span 2 and a `colgroup` of span 2 at 25 % (each column 25 %; the column group's width is refused); a 3 pt table border (the percentages are of the width less the outer half borders); a table of width 240 pt (the same rule; refused for the table width). Read from the grid lines in `lines.txt` | `CaseStatusTests` (`UnitTests.Extensions.Documents.Html`) |
 | `mf4-line-*` | 3 pt lines (4 px, not snapped), Lato 12 pt, no padding; the page area ends at the centre of row 8's bottom line plus 0, 0.75, 1.5 or 2.25 pt | `TableBreakLineTests.A_row_that_fits_down_to_its_bottom_line_s_centre_stays_and_the_line_is_split_like_Chromium` |
+| `ta-*` | text at font sizes that are not a whole number of CSS pixels (Lato, one line per size, `white-space: nowrap`, page 612 × 432 pt): seven sizes in points (`ta-sizes`), sizes given in pixels (`ta-px`), right-aligned (`ta-right`), `letter-spacing: 0` and `font-kerning: none` (`ta-kerning`), the kerning of 30 "AV" pairs with and without `font-kerning: none` (`ta-kerning-scale`), combining marks (`ta-marks`), 30 inline elements per line: left-aligned, right-aligned and in a block that fits only the unrounded widths (`ta-items`, `ta-items-right`, `ta-items-fit`). Chromium shapes at the font size floored to 1/100 px and advances at that size truncated to 1/64 px ("Where Chromium is not exact") | `ShapingSizeTests`, `TextItemWidthTests` (`UnitTests.Extensions.Documents.Typesetting`), `TextAdvanceTests`; one status line each in `html-status.txt` (`CaseStatusTests`) |
 | `te-*` | the table's outer border where the lines along one edge differ (Lato 10.5 pt, two fixed columns in 200 pt, 1.5 pt lines, one 6 pt border in red): a wider left or right border in the first or in a later row (`te-left-first`, `te-left-later`, `te-right-first`, `te-right-later`, which also has a wider line between two columns), a wider top border over one cell of the first row (`te-top`), a wider bottom border under one cell of the last row (`te-bottom`), a 3 pt and a 0.75 pt border on the table itself (`te-table-border`), a wider left border on the second page (`te-break`). Chromium centres every row's outer line half of the widest line at that edge inside the table, on every page, and insets each cell by half of its own line; the wider line is painted inside the table's border box | `CollapsedCellInsetTests`; one status line each in `html-status.txt` (`CaseStatusTests`) |
 | `tj-*` | the corners where the grid lines of a collapsed table meet (Lato 10.5 pt, fixed columns in 200 pt, solid lines of 0.75 to 4.5 pt in several colours): each side of every cell in its own colour (`tj-same-cell`); equal lines of different cells at a corner, the cell above right against the one below left and the left against the right (`tj-order`); a table's line against a cell's of the same width (`tj-cell-table`); a wider line at each of the four outer corners (`tj-outer`); four lines of four widths at two inner corners (`tj-four`); wide left lines in later rows and the right edge (`tj-right-edge`); wider outer side lines where a wider line elsewhere sets the top and bottom border (`tj-top-edge`); the half lines at a page break, 3 pt and 1.5 pt, with coloured lines below them (`tj-break`). Chromium gives each corner to the edge that wins there (wider, then cell over row over row group over table, then the earlier box in the table) and to every edge of that box as wide as it; the others stop at the corner. At a page break the vertical lines end and start at the line's centre | `CollapsedJointTests`; one status line each in `html-status.txt` (`CaseStatusTests`) |
 

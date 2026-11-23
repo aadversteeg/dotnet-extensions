@@ -19,6 +19,17 @@ public sealed record PageStyle(Length Width, Length Height, Edges Margins)
     /// when page 1 uses <see cref="Template"/>.</summary>
     public PageTemplate? FirstPage { get; init; }
 
+    /// <summary>
+    /// How much smaller than the body's area the clip of <see cref="BodyClip.BodyArea"/> is: <see cref="Size.Width"/> at
+    /// its right edge, <see cref="Size.Height"/> at its bottom edge; none by default. A front-end that lays the page area
+    /// out larger than the page area it clips to sets it: Chromium 159 lays a page out in a page area rounded up to whole
+    /// CSS pixels and clips the body to the page area's own size from the same start (measured, <c>tools/reference/chromium</c>:
+    /// 10 pt margins on a 300 pt page, case <c>mf4-line-0</c>, lay out 280.5 pt from 9.75 pt and clip at 289.758, which is
+    /// 280 pt; 20 pt margins, <c>b2-split-row</c>, clip at 280.266 and 180.270 where the area ends at 280.5 and 180.75;
+    /// 1 cm on A4, the timesheets, at 567.105). Each part is finite, 0 or more and at most the page area's side.
+    /// </summary>
+    public Size BodyClipInset { get; init; }
+
     /// <summary>The width of the page area: width minus left and right margin.</summary>
     public Length AreaWidth => Width - Margins.Horizontal;
 

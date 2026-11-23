@@ -16,11 +16,15 @@
 #   part <page> <x0> <y0> <x1> <y1>      a visible rectangle of a line cut by such a clip
 #
 # A clip that leaves out anything other than one rectangle is written as "uneven <page> <x0> <y0> <x1> <y1>" with the
-# clip's box; a curve in a clip as "curve <page>". Writes nothing for a print without such clips. Run by extract.sh in the
+# clip's box; a curve in a clip as "curve <page>". Writes nothing for a print without such clips. A clip that is one
+# rectangle (Chromium's clip of a page's body to the page area) cuts no gap: the line is read, and written here, as the
+# part inside it (visible.py), as positions.py and rectangles.py write it. Run by extract.sh in the
 # reference tools image: python3 ink.py <file.pdf>
 import sys
 
 import pymupdf
+
+import visible
 
 EPSILON = 1e-3
 
@@ -125,18 +129,27 @@ def parts(page_number, fill, holes):
     return [f"part {page_number} {left:.3f} {top:.3f} {right:.3f} {bottom:.3f}" for left, right, rows in columns for top, bottom in rows]
 
 
+def rectangle_only(clip):
+    """Whether a clip is one rectangle: it leaves out all but that rectangle, which visible.py reads, and no hole."""
+    return len(clip["items"]) == 1 and clip["items"][0][0] == "re"
+
+
 def main(path):
     for page_number, page in enumerate(pymupdf.open(path), start=1):
         clips = []
+        shown = iter(visible.drawings(page))
         for drawing in page.get_drawings(extended=True):
             level = drawing.get("level", 0)
             if drawing["type"] == "clip":
                 clips = [clip for clip in clips if clip["level"] < level] + [drawing]
                 continue
-            if drawing["type"] == "group" or drawing.get("fill") is None:
+            if drawing["type"] == "group":
                 continue
-            fill = drawing["rect"]
-            active = [clip for clip in clips if clip["level"] < level and clip.get("even_odd")]
+            _, around = next(shown)
+            if drawing.get("fill") is None or (part := visible.cut(tuple(drawing["rect"]), around)) is None:
+                continue
+            fill = pymupdf.Rect(part)
+            active = [clip for clip in clips if clip["level"] < level and clip.get("even_odd") and not rectangle_only(clip)]
             gaps, rows, holes = [], [], []
             for clip in active:
                 result = cut(clip, fill)

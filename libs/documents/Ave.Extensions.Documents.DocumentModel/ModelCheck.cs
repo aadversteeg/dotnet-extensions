@@ -29,7 +29,8 @@ public static class ModelCheck
 
     /// <summary>The page: a positive width and height of at most <see cref="ModelLimits.MaxLength"/>, margins finite, not
     /// negative and at most that long, header and footer heights positive and at most that long, and how far each starts
-    /// in the page margin (<see cref="PageArea.StartInMargin"/>) not negative and at most the left margin.</summary>
+    /// in the page margin (<see cref="PageArea.StartInMargin"/>) not negative and at most the left margin, the body clip's
+    /// inset (<see cref="PageStyle.BodyClipInset"/>) 0 or more and at most the page area's sides.</summary>
     private static Error? Page(PageStyle page)
     {
         if (!(IsPositiveAndBounded(page.Width) && IsPositiveAndBounded(page.Height)))
@@ -40,6 +41,13 @@ public static class ModelCheck
         if (Sides(page.Margins, "margin", null, DocumentErrorCodes.Input.Invalid.Length) is { } margin)
         {
             return margin;
+        }
+
+        var inset = page.BodyClipInset;
+        if (!(inset.Width >= 0 && inset.Height >= 0 && inset.Width <= page.AreaWidth.Points && inset.Height <= page.AreaHeight.Points))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.Length, "The body clip's inset must be 0 or more and at most the page area's width and height.",
+                inset.ToString(), "body-clip-inset", null);
         }
 
         foreach (var area in new[] { page.Template.Header, page.Template.Footer, page.FirstPage?.Header, page.FirstPage?.Footer })

@@ -1,4 +1,4 @@
 invoice equal
-timesheet-normal open page 1 'Periode:' x0 397.069, Chromium 397.184 (print.txt)
-timesheet-one-page open page 1 'spaces,' x1 225.47, Chromium 225.356 (print.txt)
-timesheet-pages open page 1 'Periode:' x0 397.069, Chromium 397.184 (print.txt)
+timesheet-normal equal
+timesheet-one-page equal
+timesheet-pages open box td '2026-09-01' height 39, Chromium 29.25 (boxes.txt)

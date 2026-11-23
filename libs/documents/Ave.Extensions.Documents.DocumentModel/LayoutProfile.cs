@@ -10,7 +10,8 @@ namespace Ave.Extensions.Documents.DocumentModel;
 public sealed record LayoutProfile
 {
     /// <summary>The code front-end's policies: <see cref="MonolithicOverflow.Refuse"/>, <see cref="EmptyRowParts.Avoid"/>,
-    /// <see cref="FontMetricRounding.Exact"/>, <see cref="SplitLineHalves.Exact"/> and <see cref="TableEndOverflow.EndsOnPage"/>.</summary>
+    /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
+    /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/> and <see cref="BodyClip.None"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -23,6 +24,14 @@ public sealed record LayoutProfile
     /// rounds them (<see cref="DocumentModel.FontMetricRounding"/>).</summary>
     public FontMetricRounding FontMetricRounding { get; init; } = FontMetricRounding.Exact;
 
+    /// <summary>Whether text is shaped at its font size as it is given or at the two rounded sizes Chromium shapes with
+    /// (<see cref="DocumentModel.FontSizeRounding"/>).</summary>
+    public FontSizeRounding FontSizeRounding { get; init; } = FontSizeRounding.Exact;
+
+    /// <summary>Whether lengths are kept as they are or put on Chromium's layout unit of 1/64 CSS pixel where Chromium
+    /// puts them there (<see cref="DocumentModel.LengthRounding"/>).</summary>
+    public LengthRounding LengthRounding { get; init; } = LengthRounding.Exact;
+
     /// <summary>How thick the half of a grid line is drawn where a page break between table rows splits the line
     /// (<see cref="DocumentModel.SplitLineHalves"/>).</summary>
     public SplitLineHalves SplitLineHalves { get; init; } = SplitLineHalves.Exact;
@@ -30,6 +39,33 @@ public sealed record LayoutProfile
     /// <summary>Where the part of a table that passes the page end below a row placed whole goes: it ends on the page, or it
     /// continues on the next page and takes its height there (<see cref="DocumentModel.TableEndOverflow"/>).</summary>
     public TableEndOverflow TableEndOverflow { get; init; } = TableEndOverflow.EndsOnPage;
+
+    /// <summary>Whether what a page's body draws past the body's area shows (<see cref="DocumentModel.BodyClip"/>).</summary>
+    public BodyClip BodyClip { get; init; } = BodyClip.None;
+}
+
+/// <summary>
+/// Whether each page clips its body to the body's area: the page area less the header and footer areas. (The HTML
+/// front-end lays out the top and bottom page-margin boxes as the header and footer areas of a page without top and
+/// bottom margins, so there the body's area is the CSS page area.) Layout places the body inside that area; what passes
+/// its edge is drawn all the same, such as the grid line below a table row placed whole at the top of a page
+/// (<see cref="TableEndOverflow"/>). The header and footer areas are never clipped.
+/// </summary>
+public enum BodyClip
+{
+    /// <summary>Nothing is clipped: what the body draws past its area shows on the page.</summary>
+    None,
+
+    /// <summary>
+    /// The body is drawn under a clip to its area, as Chromium prints it: what passes the area does not show. Measured
+    /// against Chromium's print (<c>tools/reference/chromium</c>, read back by <c>visible.py</c>): every page's body is drawn
+    /// under one rectangle clip, the page area (cases <c>a2-row-end-after</c>, <c>a2-row-end-6pt-part-after</c>,
+    /// <c>a4-image-in-cell</c>, <c>a4-header-tall-line</c>, <c>fr-positions</c>), and with page-margin boxes the page
+    /// area too, while the margin boxes are drawn before it, outside any clip, and show where they pass into the page area
+    /// (<c>pm-tall-over</c>). Fills, images and text are all under it. The pages, the text and the structure are those of
+    /// <see cref="None"/>; only what shows of a drawing that passes the area changes.
+    /// </summary>
+    BodyArea,
 }
 
 /// <summary>
@@ -84,6 +120,69 @@ public enum SplitLineHalves
     /// from the half's top edge covers the same pixel as Chromium's once both edges are put on whole pixels.
     /// </summary>
     AtLeastOnePixel,
+}
+
+/// <summary>
+/// The font size text is shaped at: the glyphs' advances, the kerning between them and the place of a mark on its base.
+/// The font is drawn at its size under either value; where an advance differs from the font's own width at that size,
+/// the back-ends place each glyph where layout put it (the PDF with a TJ adjustment, ISO 32000-1 §9.4.3, as it places
+/// kerned glyphs). A pixel here is the CSS pixel: 1/96 inch, 0.75 pt (CSS Values 4 §6.2).
+/// </summary>
+public enum FontSizeRounding
+{
+    /// <summary>Everything at the font size as it is given.</summary>
+    Exact,
+
+    /// <summary>
+    /// The font size in pixels floored to 1/100 px for kerning and every other positioning value, and that size truncated
+    /// to 1/64 px for the glyphs' own advances, in single precision, as Chromium prints text: Blink rounds a font's size
+    /// down to its font cache's precision (<c>platform/fonts/font_description.cc</c>,
+    /// <c>FontDescription::EffectiveFontSize</c>), and the font library under Skia scales the advances with the pixels per
+    /// em truncated to 1/64 px (skrifa <c>src/instance.rs</c>, <c>Size::fixed_linear_scale</c>). Nothing is rounded per glyph,
+    /// word or space, so the text is narrower by a constant share along the line: 0.098 % at 8 pt (10.66 px and
+    /// 10.65625 px), 0.039 % at 10 pt, 0.071 % at 11 pt, 0.030 % at 13 pt; none at 9, 10.5 and 12 pt. Measured against
+    /// Chromium's print (<c>tools/reference/chromium</c>): every word within 0.01 pt in cases <c>ta-sizes</c> (seven sizes),
+    /// <c>ta-px</c> (sizes given in px, 10.65625 px floored to 10.65), <c>ta-right</c> (right-aligned: the start of the line
+    /// moves), <c>ta-kerning-scale</c> (kerning at the floored size) and <c>ta-marks</c> (combining marks at the floored
+    /// size). The advances are scaled in 16.16 fixed point as the font library scales them (case <c>ta-right</c>: which
+    /// layout unit a line's width rounds up to). What the policy does not cover: the font is drawn at its size, where
+    /// Chromium draws it at the floored size (7.995 pt for 8 pt); and the width of each text item, which Chromium rounds up
+    /// to its layout unit of 1/64 px: that is
+    /// <see cref="LengthRounding.SixtyFourthPixels"/>, a policy of its own (case <c>sk-size</c> needs both: an underline's
+    /// gap edge 0.011 pt early and one pixel more painted under this policy alone).
+    /// </summary>
+    FlooredToPixelFractions,
+}
+
+/// <summary>
+/// Whether layout keeps its lengths as they are or puts some of them on Chromium's length step: Blink's layout unit,
+/// 1/64 CSS pixel (<c>platform/geometry/layout_unit.h</c>, <c>LayoutUnit</c>, six fraction bits), 0.01171875 pt. Only the
+/// places listed under <see cref="SixtyFourthPixels"/> follow the policy; every other length stays as it is under either
+/// value. A pixel here is the CSS pixel: 1/96 inch, 0.75 pt (CSS Values 4 §6.2).
+/// </summary>
+public enum LengthRounding
+{
+    /// <summary>Every length as layout computes it.</summary>
+    Exact,
+
+    /// <summary>
+    /// The lengths below are put on steps of 1/64 px as Chromium puts them there; nothing else is. Measured against
+    /// Chromium's print (<c>tools/reference/chromium</c>).
+    /// <list type="number">
+    /// <item>The width of a text item as line layout sees it, rounded UP: the part of one run's text that lies on one line
+    /// (<c>Typesetting.LineSegment</c>), its glyphs' advances summed and rounded up to the next 1/64 px, for placing the
+    /// next item, for aligning the line and for whether the line fits. Blink's line breaker takes each text item's width
+    /// as <c>ShapeResult::SnappedWidth</c>, <c>LayoutUnit::FromFloatCeil</c> of the shaped width
+    /// (<c>core/layout/inline/line_breaker.cc</c>, <c>LineBreaker::HandleText</c>); a new item starts at every element
+    /// boundary. The glyphs inside an item keep their exact advances; an image on the line is not a text item. Cases
+    /// <c>ta-items</c> (30 inline elements of two one-letter words at 8 and 10.5 pt: every word within 0.0005 pt of the
+    /// item widths rounded up, where unrounded widths put the last word up to 0.176 pt early and widths rounded per word
+    /// 0.266 pt late), <c>ta-items-right</c> (right-aligned: the start of the line moves by the sum of the steps),
+    /// <c>ta-items-fit</c> (in a block wider than the unrounded widths and narrower than the rounded ones the last word
+    /// wraps) and <c>sk-size</c> (an underline gap's edge).</item>
+    /// </list>
+    /// </summary>
+    SixtyFourthPixels,
 }
 
 /// <summary>

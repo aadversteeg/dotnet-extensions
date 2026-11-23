@@ -128,6 +128,8 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
     /// are what the sheet leaves beside that page area; where the area reaches past the sheet (no margin, a size that is
     /// not whole pixels) they are 0 and the engine's page area is the smaller by less than a pixel: a listed difference
     /// (measured on A4 without margins, cases <c>h-page-a4-zero-*</c>; 1 px margins remove it, <c>h-page-a4-margin-px</c>).
+    /// The body is clipped to the page area's own size from the same start, which is up to a pixel less than the area
+    /// laid out (<see cref="PageStyle.BodyClipInset"/>; cases <c>mf4-line-0</c>, <c>b2-split-row</c>).
     /// Measured: cases
     /// <c>h-page-margin-round</c> (11.75 pt margins: area from 16 px to 385 px), <c>h-page-margin-half</c> (15.5 px
     /// margins: left at 16 px), <c>h-page-area-half</c> (368.5 px left: 369 px), <c>h-page-area-right</c>,
@@ -144,11 +146,20 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
         var (areaWidth, areaHeight) = (System.Math.Ceiling(boxWidth - left - right), System.Math.Ceiling(boxHeight - top - bottom));
         var (sheetWidth, sheetHeight) = (Printed(boxWidth * 0.75), Printed(boxHeight * 0.75));
         static Length Points(double points) => Length.FromPoints(System.Math.Max(0, points));
-        return new PageStyle(sheetWidth, sheetHeight, new Edges(
+        var page = new PageStyle(sheetWidth, sheetHeight, new Edges(
             Points(y * 0.75),
             Points(sheetWidth.Points - ((x + areaWidth) * 0.75)),
             Points(sheetHeight.Points - ((y + areaHeight) * 0.75)),
             Points(x * 0.75)));
+
+        // The body is clipped to the page area's own size, not rounded (BodyClip.BodyArea), where that is less than the
+        // area laid out (on a sheet that cuts the area, the sheet may leave less than the page area's own size).
+        return page with
+        {
+            BodyClipInset = new Size(
+                System.Math.Max(0, page.AreaWidth.Points - ((boxWidth - left - right) * 0.75)),
+                System.Math.Max(0, page.AreaHeight.Points - ((boxHeight - top - bottom) * 0.75))),
+        };
     }
 
     /// <summary>

@@ -132,7 +132,10 @@ policies today:
 | --- | --- | --- | --- |
 | monolithic overflow: an image or a line box taller than the page area, at the top of a page | `Refuse` (`Documents.Layout.DoesNotFit`); `Slice` (Chromium: sliced over the pages it needs, at most 100, each slice clipped; every slice of an image is content of its figure, later slices of a line are pagination artifacts) | `Layout/MonolithicSlices.cs`, `ImageLayout.cs`, `InlineLayout.cs`, `PagePainter.cs` | CSS Fragmentation 3 §4.4 ("the UA may also fragment the contents of monolithic elements by slicing the element's graphical representation"); checked against Chromium's print (cases `a4-*`) |
 | font metric rounding: a font's ascent, descent and line gap at its size, for `line-height: normal`, the strut and the baseline's place in a line | `Exact`; `WholePixels` (Chromium: each rounded to a whole CSS pixel, half away from zero, the half-leading above floored to a whole pixel) | `Layout/LineBoxes.cs` (`InlineExtent`, `CssPixels`) | CSS 2.1 §10.8.1 leaves the metrics to the user agent; Chromium `font_metrics.cc`, `simple_font_data.cc`, `line_utils.cc`; checked against Chromium's print (cases `f-lato-*`, `f-mixed-lato`: every line within 1/64 pixel; the Theano Didot cases and `f-mixed` are measured and wait for the typographic metrics, USE_TYPO_METRICS) |
+| font size rounding: the font size text is shaped at (the glyphs' advances, kerning, the place of a mark on its base) | `Exact`; `FlooredToPixelFractions` (Chromium: the size in CSS px floored to 1/100 px for kerning and every other positioning value, and that size truncated to 1/64 px for the glyphs' own advances, in single precision, the advances scaled in 16.16 fixed point as skrifa scales them; nothing rounded per glyph, so a line is narrower by a constant share: 0.098 % at 8 pt, 0.039 % at 10 pt, 0.071 % at 11 pt, none at 9, 10.5 and 12 pt). The font is drawn at its size under both; the back-ends place each glyph where layout put it (in PDF a TJ adjustment, as for kerning) | `Typesetting/ShapingSize.cs`, `Shaper.cs` (`InPoints`), `Layout/InlineLayout.cs` (`ShapingSizeOf`) | Blink `FontDescription::EffectiveFontSize` (`font_description.cc`, precision 100 in `font_cache_key.h`), `HarfBuzzFace::GetScaledFont`; skrifa `Size::fixed_linear_scale` (`instance.rs`); checked against Chromium's print (cases `ta-sizes`, `ta-px`, `ta-right`, `ta-marks`, every word within 0.01 pt; `ta-kerning-scale`: kerning at the floored size; `TextAdvanceTests`, `ShapingSizeTests`). The HTML front-end sets `FlooredToPixelFractions` |
+| length rounding: which lengths are put on Chromium's layout unit of 1/64 CSS px | `Exact`; `SixtyFourthPixels` (Chromium: the width of each text item, the part of one run on one line, rounded up to 1/64 px, for placing what follows it, aligning the line and whether the line fits; the glyphs inside keep their advances, an image on the line is not a text item). The enum's documentation lists every place that follows the policy; today that is this one | `Typesetting/TextLine.cs` (`LineSegment.Width`), `GreedyLineBreaker.cs` (THE RULE FOR THE TEXT ITEM WIDTH), `Layout/InlineLayout.cs` (`BreakLines`) | Blink `ShapeResult::SnappedWidth` (`LayoutUnit::FromFloatCeil`) in `LineBreaker::HandleText` (`line_breaker.cc`); checked against Chromium's print (cases `ta-items`: every word within 0.0005 pt, where unrounded widths put the last word 0.176 pt early; `ta-items-right`; `ta-items-fit`: the last word wraps; `sk-size`; `TextAdvanceTests`, `TextItemWidthTests`). The HTML front-end sets `SixtyFourthPixels` |
 | empty row parts: a cut of a table row where one part shows nothing | `Avoid` (such a cut is a last resort: the row moves whole where it can); `Allow` (Chromium: a row is cut wherever its cells can break) | `Tracks/TableBreaks.cs` (`Cut`, `CutShows`) | CSS leaves where a row breaks to the user agent; checked against Chromium's print (cases `a2-*`, `a3-mirror`) |
+| body clip: what a page's body draws past its area (the page area less the header and footer areas) | `None`; `BodyArea` (Chromium: the body is drawn under a clip to its area, the page area's own size from its rounded start, `PageStyle.BodyClipInset`; the header and footer areas are not clipped) | `Layout/Paginator.cs` (the clip), `Layout/PagePainter.cs` (`PaintPage`) | Chromium's print (`tools/reference/chromium`, `visible.py`: one rectangle clip per page; `mf4-line-0`, `b2-split-row`, `pm-tall-over`); ISO 32000-1 §8.5.4 |
 
 The whole algorithms and the other rules:
 
@@ -600,7 +603,8 @@ it.
 
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
-`FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
+`BodyClip.BodyArea`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -748,6 +752,18 @@ through the whole HTML path unchanged and its pages are compared with every file
 - `<case>.boxes.txt`, the boxes measured in the page: the height of each box named by an element id within 0.1 pt.
   Not the width: the tool measures the boxes in the 1280 px browser window, not in the printed page.
 
+Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
+(ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole
+pixel, its own size, not rounded up as layout takes it), while the page-margin boxes are drawn before it, outside any
+clip. It still draws what passes that clip: a grid line past the page end, a cut cell's side lines or an image slice
+drawn again offset up by the page area's height. So the read-backs (`visible.py`, used by `positions.py`,
+`rectangles.py` and `ink.py`) write each rectangle and image area cut to the clips it is drawn under, and leave out what
+lies wholly outside them; the engine's pages are read through their page-model clips by the same rule
+(`PrintedPages.Engine`, `PrintedPages.Visible`). Words are compared whole: no word of a measured print lies wholly
+outside its clip. The engine clips the body to its area under `LayoutProfile.BodyClip` (`BodyArea`, the HTML front-end's
+value; `None`, the code front-end's default, clips nothing); the header and footer areas, where the HTML front-end puts
+the page-margin boxes, are not clipped, as Chromium draws tall margin-box content over the body (`pm-tall-over`).
+
 Baselines and the edges of rectangles and images are compared at the whole pixel where Chromium paints them (every
 rectangle and image edge in the committed prints is a whole pixel), so a difference smaller than half a pixel there
 can stay hidden; x positions, font sizes and box heights are compared as they are. A face in a print that is not a
@@ -844,8 +860,11 @@ Each is documented next to its code as well.
 - **Text decoration:** only solid lines of the automatic thickness and position exist: `text-decoration-style` other than `solid`, `text-decoration-thickness` and `text-underline-offset` other than `auto`, `text-underline-position` other than `auto`, `text-emphasis` and `text-shadow` are not in the model. `text-decoration-skip-ink: all` is not in the model (`auto` and `none` are). Under whole-pixel metrics a line's top is rounded to a whole pixel counted from its line box's top, so it lies a whole number of pixels from its text's baseline; Chromium paints each baseline at a whole pixel of the page and its lines from there. Where line tops lie on whole pixels the two are equal (every case but one); where they do not, each line lies the same distance from its baseline in both and moves with the engine's unrounded baseline, by at most half a pixel (case `dl-fraction`, 17 of 18 rows; pinned by `TextDecorationTests.Where_a_line_top_is_off_the_whole_pixel_each_line_lies_from_its_baseline_as_in_Chromium_and_moves_with_the_unrounded_baseline`).
 - **Against Chromium:** at most font sizes Chromium's text is narrower than the font's advances, by a share that
   depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small sizes; none at 9, 10.5 and 12 pt), so a line
-  that fits in Chromium by less than that share of its text width can break one word earlier in the engine. The
-  engine keeps the font's exact advances; the reference cases that pin lengths use sizes Chromium keeps exact
+  that fits in Chromium by less than that share of its text width can break one word earlier in the engine. By
+  default (`FontSizeRounding.Exact`) the engine keeps the font's exact advances; `FontSizeRounding.FlooredToPixelFractions`
+  shapes at Chromium's two sizes, and `LengthRounding.SixtyFourthPixels` rounds the width of each text item up to
+  1/64 px as Chromium's line breaker does. The HTML front-end sets both, and every word of the `ta-*` cases is where
+  Chromium prints it within 0.01 pt. The code front-end keeps both exact. The reference cases that pin lengths use sizes Chromium keeps exact
   (`tools/reference/chromium/README.md`, "Where Chromium is not exact"). With `line-height: normal` Chromium's line is
   the font's ascent, descent and line gap each rounded to whole pixels (Lato at 12 pt: 19 px, 14.25 pt, where the
   font's values give 14.4 pt), and it floors the half-leading above a line to a whole pixel; with the default
@@ -1002,8 +1021,8 @@ Each is documented next to its code as well.
   line passed, and on a page of its own when the table ends the document (`a2-row-end`, `a2-row-end-after`,
   `a2-row-end-6pt`, `a2-row-end-6pt-after`, `a2-row-end-6pt-part-after`, `a2-row-end-first-row-half-*`;
   `TableEndOverflowTests`). Chromium draws those lines again offset up by the page area's height and clips the page to
-  its area; the case comparison counts what it draws in the top margin, so the painted cases stay open by that margin
-  alone. Under `EndsOnPage`, the code front-end's default, the table ends on the page. The limits of that default,
+  its area, so its print does not show what it draws in the top margin; the engine clips the body the same way
+  (`LayoutProfile.BodyClip`, below), and the comparison reads both as they show. Under `EndsOnPage`, the code front-end's default, the table ends on the page. The limits of that default,
   against Chromium:
   (i) Chromium draws the overflowing line again at the top of the next page; when the table ends the document, that is
   a page that holds only the line (`a2-row-end`: 3 pages in Chromium, 2 in the engine). Where only the outer half of
