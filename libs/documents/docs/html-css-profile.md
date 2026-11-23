@@ -98,6 +98,18 @@ and, beside a column without a width, the percentages add up to less than 100. A
 automatic layout, a width on a cell (`td`, `th`) and on a `colgroup` are refused. A `tfoot` is drawn after the body
 rows, once; Chromium repeats a small one on every page of a table that breaks (Known limits).
 
+`width`, `min-width`, `max-width` and `box-sizing` on a block box: a length or a percentage of the containing block's
+width, for the content box or the border box; `max-width` limits the width and `min-width` wins over both. The
+horizontal margins that are `auto` share the width the box leaves: both centre it, a left one alone puts it at the
+right end; a box as wide as its container or wider starts at its left margin and passes the container's right edge,
+as in Chromium. Laid out as Chromium lays them out: a length cut toward zero to 1/64 px, a percentage and the left
+of two auto margins floored to it (cases `sz-*`). Refused: a calculated or intrinsic size (`calc()` with a
+percentage, `fit-content`), a minimum or maximum width on a table part or an image, and a width, minimum or maximum
+on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`: their columns are sized by
+their content's widths, and a sized box's share in them is not built). `height` on a block box is refused: a fixed
+height takes room of its own across a page break, which is not built (measured: cases `sz-height`,
+`sz-height-box-sizing`, `sz-height-break`). `min-height` and `max-height` stay at their initial value.
+
 ### Supported at the initial value only
 
 What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and

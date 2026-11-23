@@ -71,19 +71,19 @@ public static class ModelCheck
     /// and where each row of page-margin boxes is (<see cref="MarginBoxes"/>).</summary>
     private static Error? Nodes(StyledDocument document)
     {
-        var pending = new Stack<(Node Node, int Depth, Place Place)>();
-        pending.Push((document.Root, 0, Place.Other));
+        var pending = new Stack<(Node Node, int Depth, Place Place, bool Measured)>();
+        pending.Push((document.Root, 0, Place.Other, false));
         foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
         {
             if (area is not null)
             {
-                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea));
+                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea, false));
             }
         }
 
         while (pending.Count > 0)
         {
-            var (node, depth, place) = pending.Pop();
+            var (node, depth, place, measured) = pending.Pop();
             if (depth > ModelLimits.MaxNestingDepth)
             {
                 return Problem(DocumentErrorCodes.Input.Invalid.TooDeep, $"Boxes may nest at most {ModelLimits.MaxNestingDepth} levels deep.",
@@ -92,7 +92,7 @@ public static class ModelCheck
 
             var problem = node switch
             {
-                Box box => Box(box),
+                Box box => Box(box) ?? Sizes(box, measured),
                 TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
                 ImageNode image => ImageSize(image),
@@ -121,10 +121,11 @@ public static class ModelCheck
                 // an inline box (an image in a line) is one level deeper, as any child box.
                 var isRow = parent.Style.TableDisplay == TableDisplay.Row;
                 var childPlace = parent.Layout == LayoutAlgorithmId.MarginBoxes ? Place.InMarginBoxes : Place.Other;
+                var childMeasured = measured || parent.Layout == LayoutAlgorithmId.Tracks || parent.Layout == LayoutAlgorithmId.MarginBoxes;
                 foreach (var child in parent.Children)
                 {
                     var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } && !isRow;
-                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace));
+                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace, childMeasured));
                 }
             }
         }
@@ -147,6 +148,58 @@ public static class ModelCheck
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.HeadingLevel, "A heading level must be 1–6.", Number(heading.Level), "level", box)
                 : null)
             ?? (style.Text is { } strut ? Text(strut, box) : null);
+    }
+
+    /// <summary>
+    /// A box's width, minimum and maximum width (CSS Sizing 3 §3.1–3.2): a length of 0 or more and at most
+    /// <see cref="ModelLimits.MaxLength"/>, or a finite percentage of 0 or more (else Input.Invalid.Length); with the auto
+    /// horizontal margins, only on a box laid out by <see cref="LayoutAlgorithmId.Flow"/> or <see cref="LayoutAlgorithmId.Inline"/>
+    /// that is not inside a table or a row of page-margin boxes (<paramref name="measured"/>): those size their columns by
+    /// the intrinsic widths of their content, and a sized box's share in them is not built (else Input.Unsupported.Size).
+    /// </summary>
+    private static Error? Sizes(Box box, bool measured)
+    {
+        var style = box.Style;
+        var sizes = new[] { (style.SpecifiedWidth, "width"), (style.MinWidth, "min-width"), (style.MaxWidth, "max-width") };
+        foreach (var (size, name) in sizes)
+        {
+            var valid = size switch
+            {
+                null => true,
+                SizeValue.Fixed fixedWidth => IsBounded(fixedWidth.Width) && fixedWidth.Width.Points >= 0,
+                SizeValue.Percentage percentage => double.IsFinite(percentage.Percent) && percentage.Percent >= 0,
+                _ => false,
+            };
+            if (!valid)
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Length, $"A {name} must be a length of 0 or more and at most {ModelLimits.MaxLength}, or a finite percentage of 0 or more.", size!.ToString(), name, box);
+            }
+        }
+
+        string? value = null;
+        var property = "margin";
+        foreach (var (size, name) in sizes)
+        {
+            if (size is not null && value is null)
+            {
+                (value, property) = (size.ToString(), name);
+            }
+        }
+
+        value ??= style.AutoMargins == AutoMargins.None ? null : style.AutoMargins.ToString();
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (box.Layout != LayoutAlgorithmId.Flow && box.Layout != LayoutAlgorithmId.Inline)
+        {
+            return Problem(DocumentErrorCodes.Input.Unsupported.Size, $"A {property} is taken only by a box laid out by the flow or the inline algorithm; this box is laid out by {box.Layout}.", value, property, box);
+        }
+
+        return measured
+            ? Problem(DocumentErrorCodes.Input.Unsupported.Size, $"A {property} on a box inside a table or a row of page-margin boxes is not built: their columns are sized by the intrinsic widths of their content.", value, property, box)
+            : null;
     }
 
     /// <summary>

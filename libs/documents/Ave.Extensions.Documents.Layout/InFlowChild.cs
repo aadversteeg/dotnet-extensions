@@ -1,3 +1,4 @@
+using System;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
@@ -27,7 +28,8 @@ internal static class InFlowChild
     /// <summary>Lays out <paramref name="child"/> with the top of its BORDER box at <paramref name="top"/>.</summary>
     /// <remarks>
     /// Horizontally the child's border box spans the container's content width minus its left and right margins
-    /// (CSS 2.1 §10.3.3, <c>width: auto</c>); horizontal margins never collapse (§8.3.1).
+    /// (CSS 2.1 §10.3.3, <c>width: auto</c>), or the width its sizes give (<see cref="Horizontal"/>); horizontal margins
+    /// never collapse (§8.3.1).
     /// </remarks>
     /// <param name="environment">The layout environment.</param>
     /// <param name="child">The child box.</param>
@@ -61,9 +63,9 @@ internal static class InFlowChild
         EarlyBreak? breakAt = null,
         bool isBelowStartInsets = false)
     {
-        var margin = child.Style.Margin;
+        var (width, left) = Horizontal(child.Style, containerWidth, environment.Profile.LengthRounding);
         var space = new ConstraintSpace(
-            AvailableWidth: containerWidth - margin.Horizontal.Points,
+            AvailableWidth: width,
             AvailableHeight: containerHeight - top,
             IsAtPageStart: isAtPageStart,
             IsNewFormattingContext: isPageRoot)
@@ -77,9 +79,88 @@ internal static class InFlowChild
         return environment.Layout(child, space, resume).OnSuccessMap(result => result switch
         {
             LayoutResult.Placed placed => Maybe.From(new Placement(
-                new PlacedFragment(new Point(margin.Left.Points, top), placed.Fragment), placed.Continuation, placed.Appeal, placed.BestBreak, placed.KeepsItsBreak, placed.KeptAppeal,
+                new PlacedFragment(new Point(left, top), placed.Fragment), placed.Continuation, placed.Appeal, placed.BestBreak, placed.KeepsItsBreak, placed.KeptAppeal,
                 placed.EndsBelowContent)),
             _ => Maybe<Placement>.None,
         });
+    }
+
+    /// <summary>
+    /// The width of a child's border box in block flow and where it starts, from the left of the container's content
+    /// area: CSS 2.1 §10.3.3 and §10.4, in horizontal left-to-right writing.
+    /// <list type="bullet">
+    /// <item>Width <c>auto</c>: the container's width less the margins.</item>
+    /// <item>A length, or a percentage of the container's content width (§10.2), for the box that
+    /// <see cref="BoxStyle.BoxSizing"/> names: the content box gets padding and border added, the border box is never
+    /// narrower than they are (CSS Box Model 3 §4.3). Then <c>max-width</c> limits it and <c>min-width</c> wins over both
+    /// (§10.4: "If the resulting width is greater than 'max-width' … If the resulting width is smaller than 'min-width'").
+    /// The same for a width <c>auto</c> that a minimum or maximum changes.</item>
+    /// <item>The width left over goes to the auto margins (<see cref="BoxStyle.AutoMargins"/>): all of it to an auto left
+    /// margin, half to each of two. A box as wide as the container or wider leaves nothing: its auto margins are 0, and an
+    /// over-constrained right margin is ignored, so the box starts at its left margin and may reach past the container's
+    /// right edge, as it shows, and the next box starts below it as usual (case <c>sz-width-overflow</c>).</item>
+    /// </list>
+    /// Under <see cref="LengthRounding.SixtyFourthPixels"/> a percentage and the half of the width left over are floored to
+    /// 1/64 px, as Chromium puts them on its layout unit (cases <c>sz-width-percent</c>, <c>sz-width-percent-parent</c>,
+    /// <c>sz-width-fraction</c>, <c>sz-min-max</c>, <c>sz-margin-auto</c>).
+    /// </summary>
+    /// <param name="style">The child's style.</param>
+    /// <param name="containerWidth">The width of the container's content area.</param>
+    /// <param name="rounding">The profile's length rounding.</param>
+    /// <returns>The border box's width and the left edge of the border box.</returns>
+    internal static (double Width, double Left) Horizontal(BoxStyle style, double containerWidth, LengthRounding rounding)
+    {
+        var margin = style.Margin;
+        var available = containerWidth - margin.Horizontal.Points;
+        if (style.SpecifiedWidth is null && style.MinWidth is null && style.MaxWidth is null)
+        {
+            return (available, margin.Left.Points);
+        }
+
+        var insets = SlicedBox.HorizontalInsets(style);
+        double BorderBox(SizeValue size)
+        {
+            var value = size switch
+            {
+                SizeValue.Fixed fixedWidth => fixedWidth.Width.Points,
+                SizeValue.Percentage percentage => Floored(containerWidth * percentage.Percent / 100, rounding),
+                _ => throw new ArgumentOutOfRangeException(nameof(size), size, "a width is a length or a percentage"),
+            };
+            return style.BoxSizing == BoxSizing.BorderBox ? Math.Max(value, insets) : value + insets;
+        }
+
+        var width = style.SpecifiedWidth is { } specified ? BorderBox(specified) : available;
+        if (style.MaxWidth is { } max)
+        {
+            width = Math.Min(width, BorderBox(max));
+        }
+
+        if (style.MinWidth is { } min)
+        {
+            width = Math.Max(width, BorderBox(min));
+        }
+
+        var free = available - width;
+        var left = margin.Left.Points;
+        if (free > 0)
+        {
+            left += style.AutoMargins switch
+            {
+                AutoMargins.Left => free,
+                AutoMargins.Both => Floored(free / 2, rounding),
+                _ => 0,
+            };
+        }
+
+        return (width, left);
+    }
+
+    /// <summary>A length floored to Chromium's layout unit of 1/64 CSS px under <see cref="LengthRounding.SixtyFourthPixels"/>;
+    /// as it is under <see cref="LengthRounding.Exact"/>.</summary>
+    private static double Floored(double points, LengthRounding rounding)
+    {
+        const double unit = 0.75 / 64;
+        // A length that is a whole number of units up to the error of the product stays that number.
+        return rounding == LengthRounding.SixtyFourthPixels ? Math.Floor((points / unit) + 1e-9) * unit : points;
     }
 }

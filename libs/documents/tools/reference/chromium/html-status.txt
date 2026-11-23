@@ -175,7 +175,7 @@ d-strut equal
 d-strut-normal equal
 d-typo-lato equal
 d-typo-theano equal
-dl-end refused Documents.Html.Unsupported.Value width: 40pt at 5:1
+dl-end equal
 dl-fraction refused Documents.Html.Unsupported.Value height: 7.875pt at 5:1
 dl-height equal
 dl-image equal
@@ -186,7 +186,7 @@ dl-lato-italic equal
 dl-lines equal
 dl-nest equal
 dl-skip equal
-dl-space refused Documents.Html.Unsupported.Value width: 40pt at 6:1
+dl-space equal
 dl-theano equal
 dl-whose equal
 f-lato-10 equal
@@ -384,15 +384,15 @@ hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve a
 hw-pre-line equal
 hw-pre-wrap equal
 hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
-ii-align refused Documents.Html.Unsupported.Value width: 100pt at 3:1
+ii-align equal
 ii-baseline equal
-ii-breaks refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ii-breaks equal
 ii-height equal
-ii-hyphen refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ii-joiners refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ii-hyphen listed A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it: page 1 reads 'a -b a -b a- b x', Chromium 'a - b a - b a- b x' (print.txt)
+ii-joiners listed A_line_breaks_beside_an_image_also_next_to_a_joiner_or_another_no_break_space_like_Chromium: page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x' (print.txt)
 ii-page equal
 ii-table refused Documents.Html.Unsupported.Value width: 60pt at 4:1
-ii-wrap refused Documents.Html.Unsupported.Value width: 100pt at 3:1
+ii-wrap equal
 kb-m1-kept-box-margin-in-padded-box equal
 kb-m2-kept-para-margin-in-padded-box equal
 kb-n1-kept-box-padding equal
@@ -462,32 +462,32 @@ sk-extreme open page 1 'gạọụ' x1 53.489, Chromium 54.417 (print.txt)
 sk-lato equal
 sk-lato-bold equal
 sk-lato-italic equal
-sk-misc refused Documents.Html.Unsupported.Value width: 60pt at 6:1
+sk-misc listed An_image_a_shown_soft_hyphen_and_ligatures_are_cut_like_Chromium: page 1 reads 'gy py jump­ ing gyp fi fj ffi fly gy figure fjord', Chromium 'gy py jump­‐ ing gyp fi fj ffi fly gy figure fjord' (print.txt)
 sk-nest equal
 sk-part equal
 sk-size equal
-sk-space refused Documents.Html.Unsupported.Value width: 120pt at 5:1
+sk-space equal
 sk-theano equal
 sk-touch equal
 sk-whose equal
 sr-counter refused Documents.Css.Unsupported.Selector The selector '::after' is not supported. at 2:98
 sr-font-changes equal
-sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
-sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1
+sr-line-justify equal
+sr-line-left equal
 sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
-sz-box-sizing refused Documents.Html.Unsupported.Value width: 120pt at 3:1
+sz-box-sizing equal
 sz-height refused Documents.Html.Unsupported.Value height: 60pt at 3:1
 sz-height-box-sizing refused Documents.Html.Unsupported.Value height: 40pt at 3:1
 sz-height-break refused Documents.Html.Unsupported.Value height: 300pt at 4:1
-sz-margin-auto refused Documents.Html.Unsupported.Value width: 120pt at 3:1
-sz-min-max refused Documents.Html.Unsupported.Value width: 100pt at 3:1
-sz-width-break refused Documents.Html.Unsupported.Value width: 150pt at 4:1
-sz-width-fraction refused Documents.Html.Unsupported.Value width: 100.3pt at 3:1
-sz-width-length refused Documents.Html.Unsupported.Value width: 150pt at 3:1
-sz-width-overflow refused Documents.Html.Unsupported.Value width: 150pt at 3:1
-sz-width-percent refused Documents.Html.Unsupported.Value width: 40% at 3:1
-sz-width-percent-parent refused Documents.Html.Unsupported.Value width: 200pt at 3:1
+sz-margin-auto equal
+sz-min-max equal
+sz-width-break equal
+sz-width-fraction equal
+sz-width-length equal
+sz-width-overflow equal
+sz-width-percent equal
+sz-width-percent-parent equal
 ta-items equal
 ta-items-fit equal
 ta-items-right equal
@@ -533,35 +533,35 @@ tp-sum-100 equal
 tp-sum-above equal
 tp-sum-below equal
 tp-thirds equal
-tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
-tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
-tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1
-tw-insets refused Documents.Html.Unsupported.Value width: 300pt at 5:1
-tw-pref refused Documents.Html.Unsupported.Value width: 300pt at 6:1
-tw-span refused Documents.Html.Unsupported.Value width: 300pt at 4:1
+tw-auto equal
+tw-col equal
+tw-fixed equal
+tw-insets equal
+tw-pref refused Documents.Layout.ColumnsDoNotFit 157.805>150 at 21
+tw-span equal
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
-ws-border refused Documents.Html.Unsupported.Value width: 6pt at 6:1
+ws-border listed Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium: page 1 'bb' x0 28.395, Chromium 12 (print.txt)
 ws-break-spaces equal
-ws-forced refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-hang-break-spaces refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-hang-normal refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-hang-pre refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-hang-pre-wrap refused Documents.Html.Unsupported.Value width: 40pt at 3:1
-ws-image refused Documents.Html.Unsupported.Value width: 6pt at 4:1
-ws-image-border refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ws-forced equal
+ws-hang-break-spaces equal
+ws-hang-normal equal
+ws-hang-pre equal
+ws-hang-pre-wrap equal
+ws-image equal
+ws-image-border listed Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium: page 1 'cd' baseline 43.5 (laid out at 43.5), Chromium 61.5 (print.txt)
 ws-intrinsic refused Documents.Html.Unsupported.Value width: 20pt at 3:1
-ws-justify refused Documents.Html.Unsupported.Value width: 60pt at 3:1
-ws-justify-nbsp refused Documents.Html.Unsupported.Value width: 40pt at 3:1
+ws-justify equal
+ws-justify-nbsp equal
 ws-kern equal
-ws-lead refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ws-lead equal
 ws-longhands refused Documents.Css.Unsupported.Value white-space-collapse: preserve-spaces at 5:11
 ws-normal equal
 ws-nowrap equal
-ws-overflow refused Documents.Html.Unsupported.Value width: 100pt at 3:1
+ws-overflow equal
 ws-pre equal
 ws-pre-line equal
 ws-pre-wrap equal
-ws-soft refused Documents.Html.Unsupported.Value width: 6pt at 3:1
+ws-soft listed A_soft_hyphen_and_a_zero_width_space_in_nowrap_text_do_not_break_it_like_Chromium: page 1 reads 'aabbcc aa­ bb cc aabbcc aa­ bb cc x', Chromium 'aa­bb​cc aa­‐ bb​ cc aa­bb​cc aa­‐ bb​ cc x' (print.txt)
 ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 ws-table refused Documents.Html.Unsupported.Value width: 20pt at 4:1

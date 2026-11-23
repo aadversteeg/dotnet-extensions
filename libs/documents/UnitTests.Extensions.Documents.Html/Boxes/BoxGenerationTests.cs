@@ -194,7 +194,10 @@ public class BoxGenerationTests
     [Theory]
     // Each pair: a value without effect where it is (accepted), and the same value where it changes the print (refused).
     [InlineData("<div style=\"box-sizing:border-box\">a</div>", null)]
-    [InlineData("<div style=\"width:10pt\">a</div>", "width")]
+    [InlineData("<div style=\"width:10pt\">a</div>", null)]
+    [InlineData("<div style=\"height:10pt\">a</div>", "height")]
+    [InlineData("<p><span style=\"height:10pt\">a</span></p>", null)]
+    [InlineData("<div style=\"min-width:fit-content\">a</div>", "min-width")]
     [InlineData("<p><span style=\"width:10pt\">a</span></p>", null)]
     [InlineData("<div style=\"border-collapse:collapse;list-style-type:square\">a</div>", null)]
     [InlineData("<p><span style=\"margin-top:5pt\">a</span></p>", null)]
@@ -267,6 +270,19 @@ public class BoxGenerationTests
             "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value",
             "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Rendering");
         Boxes(html).IsFailure.Should().BeTrue("the same document is refused by default");
+    }
+
+    [Fact]
+    public void A_block_box_takes_its_width_minimum_maximum_sizing_box_and_auto_margins_a_length_in_Chromium_s_layout_unit()
+    {
+        // sz-width-percent-parent: 200pt is laid out 266.65625 px (199.992 pt), cut toward zero to 1/64 px as a margin is.
+        var body = Body(Doc("<div style=\"width:200pt;min-width:0;max-width:50%;box-sizing:border-box;margin:0 auto\">a</div><div style=\"margin:0 auto\">b</div>"));
+        var (sized, plain) = ((Box)body.Children[0], (Box)body.Children[1]);
+
+        sized.Style.SpecifiedWidth.Should().Be(new SizeValue.Fixed((17066 * 0.75 / 64).Pt()));
+        (sized.Style.MinWidth, sized.Style.MaxWidth).Should().Be(((SizeValue?)null, (SizeValue?)new SizeValue.Percentage(50)));
+        (sized.Style.BoxSizing, sized.Style.AutoMargins).Should().Be((BoxSizing.BorderBox, AutoMargins.Both));
+        (plain.Style.SpecifiedWidth, plain.Style.AutoMargins).Should().Be(((SizeValue?)null, AutoMargins.None), "auto margins without a size are 0");
     }
 
     [Fact]

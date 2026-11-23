@@ -72,6 +72,28 @@ public sealed record BoxStyle
     /// the same. Ignored for every other box.</summary>
     public BoxWidth Width { get; init; }
 
+    /// <summary>The width of a box laid out by <see cref="LayoutAlgorithmId.Flow"/> or <see cref="LayoutAlgorithmId.Inline"/>
+    /// in block flow (CSS Sizing 3 §3.1, <c>width</c>), or null for <c>auto</c>, the initial value: the box then fills its
+    /// containing block less its margins (CSS 2.1 §10.3.3). Not for a box inside a table or a row of page-margin boxes,
+    /// whose columns are sized by the intrinsic widths of their content (<see cref="ModelCheck"/>).</summary>
+    public SizeValue? SpecifiedWidth { get; init; }
+
+    /// <summary>The smallest width of such a box (CSS Sizing 3 §3.2, <c>min-width</c>), or null for <c>auto</c>, which
+    /// is 0 for a block box; it wins over <see cref="MaxWidth"/> (CSS 2.1 §10.4).</summary>
+    public SizeValue? MinWidth { get; init; }
+
+    /// <summary>The largest width of such a box (CSS Sizing 3 §3.2, <c>max-width</c>), or null for <c>none</c>.</summary>
+    public SizeValue? MaxWidth { get; init; }
+
+    /// <summary>Which box <see cref="SpecifiedWidth"/>, <see cref="MinWidth"/> and <see cref="MaxWidth"/> measure (CSS Box
+    /// Model 3 §4.3); <see cref="BoxSizing.ContentBox"/>, the CSS initial value, unless set.</summary>
+    public BoxSizing BoxSizing { get; init; }
+
+    /// <summary>Which horizontal margins are <c>auto</c> (CSS 2.1 §10.3.3); each is 0 in <see cref="Margin"/>. They take
+    /// the width the box leaves in its containing block, for a box laid out by <see cref="LayoutAlgorithmId.Flow"/> or
+    /// <see cref="LayoutAlgorithmId.Inline"/>; where the box is as wide as its containing block or wider, they are 0.</summary>
+    public AutoMargins AutoMargins { get; init; }
+
     /// <summary>The table part this box is (CSS Display 3 §2.4), or <see cref="TableDisplay.None"/>: a row group or a row
     /// of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>.</summary>
     public TableDisplay TableDisplay { get; init; }

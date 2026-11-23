@@ -531,6 +531,11 @@ public static partial class HtmlBoxGenerator
             var element = block.Element;
             var (layout, children) = block.HasBlockChildren ? (LayoutAlgorithmId.Flow, (ValueList<Node>)[.. block.Nodes]) : Content(block.Nodes);
             var style = BoxStyleOf(element) with { Text = layout == LayoutAlgorithmId.Inline ? TextStyleOf(element) : null };
+            if (HtmlBoxGenerator.PartOf(element.Style[PropertyRegistry.Display]) == TablePart.None)
+            {
+                style = Sized(element, style);
+            }
+
             if (block.ForcedBreakBefore)
             {
                 style = style with { BreakBefore = BreakBetween.Page };
@@ -592,6 +597,44 @@ public static partial class HtmlBoxGenerator
                 // A forced break after the box is a forced break before the next one (Finish); here only avoid.
                 BreakAfter = Between(Value(element, "break-after")) == BreakBetween.Avoid ? BreakBetween.Avoid : BreakBetween.Auto,
                 BreakInside = Value(element, "break-inside") is CssKeyword { Name: "avoid" or "avoid-page" } ? BreakInside.Avoid : BreakInside.Auto,
+            };
+        }
+
+        /// <summary>
+        /// The width, minimum and maximum width, sizing box and auto horizontal margins of a block box that is not a table
+        /// part (CSS Sizing 3 §3.1–3.2, CSS Box Model 3 §4.3, CSS 2.1 §10.3.3). A length is put on Chromium's layout unit of
+        /// 1/64 px, cut toward zero, as a margin is (<see cref="LayoutUnits"/>; measured: 200pt is 266.65625 px, 199.992 pt,
+        /// case <c>sz-width-percent-parent</c>; 100.3pt is 133.71875 px, 100.289 pt, case <c>sz-width-fraction</c>); a
+        /// percentage is resolved by layout. A <c>min-width</c> of 0 is its initial value for a block box. The auto margins
+        /// are set only beside a size: at width <c>auto</c> they are 0, which <see cref="BoxStyle.Margin"/> holds already.
+        /// </summary>
+        private BoxStyle Sized(StyledElement element, BoxStyle style)
+        {
+            SizeValue? Size(string name) => Value(element, name) switch
+            {
+                CssLength length => new SizeValue.Fixed(LayoutUnits(length.Value)),
+                CssPercentage percentage => new SizeValue.Percentage(percentage.Value),
+                _ => null,
+            };
+
+            var min = Value(element, "min-width") is CssLength { Value.Points: 0 } or CssPercentage { Value: 0 } ? null : Size("min-width");
+            var sized = style with { SpecifiedWidth = Size("width"), MinWidth = min, MaxWidth = Size("max-width") };
+            if (sized.SpecifiedWidth is null && sized.MinWidth is null && sized.MaxWidth is null)
+            {
+                return style;
+            }
+
+            var (left, right) = (Value(element, "margin-left") is CssKeyword { Name: "auto" }, Value(element, "margin-right") is CssKeyword { Name: "auto" });
+            return sized with
+            {
+                BoxSizing = Value(element, "box-sizing") is CssKeyword { Name: "border-box" } ? BoxSizing.BorderBox : BoxSizing.ContentBox,
+                AutoMargins = (left, right) switch
+                {
+                    (true, true) => AutoMargins.Both,
+                    (true, false) => AutoMargins.Left,
+                    (false, true) => AutoMargins.Right,
+                    _ => AutoMargins.None,
+                },
             };
         }
 
