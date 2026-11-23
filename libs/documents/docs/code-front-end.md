@@ -121,11 +121,31 @@ default, `null` for transparent). A page number the document does not have is `D
 | `RowGroup([rows])` | rows that belong together (a row span ends at the end of its group) |
 | `Cell(text)`, `Cell([elements])` | a table cell |
 | `Row([elements])` | elements side by side, one column each (equal shares unless `.Columns(…)` is set) |
+| `BulletedList([items])` | a list with a bullet beside each item's first line: a disc, in a list inside another list a circle, deeper a square; `.Bullet(ListBullet.Square)` sets one, `ListBullet.None` gives no label. Indented 30 pt (a left padding) unless a padding is set |
+| `NumberedList([items])` | a list numbered "1. ", "2. " …, each number right-aligned to its item's start; `.Start(5)` sets the first number (zero and negative numbers too) |
+| `ListItem([elements])`, `ListItem(text)` | an item of a list; its content may hold any elements, a list included, which nests one level deeper. Its font, size and colour are its label's |
 | `Image(bytes)` | a PNG or JPEG image from the bytes of the file; `.Alt("what it shows")` or `.Decorative()` |
 | `Attachment(name, bytes, mediaType)` | a file to embed with `document.Attach(…)`; `.WithRelationship(…)`, `.WithDescription(…)`, `.WithModificationDate(…)` |
 | `PageNumber()`, `PageCount()` | spans that show the page number and the number of pages |
 
 Children are collection expressions: `[a, b, .. items.Select(Line)]`.
+
+A list is items, each of any elements; a list in an item nests:
+
+```csharp
+NumberedList(
+[
+    ListItem("Unpack the box."),
+    ListItem([Paragraph("Connect the cables:"), BulletedList([ListItem("power"), ListItem("network")])]),
+    ListItem("Switch it on."),
+]).Start(1)
+```
+
+The labels are placed as Chromium places a list's outside markers (CSS Lists 3 §3): beside the first line of the item,
+on its baseline, in the item's font. A bullet is a shape whose size and place follow the font's ascent (at 10.5 pt Lato
+a disc of 3.75 pt, 12 pt left of the item); a number is right-aligned so that "1. ", its space included, ends where
+the item's content starts. A label that would start left of the sheet is `Documents.Layout.MarkerOutsideSheet`: give the
+list more left padding. A list has 1 to 10 000 items; lists nest at most 16 deep (`Documents.Input.Invalid.List`).
 
 The page is a value too: `PageSetup.A4.Margin(1.Cm()).Header(header).Footer(footer)`; `Page(width, height)` makes
 another size. Header and footer take their height from the page area (from their content, or a fixed height as the

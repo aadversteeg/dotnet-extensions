@@ -68,7 +68,7 @@ internal static class LineBoxes
     /// <see cref="FontMetricRounding.WholePixels"/> A, D and the line gap are each rounded to whole pixels and the half
     /// above is floored to a whole pixel, the rest of L going below, as Chromium does.
     /// </summary>
-    private sealed record InlineExtent(double Ascent, double Descent, double LeadingAbove, double LeadingBelow)
+    internal sealed record InlineExtent(double Ascent, double Descent, double LeadingAbove, double LeadingBelow)
     {
         public double Above => Ascent + LeadingAbove;
         public double Below => Descent + LeadingBelow;
@@ -175,7 +175,7 @@ internal static class LineBoxes
             x += segment.Width;
         }
 
-        return Result<LineFragment, Error>.Success(new LineFragment(new Size(x, above + below), children.ToImmutable()));
+        return Result<LineFragment, Error>.Success(new LineFragment(new Size(x, above + below), children.ToImmutable()) { Baseline = above });
     }
 
     /// <summary>

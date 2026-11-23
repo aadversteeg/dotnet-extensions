@@ -45,6 +45,12 @@ public static class LayoutErrorCodes
     /// SourceLine of the box.</summary>
     public static readonly ErrorCode MarginBoxOverflow = _ / "MarginBoxOverflow";
 
+    /// <summary>A list item's label that would start left of the sheet's left edge (<c>ListItemLayout</c>): a label wider
+    /// than the room left of its item, which Chromium 159 draws past the sheet and cuts (case <c>li-types</c>: "MCMXCIX. "
+    /// loses its first glyphs; case <c>li-marker-sheet</c>). The engine refuses it. Metadata: Node (the item), Value (the
+    /// label's left edge on the sheet, in points), SourceFile, SourceLine of the item.</summary>
+    public static readonly ErrorCode MarkerOutsideSheet = _ / "MarkerOutsideSheet";
+
     /// <summary>A break token a layout algorithm cannot have returned for the box it is given: a token of another
     /// algorithm's kind, or a position the box does not have (a child, line, row or cell outside it, a height shown that is
     /// negative, not finite, or the whole height of the sliced image or line or more). Only a caller of the algorithms

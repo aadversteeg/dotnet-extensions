@@ -62,6 +62,7 @@ public static class DocumentModelText
             TextRun text => [indent + $"text {text.Id} {QuotedText.Quote(text.Text)} {StyleText(text.Style)} @{text.Source}"],
             CounterRun counter => [indent + $"counter {counter.Id} {CounterName(counter.Counter)} {StyleText(counter.Style)} @{counter.Source}"],
             ImageNode image => [indent + ImageLine(image)],
+            MarkerSymbol symbol => [indent + $"marker {symbol.Id} {symbol.Shape.ToString().ToLowerInvariant()} {StyleText(symbol.Style)} @{symbol.Source}"],
             _ => [indent + $"unknown {node.GetType().Name} {node.Id} @{node.Source}"],
         };
     }

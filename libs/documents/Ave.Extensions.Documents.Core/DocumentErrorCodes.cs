@@ -120,6 +120,14 @@ public static class DocumentErrorCodes
             /// place, or a box with a place in a row outside one. Metadata: Value, Property.</summary>
             public static readonly ErrorCode MarginBoxes = _ / "MarginBoxes";
 
+            /// <summary>A list that is not valid (ISO 32000-1 §14.8.4.3.3): a list whose children are not all list items, or
+            /// more than <c>ModelLimits.MaxListItems</c> of them; an item outside a list, or not laid out as a list item, or
+            /// with other children than an optional label and then its body; a label or a marker symbol outside one; a
+            /// label longer than <c>ModelLimits.MaxLabelLength</c>; lists nested more than <c>ModelLimits.MaxListDepth</c>
+            /// deep; in the code front-end, a start number on a bulleted list, a bullet on a numbered list, or numbers past
+            /// the range of a 32-bit integer. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode List = _ / "List";
+
             /// <summary>An image size that is not a positive finite length. Metadata: Value, Property.</summary>
             public static readonly ErrorCode ImageSize = _ / "ImageSize";
 

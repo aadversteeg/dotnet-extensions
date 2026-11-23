@@ -71,19 +71,19 @@ public static class ModelCheck
     /// and where each row of page-margin boxes is (<see cref="MarginBoxes"/>).</summary>
     private static Error? Nodes(StyledDocument document)
     {
-        var pending = new Stack<(Node Node, int Depth, Place Place)>();
-        pending.Push((document.Root, 0, Place.Other));
+        var pending = new Stack<(Node Node, int Depth, Place Place, int Lists)>();
+        pending.Push((document.Root, 0, Place.Other, 0));
         foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
         {
             if (area is not null)
             {
-                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea));
+                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea, 0));
             }
         }
 
         while (pending.Count > 0)
         {
-            var (node, depth, place) = pending.Pop();
+            var (node, depth, place, lists) = pending.Pop();
             if (depth > ModelLimits.MaxNestingDepth)
             {
                 return Problem(DocumentErrorCodes.Input.Invalid.TooDeep, $"Boxes may nest at most {ModelLimits.MaxNestingDepth} levels deep.",
@@ -96,6 +96,9 @@ public static class ModelCheck
                 TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
                 ImageNode image => ImageSize(image),
+                MarkerSymbol symbol => Text(symbol.Style, symbol) ?? (System.Enum.IsDefined(symbol.Shape)
+                    ? null
+                    : Problem(DocumentErrorCodes.Input.Invalid.List, "A marker symbol is a disc, a circle or a square.", symbol.Shape.ToString(), "shape", symbol)),
                 _ => null,
             };
             if (problem is not null)
@@ -113,6 +116,11 @@ public static class ModelCheck
                 return marginBoxes;
             }
 
+            if (node is Box listed && List(listed, lists) is { } list)
+            {
+                return list;
+            }
+
             if (node is Box parent)
             {
                 // A child box is one level deeper, except the parts of a table: a table is one level with its row groups,
@@ -124,7 +132,7 @@ public static class ModelCheck
                 foreach (var child in parent.Children)
                 {
                     var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } && !isRow;
-                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace));
+                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace, parent.Role is SemanticRole.ListRole ? lists + 1 : lists));
                 }
             }
         }
@@ -233,6 +241,114 @@ public static class ModelCheck
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The structure of a list (ISO 32000-1 §14.8.4.3.3, Table 336: a list <c>L</c> holds list items <c>LI</c>, each an
+    /// optional label <c>Lbl</c> and a body <c>LBody</c>), as the list-item algorithm lays it out: a list is block flow
+    /// whose children are all list items, at most <see cref="ModelLimits.MaxListItems"/>, and numbering of its enum; a list
+    /// item, and only a list item, is laid out by <see cref="LayoutAlgorithmId.ListItem"/>, its children an optional label and
+    /// then its body, a flow box; an item is only the child of a list (a bare item outside a list is not a structure PDF
+    /// has); a label is inline, holding text runs of at most <see cref="ModelLimits.MaxLabelLength"/> code units together, or
+    /// one marker symbol; a label, a body and a marker symbol are nowhere else; lists nest at most
+    /// <see cref="ModelLimits.MaxListDepth"/> deep (<paramref name="lists"/>: the lists around the box).
+    /// </summary>
+    private static Error? List(Box box, int lists)
+    {
+        Error Invalid(string message, string value, string property, Node node) =>
+            Problem(DocumentErrorCodes.Input.Invalid.List, message, value, property, node);
+
+        var isList = box.Role is SemanticRole.ListRole;
+        if (box.Role is SemanticRole.ListRole { Numbering: var numbering } && !System.Enum.IsDefined(numbering))
+        {
+            return Invalid("A list's numbering is one of the values of ListNumbering.", numbering.ToString(), "numbering", box);
+        }
+
+        if (isList && lists >= ModelLimits.MaxListDepth)
+        {
+            return Invalid($"Lists may nest at most {ModelLimits.MaxListDepth} levels deep.", Number(lists + 1), "nesting", box);
+        }
+
+        if (isList && box.Layout != LayoutAlgorithmId.Flow)
+        {
+            return Invalid("A list is laid out as block flow.", box.Layout.ToString(), "layout", box);
+        }
+
+        if (isList && box.Children.Count > ModelLimits.MaxListItems)
+        {
+            return Invalid($"A list has at most {ModelLimits.MaxListItems} items.", Number(box.Children.Count), "items", box);
+        }
+
+        var isItem = box.Role is SemanticRole.ListItemRole;
+        if (isItem != (box.Layout == LayoutAlgorithmId.ListItem))
+        {
+            return Invalid("A list item, and only a list item, is laid out by the list-item algorithm.", $"{box.Role}/{box.Layout}", "layout", box);
+        }
+
+        if (isItem && !IsItemShape(box))
+        {
+            return Invalid("A list item holds an optional label and then its body, a flow box.", Number(box.Children.Count), "children", box);
+        }
+
+        if (box.Role is SemanticRole.ListLabelRole && LabelProblem(box) is { } label)
+        {
+            return Invalid(label, box.Layout.ToString(), "label", box);
+        }
+
+        foreach (var child in box.Children)
+        {
+            var problem = child switch
+            {
+                Box { Role: SemanticRole.ListItemRole } when !isList => "A list item is only a child of a list.",
+                _ when isList && child is not Box { Role: SemanticRole.ListItemRole } => "Every child of a list is a list item.",
+                Box { Role: SemanticRole.ListLabelRole or SemanticRole.ListBodyRole } when !isItem => "A list label and a list body are only parts of a list item.",
+                MarkerSymbol when box.Role is not SemanticRole.ListLabelRole => "A marker symbol is only the content of a list label.",
+                _ => null,
+            };
+            if (problem is not null)
+            {
+                return Invalid(problem, child is Box other ? other.Role.ToString() : child.GetType().Name, "parent", child);
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsItemShape(Box item) => item.Children.Count switch
+    {
+        1 => item.Children[0] is Box { Role: SemanticRole.ListBodyRole, Layout.Name: "flow" },
+        2 => item.Children[0] is Box { Role: SemanticRole.ListLabelRole } && item.Children[1] is Box { Role: SemanticRole.ListBodyRole, Layout.Name: "flow" },
+        _ => false,
+    };
+
+    /// <summary>Why a label is not valid, or null: inline, and one marker symbol or text runs only, of at most
+    /// <see cref="ModelLimits.MaxLabelLength"/> code units together.</summary>
+    private static string? LabelProblem(Box label)
+    {
+        if (label.Layout != LayoutAlgorithmId.Inline)
+        {
+            return "A list label is laid out inline.";
+        }
+
+        if (label.Children is [MarkerSymbol])
+        {
+            return null;
+        }
+
+        var length = 0;
+        foreach (var child in label.Children)
+        {
+            if (child is not TextRun run)
+            {
+                return "A list label holds one marker symbol, or text runs only.";
+            }
+
+            length += run.Text.Length;
+        }
+
+        return label.Children.Count == 0 ? "A list label holds one marker symbol, or text runs only."
+            : length > ModelLimits.MaxLabelLength ? $"A list label's text is at most {ModelLimits.MaxLabelLength} characters long; this one has {Number(length)}."
+            : null;
     }
 
     /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and positive.</summary>

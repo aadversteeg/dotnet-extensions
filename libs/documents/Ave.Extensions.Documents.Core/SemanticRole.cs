@@ -21,7 +21,7 @@ public abstract record SemanticRole
     /// <summary>
     /// The standard structure type the role is written as in a tagged PDF (ISO 32000-1 §14.8.4): <c>Document</c>,
     /// <c>Div</c>, <c>P</c>, <c>H1</c>–<c>H6</c>, <c>Table</c>, <c>THead</c>, <c>TBody</c>, <c>TR</c>, <c>TH</c>,
-    /// <c>TD</c> or <c>Figure</c>. Null for <see cref="Decorative"/>, which is no structure, and for a heading level
+    /// <c>TD</c>, <c>Figure</c>, <c>L</c>, <c>LI</c>, <c>Lbl</c> or <c>LBody</c>. Null for <see cref="Decorative"/>, which is no structure, and for a heading level
     /// outside 1–6, for which no standard type exists.
     /// </summary>
     public abstract string? StandardStructureType { get; }
@@ -69,6 +69,24 @@ public abstract record SemanticRole
     /// <param name="level">The level, 1 (most important) to 6. Front-ends validate the range.</param>
     /// <returns>The role.</returns>
     public static SemanticRole Heading(int level) => new HeadingRole(level);
+
+    /// <summary>A list (PDF structure type <c>L</c>, ISO 32000-1 §14.8.4.3.3): its children are list items.</summary>
+    /// <param name="numbering">How its items are numbered or marked, written as the list attribute <c>ListNumbering</c>
+    /// (§14.8.5.5, Table 347).</param>
+    /// <returns>The role.</returns>
+    public static SemanticRole List(ListNumbering numbering) => new ListRole(numbering);
+
+    /// <summary>One item of a list (PDF structure type <c>LI</c>, §14.8.4.3.3): an optional label, then its body.</summary>
+    public static SemanticRole ListItem { get; } = new ListItemRole();
+
+    /// <summary>The label of a list item, a bullet or a number (PDF structure type <c>Lbl</c>, §14.8.4.3.3).</summary>
+    /// <param name="replacementText">The text a drawn bullet stands for (the structure element's <c>/ActualText</c>,
+    /// §14.9.4), or null when the label is text itself.</param>
+    /// <returns>The role.</returns>
+    public static SemanticRole ListLabel(string? replacementText) => new ListLabelRole(replacementText);
+
+    /// <summary>The content of a list item (PDF structure type <c>LBody</c>, §14.8.4.3.3).</summary>
+    public static SemanticRole ListBody { get; } = new ListBodyRole();
 
     /// <summary>The role of <see cref="Document"/>.</summary>
     public sealed record DocumentRole : SemanticRole
@@ -202,5 +220,51 @@ public abstract record SemanticRole
         /// <summary>Returns <c>heading-N</c>.</summary>
         /// <returns>The text form.</returns>
         public override string ToString() => $"heading-{Level}";
+    }
+
+    /// <summary>A list.</summary>
+    /// <param name="Numbering">How its items are numbered or marked.</param>
+    public sealed record ListRole(ListNumbering Numbering) : SemanticRole
+    {
+        /// <summary>Returns <c>L</c>.</summary>
+        public override string? StandardStructureType => "L";
+
+        /// <summary>Returns <c>list numbering=…</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => $"list numbering={Numbering.ToString().ToLowerInvariant()}";
+    }
+
+    /// <summary>The role of <see cref="ListItem"/>.</summary>
+    public sealed record ListItemRole : SemanticRole
+    {
+        /// <summary>Returns <c>LI</c>.</summary>
+        public override string? StandardStructureType => "LI";
+
+        /// <summary>Returns <c>list-item</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => "list-item";
+    }
+
+    /// <summary>The label of a list item.</summary>
+    /// <param name="ReplacementText">The text a drawn bullet stands for, or null.</param>
+    public sealed record ListLabelRole(string? ReplacementText) : SemanticRole
+    {
+        /// <summary>Returns <c>Lbl</c>.</summary>
+        public override string? StandardStructureType => "Lbl";
+
+        /// <summary>Returns <c>list-label</c>, with the replacement text when there is one.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => ReplacementText is null ? "list-label" : $"list-label actual-text={QuotedText.Quote(ReplacementText)}";
+    }
+
+    /// <summary>The role of <see cref="ListBody"/>.</summary>
+    public sealed record ListBodyRole : SemanticRole
+    {
+        /// <summary>Returns <c>LBody</c>.</summary>
+        public override string? StandardStructureType => "LBody";
+
+        /// <summary>Returns <c>list-body</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => "list-body";
     }
 }

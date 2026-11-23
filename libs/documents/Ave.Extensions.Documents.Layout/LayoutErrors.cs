@@ -28,6 +28,17 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(box.Source);
 
+    /// <summary>A list item's label that would start left of the sheet (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>).</summary>
+    /// <param name="label">The label; its source is the item's.</param>
+    /// <param name="left">The label's left edge on the sheet, in points (negative).</param>
+    public static Error MarkerOutsideSheet(Box label, double left) =>
+        new Error(
+                LayoutErrorCodes.MarkerOutsideSheet,
+                $"The label of the list item made at {label.Source} would start {InvariantNumber.Format(-left)}pt left of the sheet's edge: it is wider than the room left of its item. Give the list more padding on the left.")
+            .With(ErrorMetadataKeys.Node, label.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(left))
+            .WithSource(label.Source);
+
     /// <summary>A header or footer area's content that does not fit in the area: an area never breaks.</summary>
     /// <param name="content">The area's content.</param>
     /// <param name="height">The area's height: its fixed height, or the page area's.</param>

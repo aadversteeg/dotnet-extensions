@@ -86,3 +86,28 @@ public enum PageCounter
 /// <param name="Height">The specified height, or null for <c>auto</c>.</param>
 /// <param name="Source">Where the image was written.</param>
 public sealed record ImageNode(NodeId Id, ImageData Image, Length? Width, Length? Height, SourceLocation Source) : Node(Id, Source);
+
+/// <summary>
+/// A list item's bullet drawn as a shape, not as a glyph (Chromium 159 draws the <c>disc</c>, <c>circle</c> and
+/// <c>square</c> markers of CSS Lists 3 §3.1 as shapes; case <c>li-ul-levels</c>): the only child of a list label
+/// (<see cref="SemanticRole.ListLabel"/>). Its size and place follow from its font's ascent (the list-item algorithm).
+/// </summary>
+/// <param name="Id">The node id.</param>
+/// <param name="Shape">Which bullet.</param>
+/// <param name="Style">The item's text properties: its font and size give the bullet's size, its colour the bullet's.</param>
+/// <param name="Source">Where the item was written.</param>
+public sealed record MarkerSymbol(NodeId Id, MarkerShape Shape, TextStyle Style, SourceLocation Source) : Node(Id, Source);
+
+/// <summary>The bullets a <see cref="MarkerSymbol"/> draws (CSS Counter Styles 3 §6.1, the symbols of <c>disc</c>,
+/// <c>circle</c> and <c>square</c>).</summary>
+public enum MarkerShape
+{
+    /// <summary>A filled circle.</summary>
+    Disc,
+
+    /// <summary>An open circle: a ring one CSS pixel wide.</summary>
+    Circle,
+
+    /// <summary>A filled square.</summary>
+    Square,
+}
