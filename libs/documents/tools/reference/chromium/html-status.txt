@@ -392,8 +392,26 @@ sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
+tf-after equal
+tf-before equal
+tf-empty refused Documents.Html.Unsupported.Table tfoot without rows at 6:9
+tf-head equal
+tf-pages listed A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page: page 1 reads 'row 1 body 1 row 2 body 2 row 3 body 3 row 4 body 4 row 5 body 5 row 6 body 6 row 7 body 7 row 8 body 8', Chromium 'row 1 body 1 row 2 body 2 row 3 body 3 row 4 body 4 row 5 body 5 row 6 body 6 row 7 body 7 total footer' (print.txt)
+tf-pages-auto equal
+tf-top-border equal
+tf-two equal
 tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.485, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
+tp-beside-auto equal
+tp-beside-length refused Documents.Html.Unsupported.Value width: 30% at 4:42
+tp-col-span equal
+tp-colgroup refused Documents.Html.Unsupported.Value width: 25% at 4:8
+tp-length-table refused Documents.Html.Unsupported.Value width: 240pt at 4:1
+tp-outer-border equal
+tp-sum-100 equal
+tp-sum-above equal
+tp-sum-below equal
+tp-thirds equal
 tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1

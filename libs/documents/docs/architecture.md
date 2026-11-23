@@ -648,7 +648,12 @@ cells keep padding, background and `vertical-align` `top`, `middle` or `bottom`;
 rows and groups no padding (§17.5), the table no padding (§17.6.2); `colspan` and `rowspan` are read by the rules for
 non-negative integers, a row span ends with its group (HTML Standard §4.9.12.1); at a page break between rows the
 engine splits the grid line there at its centre, its upper half ending one page and its lower half starting the next
-(`BoxDecorationBreak.Slice`), where Chromium paints that line whole on one page: not yet equal. Column sizes, as Chromium lays them out: in the automatic layout a
+(`BoxDecorationBreak.Slice`), each half a whole pixel at least, as Chromium prints it (`SplitLineHalves.AtLeastOnePixel`;
+"Table breaks" under Known limits). A footer group (`tfoot`) is drawn after the other row groups wherever it stands in the source; only
+the first is the table's footer, a later one is a row group in its place (CSS 2.1 §17.2; Chromium's
+`TableGroupedChildren`; cases `tf-after`, `tf-before`, `tf-head`, `tf-two`, `tf-top-border`, equal). The model's table
+has no footer group, so its rows are the last body rows: the tagged PDF has them in a `TBody`, not a `TFoot`, and
+Chromium's repetition of the footer on every page is not drawn (Known limits). Column sizes, as Chromium lays them out: in the automatic layout a
 column element's length is the column's preferred width (`TrackSize.Preferred`) and a column without one is sized by
 its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only for a table whose width is not `auto`
 (`ComputedStyle::IsFixedTableLayout`; case `tl-fixed-width-auto`, where a 30 pt column element under
@@ -658,11 +663,22 @@ columns without one share what is left (fill columns of weight 1). A table of wi
 need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
 it; the two agree while the content fits its column (case `tl-fixed-fill-wide-word`, listed;
-`HtmlListedDifferenceTests`). Refused (`Documents.Html.Unsupported.Table`,
+`HtmlListedDifferenceTests`). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
+the fixed layout of a table of width `100%`, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
+a percentage is of the width the columns share, the table's width less its outer half borders in the collapsing model
+(case `tp-outer-border`); percent columns alone grow or shrink in proportion to fill that width, whatever their sum
+(`tp-sum-100`, `tp-sum-below`, `tp-sum-above`, `tp-thirds`); beside columns without a width each keeps its percentage
+and those columns share the rest equally (`tp-beside-auto`); a span gives each of its columns the percentage
+(`tp-col-span`). Each is a fill column whose weight is its share, so layout divides the width exactly where Chromium cuts
+each share to 1/64 px and gives the last column the remainder (less than 0.012 pt per column). Refused at the column
+element (`Value`): a percent column in the automatic layout, beside a column of a length (Chromium widens the length
+columns to what the percentages leave, `tp-beside-length`), and percentages of 100 or more beside a column without a
+width (Chromium gives that column no width); a percent column, like a fill column, is never narrower than its
+content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
-(§17.2.1); a table part on another element than its HTML element; captions, footer groups, a header group after a row
+(§17.2.1); a table part on another element than its HTML element; captions, a header group after a row
 group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
-a column in which no cell starts; percent columns, a width on a cell or a column group, a table width other than
+a column in which no cell starts; the percent columns named above, a width on a cell or a column group (`tp-colgroup`), a table width other than
 `auto` and `100%`, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
@@ -717,6 +733,10 @@ fails the test, and so does a status that changes without the file; writing the 
 the committed file does not already name. To read it: `cut -d' ' -f2 html-status.txt | sort | uniq -c` gives the
 picture; grep a code or a property for the cases it holds back.
 
+The whole documents (`tools/reference/chromium/documents`: the timesheet on one page, a normal month and a long
+month, and the invoice) are compared by the same code, against their own files: `documents/measured/` and the status
+file `documents/html-status.txt`, one line per document, pinned by the same test and written by the same variable.
+
 ## Known limits (all stages)
 
 Each is documented next to its code as well.
@@ -734,6 +754,20 @@ Each is documented next to its code as well.
 - **A ligature across the border of an inline element:** the engine's text keeps every character the glyph
   shows, Chromium's print maps it to the first run's characters only (`f<span>i</span>x` reads "fx"; the rule for shaping
   across runs above; case `sr-same-font`, listed; `HtmlListedDifferenceTests`).
+- **A repeated table footer (HTML):** Chromium repeats a footer group at the end of every page its table is on when the
+  group is at most a quarter of the page area and does not break inside (`break-inside: avoid`, which the user-agent
+  style sheet gives `tfoot`), as it repeats a header group (`TableLayoutAlgorithm::Layout`); the model's table has no
+  footer group, so the engine draws the footer once, after the last body row (case `tf-pages`, listed;
+  `HtmlListedDifferenceTests`). With `break-inside: auto` on the footer group Chromium does not repeat it either
+  (case `tf-pages-auto`), and a table on one page prints the same in both (case `tf-after`).
+- **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
+  without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
+  column without a width they are refused, as are widths on cells and column groups. A percent column is never
+  narrower than its content's min-content width, where Chromium lets the content overflow (as for a fill column,
+  `tl-fixed-fill-wide-word`). The percentages are of the table's width less its outer half borders; the engine takes
+  that half border from the widest border at the table's edge, Chromium from the first row, so in a table whose rows
+  have outer borders of different widths the columns start up to half the difference apart (the cases have one border
+  width).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
 

@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- The invoice's shape: cells with only a thin grey bottom border, the footer row with a 1.5 pt top border, table
+     width 100%. -->
+<style>@page { size: 300pt 300pt; margin: 12pt; } body { font-size: 10.5pt; } table { width: 100%; }
+td, th { border: none; border-bottom: 0.75pt solid #ccc; padding: 3pt 6pt; } tfoot tr { border-top: 1.5pt solid #000; }</style></head><body>
+<table><thead><tr><th>item</th><th>amount</th></tr></thead>
+<tbody><tr><td>alpha</td><td>one</td></tr>
+<tr><td>beta</td><td>two</td></tr>
+</tbody><tfoot><tr><td>total</td><td>three</td></tr></tfoot></table>
+<p>after</p>
+</body></html>

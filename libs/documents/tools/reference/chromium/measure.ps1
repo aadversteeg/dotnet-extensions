@@ -19,6 +19,10 @@
 .PARAMETER Cases
     The cases to measure, by name (default: every case).
 
+.PARAMETER CaseFolder
+    The folder of the HTML files, relative to this folder (default: cases). The whole documents are in documents; a
+    folder elsewhere in the family works too, as long as the files it links to are inside the family folder.
+
 .PARAMETER PlaywrightImage
     The Playwright image: v1.65.1-noble by digest, the version package.json pins (Chromium 159).
 
@@ -26,11 +30,14 @@
     pwsh -NoProfile -File tools/reference/chromium/measure.ps1
 .EXAMPLE
     pwsh -NoProfile -File tools/reference/chromium/measure.ps1 mf4-line-0 widths
+.EXAMPLE
+    pwsh -NoProfile -File tools/reference/chromium/measure.ps1 -CaseFolder documents
 #>
 [CmdletBinding(PositionalBinding = $false)]
 param(
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Cases = @(),
+    [string]$CaseFolder = 'cases',
     [string]$PlaywrightImage = 'mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579'
 )
 
@@ -42,13 +49,13 @@ $out = Join-Path $here 'out'
 New-Item -ItemType Directory -Force $out | Out-Null
 
 $user = if ($IsWindows) { @() } else { @('--user', "$(id -u):$(id -g)") }
-$names = @(if ($Cases.Count -gt 0) { $Cases } else { Get-ChildItem (Join-Path $here 'cases') -Filter *.html | Sort-Object Name | ForEach-Object BaseName })
+$names = @(if ($Cases.Count -gt 0) { $Cases } else { Get-ChildItem (Join-Path $here $CaseFolder) -Filter *.html | Sort-Object Name | ForEach-Object BaseName })
 
 # MEASURE_IMAGE: measure.mjs records the image in versions.txt, next to the Chromium version and flags.
 $playwright = @('run', '--rm') + $user + @('-e', 'HOME=/tmp', '-e', "MEASURE_IMAGE=$PlaywrightImage", '-v', "${family}:/family", '-w', '/family/tools/reference/chromium', $PlaywrightImage)
 
 Write-Host "== 1. print with Chromium ($PlaywrightImage)"
-docker @playwright bash -c "npm ci --no-audit --no-fund --loglevel=error && node measure.mjs --step print $($names -join ' ')"
+docker @playwright bash -c "npm ci --no-audit --no-fund --loglevel=error && node measure.mjs --cases '$CaseFolder' --step print $($names -join ' ')"
 if ($LASTEXITCODE -ne 0) { throw 'the print step failed' }
 
 Write-Host '== 2. read the prints back in the reference tools image'
@@ -60,7 +67,7 @@ docker run --rm @user -v "${out}:/out" -v "${here}:/src:ro" $tools bash /src/ext
 if ($LASTEXITCODE -ne 0) { throw 'the extract step failed' }
 
 Write-Host '== 3. words and versions'
-docker @playwright node measure.mjs --step words @names
+docker @playwright node measure.mjs --cases $CaseFolder --step words @names
 if ($LASTEXITCODE -ne 0) { throw 'the words step failed' }
 
 Write-Host "Done. Compare $out with $(Join-Path $here 'measured')"

@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Two footer groups between two bodies: the first is the table's footer (drawn last), the second a row group in its
+     place (Chromium: TableGroupedChildren). -->
+<style>@page { size: 300pt 300pt; margin: 12pt; } body { font-size: 10.5pt; }</style></head><body>
+<table><tbody><tr><td>alpha</td><td>one</td></tr></tbody>
+<tfoot><tr><td>first</td><td>footer</td></tr></tfoot>
+<tbody><tr><td>beta</td><td>two</td></tr></tbody>
+<tfoot><tr><td>second</td><td>footer</td></tr></tfoot>
+<tbody><tr><td>gamma</td><td>three</td></tr></tbody></table>
+<p>after</p>
+</body></html>
