@@ -388,8 +388,8 @@ ii-align equal
 ii-baseline equal
 ii-breaks equal
 ii-height equal
-ii-hyphen listed A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it: page 1 reads 'a -b a -b a- b x', Chromium 'a - b a - b a- b x' (print.txt)
-ii-joiners listed A_line_breaks_beside_an_image_also_next_to_a_joiner_or_another_no_break_space_like_Chromium: page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x' (print.txt)
+ii-hyphen listed A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case: page 1 reads 'a -b a -b a- b x', Chromium 'a - b a - b a- b x' (print.txt)
+ii-joiners listed A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners: page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x' (print.txt)
 ii-page equal
 ii-table refused Documents.Html.Unsupported.Value width: 60pt at 4:1
 ii-wrap equal
@@ -462,7 +462,7 @@ sk-extreme open page 1 'gạọụ' x1 53.489, Chromium 54.417 (print.txt)
 sk-lato equal
 sk-lato-bold equal
 sk-lato-italic equal
-sk-misc listed An_image_a_shown_soft_hyphen_and_ligatures_are_cut_like_Chromium: page 1 reads 'gy py jump­ ing gyp fi fj ffi fly gy figure fjord', Chromium 'gy py jump­‐ ing gyp fi fj ffi fly gy figure fjord' (print.txt)
+sk-misc listed An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen: page 1 reads 'gy py jump­ ing gyp fi fj ffi fly gy figure fjord', Chromium 'gy py jump­‐ ing gyp fi fj ffi fly gy figure fjord' (print.txt)
 sk-nest equal
 sk-part equal
 sk-size equal
@@ -541,7 +541,7 @@ tw-pref refused Documents.Layout.ColumnsDoNotFit 157.805>150 at 21
 tw-span equal
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
-ws-border listed Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium: page 1 'bb' x0 28.395, Chromium 12 (print.txt)
+ws-border listed Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case: page 1 'bb' x0 28.395, Chromium 12 (print.txt)
 ws-break-spaces equal
 ws-forced equal
 ws-hang-break-spaces equal
@@ -549,7 +549,7 @@ ws-hang-normal equal
 ws-hang-pre equal
 ws-hang-pre-wrap equal
 ws-image equal
-ws-image-border listed Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium: page 1 'cd' baseline 43.5 (laid out at 43.5), Chromium 61.5 (print.txt)
+ws-image-border listed Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case: page 1 'cd' baseline 43.5 (laid out at 43.5), Chromium 61.5 (print.txt)
 ws-intrinsic refused Documents.Html.Unsupported.Value width: 20pt at 3:1
 ws-justify equal
 ws-justify-nbsp equal
@@ -562,6 +562,6 @@ ws-overflow equal
 ws-pre equal
 ws-pre-line equal
 ws-pre-wrap equal
-ws-soft listed A_soft_hyphen_and_a_zero_width_space_in_nowrap_text_do_not_break_it_like_Chromium: page 1 reads 'aabbcc aa­ bb cc aabbcc aa­ bb cc x', Chromium 'aa­bb​cc aa­‐ bb​ cc aa­bb​cc aa­‐ bb​ cc x' (print.txt)
+ws-soft listed A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them: page 1 reads 'aabbcc aa­ bb cc aabbcc aa­ bb cc x', Chromium 'aa­bb​cc aa­‐ bb​ cc aa­bb​cc aa­‐ bb​ cc x' (print.txt)
 ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 ws-table refused Documents.Html.Unsupported.Value width: 20pt at 4:1

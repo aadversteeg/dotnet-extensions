@@ -91,12 +91,12 @@ internal static class HtmlCases
         ["a4-line-beside-lines"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["fr-f4-padding-page-start"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
-        ["ii-hyphen"] = "A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it",
-        ["ii-joiners"] = "A_line_breaks_beside_an_image_also_next_to_a_joiner_or_another_no_break_space_like_Chromium",
-        ["ws-border"] = "Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium",
-        ["ws-image-border"] = "Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium",
-        ["ws-soft"] = "A_soft_hyphen_and_a_zero_width_space_in_nowrap_text_do_not_break_it_like_Chromium",
-        ["sk-misc"] = "An_image_a_shown_soft_hyphen_and_ligatures_are_cut_like_Chromium",
+        ["ii-hyphen"] = "A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case",
+        ["ii-joiners"] = "A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners",
+        ["ws-border"] = "Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
+        ["ws-image-border"] = "Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
+        ["ws-soft"] = "A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them",
+        ["sk-misc"] = "An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -262,6 +262,17 @@ internal static class HtmlCases
             ({ } found, true) => $"listed {listed}: {found}",
             ({ } found, false) => committed == "open" ? $"open {found}" : $"different {found}",
         };
+    }
+
+    /// <summary>Chromium's print of a case as <see cref="Status(CaseFolder, string, string?)"/> compares it: <c>print.txt</c>
+    /// with each line that Chromium clips around the glyphs' ink replaced by its pieces (<see cref="Clips"/>).</summary>
+    /// <param name="name">The case.</param>
+    /// <returns>The print.</returns>
+    public static PrintedPages ChromiumPrint(string name)
+    {
+        var clips = Clips(Cases, name);
+        var print = PrintedPages.Parse(File.ReadAllText(Measured(Cases, name) + ".print.txt"));
+        return new([.. print.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, clips)] })]);
     }
 
     /// <summary>
