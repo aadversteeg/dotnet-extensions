@@ -2157,6 +2157,38 @@ public class MeasuredReferenceFilesTests
         ["tp-thirds.lines.txt"] = 17,
         ["tp-thirds.print.txt"] = 25,
         ["tp-thirds.words.txt"] = 7,
+        ["ts-paint.boxes.txt"] = 5,
+        ["ts-paint.lines.txt"] = 6,
+        ["ts-paint.print.txt"] = 24,
+        ["ts-paint.words.txt"] = 5,
+        ["ts-plain.boxes.txt"] = 5,
+        ["ts-plain.lines.txt"] = 0,
+        ["ts-plain.print.txt"] = 22,
+        ["ts-plain.words.txt"] = 5,
+        ["ts-spacing-one.boxes.txt"] = 5,
+        ["ts-spacing-one.lines.txt"] = 0,
+        ["ts-spacing-one.print.txt"] = 26,
+        ["ts-spacing-one.words.txt"] = 5,
+        ["ts-spacing-two.boxes.txt"] = 5,
+        ["ts-spacing-two.lines.txt"] = 0,
+        ["ts-spacing-two.print.txt"] = 26,
+        ["ts-spacing-two.words.txt"] = 5,
+        ["ts-span.boxes.txt"] = 8,
+        ["ts-span.lines.txt"] = 0,
+        ["ts-span.print.txt"] = 44,
+        ["ts-span.words.txt"] = 11,
+        ["ts-table-border.boxes.txt"] = 5,
+        ["ts-table-border.lines.txt"] = 0,
+        ["ts-table-border.print.txt"] = 26,
+        ["ts-table-border.words.txt"] = 5,
+        ["ts-table-padding.boxes.txt"] = 5,
+        ["ts-table-padding.lines.txt"] = 0,
+        ["ts-table-padding.print.txt"] = 26,
+        ["ts-table-padding.words.txt"] = 5,
+        ["ts-width-100.boxes.txt"] = 3,
+        ["ts-width-100.lines.txt"] = 0,
+        ["ts-width-100.print.txt"] = 17,
+        ["ts-width-100.words.txt"] = 4,
         ["tw-auto.boxes.txt"] = 29,
         ["tw-auto.lines.txt"] = 37,
         ["tw-auto.print.txt"] = 75,
@@ -2297,7 +2329,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(563);
+        cases.Should().HaveCount(571);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

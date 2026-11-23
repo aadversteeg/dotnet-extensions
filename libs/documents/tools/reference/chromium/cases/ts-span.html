@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Separated borders: a cell over two columns wider than both covers the 6 pt spacing between them; a cell over two rows covers the spacing between those, as tall as both rows and the spacing. -->
+<style>@page { size: 300pt 240pt; margin: 12pt; } body { font-size: 10.5pt; } table { border-collapse: separate; border-spacing: 6pt; border: 1.5pt solid #ff0000; } td { border-color: #0000ff; } p { margin-bottom: 6pt; }</style></head><body>
+<table id="t">
+<tr><td id="a1" colspan="2">Spanning both columns here</td></tr>
+<tr><td id="a2">one</td><td>two</td></tr>
+</table>
+<p>gap</p>
+<table id="u">
+<tr><td id="b1" rowspan="2">one</td><td>two</td></tr>
+<tr><td id="b2">three</td></tr>
+</table>
+<p>after</p>
+</body></html>
