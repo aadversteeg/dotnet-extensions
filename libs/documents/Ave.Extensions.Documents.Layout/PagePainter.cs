@@ -124,14 +124,21 @@ public static class PagePainter
         box.Box.Style.Background is { } color ? [new FillRectangle(new Rect(origin, box.Size), color)] : [];
 
     /// <summary>
-    /// The border sides the fragment paints, each a filled rectangle along its edge of the border box (solid borders
-    /// only, CSS Backgrounds 3 §3). The top and bottom sides run the full width; the left and right sides fill the
-    /// height between them. LIMIT: where two sides of different colours meet, CSS joins them on the diagonal of the
-    /// corner (CSS Backgrounds 3, colour transitions at corners); here the top and bottom sides cover the corners.
+    /// The border sides the fragment paints. A border whose sides are all solid is painted as four filled rectangles
+    /// along the edges of the border box (CSS Backgrounds 3 §3): the top and bottom sides run the full width, the left and
+    /// right sides fill the height between them. LIMIT: where two solid sides of different colours meet, CSS joins them on
+    /// the diagonal of the corner (CSS Backgrounds 3 §4.4, colour transitions at corners); here the top and bottom sides
+    /// cover the corners. A border with an inset or outset side is painted as Chromium 159 paints it
+    /// (<see cref="ShadedBorder"/>).
     /// </summary>
     private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin)
     {
         var (border, size) = (box.Border, box.Size);
+        if (border.Top.Style != BorderStyle.Solid || border.Right.Style != BorderStyle.Solid || border.Bottom.Style != BorderStyle.Solid || border.Left.Style != BorderStyle.Solid)
+        {
+            return ShadedBorder(border, new Rect(origin, size));
+        }
+
         var (top, bottom) = (border.Top.Width.Points, border.Bottom.Width.Points);
         IEnumerable<(BorderSide Side, Rect Area)> sides =
         [
@@ -141,6 +148,74 @@ public static class PagePainter
             (border.Right, new Rect(origin + new Point(size.Width - border.Right.Width.Points, top), new Size(border.Right.Width.Points, size.Height - top - bottom))),
         ];
         return sides.Where(side => side.Side.IsVisible).Select(side => (DrawItem)new FillRectangle(side.Area, side.Side.Color));
+    }
+
+    /// <summary>The four sides of a border in the order <see cref="ShadedBorder"/> considers them: top, bottom, right, left.</summary>
+    private enum Edge { Top, Bottom, Right, Left }
+
+    /// <summary>
+    /// A border with an inset or outset side, as Chromium 159 prints it (cases <c>bs-widths</c>, <c>bs-corners</c>,
+    /// <c>bs-sides</c>, <c>hr-default</c>): each visible side is one fill in its painted colour
+    /// (<see cref="BorderShades.Painted"/>), the inset and outset sides in the order top, bottom, right, left, then the solid
+    /// sides in the same order (<c>bs-corners</c>: a solid top beside inset sides is painted last). Each side runs along
+    /// its whole edge of the border box, over both corners. At a corner where it meets a visible side painted before it in
+    /// another colour it is cut on the line from the outer to the inner corner of the border (45 degrees where the two widths
+    /// are equal), so each side shows its half of the corner; beside a side of its own colour, or a side of width 0, it covers
+    /// the corner (<c>bs-sides</c>). A side cut at a corner is a filled path; one that is not stays a filled rectangle, never
+    /// a path of four sides along the axes. The border box is painted with its edges on whole CSS pixels of the page,
+    /// each rounded to the nearest (<c>bs-colours</c>: a box 28⅔ px high is painted 29 px high, its cut sides too); the
+    /// widths of the sides stay as they are.
+    /// </summary>
+    private static IEnumerable<DrawItem> ShadedBorder(Border border, Rect box)
+    {
+        BorderSide SideOf(Edge edge) => edge switch
+        {
+            Edge.Top => border.Top,
+            Edge.Bottom => border.Bottom,
+            Edge.Right => border.Right,
+            _ => border.Left,
+        };
+        Color ColorOf(Edge edge) => BorderShades.Painted(SideOf(edge), edge is Edge.Top or Edge.Left);
+        static (Edge Start, Edge End) Neighbours(Edge edge) => edge is Edge.Top or Edge.Bottom ? (Edge.Left, Edge.Right) : (Edge.Top, Edge.Bottom);
+
+        Edge[] edges = [Edge.Top, Edge.Bottom, Edge.Right, Edge.Left];
+        var order = edges.Where(edge => SideOf(edge).Style != BorderStyle.Solid).Concat(edges.Where(edge => SideOf(edge).Style == BorderStyle.Solid))
+            .Where(edge => SideOf(edge).IsVisible).ToArray();
+        var (x0, y0) = (CssPixels.Round(box.Origin.X), CssPixels.Round(box.Origin.Y));
+        var (x1, y1) = (CssPixels.Round(box.Origin.X + box.Size.Width), CssPixels.Round(box.Origin.Y + box.Size.Height));
+        var (width, height) = (x1 - x0, y1 - y0);
+        static Rect Area(double x, double y, double width, double height) => new(new Point(x, y), new Size(width, height));
+        var (top, right, bottom, left) = (border.Top.Width.Points, border.Right.Width.Points, border.Bottom.Width.Points, border.Left.Width.Points);
+        for (var index = 0; index < order.Length; index++)
+        {
+            var edge = order[index];
+            var color = ColorOf(edge);
+            bool Cut(Edge neighbour) => Array.IndexOf(order, neighbour, 0, index) >= 0 && ColorOf(neighbour) != color;
+            var (start, end) = Neighbours(edge);
+            var (cutStart, cutEnd) = (Cut(start), Cut(end));
+            if (!cutStart && !cutEnd)
+            {
+                yield return new FillRectangle(edge switch
+                {
+                    Edge.Top => Area(x0, y0, width, top),
+                    Edge.Bottom => Area(x0, y1 - bottom, width, bottom),
+                    Edge.Right => Area(x1 - right, y0, right, height),
+                    _ => Area(x0, y0, left, height),
+                }, color);
+                continue;
+            }
+
+            // The outer edge from its start corner to its end corner, then the inner edge back: at a cut end the inner
+            // point is the inner corner of the border, else the point on the outer edge's line across the corner.
+            Point[] corners = edge switch
+            {
+                Edge.Top => [new(x0, y0), new(x1, y0), new(cutEnd ? x1 - right : x1, y0 + top), new(cutStart ? x0 + left : x0, y0 + top)],
+                Edge.Bottom => [new(x0, y1), new(x1, y1), new(cutEnd ? x1 - right : x1, y1 - bottom), new(cutStart ? x0 + left : x0, y1 - bottom)],
+                Edge.Right => [new(x1, y0), new(x1, y1), new(x1 - right, cutEnd ? y1 - bottom : y1), new(x1 - right, cutStart ? y0 + top : y0)],
+                _ => [new(x0, y0), new(x0, y1), new(x0 + left, cutEnd ? y1 - bottom : y1), new(x0 + left, cutStart ? y0 + top : y0)],
+            };
+            yield return new FillPath([new PathContour(corners[0], [.. corners.Skip(1).Select(corner => (PathSegment)new PathLine(corner))])], PathFillRule.NonZero, color);
+        }
     }
 
     /// <summary>

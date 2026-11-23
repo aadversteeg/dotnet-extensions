@@ -104,9 +104,18 @@ internal static class BoxProperties
 
         foreach (var side in Sides)
         {
-            // CSS Backgrounds 3 §3.1–3.3: a style of none or hidden computes the width to 0 (no line, no room).
-            yield return new($"border-{side}-style", "none, hidden, solid; inset and outset only where the width is 0", (value, facts) =>
-                value is CssKeyword { Name: "none" or "hidden" or "solid" } || IsZero(facts.Style, $"border-{side}-width") ? null : "only solid borders are drawn");
+            // CSS Backgrounds 3 §3.1–3.3: a style of none or hidden computes the width to 0 (no line, no room). Inset and
+            // outset are painted in two colours taken from the border colour (Layout's BorderShades, cases bs-*); a table's
+            // lines are drawn solid by the table's layout, and inset and outset sides on one box are not measured.
+            yield return new($"border-{side}-style", "none, hidden, solid; inset and outset on a block box that is no table part, not both on one box; any value where the width is 0", (value, facts) => value switch
+            {
+                _ when IsZero(facts.Style, $"border-{side}-width") || !facts.IsBlock => null,
+                CssKeyword { Name: "none" or "hidden" or "solid" } => null,
+                CssKeyword { Name: "inset" or "outset" } when TableProperties.IsPart(facts) => "an inset or outset border on a table or a part of a table is not drawn in this version: its lines are drawn solid",
+                CssKeyword { Name: "inset" or "outset" } keyword when HasStyle(facts.Style, keyword.Name == "inset" ? "outset" : "inset") => "inset and outset sides on one box are not drawn in this version",
+                CssKeyword { Name: "inset" or "outset" } => null,
+                _ => "only solid, inset and outset borders are drawn; use solid",
+            });
             yield return new($"border-{side}-width", "a length on a block box; 0 on an inline box, a column or a column group",
                 (value, facts) => TableProperties.BorderWidth(value, facts) ?? (facts.IsBlock || IsZero(value) ? null : "borders on inline boxes are not drawn in this version"));
             yield return new($"border-{side}-color", "a colour of alpha 1, or currentcolor; any colour where the width is 0", (value, facts) =>
@@ -229,11 +238,15 @@ internal static class BoxProperties
         yield return new("box-decoration-break", "slice; clone on a box with no border, padding or background", (value, facts) =>
             IsKeyword(value, "slice") || !facts.IsBlock || !HasDecoration(facts.Style) ? null : "a cloned box decoration is not drawn in this version: the document model slices every block");
 
-        // CSS Overflow 3 §3.1: hidden and clip would clip content that passes a block box (a long word).
+        // CSS Overflow 3 §3.1: hidden and clip would clip content that passes a block box (a long word). A block box with
+        // no children has no content to clip, and hidden there (the user-agent style of hr) is drawn as visible, where a
+        // border, padding or height at its top or bottom keeps its own margins from collapsing through it (CSS 2.1 §8.3.1),
+        // so the formatting context hidden starts (CSS Overflow 3 §3.1) changes nothing either (cases hr-*).
         foreach (var name in new[] { "overflow-x", "overflow-y" })
         {
-            yield return new(name, "visible; any value on an inline box or an image (its content fills its box: object-fit is fill)",
-                (value, facts) => IsKeyword(value, "visible") || !facts.IsBlock || facts.IsReplaced ? null : "clipped overflow is not drawn in this version");
+            yield return new(name, "visible; hidden on a block box with no children and a border, padding or height that is not 0 at its top or bottom; any value on an inline box or an image (its content fills its box: object-fit is fill)",
+                (value, facts) => IsKeyword(value, "visible") || !facts.IsBlock || facts.IsReplaced || (IsKeyword(value, "hidden") && !facts.HasChildren && IsClosed(facts.Style))
+                    ? null : "clipped overflow is not drawn in this version");
         }
 
         // CSS UI 4 §3: outline-style is only none, so nothing is drawn.
@@ -287,6 +300,16 @@ internal static class BoxProperties
     };
 
     private static bool IsZero(ComputedStyle style, string property) => IsZero(style[PropertyRegistry.Find(property)!]);
+
+    /// <summary>A side of the box with this border style and a width that is not 0.</summary>
+    private static bool HasStyle(ComputedStyle style, string borderStyle) =>
+        Sides.Any(side => IsKeyword(style[PropertyRegistry.Find($"border-{side}-style")!], borderStyle) && !IsZero(style, $"border-{side}-width"));
+
+    /// <summary>A border or padding that is not 0 at the box's top or bottom, or a height that is a length above 0: its top
+    /// and bottom margins do not collapse through it (CSS 2.1 §8.3.1).</summary>
+    private static bool IsClosed(ComputedStyle style) =>
+        new[] { "border-top-width", "border-bottom-width", "padding-top", "padding-bottom" }.Any(property => !IsZero(style, property))
+        || style[PropertyRegistry.Find("height")!] is CssLength { Value.Points: > 0 };
 
     /// <summary>A border, padding or background on the box.</summary>
     private static bool HasDecoration(ComputedStyle style) =>

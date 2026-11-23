@@ -194,4 +194,37 @@ public class ModelCheckTests
 
         Refused(Document(table)).Code.Should().Be(DocumentErrorCodes.Input.Invalid.Columns);
     }
+
+    [Fact]
+    public void A_border_style_the_enum_does_not_have_is_refused()
+    {
+        var side = new BorderSide(1.Pt(), Color.Black, (BorderStyle)7);
+
+        Refused(WithStyle(BoxStyle.Initial with { Border = new Border(side, BorderSide.None, BorderSide.None, BorderSide.None) })).Code.Should().Be(DocumentErrorCodes.Input.Invalid.BorderStyle);
+    }
+
+    [Fact]
+    public void An_inset_side_on_a_table_cell_is_refused_its_lines_are_drawn_solid()
+    {
+        var inset = Border.All(new BorderSide(1.Pt(), Color.Black, BorderStyle.Inset));
+        var table = new Box(new NodeId(500), SemanticRole.Table, LayoutAlgorithmId.Tracks, BoxStyle.Initial with { Columns = [new TrackSize.Preferred(50.Pt())] },
+            [new Box(new NodeId(501), SemanticRole.TableBody, LayoutAlgorithmId.Flow, BoxStyle.Initial with { TableDisplay = TableDisplay.RowGroup },
+                [new Box(new NodeId(502), SemanticRole.TableRow, LayoutAlgorithmId.Flow, BoxStyle.Initial with { TableDisplay = TableDisplay.Row },
+                    [new Box(new NodeId(503), SemanticRole.TableCell, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Border = inset }, [Paragraph(1, "x")], At(0))], At(0))], At(0))], At(0));
+
+        var error = Refused(Document(table));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.BorderStyle);
+        error.Metadata![ErrorMetadataKeys.Node].Should().Be("#503");
+    }
+
+    [Fact]
+    public void Inset_and_outset_sides_on_one_box_are_refused_and_an_outset_side_of_width_0_is_no_side()
+    {
+        var inset = new BorderSide(1.Pt(), Color.Black, BorderStyle.Inset);
+        var outset = new BorderSide(1.Pt(), Color.Black, BorderStyle.Outset);
+
+        Refused(WithStyle(BoxStyle.Initial with { Border = new Border(inset, outset, inset, inset) })).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.BorderStyle);
+        DocumentLayout.Run(WithStyle(BoxStyle.Initial with { Border = new Border(inset, outset with { Width = 0.Pt() }, inset, inset) }), TestFonts.Set).IsSuccess.Should().BeTrue();
+    }
 }

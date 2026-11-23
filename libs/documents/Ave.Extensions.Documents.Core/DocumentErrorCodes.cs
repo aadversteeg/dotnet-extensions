@@ -66,6 +66,9 @@ public static class DocumentErrorCodes
             /// with more decorations than <c>ModelLimits.MaxDecorations</c>. Metadata: Value, Property.</summary>
             public static readonly ErrorCode TextDecoration = _ / "TextDecoration";
 
+            /// <summary>A border side with a style its enum does not have. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
+
             /// <summary>An <c>orphans</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3: "Only
             /// positive integers are allowed"). Metadata: Value, Property.</summary>
             public static readonly ErrorCode Orphans = _ / "Orphans";
@@ -159,6 +162,11 @@ public static class DocumentErrorCodes
             /// boxes, whose columns are sized by the intrinsic widths of their content (a sized box's share in them is not
             /// built). Metadata: Value, Property.</summary>
             public static readonly ErrorCode Size = _ / "Size";
+
+            /// <summary>An inset or outset border side where this version does not draw it: on a table or a part of a
+            /// table, whose lines are drawn solid by the table's layout, or on a box with inset and outset sides together
+            /// (not measured). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
         }
     }
 }

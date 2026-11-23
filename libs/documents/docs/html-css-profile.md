@@ -94,6 +94,16 @@ names nothing.
 computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
 so `clip` beside `visible` is accepted and kept, as in Chromium.
 
+`border-style: inset` and `outset` on a block box: the top and left sides are drawn darker and the bottom and right
+sides lighter for `inset`, the other way round for `outset`, in two colours taken from the border colour as Chromium
+takes them (by the colour's luminance: a dark colour gets two lighter shades, a light one its darker shade and
+itself, any other a darker and a lighter shade; `currentcolor` gives the shades of #eeeeee whatever the text colour);
+where two sides of different colours meet, the corner is split on the line from its outer to its inner point (cases
+`bs-*`, `hr-*`). Refused: on a table or a part of one, whose lines are drawn solid, and inset beside outset sides on
+one box. `hr` is drawn with its default style and its `color`, `noshade`, `size`, `width` and `align` attributes:
+`overflow: hidden` is accepted on a block box with no children and a border, padding or height that is not 0 at its
+top or bottom, where it clips nothing.
+
 `width` on a table part: a table is drawn at `auto` or `100%`; a `col` takes a length, or a percentage in the fixed
 layout (`table-layout: fixed` on a table of width `100%`) when every other column is a percentage or has no width
 and, beside a column without a width, the percentages add up to less than 100. A percentage on a `col` of the

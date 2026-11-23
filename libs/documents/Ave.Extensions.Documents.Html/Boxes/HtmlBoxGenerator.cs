@@ -574,10 +574,17 @@ public static partial class HtmlBoxGenerator
         private BoxStyle BoxStyleOf(StyledElement element)
         {
             Length Side(string name) => Value(element, name) is CssLength length ? LayoutUnits(length.Value) : Length.Zero;
+            // An inset or outset side whose colour is currentcolor (the initial value) takes its two shades from #eeeeee,
+            // whatever the colour is (Chromium 159: black and gray both print #9a9a9a and #eeeeee, an explicit black
+            // #545454 and #a8a8a8; cases bs-widths, hr-default).
             BorderSide Border(string side) =>
-                Value(element, $"border-{side}-style") is CssKeyword { Name: "solid" } && Value(element, $"border-{side}-width") is CssLength { Value.Points: > 0 } width
+                Value(element, $"border-{side}-style") is CssKeyword { Name: "solid" or "inset" or "outset" } keyword && Value(element, $"border-{side}-width") is CssLength { Value.Points: > 0 } width
                 && Value(element, $"border-{side}-color") is { } color && ColorOf(BoxProperties.Resolved(color, element.Style)) is { } drawn
-                    ? new BorderSide(width.Value, drawn)
+                    ? keyword.Name switch
+                    {
+                        "solid" => new BorderSide(width.Value, drawn),
+                        var shaded => new BorderSide(width.Value, color is CssKeyword { Name: "currentcolor" } ? new Color(0xee, 0xee, 0xee) : drawn, shaded == "inset" ? BorderStyle.Inset : BorderStyle.Outset),
+                    }
                     : BorderSide.None;
             static BreakBetween Between(CssValue? value) => value switch
             {

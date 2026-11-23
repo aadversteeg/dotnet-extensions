@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Globalization;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.ErrorPaths;
@@ -141,6 +142,7 @@ public static class ModelCheck
         return Sides(style.Margin, "margin", box, DocumentErrorCodes.Input.Unsupported.NegativeMargin)
             ?? Sides(style.Padding, "padding", box, DocumentErrorCodes.Input.Invalid.Length)
             ?? Sides(style.Border.Widths, "border", box, DocumentErrorCodes.Input.Invalid.Length)
+            ?? BorderStyles(box)
             ?? (style.Orphans < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Orphans, "Orphans must be at least 1 line.", Number(style.Orphans), "orphans", box) : null)
             ?? (style.Widows < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Widows, "Widows must be at least 1 line.", Number(style.Widows), "widows", box) : null)
             ?? Columns(box)
@@ -439,6 +441,39 @@ public static class ModelCheck
         }
 
         return null;
+    }
+
+    /// <summary>The styles of a box's border sides: each one of <see cref="BorderStyle"/> (else Input.Invalid.BorderStyle);
+    /// inset and outset (CSS Backgrounds 3 §3.2) only on a box that is no table part, since a table's lines are drawn solid
+    /// by its layout (a table, a group, a row, and a row's cells, checked with their row), and not inset and outset sides on
+    /// one box, which is not measured (else Input.Unsupported.BorderStyle). A side of width 0 is not drawn, so its style is
+    /// not checked but for the enum.</summary>
+    private static Error? BorderStyles(Box box)
+    {
+        var border = box.Style.Border;
+        BorderSide[] sides = [border.Top, border.Right, border.Bottom, border.Left];
+        foreach (var side in sides)
+        {
+            if (!System.Enum.IsDefined(side.Style))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.BorderStyle, "The border style is not one the model has.", side.Style.ToString(), "border-style", box);
+            }
+        }
+
+        bool Drawn(BorderSide side, BorderStyle style) => side.IsVisible && side.Style == style;
+        if (sides.Any(side => Drawn(side, BorderStyle.Inset)) && sides.Any(side => Drawn(side, BorderStyle.Outset)))
+        {
+            return Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "Inset and outset sides on one box are not drawn in this version.", border.ToString(), "border-style", box);
+        }
+
+        static bool IsShaded(Box part) =>
+            new[] { part.Style.Border.Top, part.Style.Border.Right, part.Style.Border.Bottom, part.Style.Border.Left }.Any(side => side.IsVisible && side.Style != BorderStyle.Solid);
+        var parts = box.Layout == LayoutAlgorithmId.Tracks || box.Style.TableDisplay != TableDisplay.None ? new[] { box } : [];
+        var cells = box.Style.TableDisplay == TableDisplay.Row ? box.Children.OfType<Box>() : [];
+        return parts.Concat(cells).FirstOrDefault(IsShaded) is { } shaded
+            ? Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "An inset or outset border on a table or a part of a table is not drawn in this version: its lines are drawn solid.",
+                shaded.Style.Border.ToString(), "border-style", shaded)
+            : null;
     }
 
     /// <summary>Four sides: finite and at most <see cref="ModelLimits.MaxLength"/> (else Input.Invalid.Length), and not
