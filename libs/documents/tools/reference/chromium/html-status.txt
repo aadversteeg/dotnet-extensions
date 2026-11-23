@@ -553,6 +553,14 @@ tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-insets refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-pref refused Documents.Html.Unsupported.Value width: 300pt at 6:1
 tw-span refused Documents.Html.Unsupported.Value width: 300pt at 4:1
+twd-cell-col refused Documents.Html.Unsupported.Value width: 90pt at 6:5
+twd-cell-row refused Documents.Html.Unsupported.Value width: 80pt at 5:5
+twd-cell-span refused Documents.Html.Unsupported.Value width: 150pt at 5:5
+twd-cell-two refused Documents.Html.Unsupported.Value width: 60pt at 5:5
+twd-fraction refused Documents.Html.Unsupported.Value width: 200.1pt at 4:1
+twd-sum refused Documents.Html.Unsupported.Value width: 150pt at 4:1
+twd-table-narrow refused Documents.Html.Unsupported.Value width: 40pt at 4:1
+twd-table-wide refused Documents.Html.Unsupported.Value width: 200pt at 4:1
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
 ws-border refused Documents.Html.Unsupported.Value width: 6pt at 6:1

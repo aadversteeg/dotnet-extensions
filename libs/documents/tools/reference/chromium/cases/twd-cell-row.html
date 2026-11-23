@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Cell widths in the first row and in a later row: a, automatic layout, first row; b, automatic, separated, second row; c, fixed layout (table 200pt), first row; d, fixed, separated, second row; width 80pt. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<tr><td id="one-a" style="width: 80pt">one</td><td>text with more words</td></tr>
+<tr><td id="two-a">two</td><td>text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s">
+<tr><td id="one-b">one</td><td>text with more words</td></tr>
+<tr><td id="two-b" style="width: 80pt">two</td><td>text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="f" style="width: 200pt">
+<tr><td id="one-c" style="width: 80pt">one</td><td>text with more words</td></tr>
+<tr><td id="two-c">two</td><td>text with more words</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s f" style="width: 200pt">
+<tr><td id="one-d">one</td><td>text with more words</td></tr>
+<tr><td id="two-d" style="width: 80pt">two</td><td>text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>
