@@ -340,6 +340,18 @@ public class MeasuredReferenceFilesTests
         ["a4-header-image-228-beside-line.lines.txt"] = 35,
         ["a4-header-image-228-beside-line.print.txt"] = 48,
         ["a4-header-image-228-beside-line.words.txt"] = 8,
+        ["a4-header-image-228-beside-fit.boxes.txt"] = 4,
+        ["a4-header-image-228-beside-fit.lines.txt"] = 35,
+        ["a4-header-image-228-beside-fit.print.txt"] = 53,
+        ["a4-header-image-228-beside-fit.words.txt"] = 13,
+        ["a4-header-image-228-beside-two-pages.boxes.txt"] = 4,
+        ["a4-header-image-228-beside-two-pages.lines.txt"] = 35,
+        ["a4-header-image-228-beside-two-pages.print.txt"] = 61,
+        ["a4-header-image-228-beside-two-pages.words.txt"] = 21,
+        ["a4-header-image-228-background-beside.boxes.txt"] = 4,
+        ["a4-header-image-228-background-beside.lines.txt"] = 38,
+        ["a4-header-image-228-background-beside.print.txt"] = 50,
+        ["a4-header-image-228-background-beside.words.txt"] = 7,
         ["a4-header-image-228-line3-below.boxes.txt"] = 2,
         ["a4-header-image-228-line3-below.lines.txt"] = 15,
         ["a4-header-image-228-line3-below.print.txt"] = 23,
@@ -384,6 +396,10 @@ public class MeasuredReferenceFilesTests
         ["a4-header-row-image-228.lines.txt"] = 23,
         ["a4-header-row-image-228.print.txt"] = 33,
         ["a4-header-row-image-228.words.txt"] = 4,
+        ["a4-header-row-image-228-beside-line.boxes.txt"] = 6,
+        ["a4-header-row-image-228-beside-line.lines.txt"] = 49,
+        ["a4-header-row-image-228-beside-line.print.txt"] = 67,
+        ["a4-header-row-image-228-beside-line.words.txt"] = 12,
         ["a4-header-row-image-row.boxes.txt"] = 4,
         ["a4-header-row-image-row.lines.txt"] = 37,
         ["a4-header-row-image-row.print.txt"] = 53,
@@ -2265,7 +2281,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(555);
+        cases.Should().HaveCount(559);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
