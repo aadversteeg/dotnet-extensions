@@ -479,9 +479,17 @@ sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_i
 sz-box-sizing equal
 sz-height refused Documents.Html.Unsupported.Value height: 60pt at 3:1
 sz-height-box-sizing refused Documents.Html.Unsupported.Value height: 40pt at 3:1
+sz-height-box-sizing-break refused Documents.Html.Unsupported.Value height: 300pt at 4:1
 sz-height-break refused Documents.Html.Unsupported.Value height: 300pt at 4:1
+sz-height-forced refused Documents.Html.Unsupported.Value height: 100pt at 4:1
+sz-height-overflow-page refused Documents.Html.Unsupported.Value height: 100pt at 4:1
+sz-height-percent refused Documents.Html.Unsupported.Value height: 100pt at 3:1
+sz-height-rest-short refused Documents.Html.Unsupported.Value height: 170pt at 4:1
 sz-margin-auto equal
+sz-max-height refused Documents.Css.Unsupported.Value max-height: 20pt at 3:20
+sz-min-height-break refused Documents.Css.Unsupported.Value min-height: 300pt at 4:20
 sz-min-max equal
+sz-min-max-height refused Documents.Css.Unsupported.Value min-height: 50pt at 3:34
 sz-width-break equal
 sz-width-fraction equal
 sz-width-length equal

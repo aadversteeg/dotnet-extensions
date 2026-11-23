@@ -1,0 +1,18 @@
+page 1 300.000 400.080
+word 1 12.000 36.659 22.500 10.500 alpha #000000 Lato-Regular
+word 1 12.000 32.370 35.250 10.500 beta #000000 Lato-Regular
+word 1 12.000 45.169 48.000 10.500 gamma #000000 Lato-Regular
+word 1 12.000 33.667 48.750 10.500 after #000000 Lato-Regular
+word 1 36.134 51.301 48.750 10.500 the #000000 Lato-Regular
+word 1 53.989 72.107 48.750 10.500 first #000000 Lato-Regular
+word 1 74.790 91.616 48.750 10.500 box #000000 Lato-Regular
+word 1 12.000 37.053 61.500 10.500 alone #000000 Lato-Regular
+word 1 39.741 48.120 61.500 10.500 in #000000 Lato-Regular
+word 1 50.808 65.975 61.500 10.500 the #000000 Lato-Regular
+word 1 68.663 85.489 61.500 10.500 box #000000 Lato-Regular
+word 1 12.000 33.667 80.250 10.500 after #000000 Lato-Regular
+word 1 36.134 51.301 80.250 10.500 the #000000 Lato-Regular
+word 1 53.989 86.691 80.250 10.500 second #000000 Lato-Regular
+word 1 89.379 106.206 80.250 10.500 box #000000 Lato-Regular
+rect 1 12.000 12.000 288.000 32.250 #dddddd
+rect 1 12.000 51.000 288.000 63.750 #dddddd

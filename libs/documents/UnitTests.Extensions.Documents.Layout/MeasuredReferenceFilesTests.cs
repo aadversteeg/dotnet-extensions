@@ -1900,6 +1900,38 @@ public class MeasuredReferenceFilesTests
         ["sz-height.lines.txt"] = 2,
         ["sz-height.print.txt"] = 16,
         ["sz-height.words.txt"] = 13,
+        ["sz-height-box-sizing-break.boxes.txt"] = 2,
+        ["sz-height-box-sizing-break.lines.txt"] = 8,
+        ["sz-height-box-sizing-break.print.txt"] = 17,
+        ["sz-height-box-sizing-break.words.txt"] = 7,
+        ["sz-height-forced.boxes.txt"] = 4,
+        ["sz-height-forced.lines.txt"] = 1,
+        ["sz-height-forced.print.txt"] = 13,
+        ["sz-height-forced.words.txt"] = 10,
+        ["sz-height-overflow-page.boxes.txt"] = 2,
+        ["sz-height-overflow-page.lines.txt"] = 1,
+        ["sz-height-overflow-page.print.txt"] = 23,
+        ["sz-height-overflow-page.words.txt"] = 20,
+        ["sz-height-percent.boxes.txt"] = 6,
+        ["sz-height-percent.lines.txt"] = 4,
+        ["sz-height-percent.print.txt"] = 22,
+        ["sz-height-percent.words.txt"] = 17,
+        ["sz-height-rest-short.boxes.txt"] = 2,
+        ["sz-height-rest-short.lines.txt"] = 2,
+        ["sz-height-rest-short.print.txt"] = 11,
+        ["sz-height-rest-short.words.txt"] = 7,
+        ["sz-max-height.boxes.txt"] = 4,
+        ["sz-max-height.lines.txt"] = 2,
+        ["sz-max-height.print.txt"] = 18,
+        ["sz-max-height.words.txt"] = 15,
+        ["sz-min-height-break.boxes.txt"] = 2,
+        ["sz-min-height-break.lines.txt"] = 2,
+        ["sz-min-height-break.print.txt"] = 24,
+        ["sz-min-height-break.words.txt"] = 20,
+        ["sz-min-max-height.boxes.txt"] = 5,
+        ["sz-min-max-height.lines.txt"] = 4,
+        ["sz-min-max-height.print.txt"] = 21,
+        ["sz-min-max-height.words.txt"] = 16,
         ["sz-margin-auto.boxes.txt"] = 6,
         ["sz-margin-auto.lines.txt"] = 5,
         ["sz-margin-auto.print.txt"] = 19,
@@ -2313,7 +2345,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(567);
+        cases.Should().HaveCount(575);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
