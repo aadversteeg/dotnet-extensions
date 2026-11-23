@@ -223,6 +223,8 @@ fr-border-top-and-bottom equal
 fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value width: 50% at 3:58
 fr-continued-pad-past-33 equal
 fr-continued-pad-past-33-next-row open page 3 painted area: the pixel at (12.75, 15.75): the engine paints it and Chromium does not; the engine paints 1142 px #000000, Chromium 776 px (print.txt)
+fr-continued-pad-past-33-next-row-line-2-25pt open page 3 painted area: the pixel at (12.75, 16.5): the engine paints it and Chromium does not; the engine paints 1512 px #000000, Chromium 1146 px (print.txt)
+fr-continued-pad-past-33-next-row-line-6pt open page 3 painted area: the pixel at (12.75, 18): the engine paints it and Chromium does not; the engine paints 3352 px #000000, Chromium 1888 px (print.txt)
 fr-continued-pad-past-45 equal
 fr-continued-pad-past-60 equal
 fr-continued-pad-past-taller-than-page open page 4 'z' baseline 62.25 (laid out at 62.496), Chromium 22.5 (print.txt)
@@ -325,7 +327,9 @@ fr-row-later-padding-beside-line equal
 fr-row-later-padding-fits-line-not equal
 fr-row-later-padding-under-header equal
 fr-row-later-page-padding-overflows equal
+fr-row-later-page-padding-overflows-three-cells open page 2 reads 'w1 v1 u1 w2 v2 u2 w3 v3 u3 w4 v4 u4 w5 v5 u5 w6 v6', Chromium 'w1 v1 u1 w2 v2 u2 w3 v3 u3 w4 v4 u4 w5 v5 u5 w6 v6 w7' (print.txt)
 fr-row-later-page-padding-overflows-two-cells open page 2 reads 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6', Chromium 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7' (print.txt)
+fr-row-later-page-padding-overflows-two-cells-pad-6 open page 2 reads 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6', Chromium 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7' (print.txt)
 h-break-after-last equal
 h-break-after-last-nested equal
 h-char-cr equal

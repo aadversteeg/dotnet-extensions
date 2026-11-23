@@ -912,6 +912,14 @@ public class MeasuredReferenceFilesTests
         ["fr-cell-first-line-block-fits.lines.txt"] = 8,
         ["fr-cell-first-line-block-fits.print.txt"] = 13,
         ["fr-cell-first-line-block-fits.words.txt"] = 3,
+        ["fr-continued-pad-past-33-next-row-line-2-25pt.boxes.txt"] = 2,
+        ["fr-continued-pad-past-33-next-row-line-2-25pt.lines.txt"] = 11,
+        ["fr-continued-pad-past-33-next-row-line-2-25pt.print.txt"] = 38,
+        ["fr-continued-pad-past-33-next-row-line-2-25pt.words.txt"] = 24,
+        ["fr-continued-pad-past-33-next-row-line-6pt.boxes.txt"] = 2,
+        ["fr-continued-pad-past-33-next-row-line-6pt.lines.txt"] = 11,
+        ["fr-continued-pad-past-33-next-row-line-6pt.print.txt"] = 38,
+        ["fr-continued-pad-past-33-next-row-line-6pt.words.txt"] = 24,
         ["fr-continued-pad-past-33-next-row.boxes.txt"] = 2,
         ["fr-continued-pad-past-33-next-row.lines.txt"] = 11,
         ["fr-continued-pad-past-33-next-row.print.txt"] = 38,
@@ -1324,6 +1332,14 @@ public class MeasuredReferenceFilesTests
         ["fr-row-later-padding-under-header.lines.txt"] = 15,
         ["fr-row-later-padding-under-header.print.txt"] = 33,
         ["fr-row-later-padding-under-header.words.txt"] = 16,
+        ["fr-row-later-page-padding-overflows-three-cells.boxes.txt"] = 6,
+        ["fr-row-later-page-padding-overflows-three-cells.lines.txt"] = 28,
+        ["fr-row-later-page-padding-overflows-three-cells.print.txt"] = 60,
+        ["fr-row-later-page-padding-overflows-three-cells.words.txt"] = 29,
+        ["fr-row-later-page-padding-overflows-two-cells-pad-6.boxes.txt"] = 4,
+        ["fr-row-later-page-padding-overflows-two-cells-pad-6.lines.txt"] = 20,
+        ["fr-row-later-page-padding-overflows-two-cells-pad-6.print.txt"] = 46,
+        ["fr-row-later-page-padding-overflows-two-cells-pad-6.words.txt"] = 23,
         ["fr-row-later-page-padding-overflows-two-cells.boxes.txt"] = 4,
         ["fr-row-later-page-padding-overflows-two-cells.lines.txt"] = 20,
         ["fr-row-later-page-padding-overflows-two-cells.print.txt"] = 46,
@@ -2281,7 +2297,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(559);
+        cases.Should().HaveCount(563);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
