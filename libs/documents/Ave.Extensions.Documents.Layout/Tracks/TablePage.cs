@@ -77,10 +77,11 @@ namespace Ave.Extensions.Documents.Layout;
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
 /// would be gained by moving on. There, below a header that repeats and under <see cref="EmptyRowParts.Allow"/>, the
 /// page ends with the first body row cut below the header instead, where only such a cut places it (a last resort, see
-/// above) and its cells draw nothing on the page: their first content, an image or a line, does not fit below the
-/// header, so they are drawn empty down to the page end, their side lines and no line below them, and the content goes
-/// on in their part on the next page, as Chromium prints it (<see cref="CutsBelowHeader"/>). A cut where another cell
-/// of the row draws something on the page is not taken so (no measured case). On a later page whose height cannot hold the header and some
+/// above): a cell whose first content, an image or a line, does not fit below the header is drawn empty down to the page
+/// end, its side lines and no line below it, the other cells draw what they hold there (text, a background), and the
+/// content goes on in its part on the next page, as Chromium prints it (<see cref="CutsBelowHeader"/>). The row has then
+/// moved on once (<see cref="TracksBreakToken.CutBelowHeader"/>): on the next page its cells go on below the repeated
+/// header, where content taller than the room is sliced, beside the rest of the other cells. On a later page whose height cannot hold the header and some
 /// body content, the header is left out, so the table always makes progress.</para>
 /// <para><b>Content taller than the page area under a repeated header row</b> (<see cref="MonolithicOverflow.Slice"/>
 /// only): it is sliced right below the header, on a page after one that showed no body row other than slices of a
@@ -99,8 +100,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// Under <see cref="RepeatedHeaderRows.WhereContentIsLaidOut"/>, as Chromium prints it, such a piece is sliced below the
 /// header also when it is no taller than the page area, and a later page where all that is left of the table is the rest
 /// of pieces laid out before (<see cref="OnlyRestLeft"/>) is laid out without the header, so the rest starts at the top
-/// of the page area; where a row is still to come or a cell beside the piece goes on, the header stays above the slice
-/// (Chromium draws it over the slice there, which the engine does not copy).</para>
+/// of the page area; where a row is still to come or a cell of the piece's row beside it goes on, also an empty one
+/// (<see cref="OnlySlicesGoOn"/>), the header stays above the slice (Chromium draws it over the slice there, which the
+/// engine does not copy).</para>
 /// </remarks>
 internal static class TablePage
 {
@@ -164,6 +166,11 @@ internal static class TablePage
         /// the table keeps it too, at the cut's appeal, in which the cell's kept appeal stands
         /// (<see cref="LayoutResult.Placed.KeptAppeal"/>).</summary>
         public bool KeepsItsBreak { get; init; }
+
+        /// <summary>True when the page ends with its first body row cut right below the header rows
+        /// (<see cref="CutsBelowHeader"/>): the row has moved on once, so on the next page its content goes on below the
+        /// repeated header, and content taller than the room there is sliced there.</summary>
+        public bool CutBelowHeader { get; init; }
     }
 
     /// <summary>Lays out one page of the table and builds its fragment.</summary>
@@ -208,7 +215,11 @@ internal static class TablePage
             hasHeader = false;
         }
 
-        var outcome = Attempt(table, space, resume, isFirst, hasHeader, breakAt);
+        // After a page that ended with the first body row cut right below the header, that row's cells go on below the
+        // repeated header, where content taller than the room is sliced (see remarks).
+        var slicesAfterCut = !isFirst && hasHeader && resume.CutBelowHeader && space.IsAtPageStart
+            && table.Environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice;
+        var outcome = Attempt(slicesAfterCut ? table with { SlicesBelowHeader = true } : table, space, resume, isFirst, hasHeader, breakAt);
 
         // A later page that cannot hold the header and some body content that shows goes on without the header (see
         // remarks): under the header the body has no room, or only a last-resort cut. Content taller than the page area,
@@ -270,7 +281,7 @@ internal static class TablePage
             : placed.Continuation;
         return LayoutResult.Place(
             passes ? WithinPageArea(fragment, space) : fragment,
-            continuation is null ? null : continuation with { BodyShown = ShowsBody(table, placed.Content), RepeatsHeader = repeatsHeader },
+            continuation is null ? null : continuation with { BodyShown = ShowsBody(table, placed.Content), CutBelowHeader = placed.CutBelowHeader, RepeatsHeader = repeatsHeader },
             placed.Appeal,
             placed.BestBreak,
             placed.KeepsItsBreak,
@@ -395,9 +406,13 @@ internal static class TablePage
     }
 
     /// <summary>Whether a page's body cells draw anything besides slices of content taller than the page
-    /// (<see cref="TracksBreakToken.BodyShown"/>).</summary>
+    /// (<see cref="TracksBreakToken.BodyShown"/>). A cell's own background is not counted: it fills every part of the
+    /// cell on every page, whatever the part holds, as for a cut inside a row (<see cref="TableBreaks"/>, CutShows); so
+    /// a page with only the rest of an image in a cell with a background draws no header rows, as Chromium prints it
+    /// (case <c>a4-header-image-228-background</c>).</summary>
     private static bool ShowsBody(TableGeometry table, Content content) =>
-        content.Cells.Any(cell => table.Grid.Cells[cell.Cell].Row >= table.Grid.HeaderRowCount && DrawnContent.DrawsOutsideSlices(cell.Fragment));
+        content.Cells.Any(cell => table.Grid.Cells[cell.Cell].Row >= table.Grid.HeaderRowCount
+            && cell.Fragment.Children.Any(child => DrawnContent.DrawsOutsideSlices(child.Fragment)));
 
     /// <summary>Whether an outcome starts slicing content taller than the page area: some cell holds a first slice.</summary>
     private static bool StartsSlice(Outcome outcome) => outcome.Content.Cells.Any(cell => HoldsSlice(cell.Fragment, continuation: false));
@@ -542,8 +557,8 @@ internal static class TablePage
             return body;
         }
 
-        return CutsBelowHeader(table, resume) && body.Value.HasValue && !ShowsBody(table, body.Value.Value.Content)
-            ? Result<Maybe<Outcome>, Error>.Success(Maybe.From(body.Value.Value with { Appeal = BreakAppeal.ViolatesAvoid }))
+        return CutsBelowHeader(table, resume) && body.Value.HasValue
+            ? Result<Maybe<Outcome>, Error>.Success(Maybe.From(body.Value.Value with { Appeal = BreakAppeal.ViolatesAvoid, CutBelowHeader = true }))
             : Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(
                 content with { Lines = content.Lines.RemoveAt(content.Lines.Count - 1) },
                 BottomLine(table, grid.HeaderRowCount - 1, nextBody, content.Bottom),
@@ -554,12 +569,16 @@ internal static class TablePage
     /// <summary>
     /// Whether a page that would end right below the header rows ends with its first body row cut below them instead,
     /// its cells empty down to the page end and their content on the next page (see remarks): only below header rows that
-    /// repeat (<see cref="TracksBreakToken.RepeatsHeader"/>), under <see cref="EmptyRowParts.Allow"/>, and where no cell
-    /// of the cut row draws anything on the page (the caller checks that), as Chromium
+    /// repeat (<see cref="TracksBreakToken.RepeatsHeader"/>) and under <see cref="EmptyRowParts.Allow"/>, as Chromium
     /// prints it (<c>tools/reference/chromium</c>, cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>,
     /// <c>a4-header-tall-line</c>, <c>a4-header-row-image-row</c>: the cells' side lines from the header to the page end
     /// and no line below them; case <c>a4-header-unrepeated-image-228</c>: a header that does not repeat ends its page
-    /// alone).
+    /// alone). Also where another cell of the row draws something there: text that fits the page or goes on over two or
+    /// three pages, an empty cell with a background, the image's own cell with a background, the row as the second body
+    /// row (<c>a4-header-image-228-beside-fit</c>, <c>-beside-two-pages</c>, <c>a4-header-image-beside-lines</c>,
+    /// <c>a4-header-image-228-beside-line</c>, <c>-background-beside</c>, <c>-background</c>,
+    /// <c>a4-header-row-image-228-beside-line</c>: the image on the next page, below the header, beside the rest of the
+    /// text).
     /// </summary>
     private static bool CutsBelowHeader(TableGeometry table, TracksBreakToken resume) =>
         resume.RepeatsHeader == true && table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow;
@@ -589,8 +608,22 @@ internal static class TablePage
 
         var bare = geometry with { CellFragmentainerBlockSize = space.FragmentainerBlockSize };
         return Attempt(bare, space with { AvailableHeight = double.PositiveInfinity }, resume, isFirst: false, includeHeader: false, breakAt: null)
-            .OnSuccessMap(rest => ContinuesSlice(rest) && !ShowsBody(bare, rest.Value.Content));
+            .OnSuccessMap(rest => ContinuesSlice(rest) && !ShowsBody(bare, rest.Value.Content) && OnlySlicesGoOn(bare, rest.Value.Content));
     }
+
+    /// <summary>
+    /// Whether every body cell of the page's first row holds a later slice: no cell of that row beside the piece goes on.
+    /// A cell is as tall as its row (CSS 2.1 §17.5.3), so the cells beside a piece whose rest ends the row go on down to
+    /// that rest's end, empty, and Chromium repeats the header rows above them (cases
+    /// <c>a4-header-image-228-beside-fit</c>, <c>a4-header-image-228-beside-line</c>,
+    /// <c>a4-header-image-228-background-beside</c>, <c>a4-header-row-image-228-beside-line</c>: the last page shows the
+    /// header; <c>a4-header-image-228</c>, one column: it does not). A cell that spans into the row from an earlier one
+    /// does not count (<c>a4-header-empty-rowspan-line-image</c>: no header on the page of the rest).
+    /// </summary>
+    private static bool OnlySlicesGoOn(TableGeometry table, Content content) =>
+        content.Cells.All(cell => table.Grid.Cells[cell.Cell].Row < table.Grid.HeaderRowCount
+            || table.Grid.Cells[cell.Cell].Row < cell.TopRow
+            || HoldsSlice(cell.Fragment, continuation: true));
 
     /// <summary>The header rows, whole; None when they do not fit with the line below them.</summary>
     private static Result<Maybe<Content>, Error> PlaceHeader(

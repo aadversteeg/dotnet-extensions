@@ -104,6 +104,13 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     public bool BodyShown { get; init; } = true;
 
     /// <summary>
+    /// True when the page this token ends ended with its first body row cut right below the repeated header rows
+    /// (<see cref="TablePage"/>, remarks): the row has moved on once, so on the next page its cells go on below the
+    /// repeated header, and content in them taller than the room there is sliced there. Part of the position.
+    /// </summary>
+    internal bool CutBelowHeader { get; init; }
+
+    /// <summary>
     /// Whether the table's header rows are repeated at the top of its later fragments, as its first fragment decided
     /// (<see cref="TablePage"/>, RepeatsHeader): a later page does not decide again. Null in a token not made by the
     /// layout; then the page it resumes on decides, as a first page does. Part of the position.
@@ -134,11 +141,11 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     /// <returns>True for the same position.</returns>
     public bool Equals(TracksBreakToken? other) =>
         other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit && BodyShown == other.BodyShown
-        && RepeatsHeader == other.RepeatsHeader && Passed.Equals(other.Passed) && PaintsPassed == other.PaintsPassed;
+        && CutBelowHeader == other.CutBelowHeader && RepeatsHeader == other.RepeatsHeader && Passed.Equals(other.Passed) && PaintsPassed == other.PaintsPassed;
 
     /// <summary>The hash of the position.</summary>
     /// <returns>The hash code.</returns>
-    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, RepeatsHeader, Passed, PaintsPassed);
+    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, CutBelowHeader, RepeatsHeader, Passed, PaintsPassed);
 }
 
 /// <summary>Where one cut cell continues.</summary>

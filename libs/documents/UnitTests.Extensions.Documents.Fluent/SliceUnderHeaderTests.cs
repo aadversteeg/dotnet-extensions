@@ -366,6 +366,99 @@ public class SliceUnderHeaderTests
         FirstSlices(PrintedPages.Chromium(caseName)).Should().Equal([(2, 28.5), (5, 28.5)]);
     }
 
+    /// <summary>The cases of a row whose other cell draws something below a repeated header row ("H", "G"): a 228 pt
+    /// image in its first cell, beside it six, fourteen or thirty lines, one line, or an empty cell with a background, the
+    /// row as the second body row, and the image's own cell with a background in a table of one column.</summary>
+    private static Element[] Beside(string caseName)
+    {
+        var header = HeaderRow([Cell("H"), Cell("G")]);
+        var lines = (string prefix, int count) => Cell([Paragraph([.. Enumerable.Range(0, count).SelectMany(i => i == 0 ? new[] { Text($"{prefix}0") } : [LineBreak(), Text($"{prefix}{i}")])])]);
+        var image = Cell([TallImage(228)]);
+        var table = (TablePart[] rows) => Elements.Table(Columns(Fill(1), Fill(1)), [.. rows]).GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks();
+        return caseName switch
+        {
+            "a4-header-image-228-beside-fit" => [table([header, TableRow([image, lines("b", 6)])]), Paragraph("after")],
+            "a4-header-image-228-beside-two-pages" => [table([header, TableRow([image, lines("b", 14)])]), Paragraph("after")],
+            "a4-header-image-beside-lines" => [table([header, TableRow([image, lines("p", 30)])])],
+            "a4-header-image-228-beside-line" => [table([header, TableRow([image, Cell("beside")])]), Paragraph("after")],
+            "a4-header-image-228-background-beside" => [table([header, TableRow([image, Cell("").Background(new Color(0xC0, 0xC0, 0xC0))])]), Paragraph("after")],
+            "a4-header-row-image-228-beside-line" => [table([header, TableRow([Cell("r1"), Cell("s1")]), TableRow([image, Cell("beside")])]), Paragraph("after")],
+            "a4-header-image-228-background" => [Table(HeaderRow([Cell("H")]), TableRow([Cell([TallImage(228)]).Background(new Color(0xC0, 0xC0, 0xC0))])), Paragraph("after")],
+            _ => throw new ArgumentException(caseName, nameof(caseName)),
+        };
+    }
+
+    /// <summary>A case of <see cref="Beside"/> under the HTML front-end's values of the policies, or under
+    /// <paramref name="parts"/>.</summary>
+    private static PageDocument BesideRun(string caseName, EmptyRowParts parts = EmptyRowParts.Allow) =>
+        Run(Document([.. Beside(caseName)], Page(300.Pt(), 204.Pt()).Margin(12.Pt()), title: "Title", language: "en")
+            .FontFamily("Lato").FontSize(10.5.Pt()).LineHeight(15.Pt()).MonolithicOverflow(MonolithicOverflow.Slice).EmptyRowParts(parts)
+            .RepeatedHeaderRows(RepeatedHeaderRows.WhereContentIsLaidOut).CellsBesideSlices(CellsBesideSlices.Below).SliceRestEnd(SliceRestEnd.AtLineCentre)
+            .FontMetricRounding(FontMetricRounding.WholePixels));
+
+    /// <summary>The cases of <see cref="Beside"/>, with the pages on which both print the same words (in
+    /// <c>a4-header-image-beside-lines</c> the header over the rest on page 3, the listed limit, moves a line beside it on).</summary>
+    public static TheoryData<string, int> BesideCases => new()
+    {
+        { "a4-header-image-228-beside-fit", 3 },
+        { "a4-header-image-228-beside-two-pages", 3 },
+        { "a4-header-image-beside-lines", 2 },
+        { "a4-header-image-228-beside-line", 3 },
+        { "a4-header-image-228-background-beside", 3 },
+        { "a4-header-row-image-228-beside-line", 4 },
+        { "a4-header-image-228-background", 3 },
+    };
+
+    [Theory]
+    [MemberData(nameof(BesideCases))]
+    public void Under_EmptyRowParts_Allow_a_row_cut_below_a_repeated_header_draws_its_other_cells_and_starts_the_image_on_the_next_page(string caseName, int same)
+    {
+        // Chromium never ends a page with a repeated header alone, also where another cell of the first body row draws
+        // something there (text, a background): it starts the row below the header, draws what the other cells hold as far
+        // as the page reaches, the image's cell empty down to the page end, and starts the image in that cell's part on the
+        // next page, below the repeated header, beside the rest of the text; the image is not moved on again. On the page
+        // of the image's rest it repeats the header where the row has a cell beside the image, which goes on, empty, to the
+        // row's end, and not in a table of one column. The engine prints the same pages and words, the image's first slice
+        // on Chromium's page, 0.375 pt higher (the centre of the line below the header), and the header on Chromium's pages;
+        // under Avoid it ends the page before the image with the header alone, without the side lines below it.
+        var document = BesideRun(caseName);
+        var engine = PrintedPages.Engine(document);
+        var chromium = PrintedPages.Chromium(caseName);
+
+        engine.Pages.Length.Should().Be(chromium.Pages.Length);
+        engine.PageTexts.Take(same).Should().Equal(chromium.PageTexts.Take(same));
+        var slices = FirstSlices(chromium);
+        FirstSlices(document).Should().Equal([(slices[0].Page, slices[0].Top - 0.375)]);
+        HeaderPages(engine).Should().Equal(HeaderPages(chromium));
+        var before = slices[0].Page - 2;
+        var strip = Cells(12, 28.5, 12.75, 192);
+        Painted(chromium.Pages[before]).Should().Contain(strip, "Chromium starts the row on the page before the image");
+        Painted(engine.Pages[before]).Should().Contain(strip);
+        Painted(PrintedPages.Engine(BesideRun(caseName, EmptyRowParts.Avoid)).Pages[before]).Should().NotContain(strip);
+    }
+
+    [Theory]
+    [InlineData("a4-header-image-228-beside-fit", 0.375)]
+    [InlineData("a4-header-image-228-beside-line", 0.375)]
+    [InlineData("a4-header-image-228-background-beside", 0.375)]
+    [InlineData("a4-header-image-228-background", 0)]
+    public void Under_SliceRestEnd_AtLineCentre_a_cell_beside_the_rest_that_has_nothing_left_keeps_its_half_of_the_line_below(string caseName, double centre)
+    {
+        // On the page of the image's rest, the line below the row is centred on the rest's end in a table of one column
+        // (75.75 to 76.5 pt below a rest that ends at 76.125 pt), and half its width lower where a cell beside the image
+        // goes on with nothing left: that cell's part keeps its half (76.5 to 77.25 pt in Chromium's print, where the rest
+        // is drawn to 76.5 pt). In the engine the line's centre lies that far below the rest's end, which Chromium's
+        // print shows on its whole pixels.
+        var engine = PrintedPages.Engine(BesideRun(caseName));
+        var chromium = PrintedPages.Chromium(caseName);
+        var line = (PrintedPage page) => page.Rectangles.Where(box => box.Colour == "#000000" && box.X1 - box.X0 > 100 && box.Y0 > page.Images.Single().Y1 - 1).MinBy(box => box.Y0)!;
+        var (ours, theirs) = (engine.Pages[^1], chromium.Pages[^1]);
+
+        ((line(ours).Y0 + line(ours).Y1) / 2).Should().BeApproximately(ours.Images.Single().Y1 + centre, 1e-6);
+        line(theirs).Y0.Should().Be(ChromiumLayout.WholePixel(76.125 + centre - 0.375));
+        theirs.Images.Single().Y1.Should().Be(76.5);
+    }
+
     [Theory]
     [InlineData("a4-two-image-rows")]
     [InlineData("a4-row-image-row")]

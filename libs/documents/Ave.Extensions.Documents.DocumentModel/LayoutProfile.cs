@@ -85,7 +85,9 @@ public enum SliceRestEnd
     /// line 240 pt tall (<c>a4-header-tall-line</c>) and of an image in a table nested in the cell
     /// (<c>a4-header-nested-image-228</c>, the nested table's line). A part that lays content out on the page holds its
     /// half under this value too (<c>a4-header-cut-text-row</c>, <c>a4-header-line2-25-cut-text-row</c>), and so does a
-    /// whole cell. Where the rest ends on a whole pixel, the two values print alike (<c>a4-noheader-image-228</c>).
+    /// whole cell. So does the part of a cell of the same row that goes on beside the rest with nothing left, so there the
+    /// row ends that half below the rest (<c>a4-header-image-228-beside-line</c>: the line from 76.5 to 77.25 pt). Where
+    /// the rest ends on a whole pixel, the two values print alike (<c>a4-noheader-image-228</c>).
     /// </summary>
     AtLineCentre,
 }
@@ -111,9 +113,10 @@ public enum RepeatedHeaderRows
     /// body row (<c>a4-header-row-image-228</c>), a 408 pt image (<c>a4-header-image-row</c>), a line 240 pt tall
     /// (<c>a4-header-tall-line</c>), images of 170, 174 and 180 pt, taller than the room below the header row and no
     /// taller than the page area (<c>a4-header-image-170</c>, <c>-174</c>, <c>-180</c>). Where the table has rows still to
-    /// come or a cell beside the piece goes on (<c>a4-header-image-360-image</c>, <c>a4-header-image-beside-lines</c>),
+    /// come or a cell of the piece's row beside it goes on, also an empty one, to the row's end
+    /// (<c>a4-header-image-360-image</c>, <c>a4-header-image-beside-lines</c>, <c>a4-header-image-228-beside-line</c>),
     /// Chromium draws the header rows over the slice at the top of the page; the engine draws them above it, the slice
-    /// below them, an open difference (docs/architecture.md, "Known limits", monolithic content taller than the page).
+    /// below them, a listed difference (docs/architecture.md, "Known limits", "A repeated header row over a slice").
     /// </summary>
     WhereContentIsLaidOut,
 }
@@ -400,6 +403,8 @@ public enum EmptyRowParts
     /// <c>fr-row-later-page-padding-overflows</c>, <c>a2-row-end-nested-under-header</c>). Below header
     /// rows that repeat, a page does not end with the header alone where the first body row's content (an image, a line)
     /// does not fit below the header: the row is cut before it, its cells empty down to the page end, as Chromium prints
-    /// it (cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>, <c>a4-header-row-image-row</c>).</summary>
+    /// it (cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>, <c>a4-header-row-image-row</c>); its other cells
+    /// draw what they hold there, text or a background, and the content goes on in its cell's part on the next page
+    /// (<c>a4-header-image-228-beside-line</c>, <c>a4-header-image-beside-lines</c>, <c>a4-header-image-228-background</c>).</summary>
     Allow,
 }

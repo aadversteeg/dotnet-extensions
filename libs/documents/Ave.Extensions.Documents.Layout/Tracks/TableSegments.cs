@@ -199,11 +199,16 @@ internal static class TableSegments
     /// where the rest ends and the line below is centred there, as Chromium prints it (<see cref="SliceRestEnd.AtLineCentre"/>;
     /// cases <c>a4-header-image-228</c>, <c>a4-header-image-228-line3-below</c>). The cell's own background does not
     /// decide it (<c>a4-header-image-228-background</c>). The half takes no part in the cell's paint: the table draws the grid lines. Any other
-    /// fragment as it is.
+    /// fragment as it is, and so is this one beside a cell of its own row that goes on with nothing left: that cell's part
+    /// keeps its half of the line below, so the row ends that half below the rest (cases
+    /// <c>a4-header-image-228-beside-fit</c>, <c>a4-header-image-228-beside-line</c>,
+    /// <c>a4-header-image-228-background-beside</c>: the line at 76.5–77.25 pt below a rest that ends at 76.125 pt;
+    /// <c>a4-image-in-cell</c>: at 60–60.75 pt below a rest that ends at 60 pt). A cell that spans into the row from an
+    /// earlier one does not keep it (<c>a4-header-empty-rowspan-line-image</c>: the line centred on the rest's end).
     /// </summary>
-    private static BoxFragment AtRestEnd(TableGeometry table, ActiveCell cell, BoxFragment fragment)
+    private static BoxFragment AtRestEnd(TableGeometry table, ActiveCell cell, BoxFragment fragment, bool besideCompleteCell)
     {
-        if (table.Environment.Profile.SliceRestEnd != SliceRestEnd.AtLineCentre || cell.Token is null)
+        if (table.Environment.Profile.SliceRestEnd != SliceRestEnd.AtLineCentre || cell.Token is null || besideCompleteCell)
         {
             return fragment;
         }
@@ -265,7 +270,7 @@ internal static class TableSegments
             .TraverseAll(cell => table.Environment
                 .Layout(CellLayoutBox(table, shell, cell), Unlimited(table, table.CellWidth(table.Grid.Cells[cell.Cell])), cell.Token)
                 .OnSuccessBind(result => result is LayoutResult.Placed { Continuation: null } placed
-                    ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, AtRestEnd(table, cell, Lowered(placed.Fragment, ReopenedInset(table, shell, cell)))))
+                    ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, AtRestEnd(table, cell, Lowered(placed.Fragment, ReopenedInset(table, shell, cell)), cells.Any(other => other.IsComplete && table.Grid.Cells[other.Cell].Row == table.Grid.Cells[cell.Cell].Row))))
                     : Result<KeyValuePair<int, BoxFragment>, Error>.Failure(
                         LayoutErrors.InvalidContent(table.Grid.Cells[cell.Cell].Box, "a table cell cannot hold a forced page break."))))
             .OnSuccessMap(natural =>

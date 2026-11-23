@@ -345,16 +345,31 @@ public class HtmlListedDifferenceTests
     /// Cases: a 360 pt image, then a 408 pt image (<c>a4-header-image-360-image</c>, pages 3 and 4); a row, a 408 pt image,
     /// a row (<c>a4-header-row-image-row</c>, pages 4 and 5); a 408 pt image, a row, a 408 pt image
     /// (<c>a4-header-image-row-image</c>, pages 3 and 4); two 408 pt images (<c>a4-header-two-image-rows</c>, pages 3 and 4).
+    /// The same where the header is repeated over the rest of a 228 pt image because a cell of its row beside it goes on
+    /// (Lato 10.5 pt): text, then the empty part of a cell to the row's end (<c>a4-header-image-beside-lines</c>, page 3;
+    /// Chromium's "p26" on page 3, the engine's on page 4, as it starts the text beside the rest that much lower), or only
+    /// that empty part (<c>a4-header-image-228-beside-fit</c>, <c>-beside-line</c>, <c>-beside-two-pages</c>,
+    /// <c>-background-beside</c>, page 3; <c>a4-header-row-image-228-beside-line</c>, page 4). There every word below the rest
+    /// on the last such page is where Chromium prints it, moved down by the header's room (from the top of the page area to
+    /// the centre of the header's line, 16.125 pt) and painted at Chromium's whole pixel.
     /// </summary>
     /// <param name="name">The case.</param>
     /// <param name="first">The first page where the header is repeated over a slice.</param>
     /// <param name="last">The last such page.</param>
+    /// <param name="header">The baseline of the header's "H" in both prints.</param>
+    /// <param name="below">The first word below the rest on the last such page that is compared so, or null.</param>
     [Theory]
-    [InlineData("a4-header-image-360-image", 3, 4)]
-    [InlineData("a4-header-row-image-row", 4, 5)]
-    [InlineData("a4-header-image-row-image", 3, 4)]
-    [InlineData("a4-header-two-image-rows", 3, 4)]
-    public void A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice(string name, int first, int last)
+    [InlineData("a4-header-image-360-image", 3, 4, 24.75, null)]
+    [InlineData("a4-header-row-image-row", 4, 5, 24.75, null)]
+    [InlineData("a4-header-image-row-image", 3, 4, 24.75, null)]
+    [InlineData("a4-header-two-image-rows", 3, 4, 24.75, null)]
+    [InlineData("a4-header-image-beside-lines", 3, 3, 24.0, "p20")]
+    [InlineData("a4-header-image-228-beside-fit", 3, 3, 24.0, "after")]
+    [InlineData("a4-header-image-228-beside-line", 3, 3, 24.0, "after")]
+    [InlineData("a4-header-image-228-beside-two-pages", 3, 3, 24.0, "after")]
+    [InlineData("a4-header-image-228-background-beside", 3, 3, 24.0, "after")]
+    [InlineData("a4-header-row-image-228-beside-line", 4, 4, 24.0, "after")]
+    public void A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice(string name, int first, int last, double header, string? below)
     {
         var (engine, chromium) = (Engine(name), Chromium(name));
         var before = (PrintedPages pages) => new PrintedPages([.. pages.Pages.Take(first - 1)]);
@@ -364,11 +379,24 @@ public class HtmlListedDifferenceTests
         for (var number = first; number <= last; number++)
         {
             var (ours, theirs) = (engine.Pages[number - 1], chromium.Pages[number - 1]);
-            theirs.Words.Single(word => word.Text == "H").Baseline.Should().Be(24.75);
+            theirs.Words.Single(word => word.Text == "H").Baseline.Should().Be(header);
             theirs.Images.Single().Y0.Should().Be(12, "Chromium's slice starts at the top of the page area");
             theirs.Images.Single().Y1.Should().BeGreaterThanOrEqualTo(28.5, "and the header is drawn over it (the last slice of the 360 pt image lies wholly under it)");
-            ours.Words.Single(word => word.Text == "H").Baseline.Should().Be(24.75);
+            ours.Words.Single(word => word.Text == "H").Baseline.Should().Be(header);
             ours.Images.Single().Y0.Should().BeApproximately(28.125, 1e-6, "the engine's slice starts below the header, at the centre of its line");
+        }
+
+        if (below is not null)
+        {
+            var (ours, theirs) = (engine.Pages[last - 1], chromium.Pages[last - 1]);
+            var after = (PrintedPage page) => page.Words.SkipWhile(word => word.Text != below).ToList();
+            var (mine, chromiums) = (after(ours), after(theirs));
+            mine.Select(word => word.Text).Should().Equal(chromiums.Take(mine.Count).Select(word => word.Text));
+            mine.Select(word => ChromiumLayout.WholePixel(word.Baseline - 16.125))
+                .Should().Equal(chromiums.Take(mine.Count).Select(word => word.Baseline), "below the rest only the header's room differs");
+            var moved = chromiums.Skip(mine.Count).Select(word => word.Text).ToList();
+            engine.Pages.Skip(last).Take(1).SelectMany(page => page.Words).Where(word => word.Text is not ("H" or "G")).Take(moved.Count).Select(word => word.Text)
+                .Should().Equal(moved, "what that room pushes past the page end starts the engine's next page");
         }
 
         HtmlCases.Difference(engine, chromium).Should().NotBeNull();
@@ -380,7 +408,8 @@ public class HtmlListedDifferenceTests
     /// in a row of two or more cells the next row, and after any table the content after it, below the row's end, or at
     /// the top of the next page, drawn over the slices still to come. The engine starts what follows below the last
     /// slice, so no text is drawn over an image (docs/architecture.md, "Known limits"); it centres the line that ends the
-    /// row on the end of the last slice (<c>SliceRestEnd.AtLineCentre</c>), which prints where Chromium's is. That place is the whole
+    /// row on the end of the last slice (<c>SliceRestEnd.AtLineCentre</c>), or half that line lower where the other cell of
+    /// the row goes on with nothing left beside the slice and keeps its half, which prints where Chromium's is. That place is the whole
     /// difference: the engine's print with what follows the slice moved up to Chromium's place (from the engine's page
     /// to Chromium's, by the difference of the first word's baseline) is Chromium's, compared as every case is
     /// (<see cref="HtmlCases.Difference"/>). The engine draws a column's grid line as one rectangle down through the
@@ -401,16 +430,18 @@ public class HtmlListedDifferenceTests
     /// <param name="chromiumBaseline">Its baseline there, over the slice.</param>
     /// <param name="enginePage">The page the engine draws it on.</param>
     /// <param name="engineBaseline">Its baseline there, below the last slice.</param>
+    /// <param name="rowEnd">How far below the slice's bottom edge the line that ends the sliced row is centred: half of it
+    /// where a cell beside the slice keeps its half (<c>a4-image-in-cell</c>, <c>a4-slice4-cell-row-after</c>), else 0.</param>
     /// <param name="linesApart">How far below the line at the slice's bottom edge the engine draws the outer row's line,
     /// where Chromium draws both in one place; 0 where there is one line.</param>
     [Theory]
-    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.375, 0)]
-    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.375, 0)]
-    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.375, 0)]
-    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 70.875, 0)]
-    [InlineData("a4-image-nested-table", "after", 4, 24.75, 4, 73.125, 0.75)]
+    [InlineData("a4-image-in-cell", "after", 4, 24.75, 4, 72.75, 0.375, 0)]
+    [InlineData("a4-row-image-row", "after", 5, 24.75, 5, 72.375, 0, 0)]
+    [InlineData("a4-two-image-rows", "after", 8, 24.75, 8, 72.375, 0, 0)]
+    [InlineData("a4-slice4-cell-row-after", "after", 4, 23.25, 5, 71.25, 0.375, 0)]
+    [InlineData("a4-image-nested-table", "after", 4, 24.75, 4, 73.125, 0, 0.75)]
     public void What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices(
-        string name, string first, int chromiumPage, double chromiumBaseline, int enginePage, double engineBaseline, double linesApart)
+        string name, string first, int chromiumPage, double chromiumBaseline, int enginePage, double engineBaseline, double rowEnd, double linesApart)
     {
         var (engine, chromium) = (Engine(name), Chromium(name));
         var word = (PrintedPages pages, int page) => pages.Pages[page - 1].Words.First(candidate => candidate.Text == first);
@@ -425,7 +456,7 @@ public class HtmlListedDifferenceTests
         // Every word below the last slice moves, and every rectangle below the line centred on the slice's bottom edge,
         // which both draw (it ends the sliced row, SliceRestEnd.AtLineCentre); a column's line that runs on through it is
         // split there. An outer row's line drawn below it is first lifted onto it, as Chromium draws it.
-        var from = sliceEnd(engine, enginePage);
+        var from = sliceEnd(engine, enginePage) + rowEnd;
         var source = engine.Pages[enginePage - 1];
         var across = (PrintedBox line, double y) => Math.Abs(((line.Y0 + line.Y1) / 2) - y) < 0.01 && line.X1 - line.X0 > line.Height;
         var lifted = source.Rectangles.Where(line => across(line, from + linesApart)).ToList();

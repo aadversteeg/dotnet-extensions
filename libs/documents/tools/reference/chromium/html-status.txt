@@ -77,14 +77,14 @@ a4-header-image-170 equal
 a4-header-image-174 equal
 a4-header-image-180 equal
 a4-header-image-228 equal
-a4-header-image-228-background open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-image-228-background-beside open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 796 px #000000, Chromium 1450 px (print.txt)
-a4-header-image-228-beside-fit open page 1 reads 'H G', Chromium 'H G b0 b1 b2 b3 b4 b5' (print.txt)
-a4-header-image-228-beside-line open page 1 reads 'H G', Chromium 'H G beside' (print.txt)
-a4-header-image-228-beside-two-pages open page 1 reads 'H G', Chromium 'H G b0 b1 b2 b3 b4 b5 b6 b7 b8 b9' (print.txt)
+a4-header-image-228-background equal
+a4-header-image-228-background-beside listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
+a4-header-image-228-beside-fit listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
+a4-header-image-228-beside-line listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
+a4-header-image-228-beside-two-pages listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
 a4-header-image-228-line3-below equal
 a4-header-image-360-image listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
-a4-header-image-beside-lines open 5 pages, Chromium 4 (print.txt)
+a4-header-image-beside-lines listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 reads 'H G p20 p21 p22 p23 p24 p25', Chromium 'H G p20 p21 p22 p23 p24 p25 p26' (print.txt)
 a4-header-image-row equal
 a4-header-image-row-image listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-line2-25-cut-text-row equal
@@ -92,7 +92,7 @@ a4-header-line2-25-image-228 equal
 a4-header-line6-image-228 equal
 a4-header-nested-image-228 open 5 pages, Chromium 3 (print.txt)
 a4-header-row-image-228 equal
-a4-header-row-image-228-beside-line open page 2 reads 'H G', Chromium 'H G beside' (print.txt)
+a4-header-row-image-228-beside-line listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 4 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
 a4-header-row-image-row listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-rows-fill-image-row equal
 a4-header-rows-image-row equal
@@ -106,7 +106,7 @@ a4-image-beside-lines equal
 a4-image-block-padding-133 equal
 a4-image-block-padding-60 equal
 a4-image-first equal
-a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 72.75 (laid out at 72.375), Chromium 24.75 (print.txt)
+a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a4-image-nested-table listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 73.5 (laid out at 73.125), Chromium 24.75 (print.txt)
 a4-image-rowspan listed An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells: page 1 reads 'a b', Chromium 'a' (print.txt)
 a4-image-single-cell equal
@@ -267,7 +267,7 @@ fr-header-cell-margin refused Documents.Layout.DoesNotFit 36 at 3
 fr-header-pad-box-20 equal
 fr-header-pad-box-36 equal
 fr-header-pad-box-50 refused Documents.Layout.DoesNotFit 36 at 8
-fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header_is_printed: 4 pages, Chromium 3 (print.txt)
+fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header_is_printed: page 2 reads '', Chromium 'H' (print.txt)
 fr-header-pad-grid-36 equal
 fr-header-pad-none-36 equal
 fr-header-pad-top-36 equal
