@@ -177,23 +177,34 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
-    /// A row whose cell's lines fill the page area and whose padding does not fit with them, at the top of the first page
-    /// (case <c>fr-f4-padding-page-start</c>, eight lines with 3 pt padding, 151.5 pt in a 150 pt page area): Chromium
-    /// leaves the first page blank and prints the row whole on the second, its bottom padding and line passing the page
-    /// end; the engine cuts the row as a last resort before its last line, because a table at the top of a page cannot
-    /// move to a better page (docs/architecture.md, "Known limits"; the code front-end's
-    /// <c>TableBreakReferenceTests</c> pins the same pages). Where the page breaks is the whole difference: the engine's
-    /// first page is Chromium's second without its last line, every word and line where Chromium prints it.
+    /// A row whose cell's lines fill the page area and whose padding does not fit with them, at the top of the first page:
+    /// Chromium leaves the first page blank and prints the row whole on the second, its bottom padding and line passing the
+    /// page end; the engine cuts the row as a last resort before its last line, because a table at the top of a page
+    /// cannot move to a better page (docs/architecture.md, "Known limits"; the code front-end's
+    /// <c>TableBreakReferenceTests</c> pins the same pages). Cases: eight lines with 3 pt padding, 151.5 pt in a 150 pt
+    /// page area, then "z" (<c>fr-f4-padding-page-start</c>); twelve lines with 12 pt bottom padding, 157.5 pt, the
+    /// padding and line passing the page end of Chromium's second page by 7.5 pt (<c>a2-row-end-pad-past</c>), and the
+    /// same followed by "z" (<c>a2-row-end-pad-past-after</c>). Where the page breaks is the whole difference: the
+    /// engine's first page is Chromium's second without its last line, every word and line where Chromium prints it.
     /// </summary>
-    [Fact]
-    public void At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page()
+    /// <param name="name">The case.</param>
+    /// <param name="engineTexts">The engine's pages, as their words.</param>
+    /// <param name="chromiumTexts">Chromium's pages.</param>
+    /// <param name="lastBaseline">The baseline of the row's last line on Chromium's second page.</param>
+    [Theory]
+    [InlineData("fr-f4-padding-page-start", new[] { "a0 a1 a2 a3 a4 a5 a6", "a7 z" }, new[] { "", "a0 a1 a2 a3 a4 a5 a6 a7", "z" }, 155.25)]
+    [InlineData("a2-row-end-pad-past", new[] { "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10", "a11" }, new[] { "", "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11", "" }, 154.5)]
+    [InlineData("a2-row-end-pad-past-after", new[] { "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10", "a11 z" }, new[] { "", "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11", "z" }, 154.5)]
+    public void At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page(string name, string[] engineTexts, string[] chromiumTexts, double lastBaseline)
     {
-        var (engine, chromium) = (Engine("fr-f4-padding-page-start"), Chromium("fr-f4-padding-page-start"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
 
-        engine.PageTexts.Should().Equal("a0 a1 a2 a3 a4 a5 a6", "a7 z");
-        chromium.PageTexts.Should().Equal(string.Empty, "a0 a1 a2 a3 a4 a5 a6 a7", "z");
+        engine.PageTexts.Should().Equal(engineTexts);
+        chromium.PageTexts.Should().Equal(chromiumTexts);
+        chromium.Pages[0].Words.Should().BeEmpty();
+        chromium.Pages[0].Rectangles.Should().BeEmpty("Chromium's first page is blank");
         var second = chromium.Pages[1];
-        second.Words[^1].Baseline.Should().Be(155.25);
+        second.Words[^1].Baseline.Should().Be(lastBaseline);
         var cut = second with { Number = 1, Words = [.. second.Words.SkipLast(1).Select(word => word with { Page = 1 })], Rectangles = [.. second.Rectangles.Select(line => line with { Page = 1 })] };
         HtmlCases.Difference(new PrintedPages([engine.Pages[0]]), new PrintedPages([cut])).Should().BeNull("the row is cut where the page ends, as Chromium lays it out");
     }

@@ -48,8 +48,8 @@ a2-row-end-first-row-half-top equal
 a2-row-end-nested-under-header equal
 a2-row-end-nested-under-header-13875 open page 2 reads 'x0 x1 x2 x3 x4 x5 x6 x7 x8 x9', Chromium 'H x0 x1 x2 x3 x4 x5 x6 x7' (print.txt)
 a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
-a2-row-end-pad-past open 2 pages, Chromium 3 (print.txt)
-a2-row-end-pad-past-after open 2 pages, Chromium 3 (print.txt)
+a2-row-end-pad-past listed At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page: 2 pages, Chromium 3 (print.txt)
+a2-row-end-pad-past-after listed At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page: 2 pages, Chromium 3 (print.txt)
 a2-row-end-span equal
 a2-row-end-span-after equal
 a2-row-end-thick-less equal

@@ -955,8 +955,9 @@ Each is documented next to its code as well.
   through the HTML front-end too, `HtmlListedDifferenceTests`, where that height is the whole difference). Where a
   cell's lines all fit and only its bottom padding or grid line does not, at the top of a page the engine cuts the row
   as a last resort, where Chromium leaves the first page blank and prints the row whole on the next (cases
-  `fr-f4-padding-page-start`, listed through the HTML front-end too, where the engine's first page is Chromium's
-  second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
+  `fr-f4-padding-page-start`, and `a2-row-end-pad-past`, `a2-row-end-pad-past-after` with 12 pt of bottom padding that
+  passes Chromium's second page by 7.5 pt, listed through the HTML front-end too, where the engine's first page is
+  Chromium's second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
   after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
   line, where Chromium prints all its lines on that page and lets the padding overflow (cases
   `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`). Under
