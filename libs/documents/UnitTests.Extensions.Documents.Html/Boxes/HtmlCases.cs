@@ -426,8 +426,8 @@ internal static class HtmlCases
 
     /// <summary>The first difference between the areas the paths that are not rectangles (curves: a list marker's disc or
     /// circle) paint on a page (<see cref="PrintedPath"/>): the same number, and each in drawing order the same box of
-    /// whole pixels, colour and painted share per pixel. The engine's page model has no such path yet, so a print that
-    /// paints one differs here.</summary>
+    /// whole pixels, colour and painted share per pixel. Both sides are sampled by one rule: the engine's filled paths by
+    /// <see cref="PathSampler"/>, Chromium's curves by <c>paths.py</c>.</summary>
     private static string? PathDifference(PrintedPage ours, PrintedPage theirs)
     {
         if (ours.Paths.Length != theirs.Paths.Length)

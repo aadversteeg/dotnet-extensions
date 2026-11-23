@@ -14,6 +14,8 @@ import unittest
 
 import pymupdf
 
+import paths
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 KAPPA = 0.5522847498
 
@@ -104,6 +106,51 @@ class PathReadBackTests(unittest.TestCase):
     def test_the_colour_is_the_paint_s(self):
         self.assertEqual(read(f"1 0 0 rg {circle(31.875, 31.875, 1.875)} f")[0].split(" ")[6], "#ff0000")
         self.assertEqual(read(f"0 0 1 RG 0.75 w {circle(31.875, 31.875, 1.875, curves=16)} S")[0].split(" ")[6], "#0000ff")
+
+
+def circle_items(cx, cy, r):
+    """A circle of 4 cubic curves as PyMuPDF items, built as the engine's test support builds one (TestPaths.Circle)."""
+    k = KAPPA * r
+    quarters = [((cx + r, cy + k), (cx + k, cy + r), (cx, cy + r)), ((cx - k, cy + r), (cx - r, cy + k), (cx - r, cy)),
+                ((cx - r, cy - k), (cx - k, cy - r), (cx, cy - r)), ((cx + k, cy - r), (cx + r, cy - k), (cx + r, cy))]
+    items, point = [], (cx + r, cy)
+    for control1, control2, end in quarters:
+        items.append(("c", point, control1, control2, end))
+        point = end
+    return items
+
+
+def polygon_items(points):
+    return [("l", a, b) for a, b in zip(points, points[1:] + points[:1])]
+
+
+def sampled(items, even_odd, clip=None):
+    column, row, rows = paths.coverage(paths.contours(items), clip, even_odd=even_odd)
+    return (f"{column * paths.PIXEL:.3f} {row * paths.PIXEL:.3f} {(column + len(rows[0])) * paths.PIXEL:.3f} "
+            f"{(row + len(rows)) * paths.PIXEL:.3f} {'/'.join(rows)}")
+
+
+L_SHAPE = [(10.1, 20.2), (14.3, 20.2), (14.3, 21.9), (11.6, 21.9), (11.6, 24.05), (10.1, 24.05)]
+
+
+class SamplerAgreementTest(unittest.TestCase):
+    """The lines the engine's sampler (PathSampler, test support) must write for the same shapes: the same numbers are
+    pinned there (PathSamplerTests), so a change to either sampler fails on its own side."""
+
+    def test_a_disc(self):
+        self.assertEqual(sampled(circle_items(31.875, 201.375, 1.875), False),
+                         "30.000 199.500 33.750 203.250 2cfc2/cfffc/fffff/cfffc/2cfc2")
+
+    def test_a_ring_1px_wide(self):
+        ring = circle_items(61.875, 31.875, 2.25) + circle_items(61.875, 31.875, 1.5)
+        self.assertEqual(sampled(ring, True), "59.250 29.250 64.500 34.500 0057500/0ac8ca0/5c000c5/7800087/5c000c5/0ac8ca0/0057500")
+        self.assertEqual(sampled(ring, False), "59.250 29.250 64.500 34.500 0057500/0afffa0/5fffff5/7fffff7/5fffff5/0afffa0/0057500")
+
+    def test_a_square_cornered_path(self):
+        self.assertEqual(sampled(polygon_items(L_SHAPE), False),
+                         "9.750 19.500 15.000 24.750 1111110/8fffff1/8fffff1/8f93330/8f70000/8f70000/1100000")
+        self.assertEqual(sampled(polygon_items(L_SHAPE), False, clip=(0.0, 0.0, 13.0, 23.0)),
+                         "9.750 19.500 13.500 23.250 11110/8fff5/8fff5/8f931/5a500")
 
 
 if __name__ == "__main__":

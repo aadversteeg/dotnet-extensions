@@ -184,7 +184,9 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance; its colour
     /// and face are its run's. A rectangle's colour is its fill's. A rectangle and an image are the part the page shows,
     /// inside the clips open around them (<see cref="ClipStart"/>, <see cref="Visible"/>), and left out where they lie
-    /// wholly outside them, as <c>positions.py</c> reads Chromium's print; a word is whole.
+    /// wholly outside them, as <c>positions.py</c> reads Chromium's print; a word is whole. A filled path is the area it
+    /// paints inside those clips, sampled by the rule <c>paths.py</c> reads Chromium's curves with (<see cref="PathSampler"/>),
+    /// and left out where it paints no pixel.
     /// </summary>
     /// <param name="document">The page model.</param>
     /// <returns>The pages.</returns>
@@ -193,6 +195,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
         {
             var number = index + 1;
             var (rectangles, images) = (ImmutableArray.CreateBuilder<PrintedBox>(), ImmutableArray.CreateBuilder<PrintedBox>());
+            var paths = ImmutableArray.CreateBuilder<PrintedPath>();
             var clips = new System.Collections.Generic.Stack<Core.Rect>();
             foreach (var item in page.Items)
             {
@@ -210,11 +213,14 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                     case DrawImage image when Visible(Box(number, image.Area), clips.Count == 0 ? null : clips.Peek()) is { } shown:
                         images.Add(shown);
                         break;
+                    case FillPath path when PathSampler.Sample(number, path, clips.Count == 0 ? null : clips.Peek()) is { } painted:
+                        paths.Add(painted);
+                        break;
                 }
             }
 
             return new PrintedPage(number, page.Size.Width, page.Size.Height,
-                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run))), rectangles.ToImmutable(), images.ToImmutable());
+                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run))), rectangles.ToImmutable(), images.ToImmutable(), paths.ToImmutable());
         })]);
 
     /// <summary>

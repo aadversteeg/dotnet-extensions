@@ -137,7 +137,11 @@ within 0.0005 pt; a stroke's join taken as round, which differs from the mitre b
 closed curve); a stroke with a dash pattern or a subpath that does not close stops the read-back. `lines.txt` does not
 hold them, as they are not rectangles. The unit tests of this reading are `paths_test.py`, run in the reference tools
 image (`python3 paths_test.py`, also by `PathReadBackTests` in `UnitTests.Extensions.Documents.Layout`): a disc, a ring
-stroked 1 px wide and the same ring filled, a square, a clip, and the strokes the reading refuses. Chromium leaves out a
+stroked 1 px wide and the same ring filled, a square, a clip, and the strokes the reading refuses. The engine's side
+writes its filled paths (`FillPath`) in the same form, by the same sampling rule step for step (`PathSampler` in the test
+support, used by `PrintedPages.Engine`); `SamplerAgreementTest` here and `PathSamplerTests` there pin the same lines for
+a disc, a ring 1 px wide and a square-cornered path, clipped and not. The engine draws a rectangle as a filled rectangle,
+never as a path: PyMuPDF reads a closed path of four sides along the axes as a rectangle (a `rect` line). Chromium leaves out a
 marker that lies wholly outside the page area (case `li-marker-clip`): nothing of it is in the PDF; a marker across the
 page area's edge is drawn and cut by the body's clip.
 
