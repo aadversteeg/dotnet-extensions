@@ -100,7 +100,9 @@ takes them (by the colour's luminance: a dark colour gets two lighter shades, a 
 itself, any other a darker and a lighter shade; `currentcolor` gives the shades of #eeeeee whatever the text colour);
 where two sides of different colours meet, the corner is split on the line from its outer to its inner point (cases
 `bs-*`, `hr-*`). Refused: on a table or a part of one, whose lines are drawn solid, and inset beside outset sides on
-one box. `hr` is drawn with its default style and its `color`, `noshade`, `size`, `width` and `align` attributes:
+one box. Solid sides of more than one colour on a block box are split at the corners in the same way (cases
+`bs-solid-*`); a solid border of one colour is drawn as four rectangles. `hr` is drawn with its default style and
+its `color`, `noshade`, `size`, `width` and `align` attributes:
 `overflow: hidden` is accepted on a block box with no children and a border, padding or height that is not 0 at its
 top or bottom, where it clips nothing.
 

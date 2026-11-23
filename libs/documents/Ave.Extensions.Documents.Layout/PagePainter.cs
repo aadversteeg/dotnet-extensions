@@ -179,19 +179,20 @@ public static class PagePainter
         box.Box.Style.Background is { } color ? [new FillRectangle(new Rect(origin, box.Size), color)] : [];
 
     /// <summary>
-    /// The border sides the fragment paints. A border whose sides are all solid is painted as four filled rectangles
-    /// along the edges of the border box (CSS Backgrounds 3 §3): the top and bottom sides run the full width, the left and
-    /// right sides fill the height between them. LIMIT: where two solid sides of different colours meet, CSS joins them on
-    /// the diagonal of the corner (CSS Backgrounds 3 §4.4, colour transitions at corners); here the top and bottom sides
-    /// cover the corners. A border with an inset or outset side is painted as Chromium 159 paints it
-    /// (<see cref="ShadedBorder"/>).
+    /// The border sides the fragment paints. A border of solid sides is painted as four filled rectangles along the edges
+    /// of the border box (CSS Backgrounds 3 §3): the top and bottom sides run the full width, the left and right sides fill
+    /// the height between them. A border with an inset or outset side, or with a corner where two visible solid sides of
+    /// different colours meet, is painted as Chromium 159 paints it, with the sides cut at the corners where two colours
+    /// meet (CSS Backgrounds 3 §4.4, colour transitions at corners; <see cref="CutBorder"/>); a border of one colour stays
+    /// four rectangles (<c>bs-solid-one-colour</c>: Chromium fills the same pixels as one shape).
     /// </summary>
     private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin)
     {
         var (border, size) = (box.Border, box.Size);
-        if (border.Top.Style != BorderStyle.Solid || border.Right.Style != BorderStyle.Solid || border.Bottom.Style != BorderStyle.Solid || border.Left.Style != BorderStyle.Solid)
+        if (border.Top.Style != BorderStyle.Solid || border.Right.Style != BorderStyle.Solid || border.Bottom.Style != BorderStyle.Solid || border.Left.Style != BorderStyle.Solid
+            || MeetsAnotherColour(border))
         {
-            return ShadedBorder(border, new Rect(origin, size));
+            return CutBorder(border, new Rect(origin, size));
         }
 
         var (top, bottom) = (border.Top.Width.Points, border.Bottom.Width.Points);
@@ -205,23 +206,32 @@ public static class PagePainter
         return sides.Where(side => side.Side.IsVisible).Select(side => (DrawItem)new FillRectangle(side.Area, side.Side.Color));
     }
 
-    /// <summary>The four sides of a border in the order <see cref="ShadedBorder"/> considers them: top, bottom, right, left.</summary>
+    /// <summary>Whether two visible sides of different colours meet at a corner of the border (a side of width 0 meets
+    /// none): the only place where the cut differs from the rectangles.</summary>
+    private static bool MeetsAnotherColour(Border border) =>
+        new[] { (border.Top, border.Right), (border.Right, border.Bottom), (border.Bottom, border.Left), (border.Left, border.Top) }
+            .Any(corner => corner.Item1.IsVisible && corner.Item2.IsVisible && corner.Item1.Color != corner.Item2.Color);
+
+    /// <summary>The four sides of a border in the order <see cref="CutBorder"/> considers them: top, bottom, right, left.</summary>
     private enum Edge { Top, Bottom, Right, Left }
 
     /// <summary>
-    /// A border with an inset or outset side, as Chromium 159 prints it (cases <c>bs-widths</c>, <c>bs-corners</c>,
-    /// <c>bs-sides</c>, <c>hr-default</c>): each visible side is one fill in its painted colour
-    /// (<see cref="BorderShades.Painted"/>), the inset and outset sides in the order top, bottom, right, left, then the solid
-    /// sides in the same order (<c>bs-corners</c>: a solid top beside inset sides is painted last). Each side runs along
+    /// A border with an inset or outset side or with solid sides of more than one colour, as Chromium 159 prints it (cases
+    /// <c>bs-widths</c>, <c>bs-corners</c>, <c>bs-sides</c>, <c>hr-default</c>; solid sides: <c>bs-solid-colours</c>,
+    /// <c>bs-solid-widths</c>, <c>bs-solid-pairs</c>, <c>bs-solid-break</c>): each visible side is one fill in its painted
+    /// colour (<see cref="BorderShades.Painted"/>), the inset and outset sides in the order top, bottom, right, left, then
+    /// the solid sides in the same order (<c>bs-corners</c>, <c>bs-solid-order</c>: a solid top, bottom, left, or top and
+    /// bottom, beside inset or outset sides is painted after them). Each side runs along
     /// its whole edge of the border box, over both corners. At a corner where it meets a visible side painted before it in
     /// another colour it is cut on the line from the outer to the inner corner of the border (45 degrees where the two widths
     /// are equal), so each side shows its half of the corner; beside a side of its own colour, or a side of width 0, it covers
     /// the corner (<c>bs-sides</c>). A side cut at a corner is a filled path; one that is not stays a filled rectangle, never
     /// a path of four sides along the axes. The border box is painted with its edges on whole CSS pixels of the page,
-    /// each rounded to the nearest (<c>bs-colours</c>: a box 28⅔ px high is painted 29 px high, its cut sides too); the
-    /// widths of the sides stay as they are.
+    /// each rounded to the nearest (<c>bs-colours</c>: a box 28⅔ px high is painted 29 px high, its cut sides too;
+    /// <c>bs-solid-colours</c>, box <c>cx</c>: a left edge at 16.53 px is painted at 17 px, a bottom at 202.53 px at 203 px);
+    /// the widths of the sides stay as they are.
     /// </summary>
-    private static IEnumerable<DrawItem> ShadedBorder(Border border, Rect box)
+    private static IEnumerable<DrawItem> CutBorder(Border border, Rect box)
     {
         BorderSide SideOf(Edge edge) => edge switch
         {

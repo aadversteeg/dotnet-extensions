@@ -91,7 +91,9 @@ public class ProfileDocumentTests
         Line("itself, any other a darker and a lighter shade; `currentcolor` gives the shades of #eeeeee whatever the text colour);");
         Line("where two sides of different colours meet, the corner is split on the line from its outer to its inner point (cases");
         Line("`bs-*`, `hr-*`). Refused: on a table or a part of one, whose lines are drawn solid, and inset beside outset sides on");
-        Line("one box. `hr` is drawn with its default style and its `color`, `noshade`, `size`, `width` and `align` attributes:");
+        Line("one box. Solid sides of more than one colour on a block box are split at the corners in the same way (cases");
+        Line("`bs-solid-*`); a solid border of one colour is drawn as four rectangles. `hr` is drawn with its default style and");
+        Line("its `color`, `noshade`, `size`, `width` and `align` attributes:");
         Line("`overflow: hidden` is accepted on a block box with no children and a border, padding or height that is not 0 at its");
         Line("top or bottom, where it clips nothing.");
         Line();
