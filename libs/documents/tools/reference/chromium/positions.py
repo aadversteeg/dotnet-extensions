@@ -13,8 +13,11 @@
 #   image <page> <x0> <y0> <x1> <y1>
 #
 # A word is a run of characters without white space on one baseline, in the order the PDF draws them; x0 is the
-# origin of its first character and x1 the origin of its last plus that character's advance, so the extent is the
-# advances of the word (not its ink), which is what a layout engine places. The baseline is the origin of the
+# origin of its first character and x1 the origin of its last glyph plus that glyph's advance, so the extent is the
+# advances of the word (not its ink), which is what a layout engine places. PyMuPDF reads a base and the combining
+# marks drawn after it as one character with the base's advance; x1 is then the last mark's origin plus its advance
+# (0 for a mark the font draws without one), read from the glyphs themselves (case sk-extreme: "u" with U+0323 below
+# it, the mark at 53.489, the u's advance ending at 54.426). The baseline is the origin of the
 # characters: it does not depend on the ascent and descent a reader assumes for the font, as a bounding box does.
 # Words come per page sorted by baseline and then x0; rectangles in drawing order; an image is the rectangle it is
 # drawn into. A rectangle, a stroke's band and an image are written as the part the print shows, inside the clips they
@@ -31,6 +34,7 @@
 # the read-back, so a print never loses what it paints without a word.
 import re
 import sys
+import unicodedata
 
 import pymupdf
 
@@ -55,7 +59,21 @@ def stroked(drawing):
             (r.x0 - half, r.y0 + half, r.x0 + half, r.y1 - half), (r.x1 - half, r.y0 + half, r.x1 + half, r.y1 - half)]
 
 
+def last_glyph_end(trace, char, baseline):
+    """The origin plus the advance of the last glyph drawn for a character: the character's own (None), or that of
+    the last combining mark drawn right after its base glyph."""
+    for index, glyph in enumerate(trace):
+        if abs(glyph[2][0] - char["origin"][0]) < 0.0005 and abs(glyph[2][1] - baseline) < 0.0005:
+            last = index
+            while last + 1 < len(trace) and trace[last + 1][0] > 0 and unicodedata.combining(chr(trace[last + 1][0])) \
+                    and abs(trace[last + 1][2][1] - baseline) < 0.0005:
+                last += 1
+            return trace[last][3][2] if last != index else None
+    return None
+
+
 def words(page):
+    trace = [glyph for span in page.get_texttrace() for glyph in span["chars"]]
     found = []
     for block in page.get_text("rawdict")["blocks"]:
         for line in block.get("lines", []):
@@ -73,8 +91,8 @@ def words(page):
     result = []
     for span, chars in found:
         x0 = chars[0]["origin"][0]
-        x1 = chars[-1]["bbox"][2]
         baseline = chars[0]["origin"][1]
+        x1 = last_glyph_end(trace, chars[-1], baseline) or chars[-1]["bbox"][2]
         rgb = span["color"]
         drawn = colour(rgb >> 16 & 0xFF, rgb >> 8 & 0xFF, rgb & 0xFF, span["alpha"])
         result.append((baseline, x0, x1, span["size"], "".join(char["c"] for char in chars), drawn, face(span["font"])))

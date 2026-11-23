@@ -11,7 +11,9 @@ namespace Ave.Extensions.Documents.TestSupport;
 /// top left of the page, y down.</summary>
 /// <param name="Page">The page, from 1.</param>
 /// <param name="X0">The origin of its first character.</param>
-/// <param name="X1">The origin of its last character plus that character's advance: the word's extent is its advances.</param>
+/// <param name="X1">The origin of its last glyph plus that glyph's advance: the word's extent is its advances. A combining
+/// mark drawn after its base ends the word at its own origin plus its advance (0 where the font gives it none), as
+/// <c>positions.py</c> reads Chromium's print (case <c>sk-extreme</c>).</param>
 /// <param name="Baseline">The baseline's y.</param>
 /// <param name="FontSize">The font size.</param>
 /// <param name="Text">The characters.</param>

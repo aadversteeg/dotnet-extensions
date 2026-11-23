@@ -466,7 +466,7 @@ pm-tall-top equal
 pm-width equal
 pm-zero equal
 pm-zero-alone equal
-sk-extreme open page 1 'gạọụ' x1 53.489, Chromium 54.417 (print.txt)
+sk-extreme equal
 sk-lato equal
 sk-lato-bold equal
 sk-lato-italic equal

@@ -104,8 +104,13 @@ image <page> <x0> <y0> <x1> <y1>
 ```
 
 A word is a run of characters without white space on one baseline. Its extent is its advances (from the origin of its
-first character to the origin of its last plus that character's advance), and its height is its baseline, so neither
-depends on the ascent and descent a PDF reader assumes for a font, as a bounding box does. `rect` is a filled rectangle
+first character to the origin of its last glyph plus that glyph's advance), and its height is its baseline, so neither
+depends on the ascent and descent a PDF reader assumes for a font, as a bounding box does. A word that ends in a base
+with a combining mark drawn after it (a font without the precomposed character) ends at the mark's origin plus its
+advance, 0 where the font gives the mark none: PyMuPDF reads the base and its marks as one character with the base's
+advance, so the end is read from the glyphs the PDF draws (case `sk-extreme`: "gạọụ" in Theano Didot ends at 53.489,
+the dot below the "u", where the u's advance ends at 54.426). The engine's read-back (`PrintedPages.Engine`) and
+poppler's `pdftotext -bbox` end such a word there too. `rect` is a filled rectangle
 (a background, a border, a grid line, or a marker box a case draws on purpose to show where a box is); `image` is the
 area an image is drawn into. A `rect`, `stroke` or `image` line is the part the print shows: the PDF draws each of
 them under the clips open around it, and Chromium opens one clip per page around the page's body (the page area, less
