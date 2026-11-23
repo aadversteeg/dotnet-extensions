@@ -231,7 +231,7 @@ public class CutBorderTests
     [Fact]
     public void A_solid_border_of_one_colour_and_unequal_widths_stays_four_rectangles()
     {
-        // bs-solid-one-colour: Chromium fills one shape of the same pixels (listed in the HTML cases); the engine keeps the
+        // bs-solid-one-colour: Chromium fills one shape of the same pixels (equal in the HTML cases); the engine keeps the
         // rectangles it paints for every border of one colour.
         var fills = Fills(Painted(Page(Paragraph(1, "wo", BoxStyle.Initial with { Border = new Border(new BorderSide(6.Pt(), Blue), new BorderSide(1.5.Pt(), Blue), new BorderSide(1.5.Pt(), Blue), new BorderSide(3.Pt(), Blue)) })))[0]);
 

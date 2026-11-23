@@ -906,10 +906,6 @@ Each is documented next to its code as well.
   face prints in both (case `pm-inherit-family`).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
-- **A solid border of one colour whose widths differ:** the engine paints it as four filled rectangles, as every border
-  of one colour; Chromium fills one shape, the border box with the padding box cut out of it. The pixels are the same;
-  the case comparison holds rectangles and other paths apart, so the case differs by the kind of paint alone (case
-  `bs-solid-one-colour`, listed; `HtmlListedDifferenceTests`).
 
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured

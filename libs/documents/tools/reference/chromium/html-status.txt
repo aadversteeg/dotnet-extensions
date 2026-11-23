@@ -165,7 +165,7 @@ bs-corners equal
 bs-sides equal
 bs-solid-break equal
 bs-solid-colours equal
-bs-solid-one-colour listed A_border_of_one_colour_and_unequal_widths_is_four_rectangles_where_Chromium_fills_one_shape_of_the_same_pixels: page 1 painted area: the pixel at (12, 27): the engine paints it and Chromium does not; the engine paints 3848 px #0000ff, Chromium 0 px (print.txt)
+bs-solid-one-colour equal
 bs-solid-order equal
 bs-solid-pairs equal
 bs-solid-widths equal

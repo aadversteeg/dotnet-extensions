@@ -109,6 +109,49 @@ public static class PathSampler
             FormattableString.Invariant($"#{path.Color.Red:x2}{path.Color.Green:x2}{path.Color.Blue:x2}"), rows.ToImmutable());
     }
 
+    /// <summary>The painted share per pixel that rectangles give the whole pixels of a path's box, by the same sample points
+    /// and the same rounding as <see cref="Sample"/>: a point is painted where it lies inside one of the rectangles (left
+    /// and top edges in, right and bottom edges out), so rectangles that paint the area a path paints give the path's rows
+    /// digit for digit. A rectangle's part outside the box is not counted.</summary>
+    /// <param name="rectangles">The rectangles, as they are painted: not snapped to whole pixels.</param>
+    /// <param name="box">The path whose box of whole pixels the rows are of.</param>
+    /// <returns>The rows of the box from the top, one hexadecimal digit per pixel from the left.</returns>
+    public static ImmutableArray<string> Rows(IReadOnlyList<PrintedBox> rectangles, PrintedPath box)
+    {
+        ArgumentNullException.ThrowIfNull(rectangles);
+        ArgumentNullException.ThrowIfNull(box);
+        var (firstColumn, endColumn) = ((long)Math.Round(box.X0 / Pixel), (long)Math.Round(box.X1 / Pixel));
+        var (firstRow, endRow) = ((long)Math.Round(box.Y0 / Pixel), (long)Math.Round(box.Y1 / Pixel));
+        var step = Pixel / Samples;
+        var rows = ImmutableArray.CreateBuilder<string>();
+        for (var row = firstRow; row < endRow; row++)
+        {
+            var text = new System.Text.StringBuilder();
+            for (var column = firstColumn; column < endColumn; column++)
+            {
+                var count = 0;
+                for (var sampleRow = 0; sampleRow < Samples; sampleRow++)
+                {
+                    var y = ((row * Samples) + sampleRow + 0.5) * step;
+                    for (var sampleColumn = 0; sampleColumn < Samples; sampleColumn++)
+                    {
+                        var x = ((column * Samples) + sampleColumn + 0.5) * step;
+                        if (rectangles.Any(rectangle => rectangle.X0 <= x && x < rectangle.X1 && rectangle.Y0 <= y && y < rectangle.Y1))
+                        {
+                            count++;
+                        }
+                    }
+                }
+
+                text.Append(Hex[(count + (Samples / 2)) / Samples]);
+            }
+
+            rows.Add(text.ToString());
+        }
+
+        return rows.ToImmutable();
+    }
+
     private const string Hex = "0123456789abcdef";
 
     /// <summary>A straight segment of a flattened contour.</summary>

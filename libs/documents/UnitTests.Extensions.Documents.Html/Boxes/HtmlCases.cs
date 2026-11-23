@@ -97,7 +97,6 @@ internal static class HtmlCases
         ["ws-image-border"] = "Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
         ["ws-soft"] = "A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them",
         ["sk-misc"] = "An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen",
-        ["bs-solid-one-colour"] = "A_border_of_one_colour_and_unequal_widths_is_four_rectangles_where_Chromium_fills_one_shape_of_the_same_pixels",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -417,7 +416,11 @@ internal static class HtmlCases
                 }
             }
 
-            if ((PaintedDifference(ours, ours.Rectangles, theirs.Rectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images) ?? PathDifference(ours, theirs)) is { } area)
+            var shapes = ShapesOfRectangles(ours, theirs);
+            var (ourRectangles, theirRectangles) = (Outside(ours.Rectangles, shapes, ours: true), Outside(theirs.Rectangles, shapes, ours: false));
+            var (ourPaths, theirPaths) = (ours with { Paths = [.. ours.Paths.Where(path => !shapes.Exists(shape => shape.InOurs && ReferenceEquals(shape.Path, path)))] },
+                theirs with { Paths = [.. theirs.Paths.Where(path => !shapes.Exists(shape => !shape.InOurs && ReferenceEquals(shape.Path, path)))] });
+            if ((PaintedDifference(ours, ourRectangles, theirRectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images) ?? PathDifference(ourPaths, theirPaths)) is { } area)
             {
                 return area + " (print.txt)";
             }
@@ -442,14 +445,66 @@ internal static class HtmlCases
         static PrintedBox Colourless(PrintedBox box) => box with { Colour = null, Stroked = false };
         foreach (var (page, print) in engine.Pages.Zip(chromium.Pages))
         {
-            var filled = measured.Where(box => box.Page == page.Number).Concat(print.Rectangles.Where(box => box.Stroked).Select(Colourless));
-            if (PaintedDifference(page, [.. page.Rectangles.Select(Colourless)], [.. filled]) is { } found)
+            // A shape one side paints with rectangles and the other with a path (ShapesOfRectangles) is compared in its
+            // path's box by print.txt; lines.txt holds no colour, so Chromium's rectangles there are cut whatever colour.
+            var shapes = ShapesOfRectangles(page, print);
+            var filled = Outside(measured.Where(box => box.Page == page.Number).Concat(print.Rectangles.Where(box => box.Stroked).Select(Colourless)), shapes, ours: false);
+            if (PaintedDifference(page, [.. Outside(page.Rectangles, shapes, ours: true).Select(Colourless)], [.. filled]) is { } found)
             {
                 return found + " (lines.txt)";
             }
         }
 
         return null;
+    }
+
+    /// <summary>A path of one side whose area the other side paints with rectangles of its colour (<see cref="ShapesOfRectangles"/>).</summary>
+    /// <param name="Path">The path; its box of whole pixels is where the rectangles were compared with it.</param>
+    /// <param name="InOurs">Whether the path is the engine's (the rectangles Chromium's), else Chromium's.</param>
+    private sealed record ShapeOfRectangles(PrintedPath Path, bool InOurs);
+
+    /// <summary>
+    /// The paths of a page that the other side paints with rectangles instead: a path that no path of the other side paints
+    /// the same (<see cref="PrintedPath.Paints"/>), and whose rows are the rows the other side's rectangles of its colour
+    /// give its box (<see cref="PathSampler.Rows"/>: the same sample points; a rectangle's part outside the box not
+    /// counted). Case <c>bs-solid-one-colour</c>: Chromium fills a border of one colour and unequal widths as one shape, the
+    /// border box with the padding box cut out of it, where the engine fills four rectangles of the same pixels. Such a
+    /// path is compared with those rectangles only, in its box: the path leaves the comparison of paths, and the
+    /// rectangles of its colour on the other side are cut to what lies outside the box (<see cref="Outside"/>) for the
+    /// comparison of rectangles, so each pixel is compared once, in one of the two. A path against a path and rectangles
+    /// against rectangles are compared as before.
+    /// </summary>
+    private static List<ShapeOfRectangles> ShapesOfRectangles(PrintedPage ours, PrintedPage theirs)
+    {
+        static bool Overlaps(PrintedBox box, PrintedPath path) => box.X0 < path.X1 && path.X0 < box.X1 && box.Y0 < path.Y1 && path.Y0 < box.Y1;
+        IEnumerable<ShapeOfRectangles> Of(PrintedPage side, PrintedPage other, bool inOurs) =>
+            side.Paths.Where(path => !other.Paths.Any(path.Paints))
+                .Where(path => PathSampler.Rows([.. other.Rectangles.Where(box => box.Colour == path.Colour && Overlaps(box, path))], path).SequenceEqual(path.Rows))
+                .Select(path => new ShapeOfRectangles(path, inOurs));
+        return [.. Of(ours, theirs, inOurs: true), .. Of(theirs, ours, inOurs: false)];
+    }
+
+    /// <summary>Rectangles of one side without their parts inside the boxes of the paths the other side's shapes were
+    /// compared with (<see cref="ShapesOfRectangles"/>): a rectangle of the path's colour (any colour where the rectangle has
+    /// none, as in <c>lines.txt</c>) that reaches into a box is cut to its parts above, below, left and right of it.</summary>
+    private static List<PrintedBox> Outside(IEnumerable<PrintedBox> boxes, List<ShapeOfRectangles> shapes, bool ours)
+    {
+        var kept = boxes.ToList();
+        foreach (var shape in shapes.Where(shape => shape.InOurs != ours))
+        {
+            var path = shape.Path;
+            kept = [.. kept.SelectMany(box => box.Colour is not null && box.Colour != path.Colour || box.X1 <= path.X0 || path.X1 <= box.X0 || box.Y1 <= path.Y0 || path.Y1 <= box.Y0
+                ? [box]
+                : new[]
+                {
+                    box with { Y1 = Math.Min(box.Y1, path.Y0) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y1) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y0), Y1 = Math.Min(box.Y1, path.Y1), X1 = Math.Min(box.X1, path.X0) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y0), Y1 = Math.Min(box.Y1, path.Y1), X0 = Math.Max(box.X0, path.X1) },
+                }.Where(piece => piece.X0 < piece.X1 && piece.Y0 < piece.Y1))];
+        }
+
+        return kept;
     }
 
     /// <summary>The first difference between the areas the paths that are not rectangles (curves: a list marker's disc or
