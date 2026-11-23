@@ -22,6 +22,11 @@ internal static class TableFragments
     public static BoxFragment Build(TableGeometry table, TablePage.Outcome outcome)
     {
         var content = outcome.Content;
+        if (table.IsSeparated)
+        {
+            return Separated(table, outcome);
+        }
+
         var lines = outcome.BottomLine is { } bottomLine ? content.Lines.Add(bottomLine) : content.Lines;
         var bottom = content.Bottom + (outcome.BottomLine is { Part: TablePage.LinePart.Whole } line ? table.HorizontalWidth(line.Above, line.Below, line.Context) / 2 : 0);
         ValueList<PlacedFragment> children =
@@ -31,6 +36,19 @@ internal static class TableFragments
             .. VerticalRules(table, content.Rows, lines),
         ];
         return new BoxFragment(table.Box, new Size(table.Width, bottom), children);
+    }
+
+    /// <summary>
+    /// The fragment of a table in the separated borders model, complete on its page (<see cref="TablePage"/> refuses one
+    /// that breaks): the table's border box down to the spacing, padding and border below its last row
+    /// (<see cref="TableGeometry.BottomInset"/>), painting its own border and its background under it as a block box does,
+    /// the cells over them, each painting its own border; no grid lines (CSS 2.1 §17.6.1; case <c>ts-paint</c>: the table's
+    /// background under its whole border box, spacing included, then its border, then each cell's background and border).
+    /// </summary>
+    private static BoxFragment Separated(TableGeometry table, TablePage.Outcome outcome)
+    {
+        var content = outcome.Content;
+        return new BoxFragment(table.Box, new Size(table.Width, content.Bottom + table.BottomInset), [.. Groups(table, content)], table.Box.Style.Border);
     }
 
     /// <summary>

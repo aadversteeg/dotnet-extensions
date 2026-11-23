@@ -98,6 +98,8 @@ public static class DocumentModelText
             style.Columns.Count > 0 ? $"columns={string.Join(",", style.Columns)}" : null,
             style.Width != initial.Width ? $"width={style.Width.ToString().ToLowerInvariant()}" : null,
             style.Span != initial.Span ? $"span={style.Span}" : null,
+            style.BorderModel != initial.BorderModel ? $"border-collapse={style.BorderModel.ToString().ToLowerInvariant()}" : null,
+            style.BorderSpacing != initial.BorderSpacing ? $"border-spacing={style.BorderSpacing}" : null,
             $"@{box.Source}",
         ];
         return string.Join(" ", parts.OfType<string>());

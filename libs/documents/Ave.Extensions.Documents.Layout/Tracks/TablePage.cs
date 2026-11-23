@@ -260,6 +260,12 @@ internal static class TablePage
             return Result<LayoutResult, Error>.Failure(outcome.Error);
         }
 
+        // A table with separated borders is laid out on one page only (see SeparatedFits).
+        if (table.IsSeparated && (outcome.Value.HasNoValue || outcome.Value.Value.Continuation is not null))
+        {
+            return Result<LayoutResult, Error>.Failure(LayoutErrors.TableBreak(table.Box, space.AvailableHeight));
+        }
+
         // A last-resort cut (a part of a row that shows nothing, TableBreaks.CutShows) is taken only where the table
         // cannot move: at the top of a page, or below nothing but the top insets of boxes that start the page or the margins
         // kept there after a forced break, where a break before the table would be a last resort as well
@@ -277,6 +283,11 @@ internal static class TablePage
 
         var placed = outcome.Value.Value;
         var fragment = TableFragments.Build(table, placed);
+        if (table.IsSeparated && !SeparatedFits(fragment, space))
+        {
+            return Result<LayoutResult, Error>.Failure(LayoutErrors.TableBreak(table.Box, space.AvailableHeight));
+        }
+
         var passes = PassesPageArea(table, fragment, space);
         var carries = passes && table.Environment.Profile.TableEndOverflow == TableEndOverflow.ContinuesOnNextPage
             && (placed.Continuation is null || (!placed.Continuation.RowIsSplit && !repeatsHeader));
@@ -291,6 +302,14 @@ internal static class TablePage
             placed.KeepsItsBreak,
             placed.Appeal);
     }
+
+    /// <summary>
+    /// Whether a table with separated borders fits whole in the room it has on its page. Such a table is laid out on one
+    /// page only in this version: where it would break between or inside its rows, or reach past the page end, it is
+    /// refused (<see cref="LayoutErrorCodes.TableBreak"/>, at the table's source line) instead of being drawn other than
+    /// Chromium prints it, which breaks it with its border and padding sliced (CSS Fragmentation 3 §5.4).
+    /// </summary>
+    private static bool SeparatedFits(BoxFragment fragment, ConstraintSpace space) => Fitting.Fits(fragment.Size.Height, space.AvailableHeight);
 
     /// <summary>
     /// The token after a page whose table passes its page area below a row placed whole, under
@@ -530,7 +549,7 @@ internal static class TablePage
         var continuesAfterBreak = !isFirst && !includeHeader && (!resume.RowIsSplit || reopensCutRow);
         var firstLine = continuesAfterBreak
             ? ContinuationLine(table, firstRow.Value, resumeContext, resume.FollowsPassed)
-            : new LineAt(null, firstRow, topContext, table.HorizontalWidth(null, firstRow, topContext) / 2);
+            : new LineAt(null, firstRow, topContext, table.IsSeparated ? table.TopInset : table.HorizontalWidth(null, firstRow, topContext) / 2);
         var content = Empty(firstLine.Y) with { Lines = [firstLine] };
         if (includeHeader)
         {
@@ -546,7 +565,7 @@ internal static class TablePage
                 return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content)));
             }
 
-            content = content with { Lines = content.Lines.Add(new LineAt(grid.HeaderRowCount - 1, nextBody, resumeContext, content.Bottom)) };
+            content = content with { Lines = content.Lines.Add(new LineAt(grid.HeaderRowCount - 1, nextBody, resumeContext, content.Bottom + table.RowGap)) };
         }
 
         var body = PlaceBody(table, content, resume, height, breakAt);
@@ -693,7 +712,7 @@ internal static class TablePage
             row = unit.LastRow + 1;
             if (row < grid.Rows.Length)
             {
-                content = content with { Lines = content.Lines.Add(new LineAt(row - 1, row, CollapsedBorders.LineContext.Interior, content.Bottom)) };
+                content = content with { Lines = content.Lines.Add(new LineAt(row - 1, row, CollapsedBorders.LineContext.Interior, content.Bottom + table.RowGap)) };
             }
         }
 
@@ -843,11 +862,13 @@ internal static class TablePage
     }
 
     /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,
-    /// the half of the table's bottom border inside the table; for any other row, with clone the half of the line below
+    /// the half of the table's bottom border inside the table (in the separated borders model the spacing, padding and
+    /// border below it, <see cref="TableGeometry.BottomInset"/>); for any other row, with clone the half of the line below
     /// it that lies under its centre (the line that closes the table at the break, see remarks), and with slice nothing,
     /// because the line is split at its centre.</summary>
     internal static double InsideBelow(TableGeometry table, int row) =>
-        row == table.Grid.Rows.Length - 1 || IsCloned(table) ? table.HorizontalWidth(row, Next(table.Grid, row), PageEndContext(table, row)) / 2
+        row == table.Grid.Rows.Length - 1 && table.IsSeparated ? table.BottomInset
+        : row == table.Grid.Rows.Length - 1 || IsCloned(table) ? table.HorizontalWidth(row, Next(table.Grid, row), PageEndContext(table, row)) / 2
         : 0;
 
     internal static Content Empty(double top) => new([], [], [], top, false);

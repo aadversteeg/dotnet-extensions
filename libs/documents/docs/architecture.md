@@ -154,7 +154,7 @@ The whole algorithms and the other rules:
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
 | box slicing at page breaks | `Layout/SlicedBox.cs` | CSS Fragmentation 3 §5.2–§5.4 |
 | inline layout, line boxes | `Layout/InlineLayout.cs`, `LineBoxes.cs` | CSS 2.1 §9.4.2, §10.8 |
-| tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
+| tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders, separated borders on one page), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
 | images | `Layout/ImageLayout.cs` | CSS 2.1 §10.3.2 (with a stated deviation for width + height) |
 | page templates, page counters | `Layout/PageAreas.cs`, `Paginator.cs`, `PageContext.cs` | CSS Paged Media 3 §4.2.2, §5, §6.1 |
 | what is content and what is an artifact (a repeated header row and every slice of a line of text after the first are pagination artifacts; every slice of an image is content of its figure) | `Layout/PagePainter.cs` | ISO 32000-1 §14.8.2.2 |
@@ -605,7 +605,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`). It draws `display: block`, `inline` and `none`, tables with collapsed borders and, on one page, with separated borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -628,14 +628,15 @@ start tag, with the property and the value) only where it would change the print
 | Properties | Drawn | Refused |
 | --- | --- | --- |
 | `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
-| `border-collapse` | `collapse` on a table | `separate` (the initial value, and HTML's) |
+| `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders is laid out on one page | a table with separated borders that does not fit whole in the room it has on its page (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
+| `border-spacing` | whole CSS pixels on a table with separated borders; any value with collapsed borders (no effect) | other lengths on a table with separated borders |
 | table width, column widths, `table-layout` | the table at `auto` and `100%`; lengths of column elements; `table-layout: fixed` at width `100%` (at width `auto` the table is laid out automatically, as Chromium does) | percentages on column elements, any width on a cell or a column group, other table widths: see **Tables** |
 | margins | lengths of 0 or more; `auto` as 0 (width is auto); on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
 | padding, border widths | lengths on a block box | percentages; any on an inline box |
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
-| `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
+| `background-color` | alpha 1 on a block box, a table with separated borders included; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
 | `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `width` and `height`, `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
-| `box-sizing`, `border-spacing`, `empty-cells`, `caption-side`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, collapsed borders, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| `box-sizing`, `empty-cells`, `caption-side`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, `empty-cells: show` the only value the registry takes, which draws every cell, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
 | `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-decoration-skip-ink` | every line and combination, applied to the element's text and the text of every element inside it, through block boxes, not into an image: the parent's lines, then the element's own in the order underline, overline, line-through, each in the element's font and its decoration colour (`currentcolor` its `color`; `TextStyle.Decorations`); `solid`; `auto`, `none` from the element the text lies in (`TextStyle.DecorationSkipInk`) | a decoration colour of another alpha than 1; a text with more than 16 lines (at the start tag of the element it lies in); `blink`, `spelling-error`, `grammar-error`, other styles, a thickness, an underline offset or position other than `auto` and `skip-ink: all` (refused by the registry) |
@@ -655,8 +656,7 @@ or does not decode is refused (`Rendering`), and so is a width and a height in a
 Chromium stretches the image to and the image algorithm does not (`Value`, case `hi-stretch`). An `img` inside a line of text (`display: inline`) is the same image box
 among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
 in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
-break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: lists by `display`, a table without collapsed borders by
-`border-collapse`, `hr` by its `inset` border, `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`
+break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: lists by `display`, `hr` by its `inset` border, `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
 at its text, once per text with the first such character, its offset and their count (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed
@@ -708,6 +708,23 @@ a column in which no cell starts; the percent columns named above, a width on a 
 `auto` and `100%`, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
+
+**Separated borders.** A table of `border-collapse: separate` (CSS 2.1 §17.6.1, the initial value and HTML's) is the same
+tracks box with `BoxStyle.BorderModel` `Separate` and its `border-spacing` (`BoxStyle.BorderSpacing`, horizontal then
+vertical), as Chromium prints it (cases `ts-*`, all equal): no grid lines; each cell keeps and paints its own border and
+padding, and a cell without a border takes no room for one; the table keeps its border, padding and background, painted
+as a block box paints them, the background under the whole border box, spacing included, under the cells; one spacing
+lies between two columns and between two rows, and between the outer cells and the table's padding edge, so a table is
+as wide as its columns, its border and padding and one spacing more than it has columns (`ts-plain`, `ts-table-border`,
+`ts-table-padding`, `ts-spacing-one`, `ts-spacing-two`); at width `100%` the columns share the width less all of that
+(`ts-width-100`); a cell over several columns or rows covers the spacing between them, and gives its columns its width
+less that spacing (`ts-span`); a thicker cell border widens its own column and heightens its own row (`ts-paint`). Refused:
+a spacing other than whole CSS pixels (Chromium's rounding of it is not measured), a border on a row or a row group of
+such a table (CSS 2.1 §17.6.1 gives them none; not measured), and backgrounds of rows, groups and columns as with
+collapsed borders. Layout draws such a table on one page only: one that does not fit whole in the room it has (it would
+break between or inside its rows, which Chromium does) is refused by layout with `Documents.Layout.TableBreak` at the
+table's source line; draw it with collapsed borders, or give it the room on one page. The code front-end keeps collapsed
+grid lines; the separated model is reached through HTML.
 
 **The page.** Without an `@page` rule the page is the caller's, as Chromium prints on the paper of the print call:
 `HtmlStyleOptions.Page`, by default A4 with no margins; media queries and viewport units see its page area, `size:
@@ -1324,6 +1341,10 @@ Each is documented next to its code as well.
 - **Input size:** elements nest at most 64 deep (`Fluent/InputLimits.cs`; `Documents.Input.Invalid.TooDeep`), which
   keeps every recursive step of the engine far from the stack limit; no length is longer than 14 400 pt
   (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
+- **Separated borders:** a table with separated borders (`BoxStyle.BorderModel` `Separate`) is laid out on one page
+  only: one that does not fit whole in the room it has is refused (`Documents.Layout.TableBreak`), where Chromium breaks
+  it with its border and padding sliced. The code front-end has no separated model (its tables keep collapsed grid
+  lines). Measured with spacings of whole CSS pixels only, which is what the HTML front-end draws.
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
   the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the
   lower half starting the next (as Chromium 159 does, cases `mf4-line-*`, `a2-row-break-line-6pt`). Chromium puts both

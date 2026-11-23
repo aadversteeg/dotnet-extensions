@@ -91,6 +91,12 @@ public class ProfileDocumentTests
         Line("automatic layout, a width on a cell (`td`, `th`) and on a `colgroup` are refused. A `tfoot` is drawn after the body");
         Line("rows, once; Chromium repeats a small one on every page of a table that breaks (Known limits).");
         Line();
+        Line("`border-collapse`: both models are drawn. A table with separated borders (`separate`, the initial value) keeps its");
+        Line("border, padding and background, each cell paints its own border, and `border-spacing` lies between the cells and");
+        Line("around them, in whole CSS pixels (another spacing is refused). Such a table is laid out on one page only: one that");
+        Line("does not fit whole in the room it has is refused at the table's line, where Chromium breaks it. A border on a row");
+        Line("or a row group of such a table is refused; put borders and backgrounds on the cells.");
+        Line();
         Line("### Supported at the initial value only");
         Line();
         Line("What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and");

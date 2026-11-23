@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -18,7 +19,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// <para>The steps, each in its own type:</para>
 /// <list type="number">
 /// <item><see cref="TableGrid"/>: the slots every cell covers (column and row spans).</item>
-/// <item><see cref="CollapsedBorders"/>: one resolved line per grid line (the collapsing border model, §17.6.2).</item>
+/// <item><see cref="CollapsedBorders"/>: one resolved line per grid line (the collapsing border model, §17.6.2). In the
+/// separated borders model (§17.6.1, <see cref="BoxStyle.BorderModel"/>) there are no grid lines: each cell keeps its own
+/// border, and <see cref="BoxStyle.BorderSpacing"/> lies between the columns and between the rows.</item>
 /// <item><see cref="TrackSizing"/>: the column widths from the column kinds and the cells' intrinsic widths
 /// (§17.5.2.1 fixed, §17.5.2.2 automatic, CSS Grid <c>fr</c> for fill).</item>
 /// <item><see cref="TablePage"/>: the rows on one page — row heights (§17.5.3), vertical alignment (§17.5.3),
@@ -98,7 +101,9 @@ public static class TracksLayout
 
     /// <summary>
     /// The intrinsic widths of a tracks box: the sum of its columns' minimum and maximum widths
-    /// (<see cref="TrackSizing.ColumnRanges"/>), plus the outer halves of the left and right grid lines.
+    /// (<see cref="TrackSizing.ColumnRanges"/>), plus the outer halves of the left and right grid lines; in the separated
+    /// borders model plus the table's border and padding and the spacing left of, between and right of the columns
+    /// (<see cref="Insets"/>).
     /// </summary>
     /// <param name="environment">The fonts, algorithms and current page.</param>
     /// <param name="box">The tracks box.</param>
@@ -109,7 +114,7 @@ public static class TracksLayout
             var lines = VerticalLineWidths(box, grid);
             return ColumnRanges(environment, box, grid).OnSuccessMap(ranges =>
                 new IntrinsicWidths(ranges.Sum(range => range.MinContent), ranges.Sum(range => range.MaxContent))
-                    .Plus((lines[0] + lines[^1]) / 2));
+                    .Plus(Outer(box, lines, ranges.Length)));
         });
 
     /// <summary>
@@ -136,6 +141,48 @@ public static class TracksLayout
         };
     }
 
+    /// <summary>True for a table in the separated borders model (CSS 2.1 §17.6.1): no grid lines, each cell has its own
+    /// border, and the table its own border, padding and background.</summary>
+    internal static bool IsSeparated(Box box) => box.Style.BorderModel == TableBorderModel.Separate;
+
+    /// <summary>
+    /// The room left of the first column, right of the last, and between two columns. In the collapsing border model the
+    /// outer halves of the outer vertical grid lines, and no gap (§17.6.2). In the separated borders model the table's
+    /// border and padding and one horizontal border spacing on each side, and one spacing between two columns: CSS 2.1
+    /// §17.6.1, measured in Chromium 159 (cases <c>ts-plain</c>, <c>ts-table-border</c>, <c>ts-table-padding</c>,
+    /// <c>ts-spacing-one</c>, <c>ts-spacing-two</c>: the cells start one spacing inside the table's padding edge, and
+    /// each next column one spacing after the last).
+    /// </summary>
+    internal static (double Left, double Right, double Gap) Insets(Box box, ImmutableArray<double> lines)
+    {
+        if (!IsSeparated(box))
+        {
+            return (lines[0] / 2, lines[^1] / 2, 0);
+        }
+
+        var style = box.Style;
+        var spacing = style.BorderSpacing.Horizontal.Points;
+        return (style.Border.Widths.Left.Points + style.Padding.Left.Points + spacing, style.Border.Widths.Right.Points + style.Padding.Right.Points + spacing, spacing);
+    }
+
+    /// <summary>The width a table takes besides its columns: <see cref="Insets"/> on both sides and the gaps between
+    /// <paramref name="columns"/> columns.</summary>
+    private static double Outer(Box box, ImmutableArray<double> lines, int columns)
+    {
+        if (!IsSeparated(box))
+        {
+            return (lines[0] + lines[^1]) / 2;
+        }
+
+        var (left, right, gap) = Insets(box, lines);
+        return left + right + (Math.Max(0, columns - 1) * gap);
+    }
+
+    /// <summary>The box a cell is laid out as in the separated borders model: its own border and padding, which it paints
+    /// itself (CSS 2.1 §17.6.1; case <c>ts-paint</c>: one stroke per cell, a cell without a border takes no room for one,
+    /// a 6 pt border widens its own column alone), and no margins (§17.5).</summary>
+    internal static Box SeparatedCellBox(TableGrid.Cell cell) => cell.Box with { Style = cell.Box.Style with { Margin = Edges.Zero } };
+
     /// <summary>The width of each vertical grid line: per column boundary the widest resolved line over all rows, so
     /// every row's cells line up. At the table's edges half of it is the table's left and right border, on every page:
     /// measured in Chromium 159, a 6 pt left or right border on one cell of the first row, of a later row, or of a row
@@ -144,25 +191,36 @@ public static class TracksLayout
     /// table border wider than its cells' counts the same way (<c>te-table-border</c>). Where each cell's content
     /// starts is half of its own line (<see cref="CollapsedBorders.OwnVerticalWidth"/>), not of this one.</summary>
     internal static ImmutableArray<double> VerticalLineWidths(Box box, TableGrid grid) =>
+        IsSeparated(box) ? [.. Enumerable.Repeat(0.0, grid.ColumnCount + 1)] :
         [.. Enumerable.Range(0, grid.ColumnCount + 1).Select(boundary =>
             Enumerable.Range(0, grid.Rows.Length).Select(row => CollapsedBorders.Vertical(box, grid, row, boundary).Width.Points).DefaultIfEmpty(0).Max())];
 
     /// <summary>The columns' ranges, from every cell measured with half of its own vertical lines beside it
-    /// (<see cref="CollapsedBorders.OwnVerticalWidth"/>), as it is laid out.</summary>
-    private static Result<ImmutableArray<IntrinsicWidths>, Error> ColumnRanges(LayoutEnvironment environment, Box box, TableGrid grid) =>
-        grid.Cells
+    /// (<see cref="CollapsedBorders.OwnVerticalWidth"/>), as it is laid out; in the separated borders model with its own
+    /// border, and a cell over several columns gives them its widths less the spacing between them, which it covers
+    /// (case <c>ts-span</c>: a cell 139.969 pt wide over two columns of 66.328 and 67.641 pt and the 6 pt between them).</summary>
+    private static Result<ImmutableArray<IntrinsicWidths>, Error> ColumnRanges(LayoutEnvironment environment, Box box, TableGrid grid)
+    {
+        var gap = IsSeparated(box) ? box.Style.BorderSpacing.Horizontal.Points : 0;
+        return grid.Cells
             .TraverseAll(cell => environment
-                .Measure(CellBox(cell, new Edges(
+                .Measure(IsSeparated(box) ? SeparatedCellBox(cell) : CellBox(cell, new Edges(
                     Length.Zero,
                     (CollapsedBorders.OwnVerticalWidth(box, grid, cell, cell.Column + cell.ColumnSpan) / 2).Pt(),
                     Length.Zero,
                     (CollapsedBorders.OwnVerticalWidth(box, grid, cell, cell.Column) / 2).Pt())))
-                .OnSuccessMap(widths => new TrackSizing.Contribution(cell.Column, cell.ColumnSpan, widths)))
+                .OnSuccessMap(widths => new TrackSizing.Contribution(cell.Column, cell.ColumnSpan, cell.ColumnSpan > 1 && gap > 0 ? Covering(widths, (cell.ColumnSpan - 1) * gap) : widths)))
             .OnSuccessMap(contributions => TrackSizing.ColumnRanges(box.Style.Columns, contributions));
+    }
+
+    /// <summary>The widths a cell gives the columns it spans, less the <paramref name="gaps"/> between them, never below 0.</summary>
+    private static IntrinsicWidths Covering(IntrinsicWidths widths, double gaps) =>
+        new(Math.Max(0, widths.MinContent - gaps), Math.Max(0, widths.MaxContent - gaps));
 
     /// <summary>
     /// Places the columns: column j starts at x = <see cref="TablePreparation.ColumnX"/>[j] and is as wide as track
-    /// sizing says; the next column starts the column gap after its end. In the collapsing border model the gap is zero,
+    /// sizing says; the next column starts the column gap after its end (<see cref="Insets"/>). In the collapsing border
+    /// model the gap is zero,
     /// a column (a cell's border box) runs from the centre of the grid line on its left to the centre of the line on its
     /// right, and the first line is centred half its width inside the table's left edge (the table's border box holds
     /// half of the outer lines, §17.6.2).
@@ -170,7 +228,8 @@ public static class TracksLayout
     private static Result<TablePreparation, Error> Prepare(LayoutEnvironment environment, Box box, TableGrid grid, double availableWidth)
     {
         var lines = VerticalLineWidths(box, grid);
-        var outer = (lines[0] + lines[^1]) / 2;
+        var outer = Outer(box, lines, grid.ColumnCount);
+        var (left, right, gap) = Insets(box, lines);
         return ColumnRanges(environment, box, grid).OnSuccessBind(ranges =>
         {
             var (widths, needed) = TrackSizing.Resolve(box.Style.Columns, ranges, availableWidth - outer, box.Style.Width);
@@ -179,8 +238,7 @@ public static class TracksLayout
                 return Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, width + outer, availableWidth));
             }
 
-            const double gap = 0;
-            var start = lines[0] / 2;
+            var start = left;
             var x = ImmutableArray.CreateBuilder<double>(widths.Length);
             var end = start;
             foreach (var columnWidth in widths)
@@ -189,7 +247,7 @@ public static class TracksLayout
                 end = x[^1] + columnWidth;
             }
 
-            return Result<TablePreparation, Error>.Success(new TablePreparation(box, grid, x.MoveToImmutable(), widths, gap, start, end, lines, end + lines[^1] / 2, availableWidth));
+            return Result<TablePreparation, Error>.Success(new TablePreparation(box, grid, x.MoveToImmutable(), widths, gap, start, end, lines, end + right, availableWidth));
         });
     }
 }
@@ -273,9 +331,25 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
     /// gaps between them.</summary>
     public double CellWidth(TableGrid.Cell cell) => ColumnEnd(cell.Column + cell.ColumnSpan - 1) - ColumnX[cell.Column];
 
-    /// <summary>The width of a horizontal grid line between two rows on a page: the widest of its column segments.</summary>
+    /// <summary>True in the separated borders model (<see cref="TracksLayout.IsSeparated"/>).</summary>
+    public bool IsSeparated => TracksLayout.IsSeparated(Box);
+
+    /// <summary>The room between two rows: the vertical border spacing in the separated borders model (CSS 2.1 §17.6.1;
+    /// cases <c>ts-spacing-one</c>, <c>ts-spacing-two</c>), zero in the collapsing one.</summary>
+    public double RowGap => IsSeparated ? Box.Style.BorderSpacing.Vertical.Points : 0;
+
+    /// <summary>In the separated borders model, the room above the first row: the table's top border and padding and one
+    /// vertical spacing (CSS 2.1 §17.6.1; cases <c>ts-table-padding</c>, <c>ts-spacing-two</c>).</summary>
+    public double TopInset => Box.Style.Border.Widths.Top.Points + Box.Style.Padding.Top.Points + RowGap;
+
+    /// <summary>In the separated borders model, the room below the last row: one vertical spacing and the table's bottom
+    /// padding and border.</summary>
+    public double BottomInset => RowGap + Box.Style.Padding.Bottom.Points + Box.Style.Border.Widths.Bottom.Points;
+
+    /// <summary>The width of a horizontal grid line between two rows on a page: the widest of its column segments; zero in
+    /// the separated borders model, which has no grid lines.</summary>
     public double HorizontalWidth(int? above, int? below, CollapsedBorders.LineContext context) =>
-        Enumerable.Range(0, Grid.ColumnCount)
+        IsSeparated ? 0 : Enumerable.Range(0, Grid.ColumnCount)
             .Select(column => CollapsedBorders.Horizontal(Box, Grid, above, below, column, context).Width.Points)
             .DefaultIfEmpty(0)
             .Max();
@@ -283,6 +357,6 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
     /// <summary>A cell's own part of a horizontal grid line: the widest of the line's segments over the cell's columns
     /// (<see cref="TableSegments.CellLayoutBox"/>).</summary>
     public double HorizontalWidth(int? above, int? below, CollapsedBorders.LineContext context, TableGrid.Cell cell) =>
-        Enumerable.Range(cell.Column, cell.ColumnSpan)
+        IsSeparated ? 0 : Enumerable.Range(cell.Column, cell.ColumnSpan)
             .Max(column => CollapsedBorders.Horizontal(Box, Grid, above, below, column, context).Width.Points);
 }

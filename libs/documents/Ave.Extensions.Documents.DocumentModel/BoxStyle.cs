@@ -85,6 +85,16 @@ public sealed record BoxStyle
     /// value, unless set. Used by the tracks algorithm for a table; every other box is sliced.</summary>
     public BoxDecorationBreak DecorationBreak { get; init; }
 
+    /// <summary>How the borders of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/> are drawn, named after CSS
+    /// <c>border-collapse</c> (CSS 2.1 §17.6); <see cref="TableBorderModel.Collapse"/> unless set (where CSS's initial
+    /// value is <c>separate</c>). Ignored for every other box.</summary>
+    public TableBorderModel BorderModel { get; init; }
+
+    /// <summary>The room between the cells of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/> in the separated
+    /// borders model (CSS 2.1 §17.6.1, <c>border-spacing</c>); <see cref="BorderSpacing.Zero"/> unless set. Never
+    /// negative. Ignored in the collapsing border model and for every other box.</summary>
+    public BorderSpacing BorderSpacing { get; init; }
+
     /// <summary>Which page-margin box of its edge this box is (CSS Paged Media 3 §5: the start, centre and end boxes
     /// of the row, <c>@top-left</c>, <c>@top-center</c> and <c>@top-right</c> on the top edge), for a child of a box laid
     /// out by <see cref="LayoutAlgorithmId.MarginBoxes"/>; <see cref="MarginBoxPlace.None"/> for every other box.</summary>

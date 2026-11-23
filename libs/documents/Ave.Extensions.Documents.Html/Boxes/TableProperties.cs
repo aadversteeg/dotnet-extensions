@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Values;
 
@@ -60,27 +62,53 @@ internal static class TableProperties
         _ => null,
     };
 
-    /// <summary>A background: a cell's is drawn; the table's, a group's, a row's and a column's are not in this version.</summary>
-    public static string? Background(ElementFacts facts) =>
-        Part(facts) is TablePart.Cell or TablePart.None ? null : "a background on a table, a row group, a row or a column is not drawn in this version";
+    /// <summary>True when the element's <c>border-collapse</c> is <c>separate</c>: on a table, its border model; on a
+    /// table part, its table's, as the property is inherited (CSS 2.1 §17.6) and never set on a part in the cases.</summary>
+    public static bool IsSeparated(ElementFacts facts) => facts.Style[PropertyRegistry.Find("border-collapse")!] is not CssKeyword { Name: "collapse" };
+
+    /// <summary>A background: a cell's is drawn, and a table's with separated borders, which paints it under its whole
+    /// border box as a block box does (CSS 2.1 §17.6.1; case <c>ts-paint</c>); a group's, a row's and a column's are not in
+    /// this version, nor a table's with collapsed borders.</summary>
+    public static string? Background(ElementFacts facts) => Part(facts) switch
+    {
+        TablePart.Cell or TablePart.None => null,
+        TablePart.Table when IsSeparated(facts) => null,
+        TablePart.Table => "a background on a table with collapsed borders is not drawn in this version: put it on the cells, or draw the table with border-collapse: separate",
+        _ => "a background on a row group, a row or a column is not drawn in this version: put it on the cells",
+    };
 
     /// <summary>A border width: the columns' borders are not in the model's collapsing border model (CSS 2.1 §17.6.2.1
-    /// lets them take part in the conflicts).</summary>
-    public static string? BorderWidth(CssValue value, ElementFacts facts) =>
-        Part(facts) is TablePart.Column or TablePart.ColumnGroup && value is CssLength { Value.Points: > 0 } ? "a border on a column or a column group is not drawn in this version" : null;
+    /// lets them take part in the conflicts); in the separated borders model rows, columns and their groups have no
+    /// borders (CSS 2.1 §17.6.1: "Rows, columns, row groups, and column groups cannot have borders"), which is not
+    /// measured, so a border on a row or a row group of such a table is refused.</summary>
+    public static string? BorderWidth(CssValue value, ElementFacts facts) => value is CssLength { Value.Points: > 0 }
+        ? Part(facts) switch
+        {
+            TablePart.Column or TablePart.ColumnGroup => "a border on a column or a column group is not drawn in this version",
+            TablePart.Row or TablePart.RowGroup when IsSeparated(facts) => "a border on a row or a row group of a table with separated borders is not drawn in this version: put it on the cells",
+            _ => null,
+        }
+        : null;
 
     /// <summary>The alignment of a cell's content (CSS 2.1 §17.5.3): top, middle and bottom; no effect on the other parts.</summary>
     public static string? VerticalAlign(CssValue value, ElementFacts facts) =>
         Part(facts) != TablePart.Cell || value is CssKeyword { Name: "top" or "middle" or "bottom" } ? null : "only the top, middle and bottom alignment of a cell's content is drawn";
 
     /// <summary>
-    /// The table properties. <c>border-collapse</c> on a table: only <c>collapse</c>; <c>separate</c> is the initial
-    /// value, and HTML's (HTML Standard §15.3.8). <c>border-spacing</c> and <c>empty-cells</c> apply only in the
-    /// separated borders model (CSS 2.1 §17.6.1, §17.6.1.1), so they have no effect with collapsed borders;
-    /// <c>caption-side</c> none without a caption (a caption is refused); <c>table-layout</c> is read for the columns.
+    /// The table properties. <c>border-collapse</c> on a table: <c>collapse</c> and <c>separate</c>, the initial value and
+    /// HTML's (HTML Standard §15.3.8). <c>border-spacing</c> and <c>empty-cells</c> apply only in the separated borders
+    /// model (CSS 2.1 §17.6.1, §17.6.1.1), so they have no effect with collapsed borders; with separated borders a
+    /// spacing is drawn in whole CSS pixels, the spacings the cases measure (<c>ts-*</c>: 0, 2, 4, 8 and 12 px), and another
+    /// is refused, as Chromium's rounding of it is not measured; <c>empty-cells</c> takes only <c>show</c> (the registry),
+    /// which draws every cell. <c>caption-side</c> none without a caption (a caption is refused); <c>table-layout</c> is read
+    /// for the columns.
     /// </summary>
     public static string? TableProperty(string name, CssValue value, ElementFacts facts) =>
-        name == "border-collapse" && Part(facts) == TablePart.Table && value is not CssKeyword { Name: "collapse" }
-            ? "separated borders (border-collapse: separate, the initial value and HTML's) are not drawn in this version: a table is drawn with border-collapse: collapse"
+        name == "border-spacing" && Part(facts) == TablePart.Table && IsSeparated(facts)
+            && value is CssList { Items: var lengths } && lengths.Any(length => length is not CssLength { Value.Points: var points } || !IsWholePixels(points))
+            ? "a border spacing other than a whole number of CSS pixels (a multiple of 0.75pt) is not drawn in this version"
             : null;
+
+    /// <summary>True for a whole number of CSS pixels of 0.75 pt (CSS Values 4 §6.2), within a millionth of one.</summary>
+    private static bool IsWholePixels(double points) => Math.Abs((points / 0.75) - Math.Round(points / 0.75)) < 1e-6;
 }

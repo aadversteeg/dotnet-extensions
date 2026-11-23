@@ -173,7 +173,7 @@ public class BoxGenerationTests
 
     [Theory]
     [InlineData("<ul><li>a</li></ul>", "display")]
-    [InlineData("<table><tr><td>a</td></tr></table>", "border-collapse")]
+    [InlineData("<table border=\"1\"><tr><td>a</td></tr></table>", "border-top-style")]
     [InlineData("<pre>a\tb</pre>", "white-space-collapse")]
     [InlineData("<hr>", "border-top-style")]
     [InlineData("<p><span style=\"vertical-align:top\">a</span></p>", "vertical-align")]

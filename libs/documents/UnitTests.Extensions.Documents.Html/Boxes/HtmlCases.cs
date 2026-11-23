@@ -117,7 +117,8 @@ internal static class HtmlCases
     /// and content layout cannot place on any page (<see cref="LayoutErrorCodes.DoesNotFit"/>: it names the room it had
     /// and the source line of the box, where Chromium prints the content past the page end) or that is wider than its
     /// page-margin box (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration,
-    /// where Chromium draws it over its box). Any other error, also
+    /// where Chromium draws it over its box), and a table with separated borders that would break over pages
+    /// (<see cref="LayoutErrorCodes.TableBreak"/>: the room it had, at the table's source line). Any other error, also
     /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
@@ -145,6 +146,7 @@ internal static class HtmlCases
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
+        LayoutErrorCodes.TableBreak.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -345,7 +347,7 @@ internal static class HtmlCases
         return (line, column) switch
         {
             ({ }, { }) => $"refused {first.Code} {what} at {line}:{column}",
-            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit => $"refused {first.Code} {what} at {line}",
+            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.TableBreak => $"refused {first.Code} {what} at {line}",
             _ => $"failed {first.Code} {what}: a refusal without its line and column",
         };
     }

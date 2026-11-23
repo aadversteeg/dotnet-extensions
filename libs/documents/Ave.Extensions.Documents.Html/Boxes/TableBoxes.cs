@@ -64,7 +64,9 @@ internal enum TablePart
 /// container's width). Percent columns are drawn in the fixed layout (<c>PercentColumns</c>); widths on cells and
 /// column groups are refused.</para>
 /// <para>The parts follow CSS 2.1 §17.5: internal table elements have no margins; rows and row groups no padding; the
-/// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A row span ends with its row
+/// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A table of the separated borders
+/// model (<c>border-collapse: separate</c>, CSS 2.1 §17.6.1) keeps its padding and its <c>border-spacing</c>
+/// (<see cref="BoxStyle.BorderModel"/>, <see cref="BoxStyle.BorderSpacing"/>); layout draws it on one page only. A row span ends with its row
 /// group (HTML Standard §4.9.12.1). The table breaks with <see cref="BoxDecorationBreak.Slice"/>: layout splits a grid
 /// line at a page break between rows at its centre, half on each page, where Chromium paints the line whole on one
 /// page.</para>
@@ -418,16 +420,33 @@ public static partial class HtmlBoxGenerator
             }
 
             var sizes = Columns(element, grid);
+            var separated = Value(element, "border-collapse") is not CssKeyword { Name: "collapse" };
             return box with
             {
                 Role = SemanticRole.Table,
                 Layout = LayoutAlgorithmId.Tracks,
-                Style = box.Style with { Columns = sizes.Columns, Width = sizes.Width, DecorationBreak = BoxDecorationBreak.Slice, Padding = Edges.Zero, Text = null },
+                Style = box.Style with
+                {
+                    Columns = sizes.Columns,
+                    Width = sizes.Width,
+                    DecorationBreak = BoxDecorationBreak.Slice,
+                    BorderModel = separated ? TableBorderModel.Separate : TableBorderModel.Collapse,
+                    BorderSpacing = separated ? SpacingOf(element) : BorderSpacing.Zero,
+                    Padding = separated ? box.Style.Padding : Edges.Zero,
+                    Text = null,
+                },
                 Children = [.. groups.Select(group => (Node)(group.Style.TableDisplay == TableDisplay.HeaderGroup && hasBody ? group with { Role = SemanticRole.TableHead } : group))],
             };
         }
 
         private static IEnumerable<Box> Parts(Box box) => box.Children.OfType<Box>();
+
+        /// <summary>The computed <c>border-spacing</c> of a table with separated borders: horizontal, then vertical (CSS 2.1
+        /// §17.6.1).</summary>
+        private BorderSpacing SpacingOf(StyledElement element) =>
+            Value(element, "border-spacing") is CssList { Items: [CssLength horizontal, CssLength vertical] }
+                ? new BorderSpacing(horizontal.Value, vertical.Value)
+                : BorderSpacing.Zero;
 
         /// <summary>The slots of the table's cells (HTML Standard §4.9.12.1).</summary>
         private static TableSlots.Grid Grid(List<Box> groups) =>

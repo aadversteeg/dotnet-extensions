@@ -28,6 +28,19 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(box.Source);
 
+    /// <summary>A table with separated borders that does not fit whole in the room it has on its page
+    /// (<see cref="LayoutErrorCodes.TableBreak"/>).</summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="available">The height it had on the page.</param>
+    public static Error TableBreak(Box table, double available) =>
+        new Error(
+                LayoutErrorCodes.TableBreak,
+                $"{Describe(table)} has separated borders and does not fit whole in {Room(available)}; a table with separated borders "
+                + "is laid out on one page only in this version: give it the room on one page, or draw it with collapsed borders.")
+            .With(ErrorMetadataKeys.Node, table.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
+            .WithSource(table.Source);
+
     /// <summary>A header or footer area's content that does not fit in the area: an area never breaks.</summary>
     /// <param name="content">The area's content.</param>
     /// <param name="height">The area's height: its fixed height, or the page area's.</param>

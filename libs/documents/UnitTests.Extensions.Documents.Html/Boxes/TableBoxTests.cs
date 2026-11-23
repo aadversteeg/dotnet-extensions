@@ -159,12 +159,31 @@ public class TableBoxTests
         cells.Select(cell => cell.Style.VerticalAlign).Should().Equal(VerticalAlign.Middle, VerticalAlign.Bottom, VerticalAlign.Top);
     }
 
+    /// <summary>A table with separated borders (the user agent's <c>border-collapse: separate</c> and <c>border-spacing:
+    /// 2px</c>, CSS 2.1 §17.6.1) keeps its border model, spacing, padding and background (cases <c>ts-plain</c>,
+    /// <c>ts-table-padding</c>, <c>ts-paint</c>); with collapsed borders the table has no padding (§17.6.2).</summary>
     [Fact]
-    public void A_separated_table_is_refused_with_a_message_that_names_border_collapse()
+    public void A_separated_table_keeps_its_border_model_spacing_padding_and_background()
     {
-        var error = FirstRefusal("<table><tr><td>a</td></tr></table>", "table { width: 100% }");
-        (error.Code, error.Metadata![ErrorMetadataKeys.Property]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "border-collapse"));
-        error.Message.Should().Contain("border-collapse: collapse");
+        var table = Table("<table><tr><td>a</td></tr></table>", "table { padding: 3pt; background: #ffff00; border-spacing: 3pt 9pt }");
+        (table.Style.BorderModel, table.Style.BorderSpacing).Should().Be((TableBorderModel.Separate, new BorderSpacing(Length.FromPoints(3), Length.FromPoints(9))));
+        (table.Style.Padding, table.Style.Background).Should().Be((Edges.All(Length.FromPoints(3)), new Color(255, 255, 0)));
+        Table("<table><tr><td>a</td></tr></table>", "").Style.BorderSpacing.Should().Be(new BorderSpacing(Length.FromPoints(1.5), Length.FromPoints(1.5)), "the user agent's 2px");
+
+        var collapsed = Table("<table><tr><td>a</td></tr></table>", Collapsed + "table { padding: 3pt }");
+        (collapsed.Style.BorderModel, collapsed.Style.BorderSpacing, collapsed.Style.Padding).Should().Be((TableBorderModel.Collapse, BorderSpacing.Zero, Edges.Zero));
+    }
+
+    /// <summary>What a table with separated borders does not draw in this version, each refused with what to do: a
+    /// spacing that is not a whole number of CSS pixels, a border on a row or a row group.</summary>
+    [Theory]
+    [InlineData("<table><tr><td>a</td></tr></table>", "table { border-spacing: 1pt }", "border-spacing")]
+    [InlineData("<table><tr style=\"border-top: 1pt solid red\"><td>a</td></tr></table>", "", "border-top-width")]
+    [InlineData("<table><tbody style=\"border-left: 1pt solid red\"><tr><td>a</td></tr></tbody></table>", "", "border-left-width")]
+    public void A_separated_table_refuses_what_it_does_not_draw(string body, string css, string property)
+    {
+        var error = FirstRefusal(body, css);
+        (error.Code, error.Metadata![ErrorMetadataKeys.Property]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, property));
     }
 
     /// <summary>One row per refusal of table structure: the body, extra CSS, the refused value (null: nothing refused).</summary>

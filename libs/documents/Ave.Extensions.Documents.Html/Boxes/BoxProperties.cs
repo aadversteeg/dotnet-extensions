@@ -210,11 +210,12 @@ internal static class BoxProperties
             yield return new(name, "every value: no effect while outline-style is none, its only value", (_, _) => null);
         }
 
-        // Tables (CSS 2.1 §17.6): collapsed borders only; the rest has no effect with them, or is read for the columns.
-        yield return new("border-collapse", "collapse on a table; no effect on another box", (value, facts) => TableProperties.TableProperty("border-collapse", value, facts));
-        foreach (var name in new[] { "border-spacing", "caption-side", "empty-cells" })
+        // Tables (CSS 2.1 §17.6): both border models; the rest has no effect with collapsed borders, or is read for the columns.
+        yield return new("border-collapse", "collapse and separate on a table; no effect on another box", (value, facts) => TableProperties.TableProperty("border-collapse", value, facts));
+        yield return new("border-spacing", "whole CSS pixels on a table with separated borders; no effect with collapsed borders", (value, facts) => TableProperties.TableProperty("border-spacing", value, facts));
+        foreach (var name in new[] { "caption-side", "empty-cells" })
         {
-            yield return new(name, "every value: no effect with collapsed borders and no caption (separated borders and captions are refused)", (value, facts) => TableProperties.TableProperty(name, value, facts));
+            yield return new(name, "every value: no effect without a caption (captions are refused); empty-cells show draws every cell", (value, facts) => TableProperties.TableProperty(name, value, facts));
         }
 
         yield return new("table-layout", "both values: read for the column widths of a table", (_, _) => null);

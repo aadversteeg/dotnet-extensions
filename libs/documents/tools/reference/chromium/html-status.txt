@@ -529,14 +529,14 @@ tp-sum-100 equal
 tp-sum-above equal
 tp-sum-below equal
 tp-thirds equal
-ts-paint refused Documents.Html.Unsupported.Value background-color: rgb(255, 255, 0) at 4:1
-ts-plain refused Documents.Html.Unsupported.Value border-collapse: separate at 9:1
-ts-spacing-one refused Documents.Html.Unsupported.Value border-collapse: separate at 4:1
-ts-spacing-two refused Documents.Html.Unsupported.Value border-collapse: separate at 4:1
-ts-span refused Documents.Html.Unsupported.Value border-collapse: separate at 4:1
-ts-table-border refused Documents.Html.Unsupported.Value border-collapse: separate at 4:1
-ts-table-padding refused Documents.Html.Unsupported.Value border-collapse: separate at 4:1
-ts-width-100 refused Documents.Html.Unsupported.Value border-collapse: separate at 4:1
+ts-paint equal
+ts-plain equal
+ts-spacing-one equal
+ts-spacing-two equal
+ts-span equal
+ts-table-border equal
+ts-table-padding equal
+ts-width-100 equal
 tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1

@@ -32,6 +32,12 @@ public static class LayoutErrorCodes
     /// space the table has. Metadata: Node, Value (needed and available width), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode ColumnsDoNotFit = _ / "ColumnsDoNotFit";
 
+    /// <summary>A table in the separated borders model (<c>BoxStyle.BorderModel</c> <c>Separate</c>, CSS
+    /// <c>border-collapse: separate</c>) that does not fit whole in the room it has on its page: such a table is laid out on
+    /// one page only in this version, where Chromium breaks it between or inside its rows. Metadata: Node, Value (the
+    /// room it had, in points), SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode TableBreak = _ / "TableBreak";
+
     /// <summary>Computed content (the page count) that does not settle: every layout pass gives a different
     /// number of pages, up to the pass limit. Metadata: Node, Value (the page counts per pass), SourceFile,
     /// SourceLine of the first page-count reference.</summary>

@@ -37,11 +37,18 @@ internal static class TableSegments
     {
         public double Top => Above.Y;
 
-        public double RowTop(int row) => Top + Heights.Take(row - FirstRow).Sum();
+        /// <summary>The room between two of its rows (<see cref="TableGeometry.RowGap"/>): zero in the collapsing border
+        /// model.</summary>
+        public double Gap { get; init; }
 
-        public double RowsHeight(int first, int last) => Heights.Skip(first - FirstRow).Take(last - first + 1).Sum();
+        public double RowTop(int row) => Top + Heights.Take(row - FirstRow).Sum() + ((row - FirstRow) * Gap);
 
-        public double Height => Heights.Sum();
+        /// <summary>The height of rows <paramref name="first"/> to <paramref name="last"/> and the gaps between them, which
+        /// a cell over them covers (CSS 2.1 §17.6.1; case <c>ts-span</c>: a cell over two rows of 18.234 pt and the 6 pt
+        /// between them is 42.469 pt high).</summary>
+        public double RowsHeight(int first, int last) => Heights.Skip(first - FirstRow).Take(last - first + 1).Sum() + ((last - first) * Gap);
+
+        public double Height => Heights.Sum() + (Math.Max(0, Heights.Length - 1) * Gap);
 
         /// <summary>The cells that go on below the slice of a piece in another cell of the segment, each with the height
         /// it is lowered by (<see cref="CellsBesideSlices.Below"/>, <see cref="BelowSlices"/>); empty otherwise.</summary>
@@ -265,7 +272,7 @@ internal static class TableSegments
     /// </summary>
     internal static Result<Segment, Error> Measure(TableGeometry table, int firstRow, int lastRow, ImmutableArray<ActiveCell> cells, LineAt above)
     {
-        var shell = new Segment(firstRow, lastRow, cells, [], ImmutableDictionary<int, BoxFragment>.Empty, above);
+        var shell = new Segment(firstRow, lastRow, cells, [], ImmutableDictionary<int, BoxFragment>.Empty, above) { Gap = table.RowGap };
         return cells.Where(cell => !cell.IsComplete)
             .TraverseAll(cell => table.Environment
                 .Layout(CellLayoutBox(table, shell, cell), Unlimited(table, table.CellWidth(table.Grid.Cells[cell.Cell])), cell.Token)
@@ -278,7 +285,7 @@ internal static class TableSegments
                 var measured = natural.ToImmutableDictionary();
                 var below = BelowSlices(table, cells, measured);
                 var fragments = measured.SetItems(below.Select(cell => KeyValuePair.Create(cell.Key, Lowered(measured[cell.Key], cell.Value))));
-                return shell with { Heights = RowHeights(table.Grid, firstRow, lastRow, cells, fragments), Natural = fragments, BelowSlice = below };
+                return shell with { Heights = RowHeights(table.Grid, firstRow, lastRow, cells, fragments, table.RowGap), Natural = fragments, BelowSlice = below };
             });
     }
 
@@ -344,9 +351,9 @@ internal static class TableSegments
     }
 
     /// <summary>The row heights of §17.5.3 for one segment: single-row cells first, then each spanning cell grows the
-    /// last row it spans by what is missing.</summary>
+    /// last row it spans by what is missing; a spanning cell covers the <paramref name="gap"/> between its rows.</summary>
     internal static ImmutableArray<double> RowHeights(
-        TableGrid grid, int firstRow, int lastRow, ImmutableArray<ActiveCell> cells, ImmutableDictionary<int, BoxFragment> natural)
+        TableGrid grid, int firstRow, int lastRow, ImmutableArray<ActiveCell> cells, ImmutableDictionary<int, BoxFragment> natural, double gap = 0)
     {
         var heights = new double[lastRow - firstRow + 1];
         double HeightOf(ActiveCell cell) => natural.TryGetValue(cell.Cell, out var fragment) ? fragment.Size.Height : 0;
@@ -359,7 +366,7 @@ internal static class TableSegments
                      .OrderBy(cell => grid.Cells[cell.Cell].LastRow).ThenByDescending(cell => cell.StartRow))
         {
             var last = grid.Cells[cell.Cell].LastRow;
-            var missing = HeightOf(cell) - heights.Skip(cell.StartRow - firstRow).Take(last - cell.StartRow + 1).Sum();
+            var missing = HeightOf(cell) - (heights.Skip(cell.StartRow - firstRow).Take(last - cell.StartRow + 1).Sum() + ((last - cell.StartRow) * gap));
             heights[last - firstRow] += Math.Max(0, missing);
         }
 
@@ -385,12 +392,18 @@ internal static class TableSegments
     /// content alone, 2.25 pt below its neighbour's under a 1.5 pt line: case <c>te-top</c>; the bottom border of a last
     /// row: <c>te-bottom</c>). The rows still start and end at the line's centre, and the room a line takes at a page
     /// end is still its whole width. A cell that continues from an earlier page has no top inset (slice); its token
-    /// already tells its algorithm so.
+    /// already tells its algorithm so. In the separated borders model the cell's own box
+    /// (<see cref="TracksLayout.SeparatedCellBox"/>).
     /// </summary>
     internal static Box CellLayoutBox(TableGeometry table, Segment segment, ActiveCell cell, bool withoutLineAbove = false)
     {
         var grid = table.Grid;
         var info = grid.Cells[cell.Cell];
+        if (table.IsSeparated)
+        {
+            return TracksLayout.SeparatedCellBox(info);
+        }
+
         var top = cell.Token is null && !withoutLineAbove ? LineAboveInside(table, segment, cell) : 0;
         var bottom = LineBelowInside(table, info);
         var halves = new Edges(
