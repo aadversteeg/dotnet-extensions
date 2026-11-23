@@ -167,6 +167,12 @@ internal static class InputChecks
             yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The body clip policy must be None or BodyArea.",
                 ((int)profile.BodyClip).ToString(System.Globalization.CultureInfo.InvariantCulture), "body-clip", source);
         }
+
+        if (!Enum.IsDefined(profile.CellsBesideSlices))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.LayoutProfile, "The cells beside slices policy must be GoOn or Below.",
+                ((int)profile.CellsBesideSlices).ToString(System.Globalization.CultureInfo.InvariantCulture), "cells-beside-slices", source);
+        }
     }
 
     /// <summary>Heading levels are 1–6, as PDF structure types H1–H6 (ISO 32000-1 §14.8.4.3.2).</summary>

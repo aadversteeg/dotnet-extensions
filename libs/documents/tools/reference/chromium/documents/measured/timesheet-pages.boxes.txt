@@ -1,543 +1,543 @@
-td 510.445 32.496 Bakkerij De Gouden Koren
-td 449.555 32.496 Platformteam Q3Periode: 
-th 136.969 15.750 Uitgevoerd op
-th 164.285 15.750 Taak
-th 547.688 15.750 Titel
-th 109.559 15.750 Duur (uur)
-td 136.969 29.250 2026-09-01
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Ondersteuning gebruikers
-td 109.559 29.250 8,16
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-01
-td 164.285 15.750 Documentatie
-td 547.688 15.750 API endpoint voor weekov
-td 109.559 29.250 12,94
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-01
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Overleg met Jansen & Zn.
-td 109.559 29.250 8,95
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 15.750 2026-09-01
-td 164.285 15.750 Overleg
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 15.750 12,55
-td 136.969 29.250 2026-09-01
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 29.250 11,97
-td 711.973 13.500 Afgestemd met de product
-td 136.969 15.750 2026-09-02
-td 164.285 15.750 Overleg
-td 547.688 15.750 Datamodel facturatie (fa
-td 109.559 15.750 4,79
-td 136.969 29.250 2026-09-02
-td 164.285 15.750 Overleg
-td 547.688 15.750 API endpoint voor weekov
-td 109.559 29.250 11,69
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-02
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Code review PR #128 & #1
-td 109.559 29.250 6,14
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 15.750 2026-09-02
-td 164.285 15.750 Review
-td 547.688 15.750 API endpoint voor weekov
-td 109.559 15.750 6,01
-td 136.969 29.250 2026-09-02
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 29.250 11,11
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 15.750 2026-09-02
-td 164.285 15.750 Beheer
-td 547.688 15.750 API endpoint voor weekov
-td 109.559 15.750 14,09
-td 136.969 29.250 2026-09-02
-td 164.285 15.750 Review
-td 547.688 15.750 Logging naar OTLP-collec
-td 109.559 29.250 5,97
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 15.750 2026-09-02
-td 164.285 15.750 Review
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 15.750 13,64
-td 136.969 29.250 2026-09-03
-td 164.285 15.750 Analyse
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 29.250 11,16
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 29.250 2026-09-03
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 29.250 9,24
-td 711.973 13.500 Afgestemd met de product
-td 136.969 15.750 2026-09-03
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Migratie naar Aspire 13.
-td 109.559 15.750 12,70
-td 136.969 15.750 2026-09-03
-td 164.285 15.750 Review
-td 547.688 15.750 API endpoint voor weekov
-td 109.559 15.750 10,23
-td 136.969 29.250 2026-09-03
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Security review: Entra I
-td 109.559 29.250 5,96
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 15.750 2026-09-03
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Overleg met Jansen & Zn.
-td 109.559 15.750 13,30
-td 136.969 29.250 2026-09-03
-td 164.285 15.750 Overleg
-td 547.688 15.750 Code review PR #128 & #1
-td 109.559 29.250 6,44
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-03
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Datamodel facturatie (fa
-td 109.559 29.250 10,40
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-04
-td 164.285 15.750 Overleg
-td 547.688 15.750 Code review PR #128 & #1
-td 109.559 29.250 10,96
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-04
-td 164.285 15.750 Analyse
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 29.250 13,11
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 15.750 2026-09-04
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Prijsberekening 50% kort
-td 109.559 15.750 8,96
-td 136.969 29.250 2026-09-07
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Logging naar OTLP-collec
-td 109.559 29.250 10,23
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-07
-td 164.285 15.750 Review
-td 547.688 15.750 Migratie naar Aspire 13.
-td 109.559 29.250 12,18
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-08
-td 164.285 15.750 Analyse
-td 547.688 15.750 Logging naar OTLP-collec
-td 109.559 29.250 6,90
-td 711.973 13.500 Afgestemd met de product
-td 136.969 15.750 2026-09-08
-td 164.285 15.750 Review
-td 547.688 15.750 Azure Container Apps sca
-td 109.559 15.750 5,90
-td 136.969 29.250 2026-09-08
-td 164.285 15.750 Beheer
-td 547.688 15.750 Refinement sprint 42
-td 109.559 29.250 10,72
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-08
-td 164.285 15.750 Overleg
-td 547.688 15.750 Security review: Entra I
-td 109.559 29.250 13,77
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 15.750 2026-09-08
-td 164.285 15.750 Review
-td 547.688 15.750 Logging naar OTLP-collec
-td 109.559 15.750 7,35
-td 136.969 29.250 2026-09-08
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Overleg met Jansen & Zn.
-td 109.559 29.250 8,84
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-08
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 29.250 6,29
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-09
-td 164.285 15.750 Review
-td 547.688 15.750 Back-up en restore test
-td 109.559 29.250 8,80
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 15.750 2026-09-09
-td 164.285 15.750 Review
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 15.750 7,93
-td 136.969 15.750 2026-09-09
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Refinement sprint 42
-td 109.559 15.750 4,88
-td 136.969 15.750 2026-09-09
-td 164.285 15.750 Review
-td 547.688 15.750 Azure Container Apps sca
-td 109.559 15.750 13,34
-td 136.969 29.250 2026-09-09
-td 164.285 15.750 Review
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 29.250 10,19
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-09
-td 164.285 15.750 Overleg
-td 547.688 15.750 Overleg met Jansen & Zn.
-td 109.559 29.250 4,96
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-09
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Ondersteuning gebruikers
-td 109.559 29.250 9,10
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-09
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Prijsberekening 50% kort
-td 109.559 29.250 9,45
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-09
-td 164.285 15.750 Review
-td 547.688 15.750 Azure Container Apps sca
-td 109.559 29.250 8,18
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-09
-td 164.285 15.750 Beheer
-td 547.688 15.750 Refinement sprint 42
-td 109.559 29.250 13,12
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 29.250 2026-09-10
-td 164.285 15.750 Overleg
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 29.250 13,06
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 15.750 2026-09-10
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Back-up en restore test
-td 109.559 15.750 7,81
-td 136.969 29.250 2026-09-10
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Security review: Entra I
-td 109.559 29.250 5,06
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-10
-td 164.285 15.750 Beheer
-td 547.688 15.750 Migratie naar Aspire 13.
-td 109.559 29.250 7,77
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-10
-td 164.285 15.750 Overleg
-td 547.688 15.750 Prijsberekening 50% kort
-td 109.559 29.250 14,09
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 29.250 2026-09-10
-td 164.285 15.750 Analyse
-td 547.688 15.750 Datamodel facturatie (fa
-td 109.559 29.250 4,70
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-10
-td 164.285 15.750 Review
-td 547.688 15.750 Azure Container Apps sca
-td 109.559 29.250 11,15
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-10
-td 164.285 15.750 Analyse
-td 547.688 15.750 Refinement sprint 42
-td 109.559 29.250 5,19
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-10
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 29.250 9,29
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 15.750 2026-09-11
-td 164.285 15.750 Review
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 15.750 13,11
-td 136.969 15.750 2026-09-11
-td 164.285 15.750 Analyse
-td 547.688 15.750 Code review PR #128 & #1
-td 109.559 15.750 4,59
-td 136.969 15.750 2026-09-14
-td 164.285 15.750 Analyse
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 15.750 4,92
-td 136.969 29.250 2026-09-14
-td 164.285 15.750 Analyse
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 29.250 13,54
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-14
-td 164.285 15.750 Beheer
-td 547.688 15.750 Migratie naar Aspire 13.
-td 109.559 29.250 8,43
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-14
-td 164.285 15.750 Analyse
-td 547.688 15.750 Back-up en restore test
-td 109.559 29.250 8,58
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-14
-td 164.285 15.750 Overleg
-td 547.688 15.750 Overleg met Jansen & Zn.
-td 109.559 29.250 5,29
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 15.750 2026-09-14
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 15.750 4,94
-td 136.969 29.250 2026-09-15
-td 164.285 15.750 Review
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 29.250 5,48
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 15.750 2026-09-15
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Refinement sprint 42
-td 109.559 15.750 4,61
-td 136.969 29.250 2026-09-15
-td 164.285 15.750 Overleg
-td 547.688 15.750 Azure Container Apps sca
-td 109.559 29.250 9,34
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-15
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Refinement sprint 42
-td 109.559 29.250 13,09
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-16
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Prijsberekening 50% kort
-td 109.559 29.250 11,34
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-17
-td 164.285 15.750 Overleg
-td 547.688 15.750 Logging naar OTLP-collec
-td 109.559 29.250 6,75
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-17
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Security review: Entra I
-td 109.559 29.250 7,59
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-17
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 29.250 12,42
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-17
-td 164.285 15.750 Beheer
-td 547.688 15.750 Logging naar OTLP-collec
-td 109.559 29.250 12,56
-td 711.973 13.500 Afgestemd met de product
-td 136.969 15.750 2026-09-17
-td 164.285 15.750 Beheer
-td 547.688 15.750 Prijsberekening 50% kort
-td 109.559 15.750 8,32
-td 136.969 29.250 2026-09-17
-td 164.285 15.750 Review
-td 547.688 15.750 Datamodel facturatie (fa
-td 109.559 29.250 13,73
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-17
-td 164.285 15.750 Overleg
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 29.250 6,70
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 15.750 2026-09-17
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Refinement sprint 42
-td 109.559 15.750 6,44
-td 136.969 29.250 2026-09-17
-td 164.285 15.750 Analyse
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 29.250 5,62
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-17
-td 164.285 15.750 Analyse
-td 547.688 15.750 Prijsberekening 50% kort
-td 109.559 29.250 8,29
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-18
-td 164.285 15.750 Analyse
-td 547.688 15.750 API endpoint voor weekov
-td 109.559 29.250 7,98
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-18
-td 164.285 15.750 Beheer
-td 547.688 15.750 Security review: Entra I
-td 109.559 29.250 7,86
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-21
-td 164.285 15.750 Overleg
-td 547.688 15.750 API endpoint voor weekov
-td 109.559 29.250 7,52
-td 711.973 13.500 Afgestemd met de product
-td 136.969 15.750 2026-09-21
-td 164.285 15.750 Review
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 15.750 9,80
-td 136.969 29.250 2026-09-21
-td 164.285 15.750 Overleg
-td 547.688 15.750 Ondersteuning gebruikers
-td 109.559 29.250 11,61
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 15.750 2026-09-22
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Migratie naar Aspire 13.
-td 109.559 15.750 6,77
-td 136.969 29.250 2026-09-22
-td 164.285 15.750 Overleg
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 29.250 6,11
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 15.750 2026-09-22
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 15.750 7,51
-td 136.969 29.250 2026-09-23
-td 164.285 15.750 Beheer
-td 547.688 15.750 Logging naar OTLP-collec
-td 109.559 29.250 13,73
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-23
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Back-up en restore test
-td 109.559 29.250 13,45
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-23
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Migratie naar Aspire 13.
-td 109.559 29.250 7,14
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 29.250 2026-09-23
-td 164.285 15.750 Analyse
-td 547.688 15.750 Overleg met Jansen & Zn.
-td 109.559 29.250 5,65
-td 711.973 13.500 Café-overleg met Zoë en 
-td 136.969 15.750 2026-09-23
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Logging naar OTLP-collec
-td 109.559 15.750 8,20
-td 136.969 29.250 2026-09-23
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Back-up en restore test
-td 109.559 29.250 8,55
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-23
-td 164.285 15.750 Analyse
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 29.250 13,75
-td 711.973 13.500 Afgestemd met de product
-td 136.969 15.750 2026-09-23
-td 164.285 15.750 Analyse
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 15.750 6,49
-td 136.969 15.750 2026-09-23
-td 164.285 15.750 Overleg
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 15.750 6,52
-td 136.969 29.250 2026-09-23
-td 164.285 15.750 Analyse
-td 547.688 15.750 Security review: Entra I
-td 109.559 29.250 9,90
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-23
-td 164.285 15.750 Overleg
-td 547.688 15.750 Code review PR #128 & #1
-td 109.559 29.250 4,68
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 15.750 2026-09-23
-td 164.285 15.750 Review
-td 547.688 15.750 Prijsberekening 50% kort
-td 109.559 15.750 12,27
-td 136.969 15.750 2026-09-24
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Documentatie *deploy* pr
-td 109.559 15.750 5,72
-td 136.969 29.250 2026-09-24
-td 164.285 15.750 Beheer
-td 547.688 15.750 Datamodel facturatie (fa
-td 109.559 29.250 9,65
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 29.250 2026-09-25
-td 164.285 15.750 Overleg
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 29.250 14,08
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-25
-td 164.285 15.750 Review
-td 547.688 15.750 Overleg met Jansen & Zn.
-td 109.559 29.250 11,09
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 15.750 2026-09-25
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Datamodel facturatie (fa
-td 109.559 15.750 5,66
-td 136.969 29.250 2026-09-28
-td 164.285 15.750 Overleg
-td 547.688 15.750 Azure Container Apps sca
-td 109.559 29.250 9,93
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 15.750 2026-09-28
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Azure Container Apps sca
-td 109.559 15.750 7,71
-td 136.969 29.250 2026-09-28
-td 164.285 15.750 Beheer
-td 547.688 15.750 Overleg met Jansen & Zn.
-td 109.559 29.250 12,83
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-29
-td 164.285 15.750 Ontwikkeling
-td 547.688 15.750 Refinement sprint 42
-td 109.559 29.250 5,19
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-30
-td 164.285 15.750 Review
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 29.250 6,79
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 29.250 2026-09-30
-td 164.285 15.750 Documentatie
-td 547.688 15.750 API endpoint voor weekov
-td 109.559 29.250 9,13
-td 711.973 13.500 Tekens die in Typst-mark
-td 136.969 15.750 2026-09-30
-td 164.285 15.750 Overleg
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 15.750 11,50
-td 136.969 29.250 2026-09-30
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Security review: Entra I
-td 109.559 29.250 13,36
-td 711.973 13.500 Afgestemd met de product
-td 136.969 29.250 2026-09-30
-td 164.285 15.750 Beheer
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 29.250 8,38
-td 711.973 13.500 Inclusief unit tests en 
-td 136.969 29.250 2026-09-30
-td 164.285 15.750 Overleg
-td 547.688 15.750 Code review PR #128 & #1
-td 109.559 29.250 12,99
-td 711.973 13.500 Afgestemd met de product
-td 136.969 15.750 2026-09-30
-td 164.285 15.750 Documentatie
-td 547.688 15.750 Security review: Entra I
-td 109.559 15.750 5,75
-td 136.969 29.250 2026-09-30
-td 164.285 15.750 Beheer
-td 547.688 15.750 Migratie naar Aspire 13.
-td 109.559 29.250 10,32
-td 711.973 13.500 Lange omschrijving om he
-td 136.969 15.750 2026-09-30
-td 164.285 15.750 Analyse
-td 547.688 15.750 Performance-analyse rapp
-td 109.559 15.750 8,79
-td 136.969 29.625 2026-09-30
-td 164.285 15.750 Overleg
-td 547.688 15.750 Bugfix: urenstaat telt w
-td 109.559 29.625 8,80
-td 711.973 13.875 Afgestemd met de product
-th 848.941 23.484 Totaal:
-td 109.559 23.484 1.039,56
+td 286.723 32.496 Bakkerij De Gouden Koren
+td 252.527 32.496 Platformteam Q3Periode: 
+th 76.840 15.750 Uitgevoerd op
+th 92.168 15.750 Taak
+th 307.277 15.750 Titel
+th 61.465 15.750 Duur (uur)
+td 76.840 29.250 2026-09-01
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Ondersteuning gebruikers
+td 61.465 29.250 8,16
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 29.250 2026-09-01
+td 92.168 15.750 Documentatie
+td 307.277 15.750 API endpoint voor weekov
+td 61.465 29.250 12,94
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 39.000 2026-09-01
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Overleg met Jansen & Zn.
+td 61.465 39.000 8,95
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 15.750 2026-09-01
+td 92.168 15.750 Overleg
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 15.750 12,55
+td 76.840 29.250 2026-09-01
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 29.250 11,97
+td 399.445 13.500 Afgestemd met de product
+td 76.840 15.750 2026-09-02
+td 92.168 15.750 Overleg
+td 307.277 15.750 Datamodel facturatie (fa
+td 61.465 15.750 4,79
+td 76.840 29.250 2026-09-02
+td 92.168 15.750 Overleg
+td 307.277 15.750 API endpoint voor weekov
+td 61.465 29.250 11,69
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 39.000 2026-09-02
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Code review PR #128 & #1
+td 61.465 39.000 6,14
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 15.750 2026-09-02
+td 92.168 15.750 Review
+td 307.277 15.750 API endpoint voor weekov
+td 61.465 15.750 6,01
+td 76.840 29.250 2026-09-02
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 29.250 11,11
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 15.750 2026-09-02
+td 92.168 15.750 Beheer
+td 307.277 15.750 API endpoint voor weekov
+td 61.465 15.750 14,09
+td 76.840 39.000 2026-09-02
+td 92.168 15.750 Review
+td 307.277 15.750 Logging naar OTLP-collec
+td 61.465 39.000 5,97
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 15.750 2026-09-02
+td 92.168 15.750 Review
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 15.750 13,64
+td 76.840 39.000 2026-09-03
+td 92.168 15.750 Analyse
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 39.000 11,16
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 29.250 2026-09-03
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 29.250 9,24
+td 399.445 13.500 Afgestemd met de product
+td 76.840 15.750 2026-09-03
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Migratie naar Aspire 13.
+td 61.465 15.750 12,70
+td 76.840 15.750 2026-09-03
+td 92.168 15.750 Review
+td 307.277 15.750 API endpoint voor weekov
+td 61.465 15.750 10,23
+td 76.840 29.250 2026-09-03
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Security review: Entra I
+td 61.465 29.250 5,96
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 15.750 2026-09-03
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Overleg met Jansen & Zn.
+td 61.465 15.750 13,30
+td 76.840 29.250 2026-09-03
+td 92.168 15.750 Overleg
+td 307.277 15.750 Code review PR #128 & #1
+td 61.465 29.250 6,44
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-03
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Datamodel facturatie (fa
+td 61.465 29.250 10,40
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-04
+td 92.168 15.750 Overleg
+td 307.277 15.750 Code review PR #128 & #1
+td 61.465 29.250 10,96
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-04
+td 92.168 15.750 Analyse
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 29.250 13,11
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 15.750 2026-09-04
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Prijsberekening 50% kort
+td 61.465 15.750 8,96
+td 76.840 29.250 2026-09-07
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Logging naar OTLP-collec
+td 61.465 29.250 10,23
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-07
+td 92.168 15.750 Review
+td 307.277 15.750 Migratie naar Aspire 13.
+td 61.465 29.250 12,18
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-08
+td 92.168 15.750 Analyse
+td 307.277 15.750 Logging naar OTLP-collec
+td 61.465 29.250 6,90
+td 399.445 13.500 Afgestemd met de product
+td 76.840 15.750 2026-09-08
+td 92.168 15.750 Review
+td 307.277 15.750 Azure Container Apps sca
+td 61.465 15.750 5,90
+td 76.840 29.250 2026-09-08
+td 92.168 15.750 Beheer
+td 307.277 15.750 Refinement sprint 42
+td 61.465 29.250 10,72
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 29.250 2026-09-08
+td 92.168 15.750 Overleg
+td 307.277 15.750 Security review: Entra I
+td 61.465 29.250 13,77
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 15.750 2026-09-08
+td 92.168 15.750 Review
+td 307.277 15.750 Logging naar OTLP-collec
+td 61.465 15.750 7,35
+td 76.840 29.250 2026-09-08
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Overleg met Jansen & Zn.
+td 61.465 29.250 8,84
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 29.250 2026-09-08
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 29.250 6,29
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-09
+td 92.168 15.750 Review
+td 307.277 15.750 Back-up en restore test
+td 61.465 29.250 8,80
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 15.750 2026-09-09
+td 92.168 15.750 Review
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 15.750 7,93
+td 76.840 15.750 2026-09-09
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Refinement sprint 42
+td 61.465 15.750 4,88
+td 76.840 15.750 2026-09-09
+td 92.168 15.750 Review
+td 307.277 15.750 Azure Container Apps sca
+td 61.465 15.750 13,34
+td 76.840 29.250 2026-09-09
+td 92.168 15.750 Review
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 29.250 10,19
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-09
+td 92.168 15.750 Overleg
+td 307.277 15.750 Overleg met Jansen & Zn.
+td 61.465 29.250 4,96
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 29.250 2026-09-09
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Ondersteuning gebruikers
+td 61.465 29.250 9,10
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-09
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Prijsberekening 50% kort
+td 61.465 29.250 9,45
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 29.250 2026-09-09
+td 92.168 15.750 Review
+td 307.277 15.750 Azure Container Apps sca
+td 61.465 29.250 8,18
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 39.000 2026-09-09
+td 92.168 15.750 Beheer
+td 307.277 15.750 Refinement sprint 42
+td 61.465 39.000 13,12
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 29.250 2026-09-10
+td 92.168 15.750 Overleg
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 29.250 13,06
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 15.750 2026-09-10
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Back-up en restore test
+td 61.465 15.750 7,81
+td 76.840 29.250 2026-09-10
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Security review: Entra I
+td 61.465 29.250 5,06
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-10
+td 92.168 15.750 Beheer
+td 307.277 15.750 Migratie naar Aspire 13.
+td 61.465 29.250 7,77
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 39.000 2026-09-10
+td 92.168 15.750 Overleg
+td 307.277 15.750 Prijsberekening 50% kort
+td 61.465 39.000 14,09
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 29.250 2026-09-10
+td 92.168 15.750 Analyse
+td 307.277 15.750 Datamodel facturatie (fa
+td 61.465 29.250 4,70
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-10
+td 92.168 15.750 Review
+td 307.277 15.750 Azure Container Apps sca
+td 61.465 29.250 11,15
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-10
+td 92.168 15.750 Analyse
+td 307.277 15.750 Refinement sprint 42
+td 61.465 29.250 5,19
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-10
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 29.250 9,29
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 15.750 2026-09-11
+td 92.168 15.750 Review
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 15.750 13,11
+td 76.840 15.750 2026-09-11
+td 92.168 15.750 Analyse
+td 307.277 15.750 Code review PR #128 & #1
+td 61.465 15.750 4,59
+td 76.840 15.750 2026-09-14
+td 92.168 15.750 Analyse
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 15.750 4,92
+td 76.840 29.250 2026-09-14
+td 92.168 15.750 Analyse
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 29.250 13,54
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 29.250 2026-09-14
+td 92.168 15.750 Beheer
+td 307.277 15.750 Migratie naar Aspire 13.
+td 61.465 29.250 8,43
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-14
+td 92.168 15.750 Analyse
+td 307.277 15.750 Back-up en restore test
+td 61.465 29.250 8,58
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-14
+td 92.168 15.750 Overleg
+td 307.277 15.750 Overleg met Jansen & Zn.
+td 61.465 29.250 5,29
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 15.750 2026-09-14
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 15.750 4,94
+td 76.840 29.250 2026-09-15
+td 92.168 15.750 Review
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 29.250 5,48
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 15.750 2026-09-15
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Refinement sprint 42
+td 61.465 15.750 4,61
+td 76.840 29.250 2026-09-15
+td 92.168 15.750 Overleg
+td 307.277 15.750 Azure Container Apps sca
+td 61.465 29.250 9,34
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 29.250 2026-09-15
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Refinement sprint 42
+td 61.465 29.250 13,09
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-16
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Prijsberekening 50% kort
+td 61.465 29.250 11,34
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-17
+td 92.168 15.750 Overleg
+td 307.277 15.750 Logging naar OTLP-collec
+td 61.465 29.250 6,75
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-17
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Security review: Entra I
+td 61.465 29.250 7,59
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 29.250 2026-09-17
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 29.250 12,42
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-17
+td 92.168 15.750 Beheer
+td 307.277 15.750 Logging naar OTLP-collec
+td 61.465 29.250 12,56
+td 399.445 13.500 Afgestemd met de product
+td 76.840 15.750 2026-09-17
+td 92.168 15.750 Beheer
+td 307.277 15.750 Prijsberekening 50% kort
+td 61.465 15.750 8,32
+td 76.840 29.250 2026-09-17
+td 92.168 15.750 Review
+td 307.277 15.750 Datamodel facturatie (fa
+td 61.465 29.250 13,73
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-17
+td 92.168 15.750 Overleg
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 29.250 6,70
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 15.750 2026-09-17
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Refinement sprint 42
+td 61.465 15.750 6,44
+td 76.840 29.250 2026-09-17
+td 92.168 15.750 Analyse
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 29.250 5,62
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-17
+td 92.168 15.750 Analyse
+td 307.277 15.750 Prijsberekening 50% kort
+td 61.465 29.250 8,29
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 29.250 2026-09-18
+td 92.168 15.750 Analyse
+td 307.277 15.750 API endpoint voor weekov
+td 61.465 29.250 7,98
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 29.250 2026-09-18
+td 92.168 15.750 Beheer
+td 307.277 15.750 Security review: Entra I
+td 61.465 29.250 7,86
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 29.250 2026-09-21
+td 92.168 15.750 Overleg
+td 307.277 15.750 API endpoint voor weekov
+td 61.465 29.250 7,52
+td 399.445 13.500 Afgestemd met de product
+td 76.840 15.750 2026-09-21
+td 92.168 15.750 Review
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 15.750 9,80
+td 76.840 29.250 2026-09-21
+td 92.168 15.750 Overleg
+td 307.277 15.750 Ondersteuning gebruikers
+td 61.465 29.250 11,61
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 15.750 2026-09-22
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Migratie naar Aspire 13.
+td 61.465 15.750 6,77
+td 76.840 29.250 2026-09-22
+td 92.168 15.750 Overleg
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 29.250 6,11
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 15.750 2026-09-22
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 15.750 7,51
+td 76.840 29.250 2026-09-23
+td 92.168 15.750 Beheer
+td 307.277 15.750 Logging naar OTLP-collec
+td 61.465 29.250 13,73
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-23
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Back-up en restore test
+td 61.465 29.250 13,45
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-23
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Migratie naar Aspire 13.
+td 61.465 29.250 7,14
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 29.250 2026-09-23
+td 92.168 15.750 Analyse
+td 307.277 15.750 Overleg met Jansen & Zn.
+td 61.465 29.250 5,65
+td 399.445 13.500 Café-overleg met Zoë en 
+td 76.840 15.750 2026-09-23
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Logging naar OTLP-collec
+td 61.465 15.750 8,20
+td 76.840 29.250 2026-09-23
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Back-up en restore test
+td 61.465 29.250 8,55
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-23
+td 92.168 15.750 Analyse
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 29.250 13,75
+td 399.445 13.500 Afgestemd met de product
+td 76.840 15.750 2026-09-23
+td 92.168 15.750 Analyse
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 15.750 6,49
+td 76.840 15.750 2026-09-23
+td 92.168 15.750 Overleg
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 15.750 6,52
+td 76.840 29.250 2026-09-23
+td 92.168 15.750 Analyse
+td 307.277 15.750 Security review: Entra I
+td 61.465 29.250 9,90
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 39.000 2026-09-23
+td 92.168 15.750 Overleg
+td 307.277 15.750 Code review PR #128 & #1
+td 61.465 39.000 4,68
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 15.750 2026-09-23
+td 92.168 15.750 Review
+td 307.277 15.750 Prijsberekening 50% kort
+td 61.465 15.750 12,27
+td 76.840 15.750 2026-09-24
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Documentatie *deploy* pr
+td 61.465 15.750 5,72
+td 76.840 29.250 2026-09-24
+td 92.168 15.750 Beheer
+td 307.277 15.750 Datamodel facturatie (fa
+td 61.465 29.250 9,65
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 29.250 2026-09-25
+td 92.168 15.750 Overleg
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 29.250 14,08
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 39.000 2026-09-25
+td 92.168 15.750 Review
+td 307.277 15.750 Overleg met Jansen & Zn.
+td 61.465 39.000 11,09
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 15.750 2026-09-25
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Datamodel facturatie (fa
+td 61.465 15.750 5,66
+td 76.840 29.250 2026-09-28
+td 92.168 15.750 Overleg
+td 307.277 15.750 Azure Container Apps sca
+td 61.465 29.250 9,93
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 15.750 2026-09-28
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Azure Container Apps sca
+td 61.465 15.750 7,71
+td 76.840 29.250 2026-09-28
+td 92.168 15.750 Beheer
+td 307.277 15.750 Overleg met Jansen & Zn.
+td 61.465 29.250 12,83
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-29
+td 92.168 15.750 Ontwikkeling
+td 307.277 15.750 Refinement sprint 42
+td 61.465 29.250 5,19
+td 399.445 13.500 Afgestemd met de product
+td 76.840 39.000 2026-09-30
+td 92.168 15.750 Review
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 39.000 6,79
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 29.250 2026-09-30
+td 92.168 15.750 Documentatie
+td 307.277 15.750 API endpoint voor weekov
+td 61.465 29.250 9,13
+td 399.445 13.500 Tekens die in Typst-mark
+td 76.840 15.750 2026-09-30
+td 92.168 15.750 Overleg
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 15.750 11,50
+td 76.840 29.250 2026-09-30
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Security review: Entra I
+td 61.465 29.250 13,36
+td 399.445 13.500 Afgestemd met de product
+td 76.840 29.250 2026-09-30
+td 92.168 15.750 Beheer
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 29.250 8,38
+td 399.445 13.500 Inclusief unit tests en 
+td 76.840 29.250 2026-09-30
+td 92.168 15.750 Overleg
+td 307.277 15.750 Code review PR #128 & #1
+td 61.465 29.250 12,99
+td 399.445 13.500 Afgestemd met de product
+td 76.840 15.750 2026-09-30
+td 92.168 15.750 Documentatie
+td 307.277 15.750 Security review: Entra I
+td 61.465 15.750 5,75
+td 76.840 39.000 2026-09-30
+td 92.168 15.750 Beheer
+td 307.277 15.750 Migratie naar Aspire 13.
+td 61.465 39.000 10,32
+td 399.445 23.250 Lange omschrijving om he
+td 76.840 15.750 2026-09-30
+td 92.168 15.750 Analyse
+td 307.277 15.750 Performance-analyse rapp
+td 61.465 15.750 8,79
+td 76.840 29.625 2026-09-30
+td 92.168 15.750 Overleg
+td 307.277 15.750 Bugfix: urenstaat telt w
+td 61.465 29.625 8,80
+td 399.445 13.875 Afgestemd met de product
+th 476.285 23.484 Totaal:
+td 61.465 23.484 1.039,56

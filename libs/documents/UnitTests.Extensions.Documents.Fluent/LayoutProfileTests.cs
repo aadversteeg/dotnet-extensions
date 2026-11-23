@@ -59,6 +59,17 @@ public class LayoutProfileTests
     }
 
     [Fact]
+    public void The_cells_beside_slices_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
+    {
+        var model = DocumentTranslator.ToModel(Doc().CellsBesideSlices(CellsBesideSlices.Below)).Value;
+        var undefined = DocumentTranslator.ToModel(Doc() with { Profile = new LayoutProfile { CellsBesideSlices = (CellsBesideSlices)4 } });
+
+        LayoutProfile.Default.CellsBesideSlices.Should().Be(CellsBesideSlices.GoOn);
+        model.Profile.Should().Be(new LayoutProfile { CellsBesideSlices = CellsBesideSlices.Below });
+        undefined.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LayoutProfile);
+    }
+
+    [Fact]
     public void A_profile_that_is_missing_or_names_no_policy_value_is_refused_with_every_problem()
     {
         var missing = DocumentTranslator.ToModel(Doc() with { Profile = null! });

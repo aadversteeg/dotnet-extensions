@@ -7,10 +7,12 @@
     by digest, so the same Chromium measures on every machine), and extract.sh in the reference tools image between
     its two steps:
 
-    1. Playwright container: npm ci, then node measure.mjs --step print (Chromium's print of every case, box sizes),
-       with font hinting off (--font-render-hinting=none, set in measure.mjs: see README.md, "The reference").
-    2. Reference tools image (../tools.Dockerfile): extract.sh (pdftotext -bbox, rectangles.py, tool versions).
-    3. Playwright container: node measure.mjs --step words (words.txt per case, versions.txt).
+    1. Playwright container: npm ci, then node measure.mjs --step print (Chromium's print of every case), with font
+       hinting off (--font-render-hinting=none, set in measure.mjs: see README.md, "The reference").
+    2. Reference tools image (../tools.Dockerfile): extract.sh (pdftotext -bbox, rectangles.py, positions.py, ink.py,
+       area.py: the width of each page's page area, tool versions).
+    3. Playwright container: node measure.mjs --step boxes (box sizes per case, in a window as wide as the page area
+       step 2 read), then --step words (words.txt per case, versions.txt).
 
     The output goes to out/ (ignored by git); compare it with measured/ (see README.md). Works on Linux, macOS and
     Windows (Docker with Linux containers). On Linux and macOS the containers run as the current user, so out/ and
@@ -66,7 +68,9 @@ if ($LASTEXITCODE -ne 0) { throw "building $tools failed" }
 docker run --rm @user -v "${out}:/out" -v "${here}:/src:ro" $tools bash /src/extract.sh @names
 if ($LASTEXITCODE -ne 0) { throw 'the extract step failed' }
 
-Write-Host '== 3. words and versions'
+Write-Host '== 3. box sizes at the page area''s width, words and versions'
+docker @playwright node measure.mjs --cases $CaseFolder --step boxes @names
+if ($LASTEXITCODE -ne 0) { throw 'the boxes step failed' }
 docker @playwright node measure.mjs --cases $CaseFolder --step words @names
 if ($LASTEXITCODE -ne 0) { throw 'the words step failed' }
 

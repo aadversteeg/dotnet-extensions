@@ -1,21 +1,21 @@
-td 567.422 32.496 Müller & Søn → “Klant”20
-td 392.578 32.496 Randgevallen Periode: N/
-th 136.969 15.750 Uitgevoerd op
-th 164.285 15.750 Taak
-th 547.688 15.750 Titel
-th 109.559 15.750 Duur (uur)
-td 136.969 29.250 2026-10-01
-td 164.285 15.750 Test
-td 547.688 15.750 Emoji  and arrows → => a
-td 109.559 29.250 1.234,50
-td 711.973 13.500 Line one line two   with
-td 136.969 15.750 2026-10-02
-td 164.285 15.750 Test
-td 547.688 15.750 Rounding 0.005
-td 109.559 15.750 0,01
-td 136.969 16.125 2026-10-03
-td 164.285 16.125 Test
-td 547.688 16.125 Correction (negative)
-td 109.559 16.125 -1,25
-th 848.941 23.484 Totaal:
-td 109.559 23.484 1.233,26
+td 318.727 32.496 Müller & Søn → “Klant”20
+td 220.523 32.496 Randgevallen Periode: N/
+th 76.840 15.750 Uitgevoerd op
+th 92.168 15.750 Taak
+th 307.277 15.750 Titel
+th 61.465 15.750 Duur (uur)
+td 76.840 29.250 2026-10-01
+td 92.168 15.750 Test
+td 307.277 15.750 Emoji  and arrows → => a
+td 61.465 29.250 1.234,50
+td 399.445 13.500 Line one line two   with
+td 76.840 15.750 2026-10-02
+td 92.168 15.750 Test
+td 307.277 15.750 Rounding 0.005
+td 61.465 15.750 0,01
+td 76.840 16.125 2026-10-03
+td 92.168 16.125 Test
+td 307.277 16.125 Correction (negative)
+td 61.465 16.125 -1,25
+th 476.285 23.484 Totaal:
+td 61.465 23.484 1.233,26

@@ -136,6 +136,7 @@ policies today:
 | length rounding: which lengths are put on Chromium's layout unit of 1/64 CSS px | `Exact`; `SixtyFourthPixels` (Chromium: the width of each text item, the part of one run on one line, rounded up to 1/64 px, for placing what follows it, aligning the line and whether the line fits; the glyphs inside keep their advances, an image on the line is not a text item). The enum's documentation lists every place that follows the policy; today that is this one | `Typesetting/TextLine.cs` (`LineSegment.Width`), `GreedyLineBreaker.cs` (THE RULE FOR THE TEXT ITEM WIDTH), `Layout/InlineLayout.cs` (`BreakLines`) | Blink `ShapeResult::SnappedWidth` (`LayoutUnit::FromFloatCeil`) in `LineBreaker::HandleText` (`line_breaker.cc`); checked against Chromium's print (cases `ta-items`: every word within 0.0005 pt, where unrounded widths put the last word 0.176 pt early; `ta-items-right`; `ta-items-fit`: the last word wraps; `sk-size`; `TextAdvanceTests`, `TextItemWidthTests`). The HTML front-end sets `SixtyFourthPixels` |
 | empty row parts: a cut of a table row where one part shows nothing | `Avoid` (such a cut is a last resort: the row moves whole where it can); `Allow` (Chromium: a row is cut wherever its cells can break) | `Tracks/TableBreaks.cs` (`Cut`, `CutShows`) | CSS leaves where a row breaks to the user agent; checked against Chromium's print (cases `a2-*`, `a3-mirror`) |
 | body clip: what a page's body draws past its area (the page area less the header and footer areas) | `None`; `BodyArea` (Chromium: the body is drawn under a clip to its area, the page area's own size from its rounded start, `PageStyle.BodyClipInset`; the header and footer areas are not clipped) | `Layout/Paginator.cs` (the clip), `Layout/PagePainter.cs` (`PaintPage`) | Chromium's print (`tools/reference/chromium`, `visible.py`: one rectangle clip per page; `mf4-line-0`, `b2-split-row`, `pm-tall-over`); ISO 32000-1 §8.5.4 |
+| cells beside slices: where the other cells of a table row go on, on a page that goes on with the slices of a piece in one of its cells | `GoOn` (from the top of the page, beside the slice); `Below` (Chromium: below the slice the page shows, so a page wholly covered by a slice shows nothing of them) | `Tracks/TableSegments.cs` (`BelowSlices`, `Measure`, `Slice`) | Chromium's print (cases `a4-image-beside-lines`, `a4-slice2-beside-lines`, `a4-slice-near-end-beside-lines`); CSS Fragmentation 3 §4.4 leaves sliced monolithic content to the user agent |
 
 The whole algorithms and the other rules:
 
@@ -604,7 +605,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -749,8 +750,14 @@ through the whole HTML path unchanged and its pages are compared with every file
   same painted area, colour not compared (the file has none);
 - `<case>.words.txt`, the words read back by poppler: the same words inside the page, each start and end within
   0.1 pt, and the line box poppler gives it (the baseline less the face's ascender, plus its descender) within 0.1 pt;
-- `<case>.boxes.txt`, the boxes measured in the page: the height of each box named by an element id within 0.1 pt.
-  Not the width: the tool measures the boxes in the 1280 px browser window, not in the printed page.
+- `<case>.boxes.txt`, the boxes measured in the page: the height of each table cell and of each box named by an element
+  id within 0.1 pt, and its width within 0.1 pt. The tool measures the boxes in a browser window as wide as the print's
+  page area (the width of the clip around each page's body, rounded up to a whole pixel as Chromium lays a page out), so
+  a height that depends on the width is the print's. The window is one layout without page breaks, so the file holds
+  each box whole: a box the engine prints in one part is compared on its page (and each copy in a repeated header row),
+  a box it cuts over pages is compared in the engine's layout of the same boxes on one page as tall as the model allows,
+  which must stay one page; the parts of a cut box are what `print.txt`, `lines.txt` and `words.txt` compare. A box
+  named by its id is found by its place among the boxes of the role its tag gives on its source line.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole
@@ -808,6 +815,19 @@ Each is documented next to its code as well.
   footer group, so the engine draws the footer once, after the last body row (case `tf-pages`, listed;
   `HtmlListedDifferenceTests`). With `break-inside: auto` on the footer group Chromium does not repeat it either
   (case `tf-pages-auto`), and a table on one page prints the same in both (case `tf-after`).
+- **What follows the row of an image sliced in a table (HTML):** Chromium lays an image taller than the page area out
+  whole on the page where it starts and draws it in slices on the following pages. It ends the image's row on the next
+  page, as tall as the rest of the image, also past the page end. In a row of two or more cells the next row starts
+  below that end, or at the top of the following page, drawn over the slices still to come (a 408 pt image: the next
+  row at 24.75 pt on page 4, over the last slice, which ends at 60 pt; a 588 pt image: on page 4, over the third of four
+  slices). In a one-column table the next row starts below the last slice, as in the engine (case
+  `a4-image-single-cell`, equal). After any table, what follows does not wait for the slices: it starts at the top of the
+  following page, over them (24.75 pt). The engine starts what follows below the last slice in every shape (72.75 pt), so
+  no text is drawn over an image; that place is the whole difference (cases `a4-image-in-cell`,
+  `a4-slice4-cell-row-after`, `a4-row-image-row`, `a4-two-image-rows`, listed; `HtmlListedDifferenceTests`). In a table
+  inside a cell (`a4-image-nested-table`, open) the engine also draws the inner table's bottom line and the outer row's
+  line one below the other (60 to 61.5 pt) where Chromium draws them as one (60 to 60.75 pt). The other cells of the
+  image's row go on below the slices, as Chromium prints them (`CellsBesideSlices.Below`).
 - **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
   without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
   column without a width they are refused, as are widths on cells and column groups. A percent column is never
@@ -1108,10 +1128,12 @@ Each is documented next to its code as well.
   `Allow` had other pages under `Slice` than under `Refuse`, and 85 under `Avoid` (66 under `Allow`) that `Refuse`
   refuses were laid out under `Slice` (the shape above, a piece that fits the page area but not with its cell's insets;
   a continued cell whose rest fits the page area only without its bottom padding is another such shape, listed below).
-  Taking the cut under `Refuse` too is left to later layout work. **Deliberate deviation from Chromium:** beside a sliced
-  piece, the other cells of its row go on page by page beside the slices (cases `a4-image-beside-lines`,
-  `a4-line-beside-lines`); Chromium holds their content back while the slices run and goes on with it below the end
-  of the piece. In a cell that spans rows the pages follow from the rules for rows: the page breaks at the latest
+  Taking the cut under `Refuse` too is left to later layout work. Beside a sliced piece the other cells of its row go on page by page beside the slices
+  under `CellsBesideSlices.GoOn`, the code front-end's default, a deliberate deviation from Chromium (cases
+  `a4-image-beside-lines`, `a4-line-beside-lines`); under `Below`, the HTML front-end's value, they go on below the slice
+  each page shows, as Chromium prints it: Chromium lays the piece out whole on the page where it starts and goes on with
+  the rest of the row below what is left of it (cases `a4-image-beside-lines`, `a4-slice2-beside-lines`,
+  `a4-slice-near-end-beside-lines`; `SliceInTableTests`). In a cell that spans rows the pages follow from the rules for rows: the page breaks at the latest
   breakpoint of the span (inside its last row), the span's missing height goes to its last row, and the next row
   comes below the last slice (case `a4-image-rowspan`; Chromium breaks between the spanned rows and draws the next row
   over the slice).

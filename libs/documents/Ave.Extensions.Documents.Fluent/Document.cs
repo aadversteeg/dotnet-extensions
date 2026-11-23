@@ -34,7 +34,8 @@ public sealed record Document(
     /// <see cref="MonolithicOverflow(DocumentModel.MonolithicOverflow)"/>, <see cref="EmptyRowParts(DocumentModel.EmptyRowParts)"/>,
     /// <see cref="FontMetricRounding(DocumentModel.FontMetricRounding)"/>, <see cref="FontSizeRounding(DocumentModel.FontSizeRounding)"/>,
     /// <see cref="LengthRounding(DocumentModel.LengthRounding)"/>, <see cref="SplitLineHalves(DocumentModel.SplitLineHalves)"/>,
-    /// <see cref="TableEndOverflow(DocumentModel.TableEndOverflow)"/> or <see cref="BodyClip(DocumentModel.BodyClip)"/>.</summary>
+    /// <see cref="TableEndOverflow(DocumentModel.TableEndOverflow)"/>, <see cref="BodyClip(DocumentModel.BodyClip)"/> or
+    /// <see cref="CellsBesideSlices(DocumentModel.CellsBesideSlices)"/>.</summary>
     public LayoutProfile Profile { get; init; } = LayoutProfile.Default;
 
     /// <summary>
@@ -107,6 +108,15 @@ public sealed record Document(
     /// <param name="clip">The policy.</param>
     /// <returns>A copy with the policy.</returns>
     public Document BodyClip(BodyClip clip) => this with { Profile = Profile with { BodyClip = clip } };
+
+    /// <summary>
+    /// Where the other cells of a table row go on, on the pages that go on with the slices of a piece taller than the
+    /// page in one of its cells: beside the slices from the top of each page (the default), or below the slice each page
+    /// shows, as a browser (Chromium) prints it (<see cref="DocumentModel.CellsBesideSlices"/>).
+    /// </summary>
+    /// <param name="cells">The policy.</param>
+    /// <returns>A copy with the policy.</returns>
+    public Document CellsBesideSlices(CellsBesideSlices cells) => this with { Profile = Profile with { CellsBesideSlices = cells } };
 
     /// <summary>
     /// Embeds a file in the document, for example its data as XML. Made with <see cref="Elements.Attachment"/>;

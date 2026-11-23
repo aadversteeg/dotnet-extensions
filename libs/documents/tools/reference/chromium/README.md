@@ -40,7 +40,11 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 - `<case>.pdf`: Chromium's print of the case (`preferCSSPageSize`, so the case's `@page` rule sets the page);
 - `<case>.words.txt`: every word as `page xMin yMin xMax yMax text`, in points, origin top left (`pdftotext -bbox`);
 - `<case>.boxes.txt`: width and height in points of every table cell, every element with an id and every grid item,
-  laid out for print (1 CSS px = 0.75 pt);
+  with print media, measured in a browser window as wide as the print's page area (1 CSS px = 0.75 pt; see "Box
+  sizes"): one layout without page breaks, so a box the print cuts over pages has its whole height here;
+- `<case>.area`: the width in points of each page's page area, as `page width` (`page none` for a page whose body
+  draws nothing), read from the print (`area.py`, PyMuPDF): the window width of `boxes.txt`. Not a measured file:
+  `measured/` does not keep it;
 - `<case>.lines.txt`: every filled rectangle as `page x0 y0 x1 y1 height`, in points, origin top left
   (`rectangles.py`, PyMuPDF): the pieces of the grid lines, each the part the print shows (see "Print positions");
 - `<case>.print.txt`: where the print put things, page by page, read from the PDF alone (`positions.py`, PyMuPDF; see
@@ -65,6 +69,25 @@ seven cases in Liberation Serif, and their prints were committed so: `a4-cell-im
 `a4-cell-pad3-line-177` and the four `a6-header-quarter-*`, since measured again). So `measure.mjs` lays the case out,
 waits for `document.fonts.ready` and stops when a font face of the case failed to load. A copy of the tool needs the
 family's `assets/fonts` four folders above `cases/`.
+
+## Box sizes
+
+`boxes.txt` is measured after the print, in a second layout: the browser window, with print media. A window lays the
+document out without page breaks, so a box has one size there, the size it has before the print cuts it. That window
+is as wide as the print's page area, so a box is as wide as in the print and a height that depends on the width (text
+that wraps onto another line) is the print's too. The width is a fact of the print, not of the CSS: Chromium draws
+each page's body under one clip, the page area at its own size (see "Print positions"), and `area.py` writes the width
+of that clip on every page (`visible.body_clip`: the page's first clip outside any other). Chromium lays a page out in
+the page area rounded up to a whole CSS pixel (a 280 pt page area, 373.33 px, is laid out 374 px wide), so the window is
+the clip's width rounded up to a whole pixel. The clip is the page area at its own size in Chromium's unit of 1/64 px,
+which can be a little over a whole pixel: a 200 pt page with 10 pt margins is 266.671875 px less 2 × 13.328125 px,
+240.015625 px, clipped 180.012 pt wide, and laid out 241 px wide (the justified lines of `h-page-area-justify` end at
+190.497 pt, 9.75 pt + 241 px; `f-theano-13-ab` has the same page). Only 0.001 px is taken off before rounding up, for
+the three decimals `area.py` writes, so a page area of whole pixels stays that many pixels. A page whose body
+draws nothing opens no clip (the empty page a forced break leaves, case `a1-after-forced-break`; page 1 of
+`a1-header-row`, which holds only an empty block's margin): it gives no width, and the other pages give it. Page areas
+of different widths give no one window width: the boxes step stops with an error naming the case, and so it does for a
+print that draws nothing on any page but has boxes to measure (`h-root-display-none` has none).
 
 ## Print positions
 
@@ -314,6 +337,7 @@ solid`, `padding: 2pt 4pt`, Lato 10 pt unless the case sets another size. The bo
 | `a4-header-*`, `a4-intro-header-image-row`, `a4-two-image-rows`, `a4-row-image-row` | the same image or line in a table with a repeated header row (thead), after one row, after rows that fill a page or a row cut over two pages, after a paragraph, two images in a row, an image that fits before one that does not; and two shapes without a header. Fixed table layout, line height 15 pt, whole pixels. Chromium starts the first slice below the header on the page after one that showed no body row but slices, after a page with only the header otherwise; on later pages it moves the image a whole page area and leaves the header out or draws it over the image | `SliceUnderHeaderTests` |
 | `a4-header-empty-rowspan-line-image` | two columns, an empty repeated header row, a one-line cell over two rows beside an empty cell, and a 345 pt image in the second row (page area 276 × 180 pt): the line whole on page 1, the image sliced from page 3, as in Chromium; on page 4 the deviation of `a4-header-image-row` | `SliceUnderHeaderTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `a4-image-beside-lines`, `a4-line-beside-lines`, `a4-image-nested-table`, `a4-image-rowspan`, `a4-image-single-cell` | the image or line beside 30 lines in the next cell, in a table inside a cell, in a cell that spans two rows, alone in a one-column table, each followed by a row | `SliceInTableTests` |
+| `a4-slice2-*`, `a4-slice4-cell-row-after`, `a4-slice-near-end-*` | where content goes after an image sliced over pages (page area 276 × 180 pt, Lato 10.5 pt, `tall.png` at a quarter of its height wide): an image of 228 pt in the second cell of a row, then a row or a paragraph after the table; the same beside 30 lines; an image of 588 pt in the second cell, then a row; an image of 348 pt (its last slice ends 12 pt above the page end) beside 40 lines and as a block before a paragraph. Chromium lays the image out whole on its first page: on the next page every cell of its row goes on below what is left of the image, a cell that does not fit there goes on below the next slice, and the row ends on the first page where no cell has content left, as tall as the rest of the image, also past the page end. In a row of two cells what follows the row starts below its end, or at the top of the next page over the slices still to come (`a4-slice4-cell-row-after`: the next row on page 4, over a whole slice). Each page draws its slice first and the text over it | `CaseStatusTests` (`UnitTests.Extensions.Documents.Html`) |
 | `a4-cell-pad3-image-177`, `a4-cell-pad3-line-177`, `a4-cell-image-179-5` | a piece that fits the page area but not with its cell's padding and grid lines (page area 276 × 180 pt): Chromium moves it whole to the next page and lets the cell's bottom inset pass the page end; the engine slices it under `Slice` (a listed difference) | `SliceAboveInsetTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `a4-image-177-block-padding-3` | a block with 3 pt padding above and below a 177 pt image, then "after" (page area 276 × 180 pt): the image stays whole on page 1, the bottom padding starts page 2, and "after" comes below it, in Chromium and the engine | `SliceAboveInsetTests` (`UnitTests.Extensions.Documents.Fluent`) |
 | `a4-image-block-padding-60`, `a4-image-block-padding-133` | the 408 pt image sliced in a block with 60 or 133 pt bottom padding, then "after" (page area 276 × 180 pt): the padding fits below the last slice (60) or starts the next page (133), and "after" comes once, below it | `MonolithicSliceTests` (`UnitTests.Extensions.Documents.Fluent`) |
