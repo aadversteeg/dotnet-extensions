@@ -393,7 +393,7 @@ internal static class TablePage
     /// <c>fr-continued-pad-past-taller-than-page</c> and <c>-next-row</c>: 220 pt of padding, 190.75 pt past the page end,
     /// a page area of 150 pt: one whole page and 40.75 pt on the next). Without a row after the table Chromium starts what
     /// follows 0.75 pt below that page's top, over the padding; the engine starts it below the padding, as where what
-    /// passed fits one page (an open difference of the first case). The work is bounded: every page takes the page
+    /// passed fits one page (a documented limit, listed for the first case). The work is bounded: every page takes the page
     /// area, more than zero (<see cref="TakesPageArea"/>), of a finite height, so the rest ends after at most that height
     /// divided by the page area pages.
     /// </summary>

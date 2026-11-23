@@ -210,6 +210,35 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// Bottom padding taller than a page area, then a paragraph (case <c>fr-continued-pad-past-taller-than-page</c>: 220 pt
+    /// of padding below ten lines that end at 132 pt on page 2, 190.75 pt past the page end with the line below, in a page
+    /// area of 150 pt): both paint the cell's sides over all of page 3 and down to 52.5 pt on page 4, with the table's bottom
+    /// line there (<c>TableEndOverflow.ContinuesOnNextPage</c>). Chromium starts "z" 0.75 pt below page 4's top, its
+    /// baseline at 22.5, drawn over the sides that still pass; the engine starts it below what passed, at 62.496 (52.746 +
+    /// 9.75), as where what passed fits one page (docs/architecture.md, "Known limits"). Text drawn over a table is not what
+    /// a writer wants, as with what follows a sliced image (above). Where "z" starts is the whole difference: with it moved
+    /// to Chromium's baseline the engine's pages are Chromium's; with a row after the table, which Chromium starts below the
+    /// padding, the case is equal (<c>-next-row</c>).
+    /// </summary>
+    [Fact]
+    public void What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding()
+    {
+        var (engine, chromium) = (Engine("fr-continued-pad-past-taller-than-page"), Chromium("fr-continued-pad-past-taller-than-page"));
+        var (theirs, ours) = (chromium.Pages[3], engine.Pages[3]);
+
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        engine.PageTexts[3].Should().Be("z");
+        theirs.Words.Single().Baseline.Should().Be(22.5);
+        theirs.Rectangles.Max(box => box.Y1).Should().Be(52.5, "Chromium draws z over the sides and above the bottom line");
+        ours.Words.Single().Baseline.Should().BeApproximately(62.496, 0.0005);
+        ours.Words.Single().Baseline.Should().BeGreaterThan(ours.Rectangles.Max(box => box.Y1), "the engine starts z below what passed");
+        HtmlCases.Difference(engine, chromium).Should().NotBeNull();
+
+        var moved = new PrintedPages([.. engine.Pages.Take(3), ours with { Words = [ours.Words.Single() with { Baseline = 22.5 }] }]);
+        HtmlCases.Difference(moved, chromium).Should().BeNull("where z starts is the whole difference");
+    }
+
+    /// <summary>
     /// A one-row table at the top of the first page whose row is taller than the page area only through its cell's bottom
     /// padding (case <c>fr-old-row-taller-by-padding</c>: "w" above 140 pt of padding, 159.5 pt in a 150 pt page area, then
     /// "z"): Chromium leaves the first page blank, prints the row on the second with its padding passing the page end, and

@@ -227,7 +227,7 @@ fr-continued-pad-past-33-next-row-line-2-25pt equal
 fr-continued-pad-past-33-next-row-line-6pt equal
 fr-continued-pad-past-45 equal
 fr-continued-pad-past-60 equal
-fr-continued-pad-past-taller-than-page open page 4 'z' baseline 62.25 (laid out at 62.496), Chromium 22.5 (print.txt)
+fr-continued-pad-past-taller-than-page listed What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding: page 4 'z' baseline 62.25 (laid out at 62.496), Chromium 22.5 (print.txt)
 fr-continued-pad-past-taller-than-page-next-row equal
 fr-cut-row-between-aligned-rows equal
 fr-cut-row-three-pages-bottom equal

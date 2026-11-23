@@ -100,6 +100,7 @@ internal static class HtmlCases
         ["a2-row-end-pad-past"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["a2-row-end-pad-past-after"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
+        ["fr-continued-pad-past-taller-than-page"] = "What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,

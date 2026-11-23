@@ -972,7 +972,9 @@ Each is documented next to its code as well.
   `-two-cells`), and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
   Padding that passes by more than the page area takes the whole next page and the rest the page after, as in Chromium;
   without a row after the table Chromium then starts what follows 0.75 pt below the page's top, over the padding, where
-  the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, open).
+  the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, listed through the HTML front-end,
+  `HtmlListedDifferenceTests`, where that start is the whole difference: text over a table is not what a writer wants,
+  as with what follows a sliced image).
   Under a repeated header row, a cell whose box's bottom padding does not fit on a page with the box's content: where
   the header is repeated, Chromium cuts the row below it because its line fits and only its padding does not, and so
   does the HTML front-end (`EmptyRowParts.Allow`); on the next page Chromium repeats the header above the rest of the
