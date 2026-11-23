@@ -134,6 +134,16 @@ public static class DocumentErrorCodes
 
             /// <summary>An image that is both given alternative text and marked decorative. Metadata: Value.</summary>
             public static readonly ErrorCode ImageDescription = _ / "ImageDescription";
+
+            /// <summary>A link whose target is not accepted (<see cref="LinkUris"/>): not an absolute URI of printable ASCII,
+            /// of a scheme other than <c>http</c>, <c>https</c>, <c>mailto</c> and <c>tel</c>, or longer than
+            /// <see cref="LinkUris.MaxLength"/>; or a link without a description. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Link = _ / "Link";
+
+            /// <summary>An inline group (a link or a span) that is not valid: one outside the lines of an inline box, one
+            /// with a role other than a link or a span, a link inside a link, or a link or span role on a box.
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode InlineGroup = _ / "InlineGroup";
         }
 
         /// <summary>A value the input language allows but this version of the engine does not implement yet.</summary>

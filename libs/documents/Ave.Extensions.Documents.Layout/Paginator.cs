@@ -93,8 +93,12 @@ public static class Paginator
             .OfType<CounterRun>()
             .Where(run => run.Counter == PageCounter.PageCount);
 
-    private static IEnumerable<Node> Descendants(Node node) =>
-        node is Box box ? [box, .. box.Children.SelectMany(Descendants)] : [node];
+    private static IEnumerable<Node> Descendants(Node node) => node switch
+    {
+        Box box => [box, .. box.Children.SelectMany(Descendants)],
+        InlineGroup group => [group, .. group.Children.SelectMany(Descendants)],
+        _ => [node],
+    };
 
     /// <summary>
     /// One layout pass: every page with the given page count. Each page is the page style's size. Its page area (the

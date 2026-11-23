@@ -51,7 +51,13 @@ Document ──DocumentTranslator.ToModel──▶ StyledDocument ──Document
 
 - **Document model** (`DocumentModel/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `StyledDocument.cs`). What the author
   meant, with CSS semantics and only computed values: a tree of `Box` (with a `SemanticRole` and a
-  `LayoutAlgorithmId`), `TextRun`/`CounterRun` and `ImageNode`. Every node has an id (pre-order) and the source
+  `LayoutAlgorithmId`), `TextRun`/`CounterRun`, `InlineGroup` and `ImageNode`. `InlineGroup` is THE inline grouping:
+  a part of an inline box's content (runs, images in the line, other groups) with a role, a link
+  (`SemanticRole.Link(LinkTarget, description)`) or a span (`SemanticRole.Span`), its text style and a language
+  (held, not yet written). It is transparent for layout (no margin, padding, border or line height of its own) and
+  nests, one nesting level per group, a link never inside a link; inline boxes with their own border and background
+  will extend this node. A link's target is a closed set (`Core/LinkTarget.cs`), today only an absolute URI of an
+  accepted scheme (`Core/LinkUris.cs`, THE RULE FOR A LINK'S URI). Every node has an id (pre-order) and the source
   location of the call that made it. Roles (`Core/SemanticRole.cs`) are separate from layout: a box laid out as a
   table is not necessarily a table for a screen reader. Any front-end (code now, markup later) produces this model.
   The document also carries its layout profile (`DocumentModel/LayoutProfile.cs`): the policies its front-end chose
@@ -60,7 +66,9 @@ Document ──DocumentTranslator.ToModel──▶ StyledDocument ──Document
   images, table rules, and slices of content taller than a page, with positions relative to the parent. Internal to
   the layout layer, but serialised for tests.
 - **Page model** (`PageModel/DrawItem.cs`, `PageDocument.cs`). What to draw, in absolute page coordinates: glyph runs
-  (glyph ids, not text plus a font name), filled rectangles, images, and markers — `StructureStart`/`StructureEnd`
+  (glyph ids, not text plus a font name), filled rectangles, images, link areas (`LinkArea`: the rectangle a reader
+  clicks, one per line part of a link and one per image in it, which draws nothing and stands right inside its link's
+  structure marker, outside every artifact), and markers — `StructureStart`/`StructureEnd`
   (node, role, source location, cell span) for content, `ArtifactStart`/`ArtifactEnd` for decoration and page
   furniture, `ClipStart`/`ClipEnd` (a rectangle) around what is drawn clipped. It does not depend on the document
   model, so other back-ends (raster, SVG) and a future PDF reader can share it. One nesting rule for all three kinds
@@ -157,6 +165,7 @@ The whole algorithms and the other rules:
 | tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
 | images | `Layout/ImageLayout.cs` | CSS 2.1 §10.3.2 (with a stated deviation for width + height) |
 | page templates, page counters | `Layout/PageAreas.cs`, `Paginator.cs`, `PageContext.cs` | CSS Paged Media 3 §4.2.2, §5, §6.1 |
+| links: an inline group with the link role is read through by inline layout (`Leaves`, an explicit stack); each line records its groups' parts as ranges of its children with their area (`LineFragment.Groups`, `LineGroupPart`); the painter opens the group's structure marker around each part and puts the link's areas first inside it; inside an artifact a link is only drawn. A link's area runs from the start of its first piece on the line to the end of its last (a space removed at the line end is outside it) and from its own font's ascent above the baseline to its descent below, whatever the runs inside it; the edges are exact (not printed, so not rounded to Chromium's pixels). The PDF writes one link annotation per area (`/Rect`, `/F 4`, `/Border [0 0 0]`, `/Contents` the description, `/A` a URI action, no appearance stream, which veraPDF rule 6.3.3-1 exempts a link from), listed in the page's `/Annots`; tagged, a `Link` element holds the link's content and an object reference (OBJR) to each annotation, and each annotation's `/StructParent` key, after the pages' keys, names that element in the parent tree. The raster back-end draws nothing for an area | `DocumentModel/Node.cs` (`InlineGroup`), `LinkDescription.cs`, `Core/LinkTarget.cs`, `LinkUris.cs`, `Layout/InlineLayout.cs` (`Leaves`), `LineBoxes.cs` (THE RULE FOR A LINK'S AREA), `PagePainter.cs` (`Line`), `PageModel/DrawItem.cs` (`LinkArea`), `Render.Pdf/LinkAnnotations.cs`, `Tagging/StructureTree.cs`, `StructureObjects.cs` | ISO 32000-1 §12.5.2 (Table 164), §12.5.3 (Table 165), §12.5.6.5 (Table 173), §12.6.4.7, §14.7.4.3 (Table 325), §14.7.4.4, §14.8.4.4.2; ISO 19005-3 §6.3 (veraPDF rules 6.3.2-1, 6.3.2-2, 6.3.3-1), §6.5.1; ISO 14289-1 §7.18.1, §7.18.3, §7.18.5 (veraPDF rules 7.18.1-2, 7.18.3-1, 7.18.5-1, 7.18.5-2); Chromium 159's print (one rectangle per line part, from the link's own font); checked by `LinkAreaTests`, `LinkOutputTests` (read back with PdfPig, veraPDF PDF/A-3a and PDF/UA-1) |
 | what is content and what is an artifact (a repeated header row and every slice of a line of text after the first are pagination artifacts; every slice of an image is content of its figure) | `Layout/PagePainter.cs` | ISO 32000-1 §14.8.2.2 |
 | clips in PDF: `q x y w h re W n` … `Q` between marked-content sequences, never across one | `Render.Pdf/PageContentStream.cs` (`Clips`) | ISO 32000-1 §8.4.2, §8.5.4 |
 | line breaking | `Typesetting/LineBreaking/UnicodeLineBreaking.cs`, `GreedyLineBreaker.cs` | UAX #14 rev. 57 |
@@ -199,9 +208,9 @@ error with the code `Aggregate` (Ave.Extensions.ErrorPaths), whose parts carry e
 
 | Layer | Checks | Error codes |
 | --- | --- | --- |
-| front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth, a layout profile with defined policy values | `Documents.Input.*` |
+| front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth, a layout profile with defined policy values, a link's URI (THE RULE FOR A LINK'S URI, `Core/LinkUris.cs`) | `Documents.Input.*` |
 | layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, content that would need more than 100 slices (one piece) or 1 000 (one document), columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
-| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes (and edges) within the range of a PDF real, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier`; while the structure tree is built (`Render.Pdf/Tagging/StructureTree.cs`), a node under two parents or a decorative node in the structure: `Documents.Pdf.Write.InvalidStructure` |
+| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes (and edges) within the range of a PDF real, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; a link role with a target THE RULE FOR A LINK'S URI accepts and a description that is not blank; link areas right inside their own link's structure marker, outside every artifact, at most 8 191 per page; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier`; while the structure tree is built (`Render.Pdf/Tagging/StructureTree.cs`), a node under two parents or a decorative node in the structure: `Documents.Pdf.Write.InvalidStructure` |
 | raster back-end (`Render.Raster/PageRasterizer.cs`) | the same page-model contract (`PageModel/PageModelRules.cs`); options with a positive finite resolution; a page of at most 2^26 pixels at that resolution; a page number of the document | `Documents.Raster.InvalidPageModel`, `InvalidOptions`, `TooLarge`, `PageNotFound` |
 | profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables (and tables too large to check), the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
@@ -389,6 +398,8 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | coordinates the graphics library draws with | ±10^150 after the transform; a clip box within ±2^30 pixels | `Graphics/Canvas.cs` | `Documents.Graphics.InvalidValue` |
 | PDF/UA grid of one table | the first row's width; 4 194 304 slots | `Render.Pdf/Tagging/TableRegularity.cs` | `Documents.Pdf.Conformance.PdfUa1.TableTooLarge` |
 | nesting of elements | 64 levels | `Fluent/InputLimits.cs` | `Documents.Input.Invalid.TooDeep` |
+| a link's URI | 32 767 characters of printable ASCII (the longest string a PDF/A file may hold, veraPDF rule 6.1.13-3) | `Core/LinkUris.cs` | `Documents.Input.Invalid.Link`, from the front-end and the model check; in a page model the back-end's code, `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
+| link areas on one page | 8 191, a fixed bound on the annotations one page writes (one object and one `/Annots` entry each), far more than a page of text can show | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
 | nesting of arrays and dictionaries in one PDF object | 64 levels | `Pdf/PdfSerializer.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | nesting of arrays and structures in one XMP property | 64 levels | `Pdf/Xmp/XmpPacket.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
@@ -441,7 +452,8 @@ attachment without relationship — `Documents.Pdf.Conformance.*`, all reported 
 reads each page's markers into events, builds the structure tree from them (tagged profiles), refuses an irregular
 table (PDF/UA), and writes: XMP metadata in sync with the document information, the sRGB output intent, the
 structure tree with marked content (one MCID per content run between markers), artifacts with their kind, the
-attachments with `/AF`. A plain file is written exactly as before profiles existed (same object numbers, no marked
+attachments with `/AF`, and a link annotation per link area, with its description in every profile and, tagged, its
+object reference in the Link element. A plain file is written exactly as before profiles existed (same object numbers, no marked
 content).
 
 ## Determinism
@@ -1340,7 +1352,12 @@ Each is documented next to its code as well.
   replacement text (`/ActualText`) where it is drawn.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
   nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
-  language, no Span, Link, List, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
+  language written (an inline group holds one, the PDF does not carry it yet), no List, Caption, Note, Formula or TOC
+  structure elements, no bookmarks; Link and Span elements come from inline groups, which only the code front-end makes
+  so far (HTML's `a` is still plain text); a link leads only to a URI (no destinations inside the document); a link
+  inside an artifact (a page header or footer, a repeated copy of a table's header rows, a later slice of a line taller
+  than the page) gets no annotation and no Link element, its text is only drawn, while the first, real occurrence of a
+  header row keeps its links; ActualText only on the
   marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above); empty structure elements are
   written for empty cells; the XMP packet has no padding; everything in page headers and footers is an artifact.
   Figures and tables wholly on one page carry their `/BBox` (ISO 32000-1 Table 344); a table that continues on

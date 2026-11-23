@@ -54,6 +54,7 @@ public static class PageModelText
         ArtifactEnd => "end artifact",
         ClipStart clip => $"clip {clip.Area}",
         ClipEnd => "end clip",
+        LinkArea link => $"link-area {link.Link} {link.Area}",
         _ => $"unknown {item.GetType().Name}",
     };
 

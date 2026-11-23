@@ -212,7 +212,43 @@ public static class InlineLayout
     /// <param name="box">An inline box.</param>
     /// <returns>Whether it has line boxes.</returns>
     public static bool HasLineBoxes(Box box) =>
-        box.Children.Any(child => child is CounterRun or Box || (child is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text, text.Style.WhiteSpaceCollapse)));
+        Leaves(box).Any(leaf => leaf.Node is CounterRun or Box || (leaf.Node is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text, text.Style.WhiteSpaceCollapse)));
+
+    /// <summary>
+    /// The content of an inline box read through its inline groups (<see cref="InlineGroup"/>), which are transparent for
+    /// layout: every run and image box in document order, each with the groups it lies in, outermost first. One pass with
+    /// an explicit stack, so groups nested to any depth cost no call frames (the model check holds them to the nesting
+    /// limit).
+    /// </summary>
+    /// <param name="box">An inline box.</param>
+    /// <returns>Its leaves with their groups.</returns>
+    internal static IReadOnlyList<(Node Node, ImmutableArray<InlineGroup> Groups)> Leaves(Box box)
+    {
+        var leaves = new List<(Node, ImmutableArray<InlineGroup>)>(box.Children.Count);
+        var pending = new Stack<(Node Node, ImmutableArray<InlineGroup> Groups)>();
+        for (var index = box.Children.Count - 1; index >= 0; index--)
+        {
+            pending.Push((box.Children[index], []));
+        }
+
+        while (pending.Count > 0)
+        {
+            var (node, groups) = pending.Pop();
+            if (node is not InlineGroup group)
+            {
+                leaves.Add((node, groups));
+                continue;
+            }
+
+            var inner = groups.Add(group);
+            for (var index = group.Children.Count - 1; index >= 0; index--)
+            {
+                pending.Push((group.Children[index], inner));
+            }
+        }
+
+        return leaves;
+    }
 
     /// <summary>
     /// Resolves every run to its text, collapses white space over the whole paragraph, finds each run's font, then shapes
@@ -233,7 +269,8 @@ public static class InlineLayout
     /// </remarks>
     private static Result<IReadOnlyList<LineBoxes.Item>, Error> ShapeRuns(LayoutEnvironment environment, Box box)
     {
-        if (box.Children.FirstOrDefault(child => child is not (TextRun or CounterRun) && !(child is Box image && image.Layout == LayoutAlgorithmId.Image)) is { } other)
+        var leaves = Leaves(box);
+        if (leaves.Select(leaf => leaf.Node).FirstOrDefault(child => child is not (TextRun or CounterRun) && !(child is Box image && image.Layout == LayoutAlgorithmId.Image)) is { } other)
         {
             return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(
                 LayoutErrors.InvalidContent(box, other is Box
@@ -241,7 +278,16 @@ public static class InlineLayout
                     : "inline layout needs text runs and images as children."));
         }
 
-        var collapsed = WhiteSpaceCollapsing.Collapse([.. box.Children.Select(child => child is InlineRun run
+        var groupFonts = GroupFonts(environment, leaves);
+        if (groupFonts.IsFailure)
+        {
+            return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(groupFonts.Error);
+        }
+
+        ValueList<LineBoxes.Group> GroupsOf(ImmutableArray<InlineGroup> groups) =>
+            [.. groups.Select(group => new LineBoxes.Group(group, groupFonts.Value[group.Id]))];
+
+        var collapsed = WhiteSpaceCollapsing.Collapse([.. leaves.Select(leaf => leaf.Node is InlineRun run
             ? (TextOf(run, environment.Page), run.Style.WhiteSpaceCollapse)
             : (ObjectReplacement, WhiteSpaceCollapse.Collapse))]);
 
@@ -260,17 +306,20 @@ public static class InlineLayout
             }
         }
 
-        foreach (var (child, text) in box.Children.Zip(collapsed))
+        foreach (var ((child, groups), text) in leaves.Zip(collapsed))
         {
             if (child is InlineRun run)
             {
                 members.Add(new GroupMember(run, text,
-                    environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle).MapError(error => error.WithSource(run.Source))));
+                    environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle).MapError(error => error.WithSource(run.Source)))
+                {
+                    Groups = GroupsOf(groups),
+                });
                 continue;
             }
 
             EndStretch();
-            stretches.Add(Result<IEnumerable<LineBoxes.Item>, Error>.Success([new LineBoxes.AtomicInline((Box)child, Fragment: null, Width: 0)]));
+            stretches.Add(Result<IEnumerable<LineBoxes.Item>, Error>.Success([new LineBoxes.AtomicInline((Box)child, Fragment: null, Width: 0) { Groups = GroupsOf(groups) }]));
         }
 
         EndStretch();
@@ -278,11 +327,39 @@ public static class InlineLayout
             .OnSuccessMap(items => (IReadOnlyList<LineBoxes.Item>)[.. items.SelectMany(stretch => stretch)]);
     }
 
+    /// <summary>The font of every inline group of the paragraph, found as a run's font is: a missing font is the error a run
+    /// would get, at the group's source. Each group once.</summary>
+    private static Result<Dictionary<NodeId, TrueTypeFont>, Error> GroupFonts(LayoutEnvironment environment, IReadOnlyList<(Node Node, ImmutableArray<InlineGroup> Groups)> leaves)
+    {
+        var fonts = new Dictionary<NodeId, TrueTypeFont>();
+        foreach (var group in leaves.SelectMany(leaf => leaf.Groups))
+        {
+            if (fonts.ContainsKey(group.Id))
+            {
+                continue;
+            }
+
+            var font = environment.Fonts.Find(group.Style.FontFamily, group.Style.FontWeight, group.Style.FontStyle);
+            if (font.IsFailure)
+            {
+                return Result<Dictionary<NodeId, TrueTypeFont>, Error>.Failure(font.Error.WithSource(group.Source));
+            }
+
+            fonts[group.Id] = font.Value;
+        }
+
+        return Result<Dictionary<NodeId, TrueTypeFont>, Error>.Success(fonts);
+    }
+
     /// <summary>An atomic inline's text for white-space collapsing: the object replacement character U+FFFC.</summary>
     private static readonly string ObjectReplacement = ShapedGlyph.ObjectReplacementCharacter.ToString();
 
     /// <summary>A run of the paragraph with its collapsed text and its font, or the error of a font that was not found.</summary>
-    private sealed record GroupMember(InlineRun Run, string Text, Result<TrueTypeFont, Error> Font);
+    private sealed record GroupMember(InlineRun Run, string Text, Result<TrueTypeFont, Error> Font)
+    {
+        /// <summary>The inline groups the run lies in, outermost first.</summary>
+        public ValueList<LineBoxes.Group> Groups { get; init; } = [];
+    }
 
     /// <summary>
     /// THE RULE FOR SHAPING ACROSS RUNS: the groups of the paragraph's runs that are shaped as one text each. A run joins the
@@ -353,13 +430,13 @@ public static class InlineLayout
         // inline box counts for the line's height with (LineBoxes.Build). A group of runs without text shapes nothing.
         if (group.FirstOrDefault(member => member.Text.Length > 0) is not { } shaping)
         {
-            return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success([.. group.Select(member => new LineBoxes.ShapedRun(member.Run, member.Font.Value, []))]);
+            return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success([.. group.Select(member => new LineBoxes.ShapedRun(member.Run, member.Font.Value, []) { Groups = member.Groups })]);
         }
 
         var (font, size) = (shaping.Font.Value, shaping.Run.Style.FontSize.Points);
         Result<IEnumerable<LineBoxes.ShapedRun>, Error> Alone(GroupMember member) =>
             Shaper.Shape(member.Text, member.Font.Value, ShapingSizeOf(sizes, member.Run.Style.FontSize.Points))
-                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, member.Font.Value, glyphs)])
+                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, member.Font.Value, glyphs) { Groups = member.Groups }])
                 .MapError(error => error.WithSource(member.Run.Source));
         if (group.Count == 1)
         {
@@ -388,7 +465,7 @@ public static class InlineLayout
                 next++;
             }
 
-            runs.Add(new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. glyphs.Skip(start).Take(next - start)]));
+            runs.Add(new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. glyphs.Skip(start).Take(next - start)]) { Groups = member.Groups });
         }
 
         return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success(runs);

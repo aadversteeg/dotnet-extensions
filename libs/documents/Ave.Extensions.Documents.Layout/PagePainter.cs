@@ -64,7 +64,7 @@ public static class PagePainter
     private static IEnumerable<DrawItem> Items(Fragment fragment, Point origin, bool inArtifact, double pageWidth) => fragment switch
     {
         BoxFragment box => Box(box, origin, inArtifact, pageWidth),
-        LineFragment line => Children(line.Children, origin, inArtifact, pageWidth),
+        LineFragment line => Line(line, origin, inArtifact, pageWidth),
         TextFragment text => Glyphs(text, origin) is { Glyphs.Count: > 0 } run ? [run] : [],
         ImageFragment image => [new DrawImage(new Rect(origin, image.Size), image.Image.Image)],
         RuleFragment rule => Decoration([new FillRectangle(new Rect(origin, rule.Size), rule.Color)], inArtifact),
@@ -104,6 +104,57 @@ public static class PagePainter
             .. Children(box.Children, origin, inArtifact: false, pageWidth),
             new StructureEnd(box.Box.Id),
         ];
+    }
+
+    /// <summary>
+    /// A line: its children, and around the children of each inline group's part on it (<see cref="LineGroupPart"/>) the
+    /// group's structure marker, so a group over several lines or pages is one element in tagged PDF (the markers of one
+    /// node are joined, as for a paragraph over two pages). Inside a link's marker, before its content, come its link
+    /// areas (<see cref="LinkArea"/>): the part's area, and the border box of every image in the part (Chromium's print
+    /// writes a rectangle for the link's line part and one for an image inside it). Inside an artifact a group is drawn
+    /// without markers and a link gets no area: a link in a page header or footer, or in a repeated copy of a table's
+    /// header rows, is only drawn (a known limit; the first, real occurrence of a header row keeps its links).
+    /// </summary>
+    private static IEnumerable<DrawItem> Line(LineFragment line, Point origin, bool inArtifact, double pageWidth)
+    {
+        if (inArtifact || line.Groups.Count == 0)
+        {
+            return Children(line.Children, origin, inArtifact, pageWidth);
+        }
+
+        var items = new List<DrawItem>();
+        var open = new Stack<LineGroupPart>();
+        var next = 0;
+        for (var index = 0; index < line.Children.Count; index++)
+        {
+            while (next < line.Groups.Count && line.Groups[next].First == index)
+            {
+                var part = line.Groups[next++];
+                items.Add(new StructureStart(part.Group.Id, part.Group.Role, part.Group.Source));
+                if (part.Group.Role is SemanticRole.LinkRole)
+                {
+                    items.Add(new LinkArea(part.Group.Id, new Rect(origin + part.Area.Origin, part.Area.Size)));
+                    for (var child = part.First; child < part.First + part.Count; child++)
+                    {
+                        if (line.Children[child].Fragment is BoxFragment image)
+                        {
+                            items.Add(new LinkArea(part.Group.Id, new Rect(origin + line.Children[child].Offset, image.Size)));
+                        }
+                    }
+                }
+
+                open.Push(part);
+            }
+
+            var placed = line.Children[index];
+            items.AddRange(Items(placed.Fragment, origin + placed.Offset, inArtifact: false, pageWidth));
+            while (open.Count > 0 && open.Peek().First + open.Peek().Count == index + 1)
+            {
+                items.Add(new StructureEnd(open.Pop().Group.Id));
+            }
+        }
+
+        return items;
     }
 
     private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, double pageWidth) =>

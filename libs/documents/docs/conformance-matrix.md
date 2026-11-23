@@ -16,7 +16,7 @@ A rule that PDF/A-3a adds to PDF/A-3b lists only PDF/A-3a. The generated-documen
 fixed seed (100 per profile: borders, backgrounds, spans, nested and broken tables, page areas, images with alpha,
 font sizes, lengths at and past the limits, long words) are refused, with a code of an expected family, or pass veraPDF.
 
-109 rules by construction, 42 checked, 110 cannot occur (261 rules).
+117 rules by construction, 45 checked, 99 cannot occur (261 rules).
 
 | Rule | Profiles | veraPDF rule text | Class | How |
 | --- | --- | --- | --- | --- |
@@ -113,13 +113,13 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 6.2.11.7.2-2 | PDF/A-3a | The Unicode values specified in the ToUnicode CMap shall all be greater than zero (0), but not equal to either U+FEFF or U+FFFE | checked | Text with U+0000 and other control characters or noncharacters is `Input.Invalid.Text` in the front-end (Fluent TextCharacterTests); glyph text with U+0000, U+FEFF or U+FFFE is `Pdf.Conformance.Tagged.UnmappableText` (Render.Pdf PageModelValidationTests). |
 | 6.2.11.7.3-1 | PDF/A-3a | For any character, regardless of its rendering mode, that is mapped to a code or codes in the Unicode Private Use Area (PUA), an … | checked | Glyph text in the Private Use Area at level A: `Pdf.Conformance.PdfA3.PrivateUseText` (Render.Pdf PageModelValidationTests). |
 | 6.2.11.8-1 | PDF/A-3b, PDF/A-3a | A PDF/A-3 compliant document shall not contain a reference to the .notdef glyph from any of the text showing operators, regardless of … | checked | The front-end never draws glyph 0 (a missing glyph is `Font.GlyphMissing`); a page model that does is `Pdf.Conformance.Glyphs.NotdefGlyph` (Render.Pdf PageModelValidationTests). |
-| 6.3.1-1 | PDF/A-3b, PDF/A-3a | Annotation types not defined in ISO 32000-1 shall not be permitted. Additionally, the 3D, Sound, Screen and Movie types shall not be … | cannot occur | No annotations. |
-| 6.3.2-1 | PDF/A-3b, PDF/A-3a | Except for annotation dictionaries whose Subtype value is Popup, all annotation dictionaries shall contain the F key | cannot occur | No annotations. |
-| 6.3.2-2 | PDF/A-3b, PDF/A-3a | If present, the F key's Print flag bit shall be set to 1 and its Hidden, Invisible, ToggleNoView, and NoView flag bits shall be set to 0 | cannot occur | No annotations. |
-| 6.3.3-1 | PDF/A-3b, PDF/A-3a | Every annotation (including those whose Subtype value is Widget, as used for form fields), except for the two cases listed below, shall … | cannot occur | No annotations. |
-| 6.3.3-2 | PDF/A-3b, PDF/A-3a | For all annotation dictionaries containing an AP key, the appearance dictionary that it defines as its value shall contain only the N key | cannot occur | No annotations. |
-| 6.3.3-3 | PDF/A-3b, PDF/A-3a | If an annotation dictionary's Subtype key has a value of Widget and its FT key has a value of Btn, the value of the N key shall be an … | cannot occur | No annotations. |
-| 6.3.3-4 | PDF/A-3b, PDF/A-3a | If an annotation dictionary's Subtype key has value other than Widget, or if FT key associated with Widget annotation has value other … | cannot occur | No annotations. |
+| 6.3.1-1 | PDF/A-3b, PDF/A-3a | Annotation types not defined in ISO 32000-1 shall not be permitted. Additionally, the 3D, Sound, Screen and Movie types shall not be … | by construction | The only annotations are link annotations (LinkAnnotations, ISO 32000-1 12.5.6.5), a permitted type. |
+| 6.3.2-1 | PDF/A-3b, PDF/A-3a | Except for annotation dictionaries whose Subtype value is Popup, all annotation dictionaries shall contain the F key | by construction | Every link annotation has /F 4 (LinkAnnotations). |
+| 6.3.2-2 | PDF/A-3b, PDF/A-3a | If present, the F key's Print flag bit shall be set to 1 and its Hidden, Invisible, ToggleNoView, and NoView flag bits shall be set to 0 | by construction | Every link annotation has /F 4: Print set, Hidden, Invisible, NoView and ToggleNoView clear (LinkAnnotations). |
+| 6.3.3-1 | PDF/A-3b, PDF/A-3a | Every annotation (including those whose Subtype value is Widget, as used for form fields), except for the two cases listed below, shall … | by construction | The only annotations are link annotations, which the rule exempts from an appearance dictionary; none is written. |
+| 6.3.3-2 | PDF/A-3b, PDF/A-3a | For all annotation dictionaries containing an AP key, the appearance dictionary that it defines as its value shall contain only the N key | cannot occur | No appearance dictionaries: the only annotations are links, which have none. |
+| 6.3.3-3 | PDF/A-3b, PDF/A-3a | If an annotation dictionary's Subtype key has a value of Widget and its FT key has a value of Btn, the value of the N key shall be an … | cannot occur | No appearance dictionaries: the only annotations are links, which have none. |
+| 6.3.3-4 | PDF/A-3b, PDF/A-3a | If an annotation dictionary's Subtype key has value other than Widget, or if FT key associated with Widget annotation has value other … | cannot occur | No appearance dictionaries: the only annotations are links, which have none. |
 | 6.4.1-1 | PDF/A-3b, PDF/A-3a | A Widget annotation dictionary shall not contain the A or AA keys | cannot occur | No interactive forms. |
 | 6.4.1-2 | PDF/A-3b, PDF/A-3a | A Field dictionary shall not contain the A or AA keys | cannot occur | No interactive forms. |
 | 6.4.1-3 | PDF/A-3b, PDF/A-3a | The NeedAppearances flag of the interactive form dictionary shall either not be present or shall be false | cannot occur | No interactive forms. |
@@ -128,10 +128,10 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 6.4.3-1 | PDF/A-3b, PDF/A-3a | When computing the digest for the file, it shall be computed over the entire file, including the signature dictionary but excluding the … | cannot occur | No signatures. |
 | 6.4.3-2 | PDF/A-3b, PDF/A-3a | The PDF Signature (a DER-encoded PKCS#7 binary data object) shall be placed into the Contents entry of the signature dictionary. The … | cannot occur | No signatures. |
 | 6.4.3-3 | PDF/A-3b, PDF/A-3a | The PDF Signature (a DER-encoded PKCS#7 binary data object) shall be placed into the Contents entry of the signature dictionary. The … | cannot occur | No signatures. |
-| 6.5.1-1 | PDF/A-3b, PDF/A-3a | The Launch, Sound, Movie, ResetForm, ImportData, Hide, SetOCGState, Rendition, Trans, GoTo3DView and JavaScript actions shall not be … | cannot occur | No actions. |
-| 6.5.1-2 | PDF/A-3b, PDF/A-3a | Named actions other than NextPage, PrevPage, FirstPage, and LastPage shall not be permitted | cannot occur | No actions. |
-| 6.5.2-1 | PDF/A-3b, PDF/A-3a | The document's Catalog shall not include an AA entry for an additional-actions dictionary | cannot occur | No actions. |
-| 6.5.2-2 | PDF/A-3b, PDF/A-3a | The Page dictionary shall not include an AA entry for an additional-actions dictionary | cannot occur | No actions. |
+| 6.5.1-1 | PDF/A-3b, PDF/A-3a | The Launch, Sound, Movie, ResetForm, ImportData, Hide, SetOCGState, Rendition, Trans, GoTo3DView and JavaScript actions shall not be … | by construction | The only action is the URI action of a link annotation (ISO 32000-1 12.6.4.7); its URI is refused by scheme before it is written (`Input.Invalid.Link`, Core LinkUris), never written as a JavaScript action. |
+| 6.5.1-2 | PDF/A-3b, PDF/A-3a | Named actions other than NextPage, PrevPage, FirstPage, and LastPage shall not be permitted | cannot occur | No named actions: the only action is a URI action. |
+| 6.5.2-1 | PDF/A-3b, PDF/A-3a | The document's Catalog shall not include an AA entry for an additional-actions dictionary | cannot occur | No additional actions. |
+| 6.5.2-2 | PDF/A-3b, PDF/A-3a | The Page dictionary shall not include an AA entry for an additional-actions dictionary | cannot occur | No additional actions. |
 | 6.6.2.1-1 | PDF/A-3b, PDF/A-3a | The Catalog dictionary of a conforming file shall contain the Metadata key whose value is a metadata stream as defined in ISO … | by construction | The catalog's /Metadata is the XMP stream of type /Metadata, subtype /XML. |
 | 6.6.2.1-2 | PDF/A-3b, PDF/A-3a | The bytes attribute shall not be used in the header of an XMP packet | by construction | The xpacket header has no bytes attribute (XmpPacket). |
 | 6.6.2.1-3 | PDF/A-3b, PDF/A-3a | The encoding attribute shall not be used in the header of an XMP packet | by construction | The xpacket header has no encoding attribute (XmpPacket). |
@@ -183,7 +183,7 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 6.10-2 | PDF/A-3b, PDF/A-3a | There shall be no PresSteps entry in any Page dictionary | cannot occur | No alternate presentations or presentation steps. |
 | 6.11-1 | PDF/A-3b, PDF/A-3a | The document catalog shall not contain the Requirements key | cannot occur | No /Requirements. |
 | 7.1-1 | PDF/UA-1 | Content marked as Artifact should not be present inside tagged content | by construction | Each content run is in exactly one marked-content sequence: a structure MCID or an Artifact, never one inside the other (PageContentStream). |
-| 7.1-2 | PDF/UA-1 | Tagged content should not be present inside content marked as Artifact | by construction | As 7.1-1; a structure marker inside an artifact is `Pdf.Write.InvalidPageModel` (PageModel `MarkerNesting`). |
+| 7.1-2 | PDF/UA-1 | Tagged content should not be present inside content marked as Artifact | by construction | As 7.1-1; a structure marker inside an artifact is `Pdf.Write.InvalidStructure` (PageEvents). |
 | 7.1-3 | PDF/UA-1 | Content shall be marked as Artifact or tagged as real content | checked | Content outside every structure node and artifact: `Pdf.Conformance.Tagged.UnmarkedContent` (Render.Pdf TaggingTests). |
 | 7.1-4 | PDF/UA-1 | Files shall have a Suspects value of false(ISO 32000-1:2008, Table 321) | by construction | No /Suspects is written. |
 | 7.1-5 | PDF/UA-1 | All non-standard structure types shall be mapped to the nearest functionally equivalent standard type, as defined in ISO 32000-1:2008, … | by construction | Only standard structure types; no role map. |
@@ -216,7 +216,7 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 7.2-21 | PDF/UA-1 | Natural language for text in ActualText attribute shall be determined | cannot occur | No /ActualText on structure elements; replacement text is written on marked-content spans only (7.2-30). |
 | 7.2-22 | PDF/UA-1 | Natural language for text in Alt attribute shall be determined | checked | Alternative text takes the catalog's language, which PDF/UA-1 requires: `Pdf.Conformance.PdfUa1.MissingLanguage` (Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests). |
 | 7.2-23 | PDF/UA-1 | Natural language for text in E attribute shall be determined | cannot occur | No /E entries. |
-| 7.2-24 | PDF/UA-1 | Natural language in the Contents entry for annotations shall be determined | cannot occur | No annotations. |
+| 7.2-24 | PDF/UA-1 | Natural language in the Contents entry for annotations shall be determined | checked | A link annotation's /Contents takes the catalog's language, which PDF/UA-1 requires: `Pdf.Conformance.PdfUa1.MissingLanguage` (Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests). |
 | 7.2-25 | PDF/UA-1 | Natural language in the TU key for form fields shall be determined | cannot occur | No form fields. |
 | 7.2-26 | PDF/UA-1 | TOCI element should be contained in TOC element | cannot occur | No TOC roles. |
 | 7.2-27 | PDF/UA-1 | TOC element may contain only TOC, TOCI and Caption elements | cannot occur | No TOC roles. |
@@ -250,18 +250,18 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 7.11-1 | PDF/UA-1 | The file specification dictionary for an embedded file shall contain the non-empty F and UF keys | checked | An attachment without a file name: `Input.Invalid.Attachment` in the front-end, `Pdf.Write.InvalidPageModel` in the back-end (Render.Pdf PageModelContractTests). |
 | 7.15-1 | PDF/UA-1 | Dynamic XFA forms shall not be used | cannot occur | No forms. |
 | 7.16-1 | PDF/UA-1 | An encrypted conforming file shall contain a P key in its encryption dictionary (ISO 32000-1:2008, 7.6.3.2, Table 21). The 10th bit … | cannot occur | No encryption. |
-| 7.18.1-1 | PDF/UA-1 | An annotation, excluding annotations of subtype Widget, PrinterMark or Link, shall be nested within an Annot tag | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.1-2 | PDF/UA-1 | An annotation (except Widget annotations or hidden annotations, or those having rectangle outside the crop-box) shall have either … | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.1-3 | PDF/UA-1 | A form field shall have a TU key present or all its Widget annotations shall have alternative descriptions (in the form of an Alt entry … | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.2-1 | PDF/UA-1 | Annotations of subtype TrapNet shall not be permitted | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.3-1 | PDF/UA-1 | Every page on which there is an annotation shall contain in its page dictionary the key Tabs, and its value shall be S | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.4-1 | PDF/UA-1 | A Widget annotation shall be nested within a Form tag per ISO 32000-1:2008, 14.8.4.5, Table 340 | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.4-2 | PDF/UA-1 | If the Form element omits a Role attribute (Table 348), it shall have only one child: an object reference (14.7.4.3) identifying the … | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.5-1 | PDF/UA-1 | Links shall be tagged according to ISO 32000-1:2008, 14.8.4.4.2, Link Element | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.5-2 | PDF/UA-1 | Links shall contain an alternate description via their Contents key as described in ISO 32000-1:2008, 14.9.3 | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.6.2-1 | PDF/UA-1 | In the media clip data dictionary, the optional CT key (ISO 32000-1:2008, 13.2.4.2, Table 274) is required | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.6.2-2 | PDF/UA-1 | In the media clip data dictionary, the optional Alt key (ISO 32000-1:2008, 13.2.4.2, Table 274) is required | cannot occur | No annotations, widgets, links or media clips. |
-| 7.18.8-1 | PDF/UA-1 | PrinterMark annotations, if present, shall be considered Incidental Artifacts, as if they are hidden page elements as defined in ISO … | cannot occur | No annotations, widgets, links or media clips. |
+| 7.18.1-1 | PDF/UA-1 | An annotation, excluding annotations of subtype Widget, PrinterMark or Link, shall be nested within an Annot tag | by construction | The only annotations are link annotations, which the rule excludes; each is tagged in a Link element (rule 7.18.5-1). |
+| 7.18.1-2 | PDF/UA-1 | An annotation (except Widget annotations or hidden annotations, or those having rectangle outside the crop-box) shall have either … | checked | Every link annotation carries /Contents, its description (title, else text, else an image's alternative text, else the URI: DocumentModel LinkDescription); a blank one is refused in the model (`Input.Invalid.Link`, Layout LinkAreaTests) and in a page model (PageModelRules). |
+| 7.18.1-3 | PDF/UA-1 | A form field shall have a TU key present or all its Widget annotations shall have alternative descriptions (in the form of an Alt entry … | cannot occur | No form fields or widgets. |
+| 7.18.2-1 | PDF/UA-1 | Annotations of subtype TrapNet shall not be permitted | cannot occur | No TrapNet annotations: the only annotations are links. |
+| 7.18.3-1 | PDF/UA-1 | Every page on which there is an annotation shall contain in its page dictionary the key Tabs, and its value shall be S | by construction | Every page of a tagged file has /Tabs /S, with or without annotations. |
+| 7.18.4-1 | PDF/UA-1 | A Widget annotation shall be nested within a Form tag per ISO 32000-1:2008, 14.8.4.5, Table 340 | cannot occur | No widgets or forms. |
+| 7.18.4-2 | PDF/UA-1 | If the Form element omits a Role attribute (Table 348), it shall have only one child: an object reference (14.7.4.3) identifying the … | cannot occur | No widgets or forms. |
+| 7.18.5-1 | PDF/UA-1 | Links shall be tagged according to ISO 32000-1:2008, 14.8.4.4.2, Link Element | by construction | Each link annotation's /StructParent names its Link element in the parent tree, and the element holds an object reference to it (Tagging StructureTree, StructureObjects); a link area outside its link's structure marker is refused (PageModelRules). |
+| 7.18.5-2 | PDF/UA-1 | Links shall contain an alternate description via their Contents key as described in ISO 32000-1:2008, 14.9.3 | checked | Every link annotation carries /Contents, its description, never blank: a blank one is refused in the model (`Input.Invalid.Link`, Layout LinkAreaTests) and in a page model (PageModelRules). |
+| 7.18.6.2-1 | PDF/UA-1 | In the media clip data dictionary, the optional CT key (ISO 32000-1:2008, 13.2.4.2, Table 274) is required | cannot occur | No media clips. |
+| 7.18.6.2-2 | PDF/UA-1 | In the media clip data dictionary, the optional Alt key (ISO 32000-1:2008, 13.2.4.2, Table 274) is required | cannot occur | No media clips. |
+| 7.18.8-1 | PDF/UA-1 | PrinterMark annotations, if present, shall be considered Incidental Artifacts, as if they are hidden page elements as defined in ISO … | cannot occur | No PrinterMark annotations: the only annotations are links. |
 | 7.20-1 | PDF/UA-1 | A conforming file shall not contain any reference XObjects | cannot occur | No form or reference XObjects. |
 | 7.20-2 | PDF/UA-1 | The content of Form XObjects shall be incorporated into structure elements according to ISO 32000-1:2008, 14.7.2 | cannot occur | No form or reference XObjects. |
 | 7.21.3.1-1 | PDF/UA-1 | For any given composite (Type 0) font within a conforming file, the CIDSystemInfo entry in its CIDFont dictionary and its Encoding … | by construction | As 6.2.11.3.1-1. |

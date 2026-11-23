@@ -335,6 +335,29 @@ public static class Elements
         new(new ImageFile(file), null, null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
 
     /// <summary>
+    /// A link to a URI around text, as a span of a paragraph: <c>Paragraph([Text("See "), Link("https://example.com", "our
+    /// site"), Text(".")])</c>. A reader of the PDF opens the URI when the text is clicked; the engine never fetches it. The
+    /// URI is written as it is given and must be an absolute URI of the schemes http, https, mailto or tel, in printable
+    /// ASCII (percent-encode other characters), at most 32 767 characters long; anything else, among them
+    /// <c>javascript:</c>, <c>file:</c>, <c>data:</c> and a relative URI, is refused when the document is translated
+    /// (<c>Documents.Input.Invalid.Link</c>, with the scheme and the reason). The link's description, which a screen reader
+    /// reads and PDF/UA requires, is its text, or the URI when the text is blank. Format the span as any text span
+    /// (<c>Link(uri, "here").Bold()</c>); a link takes no underline or colour unless you set them. A link inside a page
+    /// header or footer is drawn without being a link.
+    /// </summary>
+    /// <param name="uri">The URI, for example <c>https://example.com/a</c> or <c>mailto:info@example.com</c>.</param>
+    /// <param name="text">The text that is the link.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The span.</returns>
+    public static Span Link(
+        string uri,
+        string text,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(text, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine)) { Link = LinkTarget.Uri(uri) };
+
+    /// <summary>
     /// An image in a line of text, as a span of a paragraph (an atomic inline, CSS Display 3, Appendix A, as HTML's <c>img</c> in
     /// a line): <c>Paragraph([Text("Signed "), InlineImage(Image(file).Alt("Signature").Height(12.Pt())), Text(" today")])</c>.
     /// The image is made and checked as any image (size, alternative text, margins, padding, border); its margin box sits

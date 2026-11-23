@@ -56,7 +56,27 @@ public sealed record RuleFragment(Color Color, Size Size) : Fragment(Size);
 /// <param name="Size">The line's content width and its height (CSS 2.1 §10.8).</param>
 /// <param name="Children">The text fragments and atomic inlines on the line, left to right, and the text decoration lines
 /// of each text fragment around it, in painting order (<see cref="RuleFragment"/>).</param>
-public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children) : Fragment(Size);
+public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children) : Fragment(Size)
+{
+    /// <summary>The parts of the inline groups (<see cref="InlineGroup"/>) on this line, each a range of
+    /// <see cref="Children"/>: outer groups before the groups inside them, in document order; two ranges are disjoint or
+    /// one holds the other. Empty when the line lies in no group.</summary>
+    public ValueList<LineGroupPart> Groups { get; init; } = [];
+}
+
+/// <summary>
+/// The part of an inline group (<see cref="InlineGroup"/>) on one line: the children of the line it holds and, for a link,
+/// the area a reader clicks. The painter opens the group's structure marker around these children
+/// (<see cref="PagePainter"/>); the group draws nothing of its own.
+/// </summary>
+/// <param name="Group">The group.</param>
+/// <param name="Area">Relative to the line's top-left corner: in the inline direction from the start of the group's first
+/// piece on the line to the end of its last (a space removed at the line's end is no piece), in the block direction from
+/// the group's own font's ascent above the line's baseline to its descent below it (THE RULE FOR A LINK'S AREA,
+/// <see cref="LineBoxes"/>).</param>
+/// <param name="First">The index of its first child in <see cref="LineFragment.Children"/>.</param>
+/// <param name="Count">How many children it holds, one or more.</param>
+public sealed record LineGroupPart(InlineGroup Group, Rect Area, int First, int Count);
 
 /// <summary>
 /// The part of one <see cref="InlineRun"/> that lies on one line. Its top edge is <see cref="Ascent"/> above the

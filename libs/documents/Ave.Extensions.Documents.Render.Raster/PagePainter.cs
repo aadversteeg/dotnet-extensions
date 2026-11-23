@@ -61,7 +61,8 @@ internal static class PagePainter
                 FillRectangle fill => Rectangle(canvas, fill, scale, clip),
                 GlyphRun run => Glyphs(canvas, run, scale, clip),
                 DrawImage image => Image(canvas, image, scale, clip, images),
-                StructureStart or StructureEnd or ArtifactStart or ArtifactEnd => Result<Unit, Error>.Success(Unit.Value),
+                // Markers, and a link's area, draw nothing: a page as pixels has no structure and nothing to click.
+                StructureStart or StructureEnd or ArtifactStart or ArtifactEnd or LinkArea => Result<Unit, Error>.Success(Unit.Value),
                 _ => throw new InvalidOperationException($"The raster back-end cannot draw a {item.GetType().Name} yet."),
             };
 

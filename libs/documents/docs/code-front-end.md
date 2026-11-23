@@ -112,6 +112,7 @@ default, `null` for transparent). A page number the document does not have is `D
 | `Paragraph(text)`, `Paragraph([spans])` | a paragraph of one or several spans |
 | `Heading(level, text)` | a heading, level 1–6: bold and sized like HTML's h1–h6 |
 | `Text(text)`, `Bold(text)` | a span inside a paragraph (`Bold(text)` is `Text(text).Bold()`) |
+| `Link(uri, text)` | a link to a URI around text, used as a span: `Paragraph([Text("See "), Link("https://example.com", "our site"), Text(".")])`; see [Links](#links) |
 | `LineBreak()` | a forced line break inside a paragraph (as HTML's `br`; U+2028), used as a span: `Paragraph([Text("a"), LineBreak(), Text("b")])` |
 | `PageBreak()` | starts the next element of the same list on a new page |
 | `Table(columns, rows)` | a table; `columns` made with `Columns(…)`, `rows` a list of the three below |
@@ -130,6 +131,23 @@ Children are collection expressions: `[a, b, .. items.Select(Line)]`.
 The page is a value too: `PageSetup.A4.Margin(1.Cm()).Header(header).Footer(footer)`; `Page(width, height)` makes
 another size. Header and footer take their height from the page area (from their content, or a fixed height as the
 second argument); `.FirstPageHeader(…)` and `.FirstPageFooter(…)` replace them on page 1 (`Block([])` for none).
+
+## Links
+
+`Link(uri, text)` is a span whose text is a link: clicked in a PDF reader, it opens the URI. One span is one link; format
+it as any text span (`Link(uri, "here").Bold().Underline()`); it takes no colour or underline unless you set them.
+
+- **The URI** is written into the PDF exactly as you give it. It must be an absolute URI of the schemes `http`, `https`,
+  `mailto` or `tel` (the scheme in any case), in printable ASCII (percent-encode other characters, no spaces), at most
+  32 767 characters. Anything else is refused when the document is translated, at the line of the `Link` call, with
+  `Documents.Input.Invalid.Link` and a message that names the scheme and the four accepted ones: among them
+  `javascript:`, `file:`, `data:`, a URI with a leading space or a control character, and a relative URI such as
+  `terms.html`. The engine never fetches or opens a URI.
+- **The description** a screen reader reads, and PDF/UA requires on every link, is the link's text with its white
+  space collapsed, or the URI when the text is blank. It is written in every profile.
+- **In the PDF** each line part of the link is one link annotation, so a link over two lines or over a page break
+  has an area on each line; in a tagged file one `Link` element holds the text and a reference to each annotation.
+- **In a page header or footer** a link is drawn as text without being a link (everything there is an artifact).
 
 ## Modifiers
 

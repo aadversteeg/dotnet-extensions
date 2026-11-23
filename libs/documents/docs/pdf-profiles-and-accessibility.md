@@ -120,7 +120,7 @@ the "How" column says **H**: a person has to judge. (The protocol's own introduc
 change log added one and moved two from machine to human.) The table lists all 48 and says, for this engine's output,
 whether the condition cannot occur, is met by the design, or is left to you or still open.
 
-"Not possible" means the engine cannot produce the feature at all (no forms, links, annotations, sound, scripts).
+"Not possible" means the engine cannot produce the feature at all (no forms, sound or scripts, and no annotations but links).
 
 | Condition | What a person checks | This engine |
 | --- | --- | --- |
@@ -138,7 +138,7 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 11-007 | the declared language is wrong | **Your part:** one language per document. Open: no language per paragraph or span yet, so a quote in another language is read in the document's language. |
 | 12-001 | stretched characters not represented | Not possible: justification stretches spaces, never glyphs. |
 | 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. |
-| 13-002 | a link with a meaningful background | Not possible: no links yet. |
+| 13-002 | a link with a meaningful background | Met by design: a link draws nothing of its own, no background and no border; a background behind it is its paragraph's and is decoration. |
 | 13-003 | a caption not tagged as Caption | **Open:** there is no caption element; a caption is a paragraph. |
 | 13-005 | ActualText used where Alt fits better | Met: images and figures get Alt. ActualText is written only on the marked content of a glyph whose text differs from its ToUnicode entry (a ligature, a shared hyphen glyph), to give that glyph's own text, where Alt does not apply. |
 | 13-006 | a graphic that means something only in its group, tagged alone | Not possible: an image is always one picture. |
@@ -158,7 +158,7 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 19-001, 19-002 | notes and references not tagged | Not possible: no footnotes or references. |
 | 22-001 | article threads out of order | Not possible. |
 | 24-001 | non-interactive forms without PrintFields | Not possible. |
-| 28-001, 28-003, 28-013 | annotations out of order, used for formatting, image maps | Not possible: no annotations. |
+| 28-001, 28-003, 28-013 | annotations out of order, used for formatting, image maps | Met by design: the only annotations are links, listed on each page in content order (`/Annots`), with the tab order following the structure (`/Tabs /S`); one annotation per line part of a link, none used for formatting; no image maps. |
 | 29-001 | scripts that need keystroke timing | Not possible. |
 | 31-010 | a font embedded that may not legally be embedded | Partly met: the engine refuses a font whose licence bits forbid embedding (`Documents.Pdf.Write.FontEmbeddingNotPermitted`). The bits are not the licence; **your part** to use fonts you may embed (Lato: SIL OFL). |
 

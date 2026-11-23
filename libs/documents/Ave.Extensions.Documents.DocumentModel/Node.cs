@@ -4,7 +4,8 @@ using Ave.Extensions.Documents.Images;
 namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
-/// A node of the document tree: a <see cref="Box"/>, an <see cref="InlineRun"/> or an <see cref="ImageNode"/>.
+/// A node of the document tree: a <see cref="Box"/>, an <see cref="InlineRun"/>, an <see cref="InlineGroup"/> or an
+/// <see cref="ImageNode"/>.
 /// Every node has an id (its pre-order position) and the source location of the code or markup that produced it.
 /// </summary>
 /// <param name="Id">The node id, unique in the document.</param>
@@ -18,7 +19,7 @@ public abstract record Node(NodeId Id, SourceLocation Source);
 /// <remarks>
 /// Which children a box may have depends on its algorithm: <see cref="LayoutAlgorithmId.Flow"/> stacks child
 /// boxes, <see cref="LayoutAlgorithmId.Inline"/> sets inline runs in lines (a block container whose content is an
-/// inline formatting context, CSS 2.1 §9.2.1), and among them boxes laid out by <see cref="LayoutAlgorithmId.Image"/>, each
+/// inline formatting context, CSS 2.1 §9.2.1), grouped or not in <see cref="InlineGroup"/>s, and among them boxes laid out by <see cref="LayoutAlgorithmId.Image"/>, each
 /// an atomic inline (an image in a line of text, CSS Display 3, Appendix A), <see cref="LayoutAlgorithmId.Tracks"/> lays out row groups of rows of
 /// cells, <see cref="LayoutAlgorithmId.Image"/> holds one image. The algorithm reports an error for children it
 /// cannot lay out.
@@ -64,6 +65,32 @@ public sealed record TextRun(NodeId Id, string Text, TextStyle Style, SourceLoca
 /// <param name="Style">The computed text properties.</param>
 /// <param name="Source">Where the reference was written; reported when the page count does not settle.</param>
 public sealed record CounterRun(NodeId Id, PageCounter Counter, TextStyle Style, SourceLocation Source) : InlineRun(Id, Style, Source);
+
+/// <summary>
+/// THE INLINE GROUPING of the model: a part of the content of an inline box (its runs, its images in the line and other
+/// groups) that means something as a whole: a link (<see cref="SemanticRole.Link"/>) or a span
+/// (<see cref="SemanticRole.Span"/>). It is transparent for layout: the lines are broken and painted as if its children
+/// stood in its place, it adds no margin, padding, border or line height (CSS 2.1 §10.8 counts an inline box's line
+/// height; a front-end that needs it adds an empty run in the element's style, as for any inline element). Groups nest,
+/// a link inside a link excepted, and only in the children of an inline box. Each part of a group on one line is one
+/// line part (the layout's <c>InlineGroupFragment</c>); its structure element is opened around each line part, which
+/// tagged PDF joins into one element. When inline boxes with their own border and background come, they extend this
+/// node.
+/// </summary>
+/// <param name="Id">The node id.</param>
+/// <param name="Role">What the group means: <see cref="SemanticRole.Link"/> or <see cref="SemanticRole.Span"/>.</param>
+/// <param name="Style">The computed text properties of the element: its font gives the height of a link's area on each
+/// line (its ascent above and descent below the baseline), as Chromium draws a link's rectangle from the font of the
+/// <c>a</c> element itself.</param>
+/// <param name="Children">Its runs, images (boxes laid out by <see cref="LayoutAlgorithmId.Image"/>) and groups, in
+/// document order.</param>
+/// <param name="Source">Where the group was written.</param>
+public sealed record InlineGroup(NodeId Id, SemanticRole Role, TextStyle Style, ValueList<Node> Children, SourceLocation Source) : Node(Id, Source)
+{
+    /// <summary>The natural language of the group's content as a language tag (ISO 32000-1 §14.9.2), or null when it is
+    /// that of its parent. Held in the model now; written to the PDF in a later version.</summary>
+    public string? Language { get; init; }
+}
 
 /// <summary>The page-based counters (CSS Paged Media 3 §6.1).</summary>
 public enum PageCounter

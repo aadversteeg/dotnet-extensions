@@ -396,6 +396,16 @@ internal static class InputChecks
             ? []
             : [Problem(DocumentErrorCodes.Input.Invalid.Language, "The language is not a language tag such as nl-NL.", language, "language", source)];
 
+    /// <summary>A link's target by THE RULE FOR A LINK'S URI (<see cref="LinkUris"/>): an absolute URI of the schemes http,
+    /// https, mailto or tel, printable ASCII, at most <see cref="LinkUris.MaxLength"/> characters. The message names the
+    /// scheme and the reason.</summary>
+    /// <param name="link">The span's target, or null for a span that is no link.</param>
+    /// <param name="source">The span's source location.</param>
+    public static IEnumerable<Error> Link(LinkTarget? link, SourceLocation source) =>
+        link is LinkTarget.UriTarget uri && LinkUris.Problem(uri.Value) is { } problem
+            ? [Problem(DocumentErrorCodes.Input.Invalid.Link, $"The link is refused: {problem}.", uri.Value, "uri", source)]
+            : [];
+
     /// <summary>
     /// Text of the document (a span, an image's alternative text): only characters text may hold
     /// (<see cref="TextCharacters"/>: no control character but tab and the forced line breaks, no noncharacter, no

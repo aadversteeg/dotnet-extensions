@@ -21,7 +21,7 @@ public abstract record SemanticRole
     /// <summary>
     /// The standard structure type the role is written as in a tagged PDF (ISO 32000-1 §14.8.4): <c>Document</c>,
     /// <c>Div</c>, <c>P</c>, <c>H1</c>–<c>H6</c>, <c>Table</c>, <c>THead</c>, <c>TBody</c>, <c>TR</c>, <c>TH</c>,
-    /// <c>TD</c> or <c>Figure</c>. Null for <see cref="Decorative"/>, which is no structure, and for a heading level
+    /// <c>TD</c>, <c>Figure</c>, <c>Link</c> or <c>Span</c>. Null for <see cref="Decorative"/>, which is no structure, and for a heading level
     /// outside 1–6, for which no standard type exists.
     /// </summary>
     public abstract string? StandardStructureType { get; }
@@ -64,6 +64,23 @@ public abstract record SemanticRole
     /// the <c>/Alt</c> entry); null when the author gave none. PDF/UA refuses a figure without it.</param>
     /// <returns>The role.</returns>
     public static SemanticRole Figure(string? alternativeText) => new FigureRole(alternativeText);
+
+    /// <summary>
+    /// A link (PDF structure type <c>Link</c>, §14.8.4.4.2): the role of an inline group, never of a box. In a PDF it is a
+    /// link annotation per part of the link on a line (§12.5.6.5), each with its description (<c>/Contents</c>, §12.5.2,
+    /// Table 164; ISO 14289-1 §7.18.5), and a <c>Link</c> element that holds the link's content and an object reference to
+    /// each annotation (§14.7.4.3).
+    /// </summary>
+    /// <param name="target">Where it leads.</param>
+    /// <param name="description">The link in words, for readers who cannot see it: the element's title, else its text,
+    /// else the alternative text of an image in it, else its URI. Front-ends fill it in by that order; it is never
+    /// blank.</param>
+    /// <returns>The role.</returns>
+    public static SemanticRole Link(LinkTarget target, string description) => new LinkRole(target, description);
+
+    /// <summary>A span of text with no meaning of its own beyond what it carries, such as a language (PDF structure type
+    /// <c>Span</c>, §14.8.4.4.1): the role of an inline group, never of a box.</summary>
+    public static SemanticRole Span { get; } = new SpanRole();
 
     /// <summary>A heading of the given level (PDF structure types <c>H1</c>–<c>H6</c>, §14.8.4.3.2).</summary>
     /// <param name="level">The level, 1 (most important) to 6. Front-ends validate the range.</param>
@@ -190,6 +207,30 @@ public abstract record SemanticRole
         /// <summary>Returns <c>figure</c>, with the alternative text when there is one.</summary>
         /// <returns>The text form.</returns>
         public override string ToString() => AlternativeText is null ? "figure" : $"figure alt={QuotedText.Quote(AlternativeText)}";
+    }
+
+    /// <summary>A link.</summary>
+    /// <param name="Target">Where it leads.</param>
+    /// <param name="Description">The link in words.</param>
+    public sealed record LinkRole(LinkTarget Target, string Description) : SemanticRole
+    {
+        /// <summary>Returns <c>Link</c>.</summary>
+        public override string? StandardStructureType => "Link";
+
+        /// <summary>Returns <c>link</c> with its target and description.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => $"link {Target} description={QuotedText.Quote(Description)}";
+    }
+
+    /// <summary>The role of <see cref="Span"/>.</summary>
+    public sealed record SpanRole : SemanticRole
+    {
+        /// <summary>Returns <c>Span</c>.</summary>
+        public override string? StandardStructureType => "Span";
+
+        /// <summary>Returns <c>span</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => "span";
     }
 
     /// <summary>A heading.</summary>

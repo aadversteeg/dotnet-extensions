@@ -71,19 +71,19 @@ public static class ModelCheck
     /// and where each row of page-margin boxes is (<see cref="MarginBoxes"/>).</summary>
     private static Error? Nodes(StyledDocument document)
     {
-        var pending = new Stack<(Node Node, int Depth, Place Place)>();
-        pending.Push((document.Root, 0, Place.Other));
+        var pending = new Stack<(Node Node, int Depth, Place Place, bool InLink)>();
+        pending.Push((document.Root, 0, Place.Other, false));
         foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
         {
             if (area is not null)
             {
-                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea));
+                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea, false));
             }
         }
 
         while (pending.Count > 0)
         {
-            var (node, depth, place) = pending.Pop();
+            var (node, depth, place, inLink) = pending.Pop();
             if (depth > ModelLimits.MaxNestingDepth)
             {
                 return Problem(DocumentErrorCodes.Input.Invalid.TooDeep, $"Boxes may nest at most {ModelLimits.MaxNestingDepth} levels deep.",
@@ -96,6 +96,7 @@ public static class ModelCheck
                 TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
                 ImageNode image => ImageSize(image),
+                InlineGroup group => Group(group, place, inLink),
                 _ => null,
             };
             if (problem is not null)
@@ -103,9 +104,23 @@ public static class ModelCheck
                 return problem;
             }
 
-            if (node is Box paragraph && paragraph.Layout == LayoutAlgorithmId.Inline && AtomicInlines(paragraph) is { } atomic)
+            if (node is Box paragraph && paragraph.Layout == LayoutAlgorithmId.Inline && AtomicInlines(paragraph.Children) is { } atomic)
             {
                 return atomic;
+            }
+
+            if (node is InlineGroup inGroup && AtomicInlines(inGroup.Children) is { } atomicInGroup)
+            {
+                return atomicInGroup;
+            }
+
+            if (node is InlineGroup grouping)
+            {
+                // A group is one level deeper than its parent, so groups nest no deeper than boxes do.
+                foreach (var child in grouping.Children)
+                {
+                    pending.Push((child, depth + 1, Place.InLine, inLink || grouping.Role is SemanticRole.LinkRole));
+                }
             }
 
             if (node is Box placed && MarginBoxes(placed, place) is { } marginBoxes)
@@ -120,11 +135,13 @@ public static class ModelCheck
                 // cell is the next level. Runs and images are content of their box, no level of their own; a box among the runs of
                 // an inline box (an image in a line) is one level deeper, as any child box.
                 var isRow = parent.Style.TableDisplay == TableDisplay.Row;
-                var childPlace = parent.Layout == LayoutAlgorithmId.MarginBoxes ? Place.InMarginBoxes : Place.Other;
+                var childPlace = parent.Layout == LayoutAlgorithmId.MarginBoxes ? Place.InMarginBoxes
+                    : parent.Layout == LayoutAlgorithmId.Inline ? Place.InLine
+                    : Place.Other;
                 foreach (var child in parent.Children)
                 {
-                    var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } && !isRow;
-                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace));
+                    var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } or InlineGroup && !isRow;
+                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace, false));
                 }
             }
         }
@@ -146,6 +163,9 @@ public static class ModelCheck
             ?? (box.Role is SemanticRole.HeadingRole { Level: < 1 or > 6 } heading
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.HeadingLevel, "A heading level must be 1–6.", Number(heading.Level), "level", box)
                 : null)
+            ?? (box.Role is SemanticRole.LinkRole or SemanticRole.SpanRole
+                ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, $"The role {box.Role} belongs to an inline group, not to a box.", box.Role.ToString()!, "role", box)
+                : null)
             ?? (style.Text is { } strut ? Text(strut, box) : null);
     }
 
@@ -156,10 +176,10 @@ public static class ModelCheck
     /// Fragmentation 3 §3.1, §3.2), and an atomic inline never breaks, so a value there could only be lost. The child box
     /// is one nesting level deeper, as any child box.
     /// </summary>
-    private static Error? AtomicInlines(Box paragraph)
+    private static Error? AtomicInlines(ValueList<Node> children)
     {
         var initial = BoxStyle.Initial;
-        foreach (var child in paragraph.Children)
+        foreach (var child in children)
         {
             if (child is Box other && other.Layout != LayoutAlgorithmId.Image)
             {
@@ -188,6 +208,9 @@ public static class ModelCheck
 
         /// <summary>A child of a box laid out by <see cref="LayoutAlgorithmId.MarginBoxes"/>.</summary>
         InMarginBoxes,
+
+        /// <summary>A child of a box laid out by <see cref="LayoutAlgorithmId.Inline"/>, or of an inline group in one.</summary>
+        InLine,
     }
 
     /// <summary>
@@ -233,6 +256,60 @@ public static class ModelCheck
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// An inline group (<see cref="InlineGroup"/>): only among the content of an inline box, with the role of a link or a
+    /// span, a link not inside a link (a link annotation leads to one target; HTML's content model forbids an <c>a</c>
+    /// inside an <c>a</c> too), a link's target accepted by THE RULE FOR A LINK'S URI (<see cref="LinkUris"/>) and a
+    /// description that is not blank and holds only characters text may hold (<see cref="TextCharacters"/>), a language,
+    /// when it has one, of the form of a language tag (<see cref="LanguageTags"/>), and its text values as a run's.
+    /// </summary>
+    private static Error? Group(InlineGroup group, Place place, bool inLink)
+    {
+        if (place != Place.InLine)
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group stands only among the content of an inline box (its runs and images).", group.Role?.ToString() ?? "null", "place", group);
+        }
+
+        switch (group.Role)
+        {
+            case SemanticRole.LinkRole link:
+                if (inLink)
+                {
+                    return Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "A link stands inside a link; a link leads to one target.", link.ToString(), "role", group);
+                }
+
+                var problem = link.Target switch
+                {
+                    LinkTarget.UriTarget uri => LinkUris.Problem(uri.Value),
+                    _ => "a link needs a target",
+                };
+                if (problem is not null)
+                {
+                    return Problem(DocumentErrorCodes.Input.Invalid.Link, $"The link is refused: {problem}.", (link.Target as LinkTarget.UriTarget)?.Value ?? "null", "target", group);
+                }
+
+                if (string.IsNullOrWhiteSpace(link.Description) || TextCharacters.IndexOfForbidden(link.Description) is not null)
+                {
+                    return Problem(DocumentErrorCodes.Input.Invalid.Link, "A link needs a description that is not blank and holds only characters text may hold (ISO 14289-1 §7.18.5).", link.Description ?? "null", "description", group);
+                }
+
+                break;
+            case SemanticRole.SpanRole:
+                break;
+            default:
+                return Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group is a link or a span.", group.Role?.ToString() ?? "null", "role", group);
+        }
+
+        if (group.Language is { } language && !LanguageTags.IsWellFormed(language))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.Language, "The language of an inline group is not a language tag (letters, then subtags of letters and digits joined by hyphens).", language, "language", group);
+        }
+
+        return group.Style is null
+            ? Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group needs its text properties.", "null", "style", group)
+            : Text(group.Style, group);
     }
 
     /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and positive.</summary>

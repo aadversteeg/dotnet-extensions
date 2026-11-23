@@ -20,11 +20,14 @@ namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 /// <param name="ParentTree">Per page, the element of each marked-content identifier on it (index = MCID): the parent
 /// tree's array for that page (§14.7.4.4).</param>
 /// <param name="Marks">Per page, how each of its <see cref="ContentRun"/>s is marked, in order.</param>
+/// <param name="AnnotationOwners">Per link annotation of the document (<see cref="LinkAnnotations"/>, in the same order),
+/// the index of its link's element: the parent tree's value for the annotation's <c>/StructParent</c> key.</param>
 internal sealed record StructureTree(
     ImmutableArray<StructureElement> Elements,
     ImmutableArray<int> TopLevel,
     ImmutableArray<ImmutableArray<int>> ParentTree,
-    ImmutableArray<ImmutableArray<MarkedRun>> Marks)
+    ImmutableArray<ImmutableArray<MarkedRun>> Marks,
+    ImmutableArray<int> AnnotationOwners)
 {
     /// <summary>
     /// Builds the tree. Reading order is document order (the order of the markers), which is also the order of the
@@ -44,6 +47,7 @@ internal sealed record StructureTree(
         var topLevel = ImmutableArray.CreateBuilder<int>();
         var parentTree = ImmutableArray.CreateBuilder<ImmutableArray<int>>();
         var marks = ImmutableArray.CreateBuilder<ImmutableArray<MarkedRun>>();
+        var annotationOwners = ImmutableArray.CreateBuilder<int>();
 
         for (var page = 0; page < pages.Count; page++)
         {
@@ -89,6 +93,12 @@ internal sealed record StructureTree(
                     case StructureClosed:
                         open.Pop();
                         break;
+                    case LinkAreaRead:
+                        // The link is the innermost open node (the page-model rules); its element holds an object reference
+                        // to the annotation (ISO 32000-1 §14.7.4.3), and the annotation's parent-tree entry names it.
+                        elements[open.Peek()].Kids.Add(new AnnotationKid(page, annotationOwners.Count));
+                        annotationOwners.Add(open.Peek());
+                        break;
                     case ContentRun { Artifact: { } kind } run:
                         pageMarks.Add(new MarkedRun(run, new ArtifactContent(kind)));
                         break;
@@ -113,7 +123,8 @@ internal sealed record StructureTree(
             [.. elements.Select(element => element.Build())],
             topLevel.ToImmutable(),
             parentTree.ToImmutable(),
-            marks.ToImmutable()));
+            marks.ToImmutable(),
+            annotationOwners.ToImmutable()));
     }
 
     /// <summary>The marks of untagged output: every run unmarked.</summary>
@@ -158,6 +169,11 @@ internal abstract record StructureKid
 /// <summary>A child element.</summary>
 /// <param name="Index">Its index.</param>
 internal sealed record ElementKid(int Index) : StructureKid;
+
+/// <summary>A link annotation, by an object reference (§14.7.4.3, Table 325).</summary>
+/// <param name="Page">The page it lies on, 0-based.</param>
+/// <param name="Annotation">Its index among the document's link annotations.</param>
+internal sealed record AnnotationKid(int Page, int Annotation) : StructureKid;
 
 /// <summary>A marked-content sequence on a page (§14.7.4.2).</summary>
 /// <param name="Page">The page, 0-based.</param>

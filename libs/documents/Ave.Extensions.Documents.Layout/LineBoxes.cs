@@ -16,7 +16,17 @@ internal static class LineBoxes
 {
     /// <summary>An item of a paragraph's lines: an inline run with its glyphs (<see cref="ShapedRun"/>) or an atomic inline
     /// (<see cref="AtomicInline"/>).</summary>
-    public abstract record Item;
+    public abstract record Item
+    {
+        /// <summary>The inline groups the item lies in, outermost first, each with its font resolved; empty outside every
+        /// group (<see cref="InlineGroup"/>, which layout reads through: <c>InlineLayout.Leaves</c>).</summary>
+        public ValueList<Group> Groups { get; init; } = [];
+    }
+
+    /// <summary>An inline group with its own font, which gives the height of its area on each line.</summary>
+    /// <param name="Node">The group.</param>
+    /// <param name="Font">The font its text properties resolve to.</param>
+    public sealed record Group(InlineGroup Node, TrueTypeFont Font);
 
     /// <summary>An inline run with its resolved font and shaped glyphs.</summary>
     public sealed record ShapedRun(InlineRun Run, TrueTypeFont Font, ValueList<ShapedGlyph> Glyphs) : Item
@@ -145,9 +155,11 @@ internal static class LineBoxes
         var above = extents.Max(extent => extent.Above);
         var below = extents.Max(extent => extent.Below);
         var children = ImmutableArray.CreateBuilder<PlacedFragment>(pieces.Length);
+        var groups = new LineGroups(above, rounding);
         var x = offset;
         foreach (var (segment, item, extent) in pieces)
         {
+            var firstChild = children.Count;
             // The baseline lies `above` below the line's top; this piece's top edge is its ascent above that. An atomic
             // inline's border box lies inside its margin box, whose bottom is on the baseline.
             children.Add(item switch
@@ -172,10 +184,79 @@ internal static class LineBoxes
                 children.AddRange(lines.Value.After);
             }
 
+            groups.Piece(item.Groups, firstChild, children.Count, x, x + segment.Width);
             x += segment.Width;
         }
 
-        return Result<LineFragment, Error>.Success(new LineFragment(new Size(x, above + below), children.ToImmutable()));
+        return Result<LineFragment, Error>.Success(new LineFragment(new Size(x, above + below), children.ToImmutable()) { Groups = groups.End() });
+    }
+
+    /// <summary>
+    /// The parts of the inline groups on one line (<see cref="LineGroupPart"/>), built in one pass over the line's pieces:
+    /// a group's part opens at the first piece in it and closes before the first piece outside it, so the parts nest as
+    /// the groups do. THE RULE FOR A LINK'S AREA (as Chromium 159's print writes a link: one rectangle per line part of
+    /// it): in the inline direction from the start of the group's first piece on the line
+    /// to the end of its last, so a space removed at the line's end is outside it and a space between two of its pieces
+    /// inside it; in the block direction from the ascent of the group's own font above the line's baseline to its
+    /// descent below it, at the group's font size and under the profile's font metric rounding, whatever the sizes of the
+    /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller). The edges
+    /// are exact, not rounded to whole pixels as Chromium writes them: they are not printed.
+    /// </summary>
+    private sealed class LineGroups(double baseline, FontMetricRounding rounding)
+    {
+        /// <summary>The open parts, outermost first: the group, its first child, its left and right edges, and where it
+        /// stands in <see cref="parts"/>.</summary>
+        private readonly List<(Group Group, int First, double Left, double Right, int Part)> open = [];
+        private readonly List<LineGroupPart> parts = [];
+
+        /// <summary>The end (exclusive) of the children of the last piece.</summary>
+        private int lastEnd;
+
+        /// <summary>A piece of the line: its groups, its children <paramref name="first"/> up to before <paramref name="end"/>,
+        /// and its left and right edges.</summary>
+        public void Piece(ValueList<Group> groups, int first, int end, double left, double right)
+        {
+            var common = 0;
+            while (common < open.Count && common < groups.Count && open[common].Group.Node.Id == groups[common].Node.Id)
+            {
+                common++;
+            }
+
+            Close(common);
+            for (var index = open.Count; index < groups.Count; index++)
+            {
+                // A part is added when it opens, so outer parts come before the parts inside them; its area and count are set
+                // when it closes.
+                open.Add((groups[index], first, left, right, parts.Count));
+                parts.Add(new LineGroupPart(groups[index].Node, default, first, 0));
+            }
+
+            for (var index = 0; index < open.Count; index++)
+            {
+                open[index] = open[index] with { Right = right };
+            }
+
+            lastEnd = end;
+        }
+
+        /// <summary>Closes every part still open after the last piece.</summary>
+        public ValueList<LineGroupPart> End()
+        {
+            Close(0);
+            return [.. parts];
+        }
+
+        private void Close(int keep)
+        {
+            while (open.Count > keep)
+            {
+                var (group, first, left, right, part) = open[^1];
+                open.RemoveAt(open.Count - 1);
+                var style = group.Node.Style;
+                var extent = InlineExtent.Of(group.Font, style.FontSize.Points, style.LineHeight, rounding);
+                parts[part] = new LineGroupPart(group.Node, new Rect(new Point(left, baseline - extent.Ascent), new Size(right - left, extent.Ascent + extent.Descent)), first, lastEnd - first);
+            }
+        }
     }
 
     /// <summary>

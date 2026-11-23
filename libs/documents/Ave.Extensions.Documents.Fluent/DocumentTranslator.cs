@@ -171,12 +171,15 @@ public static class DocumentTranslator
     internal static int NodeCount(Element element) => element switch
     {
         BlockElement block => 1 + block.Children.Sum(NodeCount),
-        ParagraphElement paragraph => 1 + paragraph.Spans.Sum(span => span.Image is null ? 1 : NodeCount(span.Image)),
+        ParagraphElement paragraph => 1 + paragraph.Spans.Sum(SpanNodeCount),
         ImageElement => 2,
         TableElement table => TableTranslator.NodeCount(table),
         RowElement row => TableTranslator.NodeCount(row),
         _ => 0,
     };
+
+    /// <summary>How many model nodes a span becomes: one run, an image's nodes, or a link's group and its run.</summary>
+    private static int SpanNodeCount(Span span) => span.Image is { } image ? NodeCount(image) : span.Link is null ? 1 : 2;
 
     /// <summary>The computed box style of an element from its specified box values and the inherited paragraph
     /// properties it computes (its own <see cref="Inherited"/>).</summary>
@@ -263,12 +266,14 @@ public static class DocumentTranslator
         var spans = paragraph.Spans.Select(span =>
         {
             var spanId = new NodeId(next);
-            next += span.Image is null ? 1 : NodeCount(span.Image);
+            next += SpanNodeCount(span);
             return (Span: span, Id: spanId);
         }).ToImmutableArray();
         var runs = spans.TraverseAll(item => item.Span.Image is { } image
             ? Image(image, item.Id, pageBreakBefore: false)
-            : Result<Node, Error>.Success(Run(item.Span, item.Id, IsLineBreaks(item.Span) ? own.Text : own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)));
+            : Result<Node, Error>.Success(item.Span.Link is { } link
+                ? LinkGroup(item.Span, link, item.Id, own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)
+                : Run(item.Span, item.Id, IsLineBreaks(item.Span) ? own.Text : own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)));
         // The paragraph's own font and line height make the strut of its lines (CSS 2.1 §10.8.1).
         return runs.OnSuccessMap(children => (Node)new Box(
             id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own) with { Text = own.Text }, children.ToValueList(), paragraph.Source));
@@ -278,6 +283,17 @@ public static class DocumentTranslator
     /// or another mandatory break character that white-space collapsing keeps.</summary>
     private static bool IsLineBreaks(Span span) =>
         span.Counter is null && span.Text.Length > 0 && span.Text.All(character => character is '\u2028' or '\n' or '\r' or '\v' or '\f' or '\u0085');
+
+    /// <summary>A link span: an inline group with the link's role (<see cref="InlineGroup"/>) around one run of its text, both
+    /// in the span's text style; its description by THE RULE FOR A LINK'S DESCRIPTION (<see cref="LinkDescription"/>): the
+    /// text, else the URI.</summary>
+    private static Node LinkGroup(Span span, LinkTarget link, NodeId id, TextStyle style) =>
+        new InlineGroup(
+            id,
+            SemanticRole.Link(link, LinkDescription.Of(null, span.Text, null, ((LinkTarget.UriTarget)link).Value)),
+            style,
+            [new TextRun(new NodeId(id.Value + 1), span.Text, style, span.Source)],
+            span.Source);
 
     private static Node Run(Span span, NodeId id, TextStyle style) =>
         span.Counter is { } counter ? new CounterRun(id, counter, style, span.Source) : new TextRun(id, span.Text, style, span.Source);
@@ -361,6 +377,7 @@ public static class DocumentTranslator
             ? span.Format == Style.Empty && span.Style == Style.Empty ? [] : [InputChecks.FormatOnImageSpan(span.Source)]
             : InputChecks.Text(Cascade.Text(span.Format, span.Style), span.Source)
             .Concat(InputChecks.Characters(span.Text, "text", span.Source))
+            .Concat(InputChecks.Link(span.Link, span.Source))
             .Concat(span.Style.Box.IsEmpty && span.Style.Text.TextAlign is null ? [] : [InputChecks.BoxPropertiesOnSpan(span.Source)]);
 
     /// <summary>The user-agent defaults for a heading: bold, and a size relative to the inherited one.</summary>

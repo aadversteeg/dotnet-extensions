@@ -29,6 +29,11 @@ internal sealed record StructureClosed : PageEvent
     public static StructureClosed Instance { get; } = new();
 }
 
+/// <summary>A link area (<see cref="PageModel.LinkArea"/>) inside the structure marker of its link, the innermost open
+/// node, as the page-model rules checked: one link annotation.</summary>
+/// <param name="Area">The area.</param>
+internal sealed record LinkAreaRead(LinkArea Area) : PageEvent;
+
 /// <summary>Consecutive content items with the same owner, under the same clips.</summary>
 /// <param name="Items">The items, in painting order (glyph runs, rectangles, images; never markers).</param>
 /// <param name="Artifact">The artifact the items belong to, or null when they are content of the innermost open
@@ -101,6 +106,10 @@ internal static class PageEvents
                         events.Add(StructureClosed.Instance);
                     }
 
+                    break;
+                case LinkArea link:
+                    Flush();
+                    events.Add(new LinkAreaRead(link));
                     break;
                 default:
                     content.Add(item);

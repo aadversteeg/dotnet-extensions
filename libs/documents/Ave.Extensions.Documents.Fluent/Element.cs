@@ -80,6 +80,10 @@ public sealed record Span(string Text, Style Format, Style Style, SourceLocation
     /// <summary>The image the span shows in the line instead of text, or null for text.</summary>
     public ImageElement? Image { get; init; }
 
+    /// <summary>Where the span leads when it is a link (<see cref="Elements.Link"/>), or null. Set only by
+    /// <see cref="Elements.Link"/>: one span is one link.</summary>
+    public LinkTarget? Link { get; internal init; }
+
     /// <summary>Applies a shared style (its text part). The span's own modifier values still win over it.</summary>
     /// <param name="style">The style; replaces a style applied before.</param>
     /// <returns>A copy with the style.</returns>

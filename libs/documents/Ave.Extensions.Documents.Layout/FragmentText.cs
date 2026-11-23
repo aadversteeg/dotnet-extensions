@@ -46,7 +46,8 @@ public static class FragmentText
             BoxFragment box =>
                 [$"{indent}box {box.Box.Id} {box.Box.Role} {position}{BoxExtras(box)}", .. box.Children.SelectMany(child => FragmentLines(child, depth + 1))],
             LineFragment line =>
-                [$"{indent}line {position}", .. line.Children.SelectMany(child => FragmentLines(child, depth + 1))],
+                [$"{indent}line {position}", .. line.Children.SelectMany(child => FragmentLines(child, depth + 1)),
+                    .. line.Groups.Select(part => $"{indent}  group {part.Group.Id} {part.Group.Role.StandardStructureType} area={part.Area} children={part.First}+{part.Count}")],
             TextFragment text =>
                 [$"{indent}text {text.Run.Id} {text.Font} {text.Run.Style.FontSize} {position} ascent={InvariantNumber.Format(text.Ascent)} "
                     + QuotedText.Quote(string.Concat(text.Glyphs.Select(glyph => glyph.Text)))],

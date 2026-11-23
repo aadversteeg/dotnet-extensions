@@ -119,6 +119,18 @@ public sealed record ClipEnd : DrawItem
     public static ClipEnd Instance { get; } = new();
 }
 
+/// <summary>
+/// The area a reader clicks to follow a link: one part of a link on one line, or an image inside the link (ISO 32000-1
+/// §12.5.6.5, the <c>/Rect</c> of a link annotation). It draws nothing. It stands inside the structure marker of its link
+/// (a <see cref="StructureStart"/> whose role is <see cref="SemanticRole.LinkRole"/>, which carries the target and the
+/// description), with that marker as the innermost open structure marker and no artifact open (<see cref="PageModelRules"/>):
+/// a link in an artifact, such as a page header or a repeated header row, has no area, and its text is only drawn. The PDF
+/// back-end writes one link annotation per area; the raster back-end draws nothing for it.
+/// </summary>
+/// <param name="Link">The link's node.</param>
+/// <param name="Area">The area, in page coordinates.</param>
+public sealed record LinkArea(NodeId Link, Rect Area) : DrawItem;
+
 /// <summary>The kinds of artifact (ISO 32000-1 §14.8.2.2.2, Table 330, the <c>/Type</c> and <c>/Subtype</c> entries).</summary>
 public enum ArtifactKind
 {
