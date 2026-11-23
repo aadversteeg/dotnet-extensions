@@ -219,6 +219,53 @@ public class MarginBoxGenerationTests
         right[1].Should().BeApproximately(55.0, 1e-9, "one line of 20.5 px further down");
     }
 
+    /// <summary>Measured (case <c>pm-len-sum</c>: a margin and a padding above a line of "Aa" and an image, which sets the
+    /// line's baseline at the image's height below its top): Chromium lays a margin box's margins and padding out in its
+    /// unit of 1/64 px, as in the body (<c>pm-len-body</c>), and puts none of them on a whole pixel; it paints the line's
+    /// top on the nearest whole pixel, half up, and the baseline at its distance from that top. 5pt + 5pt is 13.3125 px
+    /// and the line's top is painted at 13 px, where whole-pixel lengths would give 7 + 7 = 14; 10.25px + 10.25px is
+    /// painted at 21, where they would give 20. The engine lays the lengths out in the same unit.</summary>
+    [Fact]
+    public void A_margin_box_s_margin_and_padding_are_laid_out_in_Chromium_s_unit_and_only_the_line_s_top_is_painted_on_a_whole_pixel()
+    {
+        var boxes = HtmlCases.Boxes("pm-len-sum").Value;
+        var engine = PrintedPages.Engine(DocumentLayout.Run(boxes.Document, boxes.Fonts).Value).Pages[0].Words.Where(word => word.Text == "Aa").ToList();
+        var chromium = PrintedPages.Chromium("pm-len-sum").Pages[0].Words.Where(word => word.Text == "Aa").ToList();
+
+        engine.Should().HaveCount(6);
+        var tops = new List<double>();
+        foreach (var word in engine)
+        {
+            // The image is 24 px high, 24 / 0.7 px in the top row; its bottom is on the baseline.
+            var image = word.Baseline < 150 ? 24 / 0.7 : 24;
+            var top = (word.Baseline / 0.75) - image;
+            tops.Add(top);
+            var measured = chromium.Single(other => Math.Abs(other.X0 - word.X0) < 0.1 && Math.Abs(other.Baseline - word.Baseline) < 1.5);
+            (Math.Round(top, MidpointRounding.AwayFromZero) + image).Should().BeApproximately(measured.Baseline / 0.75, 1.0 / 64, $"the line at x {word.X0} is laid out with its top at {top} px");
+        }
+
+        // 5pt is 6.65625 px and 10.4px is 10.390625 px in Chromium's unit; 10.25px is exact.
+        foreach (var (ours, laidOut) in tops.Order().Zip(new[] { 13.3125, 20.5, 20.78125, 333.3125, 340.5, 340.78125 }))
+        {
+            ours.Should().BeApproximately(laidOut, 1e-9);
+        }
+    }
+
+    /// <summary>Measured (case <c>pm-paint-order</c>, whose rules come in neither order): Chromium paints the top row from
+    /// left to right and the bottom row from right to left, backgrounds and images alike.</summary>
+    [Fact]
+    public void The_boxes_of_a_row_are_painted_in_Chromium_s_order_whatever_the_order_of_their_rules()
+    {
+        var boxes = HtmlCases.Boxes("pm-paint-order").Value;
+        var engine = PrintedPages.Engine(DocumentLayout.Run(boxes.Document, boxes.Fonts).Value).Pages[0];
+        var chromium = PrintedPages.Chromium("pm-paint-order").Pages[0];
+        static double Pixel(double points) => Math.Round(points / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+
+        engine.Images.Select(image => (Pixel(image.X0), Pixel(image.Y0))).Should().Equal(chromium.Images.Select(image => (image.X0, image.Y0)));
+        engine.Rectangles.Select(rectangle => (Pixel(rectangle.Y0), rectangle.Colour)).Should().Equal(chromium.Rectangles.Select(rectangle => (rectangle.Y0, rectangle.Colour)),
+            "top row red, green, blue; bottom row blue, green, red");
+    }
+
     /// <summary>CSS Values 4 §4.5.1: a URL in a style sheet is resolved against that sheet's URL, a URL in the document's
     /// own style element against the document's.</summary>
     [Fact]

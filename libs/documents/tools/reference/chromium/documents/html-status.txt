@@ -1,4 +1,4 @@
 invoice equal
-timesheet-normal open page 1 'Urenstaat' baseline 99 (laid out at 99.202), Chromium 99.363 (print.txt)
-timesheet-one-page open page 1 'Urenstaat' baseline 99 (laid out at 99.202), Chromium 99.363 (print.txt)
-timesheet-pages open page 1 'Urenstaat' baseline 99 (laid out at 99.202), Chromium 99.363 (print.txt)
+timesheet-normal open page 1 'Periode:' x0 397.069, Chromium 397.184 (print.txt)
+timesheet-one-page open page 1 'spaces,' x1 225.47, Chromium 225.356 (print.txt)
+timesheet-pages open page 1 'Periode:' x0 397.069, Chromium 397.184 (print.txt)
