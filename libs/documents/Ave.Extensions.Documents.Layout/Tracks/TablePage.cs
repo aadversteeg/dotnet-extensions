@@ -81,7 +81,10 @@ namespace Ave.Extensions.Documents.Layout;
 /// end, its side lines and no line below it, the other cells draw what they hold there (text, a background), and the
 /// content goes on in its part on the next page, as Chromium prints it (<see cref="CutsBelowHeader"/>). The row has then
 /// moved on once (<see cref="TracksBreakToken.CutBelowHeader"/>): on the next page its cells go on below the repeated
-/// header, where content taller than the room is sliced, beside the rest of the other cells. On a later page whose height cannot hold the header and some
+/// header, where content taller than the room is sliced, beside the rest of the other cells. The cells of the cut row
+/// lie below the header as below start insets (<see cref="TableGeometry.CutsBelowHeaderRows"/>), so a table nested in
+/// such a cell starts on that page and cuts its own first row as at the top of a page, as Chromium prints it (case
+/// <c>a4-header-nested-image-228</c>: the nested table's top line on page 1, its image from page 2). On a later page whose height cannot hold the header and some
 /// body content, the header is left out, so the table always makes progress.</para>
 /// <para><b>Content taller than the page area under a repeated header row</b> (<see cref="MonolithicOverflow.Slice"/>
 /// only): it is sliced right below the header, on a page after one that showed no body row other than slices of a
@@ -557,13 +560,19 @@ internal static class TablePage
             return body;
         }
 
-        return CutsBelowHeader(table, resume) && body.Value.HasValue
-            ? Result<Maybe<Outcome>, Error>.Success(Maybe.From(body.Value.Value with { Appeal = BreakAppeal.ViolatesAvoid, CutBelowHeader = true }))
-            : Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(
-                content with { Lines = content.Lines.RemoveAt(content.Lines.Count - 1) },
-                BottomLine(table, grid.HeaderRowCount - 1, nextBody, content.Bottom),
-                resume,
-                BreakAppeal.ViolatesAvoid)));
+        // The cut row's cells lie below the header as below start insets, so content nested in them takes its own
+        // last-resort cut on this page (see remarks).
+        if (CutsBelowHeader(table, resume) && body.Value.HasValue)
+        {
+            var deeper = PlaceBody(table with { CutsBelowHeaderRows = true }, content, resume, height, breakAt);
+            return deeper.OnSuccessMap(cut => Maybe.From((cut.HasValue ? cut.Value : body.Value.Value) with { Appeal = BreakAppeal.ViolatesAvoid, CutBelowHeader = true }));
+        }
+
+        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(
+            content with { Lines = content.Lines.RemoveAt(content.Lines.Count - 1) },
+            BottomLine(table, grid.HeaderRowCount - 1, nextBody, content.Bottom),
+            resume,
+            BreakAppeal.ViolatesAvoid)));
     }
 
     /// <summary>

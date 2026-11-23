@@ -841,9 +841,10 @@ Each is documented next to its code as well.
   the image's row beside it goes on (text, or the cell's empty part down to the row's end): the text beside the rest and
   what follows the table start 16.125 pt lower in the engine, by the header's room, and in a cell of thirty lines one
   line moves on to the next page (`a4-header-image-beside-lines`, `a4-header-image-228-beside-fit`, `-beside-line`,
-  `-beside-two-pages`, `-background-beside`, `a4-header-row-image-228-beside-line`). That is the whole difference (cases
+  `-beside-two-pages`, `-background-beside`, `a4-header-row-image-228-beside-line`; over the rest of an image in a
+  table nested in the cell, `a4-header-nested-image-228`). That is the whole difference (cases
   `a4-header-image-360-image`, `a4-header-row-image-row`, `a4-header-image-row-image`, `a4-header-two-image-rows` and
-  those six, listed; `HtmlListedDifferenceTests`). A writer does not want a header over an image, so the engine does
+  those seven, listed; `HtmlListedDifferenceTests`). A writer does not want a header over an image, so the engine does
   not copy it.
 - **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
   without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
@@ -1193,7 +1194,9 @@ Each is documented next to its code as well.
   own cell's background (`a4-header-image-228-beside-fit`, `-beside-two-pages`, `-beside-line`, `-background-beside`,
   `-background`, `a4-header-image-beside-lines`, `a4-header-row-image-228-beside-line`), and the engine does too. The
   row has then moved on once: on the next page the image starts in its cell's part below the header, beside the rest of
-  the text, and is not moved on again. The cut row's cells then go on below the header on the next page,
+  the text, and is not moved on again. One level down the same: a table nested in the cut cell starts on the page of
+  the cut, its top line and its own row cut empty below it, as at the top of a page, and its image starts on the next
+  page (`a4-header-nested-image-228`, three pages). The cut row's cells then go on below the header on the next page,
   where the part of a cell that continues starts at the centre of the grid line below the header, as in Chromium: below
   a 0.75 pt line at 28.125 pt, half a pixel below a whole one, which Chromium paints at the next whole pixel, 28.5 pt
   (`a4-header-image-228`; "c10" at 40.125 pt, painted at 40.5 pt, `a4-header-cut-row-image-row`; below a 2.25 pt line
@@ -1205,8 +1208,8 @@ Each is documented next to its code as well.
   its half of the grid line below it, so the line is centred on the rest's end (a 0.75 pt line at 75.75–76.5 pt below a
   rest that ends at 76.125 pt, `a4-header-image-228`; a 2.25 pt line at 75–77.25 pt, `a4-header-image-228-line3-below`;
   the text after the table that much higher, `a4-header-image-row`, `a4-header-image-174`, `-180`; in a cell with a
-  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, open for
-  another reason). Beside a cell of the same row that goes on with nothing left, that cell's part keeps its half, so the
+  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, listed with
+  the header over a slice). Beside a cell of the same row that goes on with nothing left, that cell's part keeps its half, so the
   row ends half the line below the rest (the line at 76.5–77.25 pt, `a4-header-image-228-beside-line`,
   `-beside-fit`, `-background-beside`; 60–60.75 pt below a rest that ends at 60 pt, `a4-image-in-cell`); a cell that
   spans into the row from an earlier one does not keep it (`a4-header-empty-rowspan-line-image`). A part that lays content out on

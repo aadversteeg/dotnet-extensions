@@ -90,7 +90,7 @@ a4-header-image-row-image listed A_repeated_header_is_drawn_above_a_slice_where_
 a4-header-line2-25-cut-text-row equal
 a4-header-line2-25-image-228 equal
 a4-header-line6-image-228 equal
-a4-header-nested-image-228 open 5 pages, Chromium 3 (print.txt)
+a4-header-nested-image-228 listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 105 (laid out at 104.625), Chromium 88.5 (print.txt)
 a4-header-row-image-228 equal
 a4-header-row-image-228-beside-line listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 4 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
 a4-header-row-image-row listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)

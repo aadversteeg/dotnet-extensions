@@ -349,7 +349,8 @@ public class HtmlListedDifferenceTests
     /// (Lato 10.5 pt): text, then the empty part of a cell to the row's end (<c>a4-header-image-beside-lines</c>, page 3;
     /// Chromium's "p26" on page 3, the engine's on page 4, as it starts the text beside the rest that much lower), or only
     /// that empty part (<c>a4-header-image-228-beside-fit</c>, <c>-beside-line</c>, <c>-beside-two-pages</c>,
-    /// <c>-background-beside</c>, page 3; <c>a4-header-row-image-228-beside-line</c>, page 4). There every word below the rest
+    /// <c>-background-beside</c>, page 3; <c>a4-header-row-image-228-beside-line</c>, page 4), and over the rest of a 228 pt
+    /// image in a table nested in the cell, whose part goes on (<c>a4-header-nested-image-228</c>, page 3). There every word below the rest
     /// on the last such page is where Chromium prints it, moved down by the header's room (from the top of the page area to
     /// the centre of the header's line, 16.125 pt) and painted at Chromium's whole pixel.
     /// </summary>
@@ -369,6 +370,7 @@ public class HtmlListedDifferenceTests
     [InlineData("a4-header-image-228-beside-two-pages", 3, 3, 24.0, "after")]
     [InlineData("a4-header-image-228-background-beside", 3, 3, 24.0, "after")]
     [InlineData("a4-header-row-image-228-beside-line", 4, 4, 24.0, "after")]
+    [InlineData("a4-header-nested-image-228", 3, 3, 24.0, "after")]
     public void A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice(string name, int first, int last, double header, string? below)
     {
         var (engine, chromium) = (Engine(name), Chromium(name));

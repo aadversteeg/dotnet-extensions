@@ -224,6 +224,11 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
     /// the page.</summary>
     public bool SlicesBelowHeader { get; init; }
 
+    /// <summary>True where the page ends with the first body row cut right below the header rows (<see cref="TablePage"/>,
+    /// remarks): the cells of that row lie below the header as below start insets, so content in them may take its own
+    /// last-resort cut there.</summary>
+    public bool CutsBelowHeaderRows { get; init; }
+
     /// <summary>The <see cref="ConstraintSpace.FragmentainerBlockSize"/> of the cells' content, on the page and in the
     /// measurements with unlimited height alike: the table's, less the room its repeated header rows take on this page
     /// (<see cref="TablePage"/>, RepeatsHeader and Reserved: on a later page also the outer half of the table's top grid

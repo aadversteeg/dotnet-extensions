@@ -368,7 +368,8 @@ public class SliceUnderHeaderTests
 
     /// <summary>The cases of a row whose other cell draws something below a repeated header row ("H", "G"): a 228 pt
     /// image in its first cell, beside it six, fourteen or thirty lines, one line, or an empty cell with a background, the
-    /// row as the second body row, and the image's own cell with a background in a table of one column.</summary>
+    /// row as the second body row, the image's own cell with a background in a table of one column, and the image in a
+    /// table nested in the cell.</summary>
     private static Element[] Beside(string caseName)
     {
         var header = HeaderRow([Cell("H"), Cell("G")]);
@@ -384,6 +385,7 @@ public class SliceUnderHeaderTests
             "a4-header-image-228-background-beside" => [table([header, TableRow([image, Cell("").Background(new Color(0xC0, 0xC0, 0xC0))])]), Paragraph("after")],
             "a4-header-row-image-228-beside-line" => [table([header, TableRow([Cell("r1"), Cell("s1")]), TableRow([image, Cell("beside")])]), Paragraph("after")],
             "a4-header-image-228-background" => [Table(HeaderRow([Cell("H")]), TableRow([Cell([TallImage(228)]).Background(new Color(0xC0, 0xC0, 0xC0))])), Paragraph("after")],
+            "a4-header-nested-image-228" => [Table(HeaderRow([Cell("H")]), Row(Table(Row(TallImage(228))))), Paragraph("after")],
             _ => throw new ArgumentException(caseName, nameof(caseName)),
         };
     }
@@ -407,6 +409,7 @@ public class SliceUnderHeaderTests
         { "a4-header-image-228-background-beside", 3 },
         { "a4-header-row-image-228-beside-line", 4 },
         { "a4-header-image-228-background", 3 },
+        { "a4-header-nested-image-228", 3 },
     };
 
     [Theory]
@@ -418,7 +421,9 @@ public class SliceUnderHeaderTests
         // as the page reaches, the image's cell empty down to the page end, and starts the image in that cell's part on the
         // next page, below the repeated header, beside the rest of the text; the image is not moved on again. On the page
         // of the image's rest it repeats the header where the row has a cell beside the image, which goes on, empty, to the
-        // row's end, and not in a table of one column. The engine prints the same pages and words, the image's first slice
+        // row's end, and not in a table of one column. One level down the same: a table nested in the cut cell starts on the
+        // page of the cut, its top line and its row cut empty below it, and its image starts on the next page
+        // (a4-header-nested-image-228, three pages). The engine prints the same pages and words, the image's first slice
         // on Chromium's page, 0.375 pt higher (the centre of the line below the header), and the header on Chromium's pages;
         // under Avoid it ends the page before the image with the header alone, without the side lines below it.
         var document = BesideRun(caseName);
