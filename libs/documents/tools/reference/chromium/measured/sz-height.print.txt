@@ -1,0 +1,16 @@
+page 1 300.000 400.080
+word 1 12.000 25.939 22.500 10.500 tall #000000 Lato-Regular
+word 1 28.627 45.453 22.500 10.500 box #000000 Lato-Regular
+word 1 12.000 33.667 88.500 10.500 after #000000 Lato-Regular
+word 1 36.134 51.301 88.500 10.500 the #000000 Lato-Regular
+word 1 53.989 67.928 88.500 10.500 tall #000000 Lato-Regular
+word 1 70.616 87.442 88.500 10.500 box #000000 Lato-Regular
+word 1 12.000 36.659 101.250 10.500 alpha #000000 Lato-Regular
+word 1 12.000 32.370 114.000 10.500 beta #000000 Lato-Regular
+word 1 12.000 33.667 117.000 10.500 after #000000 Lato-Regular
+word 1 36.134 51.301 117.000 10.500 the #000000 Lato-Regular
+word 1 53.989 77.940 117.000 10.500 short #000000 Lato-Regular
+word 1 80.622 97.449 117.000 10.500 box #000000 Lato-Regular
+word 1 12.000 45.169 126.750 10.500 gamma #000000 Lato-Regular
+rect 1 12.000 12.000 288.000 72.000 #dddddd
+rect 1 12.000 90.750 288.000 100.500 #dddddd

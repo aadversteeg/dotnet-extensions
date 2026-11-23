@@ -1,0 +1,16 @@
+page 1 300.000 400.080
+word 1 12.000 36.659 22.500 10.500 alpha #000000 Lato-Regular
+word 1 39.347 59.717 22.500 10.500 beta #000000 Lato-Regular
+word 1 62.405 95.574 22.500 10.500 gamma #000000 Lato-Regular
+word 1 98.262 121.147 22.500 10.500 delta #000000 Lato-Regular
+word 1 123.835 156.621 22.500 10.500 epsilon #000000 Lato-Regular
+word 1 12.000 31.136 35.250 10.500 zeta #000000 Lato-Regular
+word 1 33.824 48.314 35.250 10.500 eta #000000 Lato-Regular
+word 1 51.002 75.115 35.250 10.500 theta #000000 Lato-Regular
+word 1 77.803 95.165 35.250 10.500 iota #000000 Lato-Regular
+word 1 97.853 125.394 35.250 10.500 kappa #000000 Lato-Regular
+word 1 128.082 161.393 35.250 10.500 lambda #000000 Lato-Regular
+word 1 12.000 33.667 54.000 10.500 after #000000 Lato-Regular
+word 1 36.134 51.301 54.000 10.500 the #000000 Lato-Regular
+word 1 53.989 70.816 54.000 10.500 box #000000 Lato-Regular
+rect 1 12.000 12.000 162.000 37.500 #dddddd
