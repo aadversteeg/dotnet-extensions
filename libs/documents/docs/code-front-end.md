@@ -219,7 +219,9 @@ with `width: 100%`: the width left over goes to the auto columns in proportion t
 fixed columns in proportion to their widths when no column is auto. Columns that cannot fit are the
 error `Documents.Layout.ColumnsDoNotFit`. A row is as tall as its tallest cell. Between two cells there is one
 grid line; where two borders meet, the wider one wins, then a cell's over a row's, then the upper or left one (CSS
-2.1 §17.6.2.1). A page breaks between rows, or inside a row between the lines of its cells; kept-together rows and
+2.1 §17.6.2.1). Half of a line lies inside each cell beside it, so a wider border moves only the content of its own
+cell; the table's left and right borders are half of the widest line at that edge in any row, on every page, and its
+top and bottom borders half of the widest line over its first and last row. A page breaks between rows, or inside a row between the lines of its cells; kept-together rows and
 groups move to the next page whole when they fit on one, and break anyway when they do not.
 
 The page count is known only after layout, so layout runs again until the count it shows is the count it produces,

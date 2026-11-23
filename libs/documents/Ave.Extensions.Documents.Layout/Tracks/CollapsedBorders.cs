@@ -66,6 +66,23 @@ internal static class CollapsedBorders
     }
 
     /// <summary>
+    /// The width of a cell's own vertical line at column boundary <paramref name="boundary"/> (its left or right edge):
+    /// the widest of the resolved lines beside the rows the cell spans. Half of it lies inside the cell, whatever the
+    /// line is in other rows (§17.6.2: a cell's border is half of its own collapsed border). Measured in Chromium 159:
+    /// a 6 pt left border on one cell moves that cell's content alone, 2.25 pt right of the cells under 1.5 pt lines
+    /// (cases <c>te-left-later</c>, <c>te-left-first</c>, <c>te-break</c>), and the same at the right edge and between
+    /// two columns (<c>te-right-later</c>). Where the cell spans rows whose lines differ, the widest of them is taken
+    /// (not measured).
+    /// </summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="grid">The grid.</param>
+    /// <param name="cell">The cell.</param>
+    /// <param name="boundary">The cell's first column boundary or the one after its last column.</param>
+    /// <returns>The width in points.</returns>
+    public static double OwnVerticalWidth(Box table, TableGrid grid, TableGrid.Cell cell, int boundary) =>
+        Enumerable.Range(cell.Row, cell.RowSpan).Max(row => Vertical(table, grid, row, boundary).Width.Points);
+
+    /// <summary>
     /// The horizontal line in column <paramref name="column"/> between row <paramref name="above"/> and row
     /// <paramref name="below"/> as they stand on the page; null for the table's top or bottom edge on this page. None
     /// where one cell spans both rows — except at a break with clone (<see cref="LineContext.ClosesCutCells"/>), where

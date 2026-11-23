@@ -764,10 +764,11 @@ Each is documented next to its code as well.
   without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
   column without a width they are refused, as are widths on cells and column groups. A percent column is never
   narrower than its content's min-content width, where Chromium lets the content overflow (as for a fill column,
-  `tl-fixed-fill-wide-word`). The percentages are of the table's width less its outer half borders; the engine takes
-  that half border from the widest border at the table's edge, Chromium from the first row, so in a table whose rows
-  have outer borders of different widths the columns start up to half the difference apart (the cases have one border
-  width).
+  `tl-fixed-fill-wide-word`). The percentages are of the table's width less its outer half borders; the engine and
+  Chromium both take that half border from the widest line at the table's edge in any row, on every page (cases
+  `te-left-first`, `te-left-later`, `te-right-first`, `te-right-later`, `te-table-border`, `te-break`), and each cell
+  is inset by half of its own line. Percent columns in a table whose rows have outer borders of different widths are
+  not measured (the `tp-*` cases have one border width).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
 
