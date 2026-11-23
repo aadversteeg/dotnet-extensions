@@ -3,8 +3,9 @@ through libjpeg), so the engine's own decoder is never tested against files it p
 
 Run from the repository root:  python tools/generate-test-images.py
 Writes UnitTests.Extensions.Documents.Images/Assets/*.png|*.jpg, samples/Ave.Extensions.Documents.Samples/assets/logo.png,
-tools/reference/chromium/cases/tall.png (the image of the Chromium reference cases for content taller than a page) and
-cases/wide.png (the wide image of the cases of an image in a line).
+tools/reference/chromium/cases/tall.png (the image of the Chromium reference cases for content taller than a page),
+cases/wide.png (the wide image of the cases of an image in a line) and cases/badge.png (the image of the cases of an image
+in a page-margin box).
 The pixel pattern is a formula (see pattern()), repeated in the C# tests, so every decoded pixel can be checked.
 Only test and sample assets are made here; nothing of this runs in the engine.
 """
@@ -155,7 +156,10 @@ def main():
     # A wide image for the cases of an image in a line of text (ii-*).
     with open(os.path.join(CHROMIUM_CASES, "wide.png"), "wb") as wide:
         wide.write(solid_png(16, 4, (60, 90, 160)))
-    print("written:", sorted(os.listdir(ASSETS)), "samples/.../assets/logo.png and tools/reference/chromium/cases/tall.png and wide.png")
+    # The image of the cases of an image in the content of a page-margin box (pm-image-*).
+    with open(os.path.join(CHROMIUM_CASES, "badge.png"), "wb") as badge:
+        badge.write(solid_png(40, 24, (0x33, 0x66, 0xCC)))
+    print("written:", sorted(os.listdir(ASSETS)), "samples/.../assets/logo.png and tools/reference/chromium/cases/tall.png, wide.png and badge.png")
 
 
 if __name__ == "__main__":
