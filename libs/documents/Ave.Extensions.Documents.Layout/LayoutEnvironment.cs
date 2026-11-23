@@ -9,7 +9,7 @@ namespace Ave.Extensions.Documents.Layout;
 /// <summary>
 /// What every layout call can see besides its own arguments: the fonts, the table that maps a layout algorithm id
 /// (<see cref="Box.Layout"/>) to its functions, and the page being laid out. Immutable; the paginator gives each page
-/// its own <see cref="Page"/>. The table holds the four algorithms the engine ships; adding one
+/// its own <see cref="Page"/>. The table holds the five algorithms the engine ships; adding one
 /// (<see cref="WithAlgorithm(LayoutAlgorithmId, LayoutAlgorithm, IntrinsicSizing)"/>) is internal until a front-end
 /// needs it (docs/architecture.md, "The layout contract").
 /// </summary>
@@ -24,7 +24,7 @@ public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<Layout
     public LayoutProfile Profile { get; internal init; } = LayoutProfile.Default;
 
     /// <summary>The environment with the engine's algorithms: <see cref="FlowLayout"/>, <see cref="InlineLayout"/>,
-    /// <see cref="TracksLayout"/> and <see cref="ImageLayout"/>; page 1 of 1.</summary>
+    /// <see cref="TracksLayout"/>, <see cref="ImageLayout"/> and <see cref="MarginBoxesLayout"/>; page 1 of 1.</summary>
     /// <param name="fonts">The fonts text may use.</param>
     /// <returns>The environment.</returns>
     public static LayoutEnvironment Create(FontSet fonts) =>
@@ -32,7 +32,8 @@ public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<Layout
             .Add(LayoutAlgorithmId.Flow, new RegisteredAlgorithm(FlowLayout.Layout, FlowLayout.Measure))
             .Add(LayoutAlgorithmId.Inline, new RegisteredAlgorithm(InlineLayout.Layout, InlineLayout.Measure))
             .Add(LayoutAlgorithmId.Tracks, new RegisteredAlgorithm(TracksLayout.Layout, TracksLayout.Measure))
-            .Add(LayoutAlgorithmId.Image, new RegisteredAlgorithm(ImageLayout.Layout, ImageLayout.Measure)),
+            .Add(LayoutAlgorithmId.Image, new RegisteredAlgorithm(ImageLayout.Layout, ImageLayout.Measure))
+            .Add(LayoutAlgorithmId.MarginBoxes, new RegisteredAlgorithm(MarginBoxesLayout.Layout, MarginBoxesLayout.Measure)),
             PageContext.First);
 
     /// <summary>Adds or replaces an algorithm.</summary>

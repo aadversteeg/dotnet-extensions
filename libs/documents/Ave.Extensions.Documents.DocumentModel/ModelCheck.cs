@@ -28,7 +28,8 @@ public static class ModelCheck
     }
 
     /// <summary>The page: a positive width and height of at most <see cref="ModelLimits.MaxLength"/>, margins finite, not
-    /// negative and at most that long, header and footer heights positive and at most that long.</summary>
+    /// negative and at most that long, header and footer heights positive and at most that long, and how far each starts
+    /// in the page margin (<see cref="PageArea.StartInMargin"/>) not negative and at most the left margin.</summary>
     private static Error? Page(PageStyle page)
     {
         if (!(IsPositiveAndBounded(page.Width) && IsPositiveAndBounded(page.Height)))
@@ -47,27 +48,34 @@ public static class ModelCheck
             {
                 return Problem(DocumentErrorCodes.Input.Invalid.Length, $"A header or footer height must be a positive length of at most {ModelLimits.MaxLength}.", height.ToString(), "height", area.Content);
             }
+
+            if (area is not null && !(area.StartInMargin.Points >= 0 && area.StartInMargin.Points <= page.Margins.Left.Points))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Length, "How far a header or footer starts in the page margin must be 0 or more and at most the left margin.",
+                    area.StartInMargin.ToString(), "start-in-margin", area.Content);
+            }
         }
 
         return null;
     }
 
-    /// <summary>Every node of the body and of the page areas, each root at level 0 (<see cref="ModelLimits.MaxNestingDepth"/>).</summary>
+    /// <summary>Every node of the body and of the page areas, each root at level 0 (<see cref="ModelLimits.MaxNestingDepth"/>),
+    /// and where each row of page-margin boxes is (<see cref="MarginBoxes"/>).</summary>
     private static Error? Nodes(StyledDocument document)
     {
-        var pending = new Stack<(Node Node, int Depth)>();
-        pending.Push((document.Root, 0));
+        var pending = new Stack<(Node Node, int Depth, Place Place)>();
+        pending.Push((document.Root, 0, Place.Other));
         foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
         {
             if (area is not null)
             {
-                pending.Push((area.Content, 0));
+                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea));
             }
         }
 
         while (pending.Count > 0)
         {
-            var (node, depth) = pending.Pop();
+            var (node, depth, place) = pending.Pop();
             if (depth > ModelLimits.MaxNestingDepth)
             {
                 return Problem(DocumentErrorCodes.Input.Invalid.TooDeep, $"Boxes may nest at most {ModelLimits.MaxNestingDepth} levels deep.",
@@ -92,6 +100,11 @@ public static class ModelCheck
                 return atomic;
             }
 
+            if (node is Box placed && MarginBoxes(placed, place) is { } marginBoxes)
+            {
+                return marginBoxes;
+            }
+
             if (node is Box parent)
             {
                 // A child box is one level deeper, except the parts of a table: a table is one level with its row groups,
@@ -99,10 +112,11 @@ public static class ModelCheck
                 // cell is the next level. Runs and images are content of their box, no level of their own; a box among the runs of
                 // an inline box (an image in a line) is one level deeper, as any child box.
                 var isRow = parent.Style.TableDisplay == TableDisplay.Row;
+                var childPlace = parent.Layout == LayoutAlgorithmId.MarginBoxes ? Place.InMarginBoxes : Place.Other;
                 foreach (var child in parent.Children)
                 {
                     var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } && !isRow;
-                    pending.Push((child, isLevel ? depth + 1 : depth));
+                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace));
                 }
             }
         }
@@ -149,6 +163,64 @@ public static class ModelCheck
             {
                 return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An image in a line of text has no page break properties: they apply to block-level boxes only.",
                     $"{box.Style.BreakBefore}/{box.Style.BreakAfter}/{box.Style.BreakInside}", "break", box);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Where a node is, for the rows of page-margin boxes (<see cref="MarginBoxes"/>).</summary>
+    private enum Place
+    {
+        /// <summary>Anywhere else.</summary>
+        Other,
+
+        /// <summary>The content of a header or footer area with a fixed height.</summary>
+        FixedArea,
+
+        /// <summary>A child of a box laid out by <see cref="LayoutAlgorithmId.MarginBoxes"/>.</summary>
+        InMarginBoxes,
+    }
+
+    /// <summary>
+    /// The rows of page-margin boxes (<see cref="LayoutAlgorithmId.MarginBoxes"/>): a row is only the content of a header
+    /// or footer area with a fixed height, because it takes that height (CSS Paged Media 3 §5.3: the boxes of the top
+    /// row are as tall as the page's top margin); its children are boxes, each at a place of the row
+    /// (<see cref="BoxStyle.MarginBoxPlace"/>), at most one at each place. A box that is not generated is no child: Chromium
+    /// 159 draws a page-margin box whose <c>content</c> is <c>none</c> or <c>normal</c> nowhere and gives it no width,
+    /// where one with <c>content: ""</c> is drawn and takes its width. A place on a box outside a row means nothing, so
+    /// it is refused too.
+    /// </summary>
+    private static Error? MarginBoxes(Box box, Place place)
+    {
+        if (box.Style.MarginBoxPlace != MarginBoxPlace.None && place != Place.InMarginBoxes)
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.MarginBoxes, "Only a child of a row of page-margin boxes has a place in the row.", box.Style.MarginBoxPlace.ToString(), "place", box);
+        }
+
+        if (box.Layout == LayoutAlgorithmId.MarginBoxes && place != Place.FixedArea)
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.MarginBoxes, "A row of page-margin boxes is only the content of a header or footer area with a fixed height.", box.Layout.ToString(), "layout", box);
+        }
+
+        if (box.Layout != LayoutAlgorithmId.MarginBoxes)
+        {
+            return null;
+        }
+
+        var taken = new HashSet<MarginBoxPlace>();
+        foreach (var child in box.Children)
+        {
+            if (child is not Box { Style.MarginBoxPlace: not MarginBoxPlace.None } marginBox || !System.Enum.IsDefined(marginBox.Style.MarginBoxPlace))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.MarginBoxes, "Every child of a row of page-margin boxes is a box with a place in the row: start, center or end.",
+                    child is Box other ? other.Style.MarginBoxPlace.ToString() : child.GetType().Name, "place", child);
+            }
+
+            if (!taken.Add(marginBox.Style.MarginBoxPlace))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.MarginBoxes, $"A row of page-margin boxes has at most one box at each place; this is a second one at {marginBox.Style.MarginBoxPlace}.",
+                    marginBox.Style.MarginBoxPlace.ToString(), "place", marginBox);
             }
         }
 
