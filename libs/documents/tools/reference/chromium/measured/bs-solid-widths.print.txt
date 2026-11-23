@@ -1,0 +1,13 @@
+page 1 300.000 400.080
+word 1 12.000 27.582 23.250 10.500 top #000000 Lato-Regular
+word 1 16.500 28.517 47.250 10.500 wt #000000 Lato-Regular
+word 1 21.000 31.726 77.250 10.500 wl #000000 Lato-Regular
+word 1 12.000 29.283 102.750 10.500 end #000000 Lato-Regular
+rect 1 12.000 27.000 288.000 33.000 #ff0000
+rect 1 12.000 54.000 288.000 55.500 #0000ff
+path 1 286.500 27.000 288.000 55.500 #008000 02/06/09/0d/2f/6f/9f/df/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/8f/08
+path 1 12.000 27.000 13.500 55.500 #ffa500 20/60/90/d0/f2/f6/f9/fd/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/f7/70
+rect 1 12.000 61.500 288.000 63.000 #ff0000
+rect 1 12.000 84.000 288.000 85.500 #0000ff
+path 1 286.500 61.500 288.000 85.500 #008000 08/8f/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/8f/08
+path 1 12.000 61.500 18.000 85.500 #ffa500 d9620000/ffffd962/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffd962/d9620000

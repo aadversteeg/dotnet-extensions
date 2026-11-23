@@ -592,6 +592,33 @@ public class HtmlListedDifferenceTests
         HtmlCases.Difference(engine, Read(chromium, EngineText)).Should().BeNull("the hyphen in the text is the whole difference");
     }
 
+    /// <summary>
+    /// A solid border of one colour whose sides are not all of one width (case <c>bs-solid-one-colour</c>: a top of 8 px
+    /// and a left of 4 px beside sides of 2 px) is four filled rectangles in the engine, the top and bottom sides over the
+    /// full width, as every border of one colour is; Chromium fills it as one shape, the border box with the padding box
+    /// cut out of it, which the read-back writes as one <c>path</c>. Both paint the same pixels: every pixel of the path's
+    /// box is whole in Chromium's path exactly where it lies in one of the engine's rectangles, and no other pixel is
+    /// painted. The comparison holds the two kinds of paint apart, so the case differs by the kind alone.
+    /// </summary>
+    [Fact]
+    public void A_border_of_one_colour_and_unequal_widths_is_four_rectangles_where_Chromium_fills_one_shape_of_the_same_pixels()
+    {
+        var (engine, chromium) = (Engine("bs-solid-one-colour").Pages.Single(), Chromium("bs-solid-one-colour").Pages.Single());
+        var rectangles = engine.Rectangles.Where(rectangle => rectangle.Colour == "#0000ff").ToArray();
+        rectangles.Should().HaveCount(4);
+        engine.Paths.Should().BeEmpty();
+        chromium.Rectangles.Should().BeEmpty();
+        var path = chromium.Paths.Should().ContainSingle().Which;
+
+        const double Pixel = 0.75;
+        bool Painted(double x, double y) => rectangles.Any(rectangle => rectangle.X0 <= x && x < rectangle.X1 && rectangle.Y0 <= y && y < rectangle.Y1);
+        var engineRows = Enumerable.Range(0, path.Rows.Length).Select(row => string.Concat(Enumerable.Range(0, path.Rows[row].Length)
+            .Select(column => Painted(path.X0 + ((column + 0.5) * Pixel), path.Y0 + ((row + 0.5) * Pixel)) ? 'f' : '0')));
+        engineRows.Should().Equal(path.Rows, "the engine's rectangles paint the pixels of Chromium's shape, and only those");
+        rectangles.Sum(rectangle => (rectangle.X1 - rectangle.X0) * (rectangle.Y1 - rectangle.Y0) / (Pixel * Pixel)).Should().BeApproximately(
+            path.Rows.Sum(row => row.Count(digit => digit == 'f')), 0.01, "the rectangles do not overlap");
+    }
+
     /// <summary>The width the read-back gives a glyph that Chromium's PDF lists no width for, per point of font size: the
     /// font's default width, <c>/DW 256</c> in units of 1/1000 (case <c>sr-zwnj</c>).</summary>
     private const double DefaultWidth = 0.256;

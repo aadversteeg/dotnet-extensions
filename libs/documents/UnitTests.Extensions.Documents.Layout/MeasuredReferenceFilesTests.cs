@@ -684,6 +684,30 @@ public class MeasuredReferenceFilesTests
         ["bs-break.lines.txt"] = 4,
         ["bs-break.print.txt"] = 22,
         ["bs-break.words.txt"] = 14,
+        ["bs-solid-order.boxes.txt"] = 4,
+        ["bs-solid-order.lines.txt"] = 8,
+        ["bs-solid-order.print.txt"] = 23,
+        ["bs-solid-order.words.txt"] = 6,
+        ["bs-solid-colours.boxes.txt"] = 4,
+        ["bs-solid-colours.lines.txt"] = 8,
+        ["bs-solid-colours.print.txt"] = 23,
+        ["bs-solid-colours.words.txt"] = 6,
+        ["bs-solid-widths.boxes.txt"] = 2,
+        ["bs-solid-widths.lines.txt"] = 4,
+        ["bs-solid-widths.print.txt"] = 13,
+        ["bs-solid-widths.words.txt"] = 4,
+        ["bs-solid-one-colour.boxes.txt"] = 1,
+        ["bs-solid-one-colour.lines.txt"] = 0,
+        ["bs-solid-one-colour.print.txt"] = 5,
+        ["bs-solid-one-colour.words.txt"] = 3,
+        ["bs-solid-pairs.boxes.txt"] = 3,
+        ["bs-solid-pairs.lines.txt"] = 6,
+        ["bs-solid-pairs.print.txt"] = 16,
+        ["bs-solid-pairs.words.txt"] = 5,
+        ["bs-solid-break.boxes.txt"] = 1,
+        ["bs-solid-break.lines.txt"] = 2,
+        ["bs-solid-break.print.txt"] = 22,
+        ["bs-solid-break.words.txt"] = 14,
         ["c-cell-first-line.boxes.txt"] = 2,
         ["c-cell-first-line.lines.txt"] = 8,
         ["c-cell-first-line.print.txt"] = 13,
@@ -2445,7 +2469,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(600);
+        cases.Should().HaveCount(606);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
