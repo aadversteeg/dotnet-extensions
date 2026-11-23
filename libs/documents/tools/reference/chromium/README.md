@@ -101,6 +101,7 @@ word <page> <x0> <x1> <baseline> <font size> <text> <colour> <face>
 rect <page> <x0> <y0> <x1> <y1> <colour>
 stroke <page> <x0> <y0> <x1> <y1> <colour>
 image <page> <x0> <y0> <x1> <y1>
+path <page> <x0> <y0> <x1> <y1> <colour> <rows>
 ```
 
 A word is a run of characters without white space on one baseline. Its extent is its advances (from the origin of its
@@ -120,6 +121,25 @@ rectangle paints: Chromium strokes a border of one colour and style on all four 
 (`kb-v8-padded-box-kept-para`, `kb-v9-padded-box-kept-table-row`, `fr-header-cell-margin`), and `positions.py` writes
 the top and bottom band across the outer width and the left and right band between them, in drawing order among the
 `rect` lines; any other stroke stops the read-back. `lines.txt` (`rectangles.py`) keeps fills only.
+
+A `path` line is a fill or a stroke of a path that is not made of rectangles: a curve, such as the disc and the circle
+Chromium draws as list markers (it prints them as paths, not as glyphs). It is written as the area it paints, on the
+grid of whole pixels the case comparison counts painted areas on (0.75 pt from the page's top left): `x0 y0 x1 y1` is
+the smallest box of whole pixels that holds every pixel it paints, and `rows` gives each pixel's painted share as one
+hexadecimal digit, `0` for nothing to `f` for the whole pixel (the share of 15 × 15 sample points inside the pixel that
+are painted, in fifteenths, rounded half up), the rows from the top joined by `/`. The share is counted inside the clips
+around the drawing, as for a `rect`. The area and not the path's segments, because two paths that paint the same ink
+are the same on the page: Chromium strokes its circle marker, 16 cubic curves, with a line 1 px wide, and a ring filled
+between two circles of 4 curves each paints the same ink with other segments; both give the same line. A disc and a
+square in the same box give different lines (a square is a `rect`, the disc's corners are not painted), where the box
+of the disc, which the read-back wrote before, did not tell them apart. `paths.py` reads them (curves flattened to
+within 0.0005 pt; a stroke's join taken as round, which differs from the mitre by far less than a sample step on a smooth
+closed curve); a stroke with a dash pattern or a subpath that does not close stops the read-back. `lines.txt` does not
+hold them, as they are not rectangles. The unit tests of this reading are `paths_test.py`, run in the reference tools
+image (`python3 paths_test.py`, also by `PathReadBackTests` in `UnitTests.Extensions.Documents.Layout`): a disc, a ring
+stroked 1 px wide and the same ring filled, a square, a clip, and the strokes the reading refuses. Chromium leaves out a
+marker that lies wholly outside the page area (case `li-marker-clip`): nothing of it is in the PDF; a marker across the
+page area's edge is drawn and cut by the body's clip.
 
 The tests read these files through `PrintedPages` in the test-support project, which gives the engine's page model the
 same form (`PrintedPages.Engine`), so a test compares the two page by page. What the tests compare: the words of each

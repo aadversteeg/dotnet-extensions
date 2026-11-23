@@ -353,7 +353,8 @@ internal static class HtmlCases
     /// colour and face (<see cref="PrintedWord.Colour"/>, <see cref="PrintedWord.Face"/>: the PostScript name, which names
     /// the font file and with it the weight and the style); the same area painted in each colour by the rectangles,
     /// filled or stroked (<see cref="PaintedDifference"/>); the same image areas in drawing order, each edge after
-    /// <see cref="WholePixel"/> within <see cref="Bound"/>.
+    /// <see cref="WholePixel"/> within <see cref="Bound"/>; the same areas painted by paths that are not rectangles
+    /// (<see cref="PathDifference"/>).
     /// </summary>
     public static string? Difference(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null)
     {
@@ -388,7 +389,7 @@ internal static class HtmlCases
                 }
             }
 
-            if ((PaintedDifference(ours, ours.Rectangles, theirs.Rectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images)) is { } area)
+            if ((PaintedDifference(ours, ours.Rectangles, theirs.Rectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images) ?? PathDifference(ours, theirs)) is { } area)
             {
                 return area + " (print.txt)";
             }
@@ -421,6 +422,22 @@ internal static class HtmlCases
         }
 
         return null;
+    }
+
+    /// <summary>The first difference between the areas the paths that are not rectangles (curves: a list marker's disc or
+    /// circle) paint on a page (<see cref="PrintedPath"/>): the same number, and each in drawing order the same box of
+    /// whole pixels, colour and painted share per pixel. The engine's page model has no such path yet, so a print that
+    /// paints one differs here.</summary>
+    private static string? PathDifference(PrintedPage ours, PrintedPage theirs)
+    {
+        if (ours.Paths.Length != theirs.Paths.Length)
+        {
+            return $"page {ours.Number} has {ours.Paths.Length} painted paths, Chromium {theirs.Paths.Length}";
+        }
+
+        return ours.Paths.Zip(theirs.Paths).Where(pair => !pair.First.Paints(pair.Second)).Select(pair =>
+            $"page {ours.Number} path at ({Of(pair.First.X0)}, {Of(pair.First.Y0)}) paints {string.Join('/', pair.First.Rows)} {pair.First.Colour}, " +
+            $"Chromium at ({Of(pair.Second.X0)}, {Of(pair.Second.Y0)}) {string.Join('/', pair.Second.Rows)} {pair.Second.Colour}").FirstOrDefault();
     }
 
     /// <summary>

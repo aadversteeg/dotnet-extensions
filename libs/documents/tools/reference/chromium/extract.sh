@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reads Chromium's prints back with independent tools, in the reference tools image (../tools.Dockerfile): every word
 # with its box (poppler's pdftotext -bbox), every filled rectangle (rectangles.py, PyMuPDF) and the print's positions
-# page by page (positions.py, PyMuPDF: words with their baselines, rectangles, images), and the gaps of a decoration line
+# page by page (positions.py, PyMuPDF: words with their baselines, rectangles, images, the area a curve paints), and the gaps of a decoration line
 # that skips ink (ink.py, PyMuPDF; only for a print that has any), and the width of each page's page area (area.py,
 # PyMuPDF), at which measure.mjs then measures the boxes. Run by measure.mjs and
 # measure.ps1 with the output folder at /out and this folder at /src:

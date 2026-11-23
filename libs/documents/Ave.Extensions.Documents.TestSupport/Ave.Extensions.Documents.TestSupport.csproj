@@ -35,6 +35,8 @@
     <None Include="$(MSBuildThisFileDirectory)../tools/reference/tools.Dockerfile" Link="tools/tools.Dockerfile" CopyToOutputDirectory="PreserveNewest" />
     <!-- The fontTools script the outline decoder is compared with (UnitTests.Extensions.Documents.Fonts). -->
     <None Include="$(MSBuildThisFileDirectory)../tools/reference/glyph-outlines.py" Link="tools/glyph-outlines.py" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The read-back of Chromium's prints and its unit tests of paths that are not rectangles (UnitTests.Extensions.Documents.Layout). -->
+    <None Include="$(MSBuildThisFileDirectory)../tools/reference/chromium/positions.py;$(MSBuildThisFileDirectory)../tools/reference/chromium/rectangles.py;$(MSBuildThisFileDirectory)../tools/reference/chromium/visible.py;$(MSBuildThisFileDirectory)../tools/reference/chromium/paths.py;$(MSBuildThisFileDirectory)../tools/reference/chromium/paths_test.py" Link="tools/chromium/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
