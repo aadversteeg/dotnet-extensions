@@ -1349,8 +1349,10 @@ Each is documented next to its code as well.
   replacement text (`/ActualText`) where it is drawn.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
   nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
-  language, no Span, Link, List, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
-  marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above); empty structure elements are
+  language, no Span, Link, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
+  marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above) and on the `Lbl` structure
+  element of a drawn bullet (its character, U+2022, U+25E6 or U+25AA; lists are `L` with `ListNumbering`, `LI`, `Lbl`,
+  `LBody`, ISO 32000-1 §14.8.4.3.3, §14.8.5.5); empty structure elements are
   written for empty cells; the XMP packet has no padding; everything in page headers and footers is an artifact.
   Figures and tables wholly on one page carry their `/BBox` (ISO 32000-1 Table 344); a table that continues on
   another page has none, and no other layout attributes are written.

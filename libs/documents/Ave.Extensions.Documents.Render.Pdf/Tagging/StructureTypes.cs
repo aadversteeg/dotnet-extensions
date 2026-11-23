@@ -19,8 +19,8 @@ internal static class StructureTypes
 
     /// <summary>
     /// The attributes of an element (§14.7.5, Table 323, <c>/A</c>: "a single attribute object or array of attribute
-    /// objects"): its table attributes (<see cref="TableAttributes"/>) and its layout attributes
-    /// (<see cref="LayoutAttributes"/>). Null when it has none, the object itself when it has one, an array otherwise.
+    /// objects"): its table attributes (<see cref="TableAttributes"/>), its list attributes (<see cref="ListAttributes"/>)
+    /// and its layout attributes (<see cref="LayoutAttributes"/>). Null when it has none, the object itself when it has one, an array otherwise.
     /// </summary>
     /// <param name="role">The role.</param>
     /// <param name="span">The cell's span.</param>
@@ -28,7 +28,7 @@ internal static class StructureTypes
     /// <returns>The value of <c>/A</c>, or null.</returns>
     public static PdfObject? Attributes(SemanticRole role, CellSpan span, UserSpaceBox? box)
     {
-        PdfDictionary[] owners = [.. new[] { TableAttributes(role, span), LayoutAttributes(box) }.OfType<PdfDictionary>()];
+        PdfDictionary[] owners = [.. new[] { TableAttributes(role, span), ListAttributes(role), LayoutAttributes(box) }.OfType<PdfDictionary>()];
         return owners.Length switch
         {
             0 => null,
@@ -36,6 +36,16 @@ internal static class StructureTypes
             _ => new PdfArray([.. owners]),
         };
     }
+
+    /// <summary>
+    /// The attribute object of a list (§14.8.5.5, Table 347, owner <c>/List</c>): its <c>/ListNumbering</c>, how its items are
+    /// numbered or marked (<c>None</c>, <c>Disc</c>, <c>Circle</c>, <c>Square</c>, <c>Decimal</c>, <c>UpperRoman</c>,
+    /// <c>LowerRoman</c>, <c>UpperAlpha</c>, <c>LowerAlpha</c>), written for every list, <c>None</c> included, so a reader
+    /// need not rely on the attribute's default. Null for anything that is not a list.
+    /// </summary>
+    private static PdfDictionary? ListAttributes(SemanticRole role) => role is SemanticRole.ListRole list
+        ? PdfDictionary.Of(("O", new PdfName("List")), ("ListNumbering", new PdfName(list.Numbering.ToString())))
+        : null;
 
     /// <summary>
     /// The layout attribute object (§14.8.5.4, owner <c>/Layout</c>) with the element's <c>/BBox</c>: left, bottom,

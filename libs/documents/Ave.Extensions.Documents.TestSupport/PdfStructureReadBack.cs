@@ -184,6 +184,11 @@ public static class PdfStructureReadBack
                 details.Add($"Alt=\"{((StringToken)Resolve(alt)).Data}\"");
             }
 
+            if (element.TryGet(NameToken.Create("ActualText"), out var actual))
+            {
+                details.Add($"ActualText=\"{((StringToken)Resolve(actual)).Data}\"");
+            }
+
             // /A is one attribute object or an array of them (ISO 32000-1 §14.7.5).
             var attributes = element.TryGet(NameToken.Create("A"), out var a)
                 ? (Resolve(a) is ArrayToken many ? many.Data.Select(Dictionary).ToList() : [Dictionary(a)])

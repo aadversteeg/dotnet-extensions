@@ -406,7 +406,9 @@ internal static class MarkerNesting
 /// of one of its row groups; a header or data cell (TH, TD) is a child of a row; a row group is a child of a table.
 /// Seen from the parent, a table holds only rows and row groups, a row group only rows, a row only cells. veraPDF
 /// checks the same for PDF/UA-1 (rules 7.2-3 to 7.2-10, 7.2-36 to 7.2-38). Parent here means the nearest enclosing node
-/// that has a structure type; a decorative node (an artifact) is not one. The row groups are THead and TBody: there is no
+/// that has a structure type; a decorative node (an artifact) is not one. Lists nest the same way (§14.8.4.3.3, Table 336):
+/// a list item (LI) is a child of a list (L), a label (Lbl) and a list body (LBody) of a list item; a list holds only list
+/// items and lists, a list item only a label and a body (veraPDF rules 7.2-17 to 7.2-20; there is no Caption role). The row groups are THead and TBody: there is no
 /// role for a table footer (TFoot, Core SemanticRole), so the rules have no case for it.
 /// </summary>
 internal static class StructureNesting
@@ -420,6 +422,9 @@ internal static class StructureNesting
         ["TD"] = ["TR"],
         ["THead"] = ["Table"],
         ["TBody"] = ["Table"],
+        ["LI"] = ["L"],
+        ["Lbl"] = ["LI"],
+        ["LBody"] = ["LI"],
     }.ToImmutableDictionary();
 
     private static readonly ImmutableDictionary<string, ImmutableHashSet<string>> AllowedChildren = new Dictionary<string, ImmutableHashSet<string>>
@@ -428,6 +433,8 @@ internal static class StructureNesting
         ["THead"] = ["TR"],
         ["TBody"] = ["TR"],
         ["TR"] = ["TH", "TD"],
+        ["L"] = ["L", "LI"],
+        ["LI"] = ["Lbl", "LBody"],
     }.ToImmutableDictionary();
 
     /// <summary>Every structure start on the page whose parent or own type breaks the table rules.</summary>
