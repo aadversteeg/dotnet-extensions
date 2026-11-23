@@ -422,22 +422,22 @@ kb-t2-kept-row-group-after-a-row equal
 kb-t3-row-group-not-kept-control equal
 kb-v8-padded-box-kept-para equal
 kb-v9-padded-box-kept-table-row equal
-li-bare refused Documents.Html.Unsupported.Value display: list-item at 11:17
-li-counter-styles refused Documents.Html.Unsupported.Attribute value at 11:82
-li-div-list-item refused Documents.Html.Unsupported.Value display: list-item at 11:17
-li-first-line refused Documents.Html.Unsupported.Value display: list-item at 11:21
-li-font refused Documents.Html.Unsupported.Value display: list-item at 11:17
-li-inside refused Documents.Html.Unsupported.Attribute value at 13:109
-li-marker-clip refused Documents.Html.Unsupported.Value display: list-item at 11:22
-li-marker-sheet refused Documents.Html.Unsupported.Value display: list-item at 11:21
-li-none refused Documents.Html.Unsupported.Value display: list-item at 11:49
-li-ol-12 refused Documents.Html.Unsupported.Value display: list-item at 12:1
-li-ol-attrs refused Documents.Html.Unsupported.Attribute start at 11:22
-li-ol-nested refused Documents.Html.Unsupported.Attribute start at 12:36
-li-page-break refused Documents.Html.Unsupported.Value display: list-item at 12:5
-li-symbol-sizes refused Documents.Html.Unsupported.Value display: list-item at 11:50
-li-types refused Documents.Html.Unsupported.Attribute value at 11:56
-li-ul-levels refused Documents.Html.Unsupported.Value display: list-item at 11:23
+li-bare equal
+li-counter-styles equal
+li-div-list-item equal
+li-first-line equal
+li-font equal
+li-inside refused Documents.Css.Unsupported.Value list-style-position: inside at 12:25
+li-marker-clip equal
+li-marker-sheet refused Documents.Layout.MarkerOutsideSheet -1.5 at 13
+li-none equal
+li-ol-12 equal
+li-ol-attrs equal
+li-ol-nested equal
+li-page-break open page 1 is 300x201.12, Chromium 300x200.88 (print.txt)
+li-symbol-sizes equal
+li-types refused Documents.Layout.MarkerOutsideSheet -32.461 at 13
+li-ul-levels equal
 mf4-line-0 equal
 mf4-line-075 equal
 mf4-line-150 equal

@@ -147,7 +147,8 @@ internal static class BoxProperties
         yield return new("box-sizing", "both values: no effect while width and height are auto (every other width and height is refused)", (_, _) => null);
 
         // CSS Display 3 §2.
-        yield return new("display", "block, inline, none, table and its parts but the caption", (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" } ? null : TableProperties.Display(value));
+        yield return new("display", "block, inline, none, list-item (CSS Lists 3 §2; HtmlBoxGenerator.Lists.cs), table and its parts but the caption",
+            (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" or "list-item" } ? null : TableProperties.Display(value));
 
         // CSS Color 4 §3.1: the colour of the element's own text; a border in currentcolor is checked in its row.
         yield return new("color", "a colour of alpha 1; any colour on an element without text of its own",
@@ -219,11 +220,10 @@ internal static class BoxProperties
 
         yield return new("table-layout", "both values: read for the column widths of a table", (_, _) => null);
 
-        // Lists: no effect on a box that is not a list item (that display type is refused).
-        foreach (var name in new[] { "list-style-position", "list-style-type" })
-        {
-            yield return new(name, "every value: no effect on a box that is not a list item (display: list-item is refused)", (_, _) => null);
-        }
+        // CSS Lists 3 §3.1, §3.2: the marker of a list item, outside its box; the style sheet refuses inside, every image
+        // and the counter styles beyond the predefined twelve. No effect on a box that is not a list item.
+        yield return new("list-style-type", "disc, circle, square, decimal, decimal-leading-zero, lower-roman, upper-roman, lower-alpha, upper-alpha, lower-latin, upper-latin, none (the twelve the style sheet accepts)", (_, _) => null);
+        yield return new("list-style-position", "outside, the only value the style sheet accepts", (_, _) => null);
     }
 
     /// <summary>The alpha of a colour value; NaN for anything else.</summary>

@@ -172,7 +172,6 @@ public class BoxGenerationTests
     }
 
     [Theory]
-    [InlineData("<ul><li>a</li></ul>", "display")]
     [InlineData("<table><tr><td>a</td></tr></table>", "border-collapse")]
     [InlineData("<pre>a\tb</pre>", "white-space-collapse")]
     [InlineData("<hr>", "border-top-style")]
@@ -252,20 +251,21 @@ public class BoxGenerationTests
     }
 
     [Fact]
-    public void Under_warn_a_refused_value_takes_the_model_s_initial_value_a_refused_display_is_a_block_and_an_element_refused_by_its_own_rule_is_left_out()
+    public void Under_warn_a_refused_value_takes_the_model_s_initial_value_and_an_element_refused_by_its_own_rule_is_left_out()
     {
-        var html = Doc("<div style=\"padding:5%;background-color:rgba(0,0,0,0.5)\">a</div><ul><li>b</li></ul><p>c<wbr>d</p>");
+        var html = Doc("<div style=\"padding:5%;background-color:rgba(0,0,0,0.5)\">a</div><ol><li value=9999999999>b</li></ol><p>c<wbr>d</p>");
         var warned = Boxes(html, UnsupportedPolicy.Warn);
         warned.IsSuccess.Should().BeTrue(warned.IsFailure ? warned.Error.ToString() : string.Empty);
         var body = (Box)warned.Value.Document.Root.Children.Single();
         var div = (Box)body.Children[0];
         (div.Style.Padding, div.Style.Background).Should().Be((default(Edges), (Color?)null));
         var li = (Box)((Box)body.Children[1]).Children.Single();
-        (li.Layout, Texts(li)).Should().Be((LayoutAlgorithmId.Inline, "b"));
+        var label = (Box)li.Children[0];
+        (li.Layout, Texts(label), Texts((Box)((Box)li.Children[1]).Children.Single())).Should().Be((LayoutAlgorithmId.ListItem, "1. ", "b"), "a value beyond 32 bits is not taken");
         Texts((Box)body.Children[2]).Should().Be("c|d");
         Refusals(html, UnsupportedPolicy.Warn).Select(error => error.Code.ToString()).Should().Equal(
             "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value",
-            "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Rendering");
+            "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.List", "Documents.Html.Unsupported.Rendering");
         Boxes(html).IsFailure.Should().BeTrue("the same document is refused by default");
     }
 
