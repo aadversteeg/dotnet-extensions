@@ -65,7 +65,7 @@ internal static class TableFragments
     /// </summary>
     private static IEnumerable<PlacedFragment> Groups(TableGeometry table, TablePage.Content content)
     {
-        var innerWidth = table.LineX[^1] - table.LineX[0];
+        var innerWidth = table.GridEnd - table.GridStart;
         var runs = new List<List<TablePage.PlacedRow>>();
         foreach (var row in WithContinuedRows(table.Grid, content))
         {
@@ -86,7 +86,7 @@ internal static class TableFragments
             var height = run[^1].Top + run[^1].Height - top;
             ValueList<PlacedFragment> rows = [.. run.Select(row => new PlacedFragment(new Point(0, row.Top - top), Row(table, content, row, innerWidth)))];
             yield return new PlacedFragment(
-                new Point(table.LineX[0], top),
+                new Point(table.GridStart, top),
                 new BoxFragment(table.Grid.Rows[run[0].Row].Group, new Size(innerWidth, height), rows, IsRepeated: run[0].IsRepeated));
         }
     }
@@ -116,7 +116,7 @@ internal static class TableFragments
         [
             .. content.Cells.Where(cell => table.Grid.Cells[cell.Cell].Row == row.Row)
                 .Select(cell => new PlacedFragment(
-                    new Point(table.LineX[table.Grid.Cells[cell.Cell].Column] - table.LineX[0], topOf[cell.TopRow] - row.Top),
+                    new Point(table.ColumnX[table.Grid.Cells[cell.Cell].Column] - table.GridStart, topOf[cell.TopRow] - row.Top),
                     cell.Fragment)),
         ];
         return new BoxFragment(table.Grid.Rows[row.Row].Box, new Size(innerWidth, row.Height), cells);
@@ -137,8 +137,8 @@ internal static class TableFragments
             var corners = Enumerable.Range(0, table.Grid.ColumnCount + 1).Select(boundary => Corner(table, line, boundary)).ToImmutableArray();
             var segments = Enumerable.Range(0, table.Grid.ColumnCount)
                 .Select(column => (
-                    Start: table.LineX[column] + (corners[column].CoversRight ? -corners[column].Width : corners[column].Width) / 2,
-                    End: table.LineX[column + 1] + (corners[column + 1].CoversLeft ? corners[column + 1].Width : -corners[column + 1].Width) / 2,
+                    Start: table.LineX(column) + (corners[column].CoversRight ? -corners[column].Width : corners[column].Width) / 2,
+                    End: table.LineX(column + 1) + (corners[column + 1].CoversLeft ? corners[column + 1].Width : -corners[column + 1].Width) / 2,
                     Side: CollapsedBorders.Horizontal(table.Box, table.Grid, line.Above, line.Below, column, line.Context)));
             foreach (var (left, right, side) in Joined(segments))
             {
@@ -194,7 +194,7 @@ internal static class TableFragments
             foreach (var (top, bottom, side) in Joined(segments))
             {
                 var width = side.Width.Points;
-                yield return new PlacedFragment(new Point(table.LineX[line] - width / 2, top), new RuleFragment(side.Color, new Size(width, bottom - top)));
+                yield return new PlacedFragment(new Point(table.LineX(line) - width / 2, top), new RuleFragment(side.Color, new Size(width, bottom - top)));
             }
         }
     }

@@ -161,9 +161,11 @@ public static class TracksLayout
             .OnSuccessMap(contributions => TrackSizing.ColumnRanges(box.Style.Columns, contributions));
 
     /// <summary>
-    /// Places the columns: grid line j at x = <see cref="TableGeometry.LineX"/>[j]. The first line is centred half
-    /// its width inside the table's left edge (the table's border box holds half of the outer lines, §17.6.2), and each
-    /// column (a cell's border box, from line centre to line centre) is as wide as track sizing says.
+    /// Places the columns: column j starts at x = <see cref="TablePreparation.ColumnX"/>[j] and is as wide as track
+    /// sizing says; the next column starts the column gap after its end. In the collapsing border model the gap is zero,
+    /// a column (a cell's border box) runs from the centre of the grid line on its left to the centre of the line on its
+    /// right, and the first line is centred half its width inside the table's left edge (the table's border box holds
+    /// half of the outer lines, §17.6.2).
     /// </summary>
     private static Result<TablePreparation, Error> Prepare(LayoutEnvironment environment, Box box, TableGrid grid, double availableWidth)
     {
@@ -177,15 +179,17 @@ public static class TracksLayout
                 return Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, width + outer, availableWidth));
             }
 
-            var x = ImmutableArray.CreateBuilder<double>(widths.Length + 1);
-            x.Add(lines[0] / 2);
+            const double gap = 0;
+            var start = lines[0] / 2;
+            var x = ImmutableArray.CreateBuilder<double>(widths.Length);
+            var end = start;
             foreach (var columnWidth in widths)
             {
-                x.Add(x[^1] + columnWidth);
+                x.Add(x.Count == 0 ? start : end + gap);
+                end = x[^1] + columnWidth;
             }
 
-            var lineX = x.MoveToImmutable();
-            return Result<TablePreparation, Error>.Success(new TablePreparation(box, grid, lineX, lines, lineX[^1] + lines[^1] / 2, availableWidth));
+            return Result<TablePreparation, Error>.Success(new TablePreparation(box, grid, x.MoveToImmutable(), widths, gap, start, end, lines, end + lines[^1] / 2, availableWidth));
         });
     }
 }
@@ -194,12 +198,17 @@ public static class TracksLayout
 /// <param name="Table">The tracks box they were prepared for (compared by reference: a token of another table does not
 /// carry its grid over).</param>
 /// <param name="Grid">The grid.</param>
-/// <param name="LineX">The x of every vertical grid line's centre, from the table's left edge; column j runs from
-/// LineX[j] to LineX[j + 1].</param>
+/// <param name="ColumnX">The x where every column starts, from the table's left edge.</param>
+/// <param name="ColumnWidths">The width of every column.</param>
+/// <param name="ColumnGap">The room between two columns: zero in the collapsing border model.</param>
+/// <param name="GridStart">The x where the first column starts.</param>
+/// <param name="GridEnd">The x where the last column ends (<paramref name="GridStart"/> without columns).</param>
 /// <param name="LineWidths">The width of every vertical grid line.</param>
 /// <param name="Width">The table's border-box width.</param>
 /// <param name="AvailableWidth">The width the columns were placed in; a page of another width prepares again.</param>
-internal sealed record TablePreparation(Box Table, TableGrid Grid, ImmutableArray<double> LineX, ImmutableArray<double> LineWidths, double Width, double AvailableWidth);
+internal sealed record TablePreparation(
+    Box Table, TableGrid Grid, ImmutableArray<double> ColumnX, ImmutableArray<double> ColumnWidths, double ColumnGap, double GridStart, double GridEnd,
+    ImmutableArray<double> LineWidths, double Width, double AvailableWidth);
 
 /// <summary>A tracks box with its grid and columns placed, on the current page: everything a page of it needs.</summary>
 /// <param name="Environment">The fonts, algorithms and current page.</param>
@@ -238,8 +247,21 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
     /// <summary>The grid.</summary>
     public TableGrid Grid => Prepared.Grid;
 
-    /// <summary>The x of every vertical grid line's centre.</summary>
-    public ImmutableArray<double> LineX => Prepared.LineX;
+    /// <summary>The x where every column starts.</summary>
+    public ImmutableArray<double> ColumnX => Prepared.ColumnX;
+
+    /// <summary>The x where the first column starts.</summary>
+    public double GridStart => Prepared.GridStart;
+
+    /// <summary>The x where the last column ends.</summary>
+    public double GridEnd => Prepared.GridEnd;
+
+    /// <summary>The x where column <paramref name="column"/> ends.</summary>
+    public double ColumnEnd(int column) => ColumnX[column] + Prepared.ColumnWidths[column];
+
+    /// <summary>The x of the centre of vertical grid line <paramref name="boundary"/> in the collapsing border model, where
+    /// the column gap is zero: where the column right of it starts, and at the right edge where the last column ends.</summary>
+    public double LineX(int boundary) => boundary < ColumnX.Length ? ColumnX[boundary] : GridEnd;
 
     /// <summary>The width of every vertical grid line.</summary>
     public ImmutableArray<double> LineWidths => Prepared.LineWidths;
@@ -247,8 +269,9 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
     /// <summary>The table's border-box width.</summary>
     public double Width => Prepared.Width;
 
-    /// <summary>The width of a cell's border box: its columns from line centre to line centre.</summary>
-    public double CellWidth(TableGrid.Cell cell) => LineX[cell.Column + cell.ColumnSpan] - LineX[cell.Column];
+    /// <summary>The width of a cell's border box: from the start of its first column to the end of its last, with the
+    /// gaps between them.</summary>
+    public double CellWidth(TableGrid.Cell cell) => ColumnEnd(cell.Column + cell.ColumnSpan - 1) - ColumnX[cell.Column];
 
     /// <summary>The width of a horizontal grid line between two rows on a page: the widest of its column segments.</summary>
     public double HorizontalWidth(int? above, int? below, CollapsedBorders.LineContext context) =>
