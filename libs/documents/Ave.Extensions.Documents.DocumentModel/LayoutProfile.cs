@@ -68,6 +68,9 @@ public sealed record LayoutProfile
 /// the rest's later slices, no other content, no padding below them. It decides where the grid line below the cell lies,
 /// and so where the table ends and what follows starts. Every other cell, and such a cell under either value on the page
 /// where the piece starts, holds its half of the line below it (CSS 2.1 §17.6.2).
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) the policy has no meaning: there is no grid line,
+/// and a table of that model with content sliced in a cell is refused (<c>Documents.Layout.TableBreak</c>; case
+/// <c>ts-break-image</c>).</para>
 /// </summary>
 public enum SliceRestEnd
 {
@@ -96,6 +99,9 @@ public enum SliceRestEnd
 /// On which later pages of a table its repeated header rows are drawn, where a piece in one of its body cells (an image,
 /// a line) is taller than the room below them (<see cref="MonolithicOverflow.Slice"/>). Only a table whose header rows
 /// repeat is concerned; nothing changes on its first page.
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) neither value is reached: a table of that model
+/// with content sliced in a cell is refused (<c>Documents.Layout.TableBreak</c>; case <c>ts-break-image</c>), and its
+/// header rows start every later fragment, one spacing above the first body row (case <c>ts-break-header</c>).</para>
 /// </summary>
 public enum RepeatedHeaderRows
 {
@@ -126,6 +132,9 @@ public enum RepeatedHeaderRows
 /// the row starts, every cell of a cut row starts at the top of its part under both values, as Chromium prints it (case
 /// <c>fr-cut-row-uncut-bottom-cell</c>: a bottom-aligned cell that fits beside a cell that is cut); a row that no break
 /// cuts is aligned as its cells' <see cref="VerticalAlign"/> says under both values.
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) a cut row whose cells are all aligned at the top is
+/// drawn as under both values (cases <c>ts-break-cut</c>, <c>ts-break-move</c>); one with a cell aligned at the middle
+/// or bottom is refused (<c>Documents.Layout.TableBreak</c>), as no case measures it.</para>
 /// </summary>
 public enum CutRowAlignment
 {
@@ -149,6 +158,8 @@ public enum CutRowAlignment
 /// area in one of its cells (<see cref="MonolithicOverflow.Slice"/>): beside the slice from the top of the page, or below
 /// it. Only a cell that continues from the previous page is concerned; a cell whose content ended there stays empty either
 /// way, and nothing changes on the page where the piece starts.
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) neither value is reached: a table of that model
+/// with content sliced in a cell is refused (<c>Documents.Layout.TableBreak</c>; case <c>ts-break-image</c>).</para>
 /// </summary>
 public enum CellsBesideSlices
 {
@@ -197,6 +208,9 @@ public enum BodyClip
 /// <see cref="EmptyRowParts.Allow"/> (its content fits, its line below does not): below the table's last row, or at a
 /// break between rows after it. That part is never content: it is a grid line, or the half of a line that a cell holds.
 /// The page that ends draws the line under either value; the value decides what the next page does.
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) neither value is reached: a page of a table of that
+/// model that would pass the page end is refused (<c>Documents.Layout.TableBreak</c>), and a last row that fits only
+/// without the spacing, padding and border below it moves to the next page (case <c>ts-break-end</c>).</para>
 /// </summary>
 public enum TableEndOverflow
 {
@@ -236,6 +250,8 @@ public enum TableEndOverflow
 /// at its centre (<c>BoxDecorationBreak.Slice</c>): the upper half ends one page, the lower half starts the next. Only the
 /// paint follows the policy: each half takes its exact width in layout under either value, so content is where it is
 /// under <see cref="Exact"/>. A pixel here is the CSS pixel: 1/96 inch, 0.75 pt (CSS Values 4 §6.2).
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) the policy has no meaning: there is no grid line to
+/// split; the table and each cut cell are sliced as block boxes are (cases <c>ts-break-rows</c>, <c>ts-break-cut</c>).</para>
 /// </summary>
 public enum SplitLineHalves
 {
@@ -386,6 +402,10 @@ public enum MonolithicOverflow
 /// Whether a table row may be cut at a page break where one part of it — the part on this page, or the rest on the
 /// next — shows nothing: a strip of empty cells at the end or the start of a page. CSS leaves where a row breaks to the
 /// user agent (CSS Fragmentation 3 §4.4 and CSS 2.1 §17 name no rule for it).
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) rows are cut and moved by the same rule; under <see
+/// cref="Allow"/> as Chromium prints it (cases <c>ts-break-cut</c>: a cell that ended goes on, empty, beside the cut
+/// cell; <c>ts-break-move</c>; <c>ts-break-first-row</c>: a table whose first row has no break that fits moves to the
+/// next page whole), under <see cref="Avoid"/> not measured, as with collapsed borders a deliberate rule of the engine.</para>
 /// </summary>
 public enum EmptyRowParts
 {

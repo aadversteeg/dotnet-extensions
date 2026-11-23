@@ -628,7 +628,7 @@ start tag, with the property and the value) only where it would change the print
 | Properties | Drawn | Refused |
 | --- | --- | --- |
 | `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
-| `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders is laid out on one page | a table with separated borders that does not fit whole in the room it has on its page (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
+| `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders breaks over pages, sliced | a table with separated borders that breaks with a cell over several rows across the break, content sliced in a cell, a cut row beside a cell aligned at the middle or bottom, `box-decoration-break: clone`, or past the page end (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
 | `border-spacing` | whole CSS pixels on a table with separated borders; any value with collapsed borders (no effect) | other lengths on a table with separated borders |
 | table width, column widths, `table-layout` | the table at `auto` and `100%`; lengths of column elements; `table-layout: fixed` at width `100%` (at width `auto` the table is laid out automatically, as Chromium does) | percentages on column elements, any width on a cell or a column group, other table widths: see **Tables** |
 | margins | lengths of 0 or more; `auto` as 0 (width is auto); on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
@@ -721,10 +721,22 @@ as wide as its columns, its border and padding and one spacing more than it has 
 less that spacing (`ts-span`); a thicker cell border widens its own column and heightens its own row (`ts-paint`). Refused:
 a spacing other than whole CSS pixels (Chromium's rounding of it is not measured), a border on a row or a row group of
 such a table (CSS 2.1 §17.6.1 gives them none; not measured), and backgrounds of rows, groups and columns as with
-collapsed borders. Layout draws such a table on one page only: one that does not fit whole in the room it has (it would
-break between or inside its rows, which Chromium does) is refused by layout with `Documents.Layout.TableBreak` at the
-table's source line; draw it with collapsed borders, or give it the room on one page. The code front-end keeps collapsed
-grid lines; the separated model is reached through HTML.
+collapsed borders. Over pages the table and each cell a break cuts are sliced as block boxes are (CSS Fragmentation 3
+§5.4), as Chromium prints them (cases `ts-break-*`, equal): a fragment that breaks runs to the page end with its side
+borders and background, without its bottom border and without the spacing below its last row; the next page starts
+with its first row (or the repeated header row) at the fragment's top, with no border, padding or spacing above it,
+and one spacing between the header and the first body row (`ts-break-rows`, `ts-break-header`); only the last fragment
+ends with the spacing, padding and border below the last row, and a last row that fits only without them moves to the
+next page (`ts-break-end`). A row cut inside itself slices each of its cells, and a cell whose content ended above the
+cut goes on, empty, as tall as the row, its bottom border on the next page (`ts-break-cut`); rows are cut and moved by
+the rules of collapsed tables (`ts-break-move`, `ts-break-first-row`). Refused by layout with
+`Documents.Layout.TableBreak` at the table's source line, where no case shows a rule: a cell over several rows across
+the break (`ts-break-span`: Chromium starts the next row one spacing below the page's top while the spanning cell's
+rest ends higher); content sliced in a cell, or a row cut empty below a repeated header (`ts-break-image`: Chromium
+moves the image's row to the next page with its cells empty and draws the last fragment twice); a cut row with a cell
+aligned at the middle or bottom; `box-decoration-break: clone`; a page of the table that would pass the page end. The
+policies of `LayoutProfile` say what each means in this model. The code front-end keeps collapsed grid lines; the
+separated model is reached through HTML.
 
 **The page.** Without an `@page` rule the page is the caller's, as Chromium prints on the paper of the print call:
 `HtmlStyleOptions.Page`, by default A4 with no margins; media queries and viewport units see its page area, `size:
@@ -1341,9 +1353,11 @@ Each is documented next to its code as well.
 - **Input size:** elements nest at most 64 deep (`Fluent/InputLimits.cs`; `Documents.Input.Invalid.TooDeep`), which
   keeps every recursive step of the engine far from the stack limit; no length is longer than 14 400 pt
   (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
-- **Separated borders:** a table with separated borders (`BoxStyle.BorderModel` `Separate`) is laid out on one page
-  only: one that does not fit whole in the room it has is refused (`Documents.Layout.TableBreak`), where Chromium breaks
-  it with its border and padding sliced. The code front-end has no separated model (its tables keep collapsed grid
+- **Separated borders:** a table with separated borders (`BoxStyle.BorderModel` `Separate`) breaks between rows and
+  inside rows of top-aligned cells, as Chromium prints it; it is refused (`Documents.Layout.TableBreak`) where it breaks
+  with a cell over several rows across the break, with content sliced in a cell, with a cut row beside a cell aligned
+  at the middle or bottom, with `box-decoration-break: clone`, or past the page end (cases `ts-break-span`,
+  `ts-break-image`; the others not measured). The code front-end has no separated model (its tables keep collapsed grid
   lines). Measured with spacings of whole CSS pixels only, which is what the HTML front-end draws.
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
   the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the

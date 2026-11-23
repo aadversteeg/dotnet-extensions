@@ -93,9 +93,11 @@ public class ProfileDocumentTests
         Line();
         Line("`border-collapse`: both models are drawn. A table with separated borders (`separate`, the initial value) keeps its");
         Line("border, padding and background, each cell paints its own border, and `border-spacing` lies between the cells and");
-        Line("around them, in whole CSS pixels (another spacing is refused). Such a table is laid out on one page only: one that");
-        Line("does not fit whole in the room it has is refused at the table's line, where Chromium breaks it. A border on a row");
-        Line("or a row group of such a table is refused; put borders and backgrounds on the cells.");
+        Line("around them, in whole CSS pixels (another spacing is refused). Such a table breaks over pages as Chromium prints it,");
+        Line("sliced: between rows and inside rows of top-aligned cells, with a repeated header. It is refused at the table's line");
+        Line("where it breaks with a cell over several rows across the break, with content sliced in a cell, beside a cut cell");
+        Line("aligned at the middle or bottom, or with `box-decoration-break: clone`. A border on a row or a row group of such a");
+        Line("table is refused; put borders and backgrounds on the cells.");
         Line();
         Line("### Supported at the initial value only");
         Line();

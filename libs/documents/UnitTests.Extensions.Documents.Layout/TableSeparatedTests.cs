@@ -149,23 +149,143 @@ public class TableSeparatedTests
         ChromiumLayout.DifferenceInLayoutUnits(cells[2].Box.Size.Width, 44.320).Should().BeLessThanOrEqualTo(1 + ChromiumLayout.FloatSlack);
     }
 
+    /// <summary>The pages of a document that lays out.</summary>
+    private static ValueList<PageFragment> Pages(StyledDocument document)
+    {
+        var result = Layout(document);
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        return result.Value;
+    }
+
+    /// <summary>The table of the <c>ts-break-*</c> cases: spacing 6 pt, padding 3 pt, border 3 pt, a background.</summary>
+    private static Box Broken(Box table) => Separated(table, 6, 6, Red(3), Edges.All(3.Pt()), Color.Black);
+
+    private static Box[] Rows(TableModels t, int from, int to) =>
+        [.. Enumerable.Range(from, to - from + 1).Select(row => t.Row(t.Cell($"row {row}"), t.Cell($"text {row}")))];
+
     /// <summary>
-    /// A table with separated borders is laid out on one page only in this version: one that does not fit whole in the
-    /// room it has is refused with <see cref="LayoutErrorCodes.TableBreak"/> at its source line, where Chromium breaks it
-    /// (CSS Fragmentation 3); the same table with collapsed borders breaks.
+    /// At a break between rows the table is sliced as a block box is, and the next page starts with its row: case
+    /// <c>ts-break-rows</c> (a page area of 136 pt, eight rows): five rows on page 1, where the table's fragment runs to
+    /// the page end with its side borders and background and without its bottom border (Chromium's background and side
+    /// borders reach 147.996 pt, the page end); on page 2 the first row's cell starts at the fragment's top, with no
+    /// border, padding or spacing above it (its top border at 12 pt, the page area's top), and the fragment ends 12 pt
+    /// below the last row: spacing, padding and the bottom border.
     /// </summary>
     [Fact]
-    public void A_table_with_separated_borders_that_does_not_fit_its_page_is_refused()
+    public void At_a_break_between_rows_the_table_is_sliced_and_the_next_page_starts_with_its_row()
     {
         var t = new TableModels(ExactSize);
-        var table = t.Table(TwoAutos, t.Body([.. Enumerable.Range(0, 12).Select(row => t.Row(t.Cell($"row {row}"), t.Cell("two")))]));
+        var pages = Pages(TableModels.Page(276, 136, Broken(t.Table(TwoAutos, t.Body(Rows(t, 1, 8))))));
 
-        var refused = Layout(TableModels.Page(276, 120, Separated(table, 6, 6, Red(1.5))));
-        refused.IsFailure.Should().BeTrue();
-        refused.Error.Code.Should().Be(LayoutErrorCodes.TableBreak);
-        refused.Error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(table.Source.Line);
+        pages.Should().HaveCount(2);
+        Cells(pages[0]).Should().HaveCount(10, "five rows on page 1");
+        Cells(pages[1]).Should().HaveCount(6, "three rows on page 2");
+        var (first, _) = Table(pages[0]);
+        first.Size.Height.Should().BeApproximately(136, 1e-9, "the fragment that breaks runs to the page end");
+        first.Border.Bottom.Should().Be(BorderSide.None, "no bottom border at the break");
+        first.Border.Top.Width.Points.Should().Be(3);
+        var (second, at) = Table(pages[1]);
+        var cells = Cells(pages[1]);
+        (cells[0].At.Y - at.Y).Should().BeApproximately(0, 1e-9, "no border, padding or spacing above the first row of a later page");
+        second.Border.Top.Should().Be(BorderSide.None, "no top border after the break");
+        second.Border.Bottom.Width.Points.Should().Be(3);
+        (at.Y + second.Size.Height - (cells[^1].At.Y + cells[^1].Box.Size.Height)).Should().BeApproximately(6 + 3 + 3, 1e-9, "spacing, padding and border below the last row");
+    }
 
-        Layout(TableModels.Page(276, 120, table)).Value.Should().HaveCountGreaterThan(1, "with collapsed borders the table breaks");
+    /// <summary>
+    /// A repeated header row starts a later page's fragment, and one spacing lies between it and the first body row:
+    /// case <c>ts-break-header</c> (a header row and twelve rows, a page area of 136 pt): four body rows on each of three
+    /// pages; on pages 2 and 3 the header's top border at 12 pt, the page area's top, and the first body row's 6 pt below
+    /// the header (Chromium: the header's bottom border ends at 30, the next row's top border starts at 36).
+    /// </summary>
+    [Fact]
+    public void A_repeated_header_row_starts_a_later_page_and_one_spacing_lies_below_it()
+    {
+        var t = new TableModels(ExactSize);
+        var table = t.Table(TwoAutos, t.Head(t.Row(t.Cell("head"), t.Cell("other"))), t.Body(Rows(t, 1, 12)));
+        var pages = Pages(TableModels.Page(276, 136, Broken(table)));
+
+        pages.Select(page => Cells(page).Count).Should().Equal([10, 10, 10], "the header and four body rows on each page");
+        foreach (var page in pages.Skip(1))
+        {
+            var (_, at) = Table(page);
+            var cells = Cells(page);
+            (cells[0].At.Y - at.Y).Should().BeApproximately(0, 1e-9, "the repeated header at the fragment's top");
+            (cells[2].At.Y - (cells[0].At.Y + cells[0].Box.Size.Height)).Should().BeApproximately(6, 1e-9, "one spacing below the header");
+        }
+    }
+
+    /// <summary>
+    /// The table's last row fits only with the spacing, padding and border below it: case <c>ts-break-end</c> (five rows,
+    /// a page area of 128.004 pt, in which the fifth row ends at 127.17 pt and its 12 pt below do not fit): Chromium moves
+    /// the fifth row to page 2.
+    /// </summary>
+    [Fact]
+    public void A_last_row_that_fits_only_without_the_spacing_padding_and_border_below_it_moves_to_the_next_page()
+    {
+        var t = new TableModels(ExactSize);
+        var pages = Pages(TableModels.Page(276, 128, Broken(t.Table(TwoAutos, t.Body(Rows(t, 1, 5))))));
+
+        pages.Select(page => Cells(page).Count).Should().Equal([8, 2]);
+    }
+
+    /// <summary>
+    /// A row cut inside itself slices each of its cells as a block box is sliced, and a cell whose content ended above
+    /// the cut goes on, empty, as tall as the row: case <c>ts-break-cut</c> (a cell of ten lines beside "short"): on page 1
+    /// both cells paint their top border and no bottom border, their sides down to the page end; on page 2 both start at
+    /// the fragment's top without a top border and end with their bottom border, equally tall (Chromium: both bottom
+    /// borders at 52.5 to 53.25 pt).
+    /// </summary>
+    [Fact]
+    public void A_cut_row_slices_its_cells_and_the_cell_that_ended_is_closed_on_the_next_page()
+    {
+        var t = new TableModels(ExactSize);
+        var lines = t.Lines([.. Enumerable.Range(1, 10).Select(line => $"line {line}")]);
+        var table = t.Table(TwoAutos, t.Body(t.Row(t.Cell("one"), t.Cell("text 1")), t.Row(lines, t.Cell("short")), t.Row(t.Cell("three"), t.Cell("text 3"))));
+        var pages = Pages(TableModels.Page(276, 136, Broken(table)));
+
+        pages.Should().HaveCount(2);
+        var before = Cells(pages[0]).Skip(2).ToList();
+        before.Select(cell => cell.Box.Border.Bottom).Should().Equal([BorderSide.None, BorderSide.None], "no bottom border at the cut");
+        before.Select(cell => cell.Box.Border.Top.Width.Points).Should().Equal([0.75, 0.75]);
+        var (_, at) = Table(pages[1]);
+        var after = Cells(pages[1]).Take(2).ToList();
+        after.Select(cell => cell.At.Y - at.Y).Should().Equal([0.0, 0.0], "the cut row goes on at the fragment's top");
+        after.Select(cell => cell.Box.Border.Top).Should().Equal([BorderSide.None, BorderSide.None], "no top border after the cut");
+        after.Select(cell => cell.Box.Border.Bottom.Width.Points).Should().Equal([0.75, 0.75], "each closed on the page where it ends");
+        after[1].Box.Size.Height.Should().BeApproximately(after[0].Box.Size.Height, 1e-9, "the cell that ended is as tall as the row");
+    }
+
+    /// <summary>
+    /// Where no measured case says how Chromium breaks a table with separated borders, the table is refused with
+    /// <see cref="LayoutErrorCodes.TableBreak"/> at its source line: a cell over three rows across the break (case
+    /// <c>ts-break-span</c>: Chromium starts the next row 6 pt below the page's top while the spanning cell's rest ends
+    /// at 27 pt), a cut row with a cell aligned at the middle, and a table that clones its decoration at a break. The
+    /// same tables with collapsed borders break, on a smaller page.
+    /// </summary>
+    [Fact]
+    public void A_break_that_no_measured_case_shows_is_refused()
+    {
+        var t = new TableModels(ExactSize);
+        var spanning = t.Table(TwoAutos, t.Body([
+            .. Rows(t, 1, 3),
+            t.Row(t.Cell("span", TableModels.ReferenceCell with { Span = new CellSpan(1, 3) }), t.Cell("text 4")),
+            t.Row(t.Cell("text 5")),
+            t.Row(t.Cell("text 6")),
+            .. Rows(t, 7, 7)]));
+        var lines = t.Lines([.. Enumerable.Range(1, 10).Select(line => $"line {line}")]);
+        var middle = t.Table(TwoAutos, t.Body(t.Row(t.Cell("one"), t.Cell("text 1")), t.Row(lines, t.Cell("short", TableModels.ReferenceCell with { VerticalAlign = VerticalAlign.Middle }))));
+        var rows = t.Table(TwoAutos, t.Body(Rows(t, 1, 8)));
+        var cloned = rows with { Style = rows.Style with { DecorationBreak = BoxDecorationBreak.Clone } };
+
+        foreach (var table in new[] { spanning, middle, cloned })
+        {
+            var refused = Layout(TableModels.Page(276, 136, Broken(table)));
+            refused.IsFailure.Should().BeTrue();
+            refused.Error.Code.Should().Be(LayoutErrorCodes.TableBreak);
+            refused.Error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(table.Source.Line);
+            Layout(TableModels.Page(276, 60, table)).IsSuccess.Should().BeTrue("with collapsed borders the table breaks");
+        }
     }
 
     /// <summary>The model's check: a border spacing is not negative (CSS 2.1 §17.6.1: "Negative values are not

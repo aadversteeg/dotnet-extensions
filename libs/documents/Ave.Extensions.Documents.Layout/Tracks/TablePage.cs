@@ -260,8 +260,8 @@ internal static class TablePage
             return Result<LayoutResult, Error>.Failure(outcome.Error);
         }
 
-        // A table with separated borders is laid out on one page only (see SeparatedFits).
-        if (table.IsSeparated && (outcome.Value.HasNoValue || outcome.Value.Value.Continuation is not null))
+        // A table with separated borders breaks only where a measured case says how (see SeparatedBreakIsDrawn).
+        if (table.IsSeparated && outcome.Value.HasValue && !SeparatedBreakIsDrawn(table, incoming, outcome.Value.Value))
         {
             return Result<LayoutResult, Error>.Failure(LayoutErrors.TableBreak(table.Box, space.AvailableHeight));
         }
@@ -282,7 +282,7 @@ internal static class TablePage
         }
 
         var placed = outcome.Value.Value;
-        var fragment = TableFragments.Build(table, placed);
+        var fragment = TableFragments.Build(table, placed, incoming, space.AvailableHeight);
         if (table.IsSeparated && !SeparatedFits(fragment, space))
         {
             return Result<LayoutResult, Error>.Failure(LayoutErrors.TableBreak(table.Box, space.AvailableHeight));
@@ -304,12 +304,50 @@ internal static class TablePage
     }
 
     /// <summary>
-    /// Whether a table with separated borders fits whole in the room it has on its page. Such a table is laid out on one
-    /// page only in this version: where it would break between or inside its rows, or reach past the page end, it is
-    /// refused (<see cref="LayoutErrorCodes.TableBreak"/>, at the table's source line) instead of being drawn other than
-    /// Chromium prints it, which breaks it with its border and padding sliced (CSS Fragmentation 3 §5.4).
+    /// Whether a page's fragment of a table with separated borders stays in the room it has on its page. Where it would
+    /// pass the page end (a row that starts its page area and does not fit with the spacing, padding and border below it,
+    /// <see cref="PassesOnlyByItsLineBelow"/>), it is refused (<see cref="LayoutErrorCodes.TableBreak"/>, at the table's
+    /// source line): what Chromium prints there is not measured for separated borders.
     /// </summary>
     private static bool SeparatedFits(BoxFragment fragment, ConstraintSpace space) => Fitting.Fits(fragment.Size.Height, space.AvailableHeight);
+
+    /// <summary>
+    /// Whether a page of a table with separated borders breaks where a measured case says how Chromium prints it. Drawn:
+    /// a break between two rows that no cell spans (cases <c>ts-break-rows</c>, <c>ts-break-header</c>, <c>ts-break-end</c>)
+    /// and a break inside a row whose cells are all aligned at the top (<c>ts-break-cut</c>, <c>ts-break-move</c>), the
+    /// table and the cut cells sliced (<see cref="TableFragments"/>). Refused (<see cref="LayoutErrorCodes.TableBreak"/>):
+    /// a cell over several rows across the break (case <c>ts-break-span</c>: Chromium starts the next row one spacing below
+    /// the page's top while the spanning cell's rest ends higher, a part of a cell the rows do not set; no such mechanism
+    /// here); content taller than the page sliced in a cell, or a row cut empty below a repeated header (case
+    /// <c>ts-break-image</c>: Chromium moves the image's row to the next page with its cells empty, slices the image on the
+    /// pages after it and draws the table's last fragment twice); a cut row with a cell aligned at the middle or bottom
+    /// (<see cref="CutRowAlignment"/> is not measured for separated borders); a table of
+    /// <see cref="BoxDecorationBreak.Clone"/> (not measured for separated borders).
+    /// </summary>
+    private static bool SeparatedBreakIsDrawn(TableGeometry table, TracksBreakToken? incoming, Outcome outcome)
+    {
+        var grid = table.Grid;
+        var breaks = outcome.Continuation is { } next ? [incoming, next] : new[] { incoming };
+        foreach (var token in breaks)
+        {
+            if (token is null)
+            {
+                continue;
+            }
+
+            if (IsCloned(table) || token.Cells.Any(cell => grid.Cells[cell.Cell].RowSpan > 1))
+            {
+                return false;
+            }
+
+            if (token.RowIsSplit && token.Cells.Any(cell => grid.Cells[cell.Cell].Box.Style.VerticalAlign != VerticalAlign.Top))
+            {
+                return false;
+            }
+        }
+
+        return !outcome.CutBelowHeader && !StartsSlice(outcome) && !ContinuesSlice(Maybe.From(outcome));
+    }
 
     /// <summary>
     /// The token after a page whose table passes its page area below a row placed whole, under
@@ -539,7 +577,10 @@ internal static class TablePage
         // row cut inside itself starts again under the whole line above it, which is resolved as on the page it started
         // on, with the row's own cells and their top borders (see remarks). With clone the line also closes a spanning
         // cell that continues over the break (see remarks). One rule for the line above the page's first body row: the
-        // same context whether a repeated header comes before it or not.
+        // same context whether a repeated header comes before it or not. With separated borders the first row of the
+        // table's first page lies below the table's border, padding and one spacing (TopInset), and the first row of a
+        // later page, or its repeated header, at the fragment's top: the table is sliced there (cases ts-break-rows,
+        // ts-break-header, ts-break-cut).
         var reopensCutRow = !isFirst && resume.RowIsSplit && IsCloned(table);
         if (!isFirst && IsCloned(table))
         {
@@ -549,7 +590,7 @@ internal static class TablePage
         var continuesAfterBreak = !isFirst && !includeHeader && (!resume.RowIsSplit || reopensCutRow);
         var firstLine = continuesAfterBreak
             ? ContinuationLine(table, firstRow.Value, resumeContext, resume.FollowsPassed)
-            : new LineAt(null, firstRow, topContext, table.IsSeparated ? table.TopInset : table.HorizontalWidth(null, firstRow, topContext) / 2);
+            : new LineAt(null, firstRow, topContext, table.IsSeparated ? (isFirst ? table.TopInset : 0) : table.HorizontalWidth(null, firstRow, topContext) / 2);
         var content = Empty(firstLine.Y) with { Lines = [firstLine] };
         if (includeHeader)
         {

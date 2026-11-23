@@ -66,7 +66,8 @@ internal enum TablePart
 /// <para>The parts follow CSS 2.1 §17.5: internal table elements have no margins; rows and row groups no padding; the
 /// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A table of the separated borders
 /// model (<c>border-collapse: separate</c>, CSS 2.1 §17.6.1) keeps its padding and its <c>border-spacing</c>
-/// (<see cref="BoxStyle.BorderModel"/>, <see cref="BoxStyle.BorderSpacing"/>); layout draws it on one page only. A row span ends with its row
+/// (<see cref="BoxStyle.BorderModel"/>, <see cref="BoxStyle.BorderSpacing"/>); layout slices it at page breaks and refuses the breaks no
+/// case measures (<c>Documents.Layout.TableBreak</c>). A row span ends with its row
 /// group (HTML Standard §4.9.12.1). The table breaks with <see cref="BoxDecorationBreak.Slice"/>: layout splits a grid
 /// line at a page break between rows at its centre, half on each page, where Chromium paints the line whole on one
 /// page.</para>

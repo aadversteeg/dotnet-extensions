@@ -17,14 +17,16 @@ internal static class TableFragments
     /// <summary>Builds the fragment for a page's outcome.</summary>
     /// <param name="table">The table with its columns.</param>
     /// <param name="outcome">What the page holds.</param>
+    /// <param name="incoming">The token the page started from, null on the table's first page (separated borders only).</param>
+    /// <param name="pageEnd">The page end, from the table's top edge (separated borders only).</param>
     /// <returns>The table's fragment, as wide as the table and as tall as its rows plus the outer halves of the top
     /// and bottom lines.</returns>
-    public static BoxFragment Build(TableGeometry table, TablePage.Outcome outcome)
+    public static BoxFragment Build(TableGeometry table, TablePage.Outcome outcome, TracksBreakToken? incoming = null, double pageEnd = 0)
     {
         var content = outcome.Content;
         if (table.IsSeparated)
         {
-            return Separated(table, outcome);
+            return Separated(table, outcome, incoming, pageEnd);
         }
 
         var lines = outcome.BottomLine is { } bottomLine ? content.Lines.Add(bottomLine) : content.Lines;
@@ -39,16 +41,45 @@ internal static class TableFragments
     }
 
     /// <summary>
-    /// The fragment of a table in the separated borders model, complete on its page (<see cref="TablePage"/> refuses one
-    /// that breaks): the table's border box down to the spacing, padding and border below its last row
-    /// (<see cref="TableGeometry.BottomInset"/>), painting its own border and its background under it as a block box does,
-    /// the cells over them, each painting its own border; no grid lines (CSS 2.1 §17.6.1; case <c>ts-paint</c>: the table's
-    /// background under its whole border box, spacing included, then its border, then each cell's background and border).
+    /// The fragment of one page of a table in the separated borders model: the table's border box, painting its own border
+    /// and its background under it as a block box does, the cells over them, each painting its own border; no grid lines
+    /// (CSS 2.1 §17.6.1; case <c>ts-paint</c>: the table's background under its whole border box, spacing included, then
+    /// its border, then each cell's background and border). At a page break the table and every cell the break cuts are
+    /// sliced, as <c>box-decoration-break: slice</c> slices a block box (CSS Fragmentation 3 §5.4), as Chromium prints it:
+    /// a fragment that breaks runs to the page end without its bottom border and without the spacing below its last row,
+    /// a later fragment has no top border, padding or spacing (<see cref="TablePage"/> starts its first row at its top),
+    /// and only the last fragment ends with the spacing, padding and border below the last row
+    /// (<see cref="TableGeometry.BottomInset"/>; cases <c>ts-break-rows</c>, <c>ts-break-header</c>: the side borders and
+    /// the background down to the page end, the rows of the next page from its top). A cell paints its top border on the
+    /// page where it starts and its bottom border on the page where it ends, also a cell whose content ended above a cut
+    /// in its row: that one goes on, empty, as tall as the row, and is closed on the next page (case <c>ts-break-cut</c>:
+    /// the short cell's sides down to the page end, then from the next page's top to its bottom border).
     /// </summary>
-    private static BoxFragment Separated(TableGeometry table, TablePage.Outcome outcome)
+    private static BoxFragment Separated(TableGeometry table, TablePage.Outcome outcome, TracksBreakToken? incoming, double pageEnd)
     {
         var content = outcome.Content;
-        return new BoxFragment(table.Box, new Size(table.Width, content.Bottom + table.BottomInset), [.. Groups(table, content)], table.Box.Style.Border);
+        var continued = incoming is null ? new HashSet<int>() : incoming.Cells.Select(cell => cell.Cell).ToHashSet();
+        var goesOn = outcome.Continuation is null ? new HashSet<int>() : outcome.Continuation.Cells.Select(cell => cell.Cell).ToHashSet();
+        var cells = content.Cells.Select(cell => cell with
+        {
+            Fragment = cell.Fragment with
+            {
+                Border = cell.Fragment.Box.Style.Border with
+                {
+                    Top = continued.Contains(cell.Cell) ? BorderSide.None : cell.Fragment.Box.Style.Border.Top,
+                    Bottom = goesOn.Contains(cell.Cell) ? BorderSide.None : cell.Fragment.Box.Style.Border.Bottom,
+                },
+            },
+        });
+        var sliced = content with { Cells = [.. cells] };
+        var breaks = outcome.Continuation is not null;
+        var border = table.Box.Style.Border with
+        {
+            Top = incoming is null ? table.Box.Style.Border.Top : BorderSide.None,
+            Bottom = breaks ? BorderSide.None : table.Box.Style.Border.Bottom,
+        };
+        var height = breaks ? Math.Max(content.Bottom, pageEnd) : content.Bottom + table.BottomInset;
+        return new BoxFragment(table.Box, new Size(table.Width, height), [.. Groups(table, sliced)], border);
     }
 
     /// <summary>

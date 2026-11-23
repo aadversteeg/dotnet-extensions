@@ -28,15 +28,16 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(box.Source);
 
-    /// <summary>A table with separated borders that does not fit whole in the room it has on its page
+    /// <summary>A table with separated borders that breaks over pages in a way this version does not draw
     /// (<see cref="LayoutErrorCodes.TableBreak"/>).</summary>
     /// <param name="table">The tracks box.</param>
     /// <param name="available">The height it had on the page.</param>
     public static Error TableBreak(Box table, double available) =>
         new Error(
                 LayoutErrorCodes.TableBreak,
-                $"{Describe(table)} has separated borders and does not fit whole in {Room(available)}; a table with separated borders "
-                + "is laid out on one page only in this version: give it the room on one page, or draw it with collapsed borders.")
+                $"{Describe(table)} has separated borders and breaks in {Room(available)} where this version does not draw the break: "
+                + "a cell over several rows across it, content sliced in a cell, a row cut beside a cell aligned at the middle or bottom, "
+                + "box-decoration-break: clone, or a part past the page end. Give the table the room on one page, or draw it with collapsed borders.")
             .With(ErrorMetadataKeys.Node, table.Id.ToString())
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(table.Source);
