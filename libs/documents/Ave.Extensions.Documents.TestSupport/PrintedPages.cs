@@ -38,6 +38,27 @@ public sealed record PrintedBox(int Page, double X0, double Y0, double X1, doubl
     public double Height => Y1 - Y0;
 }
 
+/// <summary>The area a filled or stroked path that is not a rectangle paints (a curve, such as a list marker's disc or
+/// circle), on the grid of whole pixels of 0.75 pt from the page's top left: the box of whole pixels that holds every
+/// pixel it paints, and per pixel the share that is painted, in fifteenths (<c>tools/reference/chromium/paths.py</c>).
+/// A stroke and a fill that paint the same ink are the same area; a disc and a square in one box are not.</summary>
+/// <param name="Page">The page, from 1.</param>
+/// <param name="X0">The box's left edge, a whole pixel.</param>
+/// <param name="Y0">The box's top edge, a whole pixel.</param>
+/// <param name="X1">The box's right edge, a whole pixel.</param>
+/// <param name="Y1">The box's bottom edge, a whole pixel.</param>
+/// <param name="Colour">The paint's colour as <c>#rrggbb</c> (<c>#rrggbbaa</c> where it is not opaque).</param>
+/// <param name="Rows">The box's rows from the top, each one hexadecimal digit per pixel from the left: 0 for nothing
+/// painted, f for the whole pixel.</param>
+public sealed record PrintedPath(int Page, double X0, double Y0, double X1, double Y1, string Colour, ImmutableArray<string> Rows)
+{
+    /// <summary>Whether two paths paint the same area in the same colour (a record compares its array by reference).</summary>
+    /// <param name="other">The other path.</param>
+    /// <returns>Whether they are the same.</returns>
+    public bool Paints(PrintedPath other) =>
+        other is not null && (Page, X0, Y0, X1, Y1, Colour) == (other.Page, other.X0, other.Y0, other.X1, other.Y1, other.Colour) && Rows.SequenceEqual(other.Rows);
+}
+
 /// <summary>One printed page: its size and what is on it.</summary>
 /// <param name="Number">The page number, from 1.</param>
 /// <param name="Width">The page width.</param>
@@ -45,8 +66,14 @@ public sealed record PrintedBox(int Page, double X0, double Y0, double X1, doubl
 /// <param name="Words">The words, sorted by baseline and then by <see cref="PrintedWord.X0"/>.</param>
 /// <param name="Rectangles">The painted rectangles, filled and stroked, in drawing order.</param>
 /// <param name="Images">The images, in drawing order.</param>
-public sealed record PrintedPage(int Number, double Width, double Height, ImmutableArray<PrintedWord> Words, ImmutableArray<PrintedBox> Rectangles, ImmutableArray<PrintedBox> Images)
+/// <param name="Paths">The areas painted by paths that are not rectangles (curves), in drawing order; empty where there
+/// are none.</param>
+public sealed record PrintedPage(int Number, double Width, double Height, ImmutableArray<PrintedWord> Words, ImmutableArray<PrintedBox> Rectangles, ImmutableArray<PrintedBox> Images,
+    ImmutableArray<PrintedPath> Paths = default)
 {
+    /// <summary>The areas painted by paths that are not rectangles, in drawing order (empty, never default).</summary>
+    public ImmutableArray<PrintedPath> Paths { get; init; } = Paths.IsDefault ? [] : Paths;
+
     /// <summary>The words of the page joined by single spaces, in reading order (baseline, then x).</summary>
     public string Text => string.Join(" ", Words.Select(word => word.Text));
 
@@ -110,11 +137,12 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     /// <summary>
     /// Reads the text form <c>positions.py</c> writes: one line per item, <c>page n width height</c>, <c>word page x0 x1
     /// baseline size text colour face</c>, <c>rect page x0 y0 x1 y1 colour</c>, <c>stroke page x0 y0 x1 y1 colour</c> (a
-    /// band a stroke paints), <c>image page x0 y0 x1 y1</c>.
+    /// band a stroke paints), <c>image page x0 y0 x1 y1</c>, <c>path page x0 y0 x1 y1 colour rows</c> (the area a curve
+    /// paints, <see cref="PrintedPath"/>; the rows joined by <c>/</c>).
     /// </summary>
     /// <param name="text">The file's text.</param>
     /// <returns>The pages.</returns>
-    /// <exception cref="FormatException">A line is not one of the five forms, with exactly the fields of its form.</exception>
+    /// <exception cref="FormatException">A line is not one of the six forms, with exactly the fields of its form.</exception>
     public static PrintedPages Parse(string text)
     {
         var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -124,7 +152,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
         static PrintedBox Box(string[] fields) =>
             new(int.Parse(fields[1], CultureInfo.InvariantCulture), Number(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]),
                 fields.Length > 6 ? fields[6] : null, fields[0] == "stroke");
-        foreach (var fields in lines.Where(fields => fields.Length != fields[0] switch { "page" => 4, "word" => 9, "rect" or "stroke" => 7, "image" => 6, _ => -1 }))
+        foreach (var fields in lines.Where(fields => fields.Length != fields[0] switch { "page" => 4, "word" => 9, "rect" or "stroke" => 7, "image" => 6, "path" => 8, _ => -1 }))
         {
             throw new FormatException($"Not a line of positions.py: '{string.Join(' ', fields)}'.");
         }
@@ -135,13 +163,18 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             .ToImmutableArray();
         var rectangles = lines.Where(fields => fields[0] is "rect" or "stroke").Select(Box).ToImmutableArray();
         var images = lines.Where(fields => fields[0] == "image").Select(Box).ToImmutableArray();
+        var paths = lines.Where(fields => fields[0] == "path")
+            .Select(fields => new PrintedPath(int.Parse(fields[1], CultureInfo.InvariantCulture), Number(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]), fields[6],
+                [.. fields[7].Split('/')]))
+            .ToImmutableArray();
         return new([.. lines.Where(fields => fields[0] == "page").Select(fields =>
         {
             var number = int.Parse(fields[1], CultureInfo.InvariantCulture);
             return new PrintedPage(number, Number(fields[2]), Number(fields[3]),
                 Sorted(words.Where(word => word.Page == number)),
                 [.. rectangles.Where(box => box.Page == number)],
-                [.. images.Where(box => box.Page == number)]);
+                [.. images.Where(box => box.Page == number)],
+                [.. paths.Where(path => path.Page == number)]);
         })]);
     }
 
@@ -151,7 +184,9 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance; its colour
     /// and face are its run's. A rectangle's colour is its fill's. A rectangle and an image are the part the page shows,
     /// inside the clips open around them (<see cref="ClipStart"/>, <see cref="Visible"/>), and left out where they lie
-    /// wholly outside them, as <c>positions.py</c> reads Chromium's print; a word is whole.
+    /// wholly outside them, as <c>positions.py</c> reads Chromium's print; a word is whole. A filled path is the area it
+    /// paints inside those clips, sampled by the rule <c>paths.py</c> reads Chromium's curves with (<see cref="PathSampler"/>),
+    /// and left out where it paints no pixel.
     /// </summary>
     /// <param name="document">The page model.</param>
     /// <returns>The pages.</returns>
@@ -160,6 +195,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
         {
             var number = index + 1;
             var (rectangles, images) = (ImmutableArray.CreateBuilder<PrintedBox>(), ImmutableArray.CreateBuilder<PrintedBox>());
+            var paths = ImmutableArray.CreateBuilder<PrintedPath>();
             var clips = new System.Collections.Generic.Stack<Core.Rect>();
             foreach (var item in page.Items)
             {
@@ -177,11 +213,14 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                     case DrawImage image when Visible(Box(number, image.Area), clips.Count == 0 ? null : clips.Peek()) is { } shown:
                         images.Add(shown);
                         break;
+                    case FillPath path when PathSampler.Sample(number, path, clips.Count == 0 ? null : clips.Peek()) is { } painted:
+                        paths.Add(painted);
+                        break;
                 }
             }
 
             return new PrintedPage(number, page.Size.Width, page.Size.Height,
-                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run))), rectangles.ToImmutable(), images.ToImmutable());
+                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run))), rectangles.ToImmutable(), images.ToImmutable(), paths.ToImmutable());
         })]);
 
     /// <summary>

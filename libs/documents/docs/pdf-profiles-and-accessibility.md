@@ -137,7 +137,7 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 09-002 | structure nested in a meaningless way | Mostly met: the front-end cannot put a table inside a heading or paragraph. A table inside a table cell is allowed and tagged as written. |
 | 11-007 | the declared language is wrong | **Your part:** one language per document. Open: no language per paragraph or span yet, so a quote in another language is read in the document's language. |
 | 12-001 | stretched characters not represented | Not possible: justification stretches spaces, never glyphs. |
-| 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. |
+| 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. A filled path of the page model is content or an artifact as its producer marks it, as any drawn item; the layout draws none yet. |
 | 13-002 | a link with a meaningful background | Not possible: no links yet. |
 | 13-003 | a caption not tagged as Caption | **Open:** there is no caption element; a caption is a paragraph. |
 | 13-005 | ActualText used where Alt fits better | Met: images and figures get Alt. ActualText is written only on the marked content of a glyph whose text differs from its ToUnicode entry (a ligature, a shared hyphen glyph), to give that glyph's own text, where Alt does not apply. |
