@@ -968,8 +968,11 @@ Each is documented next to its code as well.
   it, the line between the two rows is drawn there once, as the upper half that passed, and the next row keeps the room
   of the lower half without drawing it (cases `fr-continued-pad-past-33-next-row`, with a 6 pt and a 2.25 pt line
   `-line-6pt`, `-line-2-25pt`, and `-taller-than-page-next-row`). Still cut so: a row
-  with a cell that ends above the page end, whose whole bottom padding Chromium gives the next page (13.5 pt in
-  `-two-cells`), and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
+  with a cell that ends above the page end, where Chromium gives the next page what passed of the cell that passes
+  (1.125 pt with the line's upper half) plus the largest whole bottom padding of the cells that ended above the page
+  end, the line below centred 13.125 pt below the page's top beside 12 pt of padding (`-two-cells`), 7.125 pt beside
+  6 pt (`-two-cells-pad-6`), 19.125 pt beside 6 and 18 pt (`-three-cells`): not the rule above, which carries only
+  what passed; and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
   Padding that passes by more than the page area takes the whole next page and the rest the page after, as in Chromium;
   without a row after the table Chromium then starts what follows 0.75 pt below the page's top, over the padding, where
   the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, listed through the HTML front-end,
@@ -1130,9 +1133,11 @@ Each is documented next to its code as well.
   page 1, moves to page 2 whole). (v) With 13.875 pt of top padding, under `Allow` that page goes on without the outer
   header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and Chromium repeats
   the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`,
-  `a2-row-end-nested-under-header-13875`): below the header the engine starts the inner table 0.375 pt higher than
-  Chromium (its top line at 28.125, Chromium's at 28.5), so the row's ten lines fit there with only its line below past
-  the page end, and such a row is not cut. With 9 lines below 12 pt of top padding the
+  `a2-row-end-nested-under-header-13875`). Below the header both lay the inner table out in one place (its line laid
+  out at 28.125, which Chromium prints at 28.5, the nearest whole pixel), the row's lines from 42.375: 149.625 pt of
+  room for ten lines of 15 pt, which do not fit by 0.375; Chromium cuts the row there (widows 2: `x0`..`x7`), and the
+  engine finds no cut below the header that is not a last resort and goes on without it (with 13.125 or 14.25 pt it
+  keeps the header). With 9 lines below 12 pt of top padding the
   rest of the inner table fits below the repeated header but for the outer table's bottom line: Chromium repeats the
   header and lets that line pass the page end (and draws it again on a third page that shows nothing else), and the
   engine goes on without the header under every profile (`H a0`..`a9`, `x0`..`x8 after`;

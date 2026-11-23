@@ -749,8 +749,10 @@ internal static class TablePage
     /// with a row after it; <c>fr-row-later-page-padding-overflows</c>, a row that moved to the page whole;
     /// <c>a4-continued-cell-pad-bottom-30</c>, a nested table as the content). Where a cell's content does not fit, the
     /// row is cut as before, and its last lines go to the next page with the padding. Also as before: a row with a cell
-    /// that ends above the page end, where Chromium gives the next page that cell's whole bottom padding (case
-    /// <c>fr-row-later-page-padding-overflows-two-cells</c>: 13.5 pt on page 3, where the cell that passes leaves 1.5), and
+    /// that ends above the page end, where Chromium gives the next page what passed plus the largest whole bottom padding
+    /// of the cells that ended (cases <c>fr-row-later-page-padding-overflows-two-cells</c>: the line below centred at
+    /// 13.125 pt beside 12 pt of padding, where the cell that passes leaves 1.125; <c>-two-cells-pad-6</c>: 7.125 beside
+    /// 6; <c>-three-cells</c>: 19.125 beside 6 and 18), and
     /// a cell whose rest is only padding, without content (not measured).
     /// Under <see cref="TableEndOverflow.EndsOnPage"/> nothing changes.
     /// </summary>
