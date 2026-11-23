@@ -66,6 +66,9 @@ public static partial class HtmlBoxGenerator
         TableEndOverflow = TableEndOverflow.ContinuesOnNextPage,
         BodyClip = BodyClip.BodyArea,
         CellsBesideSlices = CellsBesideSlices.Below,
+        CutRowAlignment = CutRowAlignment.TopOnEveryPage,
+        RepeatedHeaderRows = RepeatedHeaderRows.WhereContentIsLaidOut,
+        SliceRestEnd = SliceRestEnd.AtLineCentre,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>

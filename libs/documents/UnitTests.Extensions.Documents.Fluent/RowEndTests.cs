@@ -330,14 +330,12 @@ public class RowEndTests
     }
 
     [Fact]
-    public void Under_an_outer_table_s_repeated_header_a_continued_row_that_fits_but_for_its_line_below_is_not_placed_whole_there()
+    public void Under_an_outer_table_s_repeated_header_a_row_that_moved_from_the_page_before_is_cut_below_the_header_as_in_Chromium()
     {
         // A table inside the one body cell of a table with a header row "H": its row of 10 lines fills page 1, and its
-        // second row, 10 lines below 14.25 pt top padding, starts page 2 below the repeated header. There the inner table
-        // continues but does not start the page, so the rule does not place the row whole below the header. Under Avoid
-        // the row is cut before "x8", as Chromium prints it. Under Allow the cut below the header is not taken: page 2
-        // goes on without the header, where the rule places the row whole (docs/architecture.md, "Known limits"); Chromium
-        // repeats the header and cuts the row.
+        // second row, 10 lines below 14.25 pt top padding, has no room there for its padding and moves to page 2 whole
+        // (CellTopInsetTests), below the repeated header. There the inner table continues but does not start the page, so
+        // the rule does not place the row whole below the header: the row is cut before "x8", as Chromium prints it.
         Element[] body =
         [
             Grid(1, HeaderRow([Cell("H")]), TableRow([Cell([Grid(1,
@@ -346,14 +344,13 @@ public class RowEndTests
                 TableRow([Cell("after")]))])])),
         ];
         var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header");
-        string[] withoutHeader = ["H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after"];
         foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
         {
             foreach (var parts in Enum.GetValues<EmptyRowParts>())
             {
                 var result = Run(body, parts, overflow);
                 result.IsSuccess.Should().BeTrue($"{overflow}/{parts}: {(result.IsFailure ? result.Error.ToString() : string.Empty)}");
-                PrintedPages.Engine(result.Value).PageTexts.Should().Equal(parts == EmptyRowParts.Avoid ? chromium.PageTexts : withoutHeader, $"{overflow}/{parts}");
+                PrintedPages.Engine(result.Value).PageTexts.Should().Equal(chromium.PageTexts, $"{overflow}/{parts}");
             }
         }
 
@@ -394,18 +391,19 @@ public class RowEndTests
     [Fact]
     public void Under_an_outer_table_s_repeated_header_a_continued_row_below_13_875_pt_of_padding_is_cut_as_in_Chromium_under_Avoid_only()
     {
-        // The shape above with 10 lines below 13.875 pt top padding. Under Avoid the row is cut below the repeated header
-        // as Chromium cuts it. Under Allow it is refused under Refuse, and under Slice page 2 goes on without the header,
-        // as in a2-row-end-nested-under-header (docs/architecture.md, "Known limits").
+        // The shape above with 10 lines below 13.875 pt top padding: the row moves to page 2 whole as above. Under Avoid it
+        // is cut below the repeated header as Chromium cuts it. Under Allow page 2 goes on without the header: below the
+        // header the engine starts the inner table 0.375 pt higher than Chromium (its top line at 28.125, Chromium's at
+        // 28.5), so the row's ten lines fit there and only its line below passes the page end; such a row is not cut, and
+        // it cannot move (docs/architecture.md, "Known limits").
         var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header-13875");
         foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
         {
             Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Avoid, overflow).OnSuccessMap(PrintedPages.Engine).Value.PageTexts.Should().Equal(chromium.PageTexts, $"{overflow}/Avoid");
+            Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, overflow).OnSuccessMap(PrintedPages.Engine).Value.PageTexts
+                .Should().Equal(["H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after"], $"{overflow}/Allow");
         }
 
-        Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, MonolithicOverflow.Refuse).Error.Code.Should().Be(LayoutErrorCodes.DoesNotFit);
-        Run(NestedUnderHeader(10, 13.875), EmptyRowParts.Allow, MonolithicOverflow.Slice).OnSuccessMap(PrintedPages.Engine).Value.PageTexts
-            .Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "x0 x1 x2 x3 x4 x5 x6 x7 x8 x9", "H after");
         chromium.PageTexts.Should().Equal("H a0 a1 a2 a3 a4 a5 a6 a7 a8 a9", "H x0 x1 x2 x3 x4 x5 x6 x7", "H x8 x9 after");
     }
 

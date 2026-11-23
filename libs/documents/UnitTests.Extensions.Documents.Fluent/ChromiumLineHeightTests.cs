@@ -132,7 +132,7 @@ public class ChromiumLineHeightTests
         var engine = Print(c, paragraph => paragraph.LineHeight(InChromiumUnits(c.Kind, c.Value, c.FontSize))).Pages.SelectMany(page => page.Words).ToList();
 
         engine.Select(word => (word.Page, word.Text)).Should().Equal(chromium.Select(word => (word.Page, word.Text)));
-        engine.Select(word => Math.Round((word.Baseline - top) / 0.75, MidpointRounding.AwayFromZero) * 0.75 + top).Should().Equal(chromium.Select(word => word.Baseline));
+        engine.Select(word => ChromiumLayout.WholePixel(word.Baseline - top) + top).Should().Equal(chromium.Select(word => word.Baseline));
         engine.Zip(chromium).Max(pair => Math.Abs(pair.First.Baseline - pair.Second.Baseline)).Should().BeLessThanOrEqualTo(0.375 + 1e-9);
     }
 }

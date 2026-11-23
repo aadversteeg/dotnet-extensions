@@ -75,6 +75,27 @@ public class TableEndOverflowTests
         Word(end, "below").Baseline.Should().Be(ends);
     }
 
+    [Fact]
+    public void Where_only_part_of_the_outer_half_of_the_last_line_passes_the_next_page_takes_the_whole_half()
+    {
+        // Chromium: a one-row table at the top of the page whose 6 pt bottom line lies at 156.75 to 162.75, past the page
+        // end at 162 by 0.75 pt; its outer half, 3 pt, is what the next page takes: "z" at 24.75, 3 pt below where a
+        // first line starts a page ("i" at 21.75). Likewise a 0.75 pt line that passes by 0.25 pt of its 0.375 pt half
+        // (a4-cell-image-179-5: "after" at 24.375, printed at 24.75 where 24.25 would print at 24).
+        var chromium = PrintedPages.Chromium("a2-row-end-thick-less-after");
+        chromium.Pages[0].Rectangles.Should().Contain(new PrintedBox(1, 12, 156.75, 288, 162, "#000000"));
+        Word(chromium, "z").Baseline.Should().Be(Word(PrintedPages.Chromium("fr-row-later-padding-beside-line"), "i").Baseline + 3);
+
+        // The same with 6 pt grid lines: 4.5 pt of top padding put the middle of the line below at 190.5, so 1.5 pt of
+        // its outer half pass the page end at 192; the next page takes all 3 pt, as where the whole half passes (6 pt).
+        var part = Printed(OuterHalf(6, 4.5, below: true), TableEndOverflow.ContinuesOnNextPage, 10.5);
+        var whole = Printed(OuterHalf(6, 6, below: true), TableEndOverflow.ContinuesOnNextPage, 10.5);
+        part.Pages[0].Rectangles.Max(box => box.Y1).Should().Be(193.5);
+        Word(part, "below").Baseline.Should().Be(26.25).And.Be(Word(whole, "below").Baseline);
+        part.Pages[1].Rectangles.Should().BeEmpty();
+        Word(Printed(OuterHalf(6, 4.5, below: true), TableEndOverflow.EndsOnPage, 10.5), "below").Baseline.Should().Be(23.25, "the default ends the table on its page");
+    }
+
     [Theory]
     [InlineData("a2-row-end-first-row-half-alone", 0.75, 13.875, 12)]
     [InlineData("a2-row-end-first-row-half-6pt-alone", 6, 6, 10.5)]
@@ -193,6 +214,123 @@ public class TableEndOverflowTests
         Word(next, "below").Baseline.Should().Be(23.625);
         end.PageTexts.Should().Equal(chromium.PageTexts);
         Word(end, "below").Baseline.Should().Be(23.25);
+    }
+
+    /// <summary>A paragraph, then a one-column table of one row of 21 lines with <paramref name="padding"/> pt of bottom
+    /// padding, which continues on page 2 with 10 lines that end at 132 (page area 12 to 162, 10.5 pt Lato, line height
+    /// 12 pt); a row "n0" after it, or none; then "z" (cases <c>fr-continued-pad-past-*</c>).</summary>
+    private static Element[] ContinuedPadding(double padding, bool nextRow) =>
+    [
+        Paragraph("i"),
+        Table(Columns(Fill(1)), [TableRow([Cell([Lines("a", 21)]).PaddingBottom(padding.Pt())]), .. nextRow ? new[] { TableRow([Cell("n0")]) } : []])
+            .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks().CellPadding(0.Pt(), 3.Pt()),
+        Paragraph("z"),
+    ];
+
+    private static PrintedPages PrintedPadded(Element[] body, TableEndOverflow overflow, double fontSize = 10.5, double lineHeight = 12, int orphans = 1)
+    {
+        var result = DocumentTranslator.ToModel(Document([.. body], Page(300.Pt(), 174.Pt()).Margin(12.Pt()), title: "Title", language: "en")
+                .FontFamily("Lato").FontSize(fontSize.Pt()).LineHeight(lineHeight.Pt()).Orphans(orphans).Widows(1)
+                .EmptyRowParts(EmptyRowParts.Allow).MonolithicOverflow(MonolithicOverflow.Slice).FontMetricRounding(FontMetricRounding.WholePixels)
+                .SplitLineHalves(SplitLineHalves.AtLeastOnePixel).TableEndOverflow(overflow))
+            .OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic));
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        return PrintedPages.Engine(result.Value);
+    }
+
+    private static string Words(string prefix, int first, int last) => string.Join(" ", Enumerable.Range(first, last - first + 1).Select(i => $"{prefix}{i}"));
+
+    [Theory]
+    [InlineData("fr-continued-pad-past-33", 33, 19, 15.75, 25.5)]
+    [InlineData("fr-continued-pad-past-45", 45, 18, 27.75, 37.5)]
+    [InlineData("fr-continued-pad-past-60", 60, 17, 42.75, 52.5)]
+    public void A_continued_cell_whose_lines_fit_keeps_them_and_its_bottom_padding_continues_on_the_next_page(
+        string caseName, double padding, int endsOnPageLast, double passedBottom, double z)
+    {
+        // Page 2's ten lines a11..a20 end at 132; the padding below them passes the page end at 162 by 3, 15 and 30 pt,
+        // and the line below by 0.75 more. Chromium keeps all ten lines on page 2 and starts page 3 with what passed,
+        // painted: the cell's sides from 12 and the table's bottom line ending at 12 + what passed; "z" below it.
+        var chromium = PrintedPages.Chromium(caseName);
+        var next = PrintedPadded(ContinuedPadding(padding, nextRow: false), TableEndOverflow.ContinuesOnNextPage);
+        var end = PrintedPadded(ContinuedPadding(padding, nextRow: false), TableEndOverflow.EndsOnPage);
+
+        chromium.PageTexts.Should().Equal($"i {Words("a", 0, 10)}", Words("a", 11, 20), "z");
+        Word(chromium, "z").Baseline.Should().Be(z);
+        chromium.Pages[2].Rectangles.Max(box => box.Y1).Should().Be(passedBottom);
+        next.PageTexts.Should().Equal(chromium.PageTexts);
+        Word(next, "z").Baseline.Should().Be(z);
+        next.Pages[2].Rectangles.Min(box => box.Y0).Should().Be(12);
+        next.Pages[2].Rectangles.Max(box => box.Y1).Should().Be(passedBottom);
+        next.Pages[2].Rectangles.Should().Contain(box => box.X1 - box.X0 > 200 && box.Y1 == passedBottom, "the table's bottom line ends what passed");
+
+        // Under the default the engine moves the last lines to the next page so that the padding fits on page 2.
+        end.PageTexts[1].Should().Be(Words("a", 11, endsOnPageLast));
+    }
+
+    [Fact]
+    public void With_a_row_after_it_the_next_row_starts_below_the_bottom_padding_that_passed()
+    {
+        // Chromium: the 3 pt of padding and the line below it start page 3, then the row "n0" (baseline 25.5) and "z".
+        var chromium = PrintedPages.Chromium("fr-continued-pad-past-33-next-row");
+        var next = PrintedPadded(ContinuedPadding(33, nextRow: true), TableEndOverflow.ContinuesOnNextPage);
+        var end = PrintedPadded(ContinuedPadding(33, nextRow: true), TableEndOverflow.EndsOnPage);
+
+        chromium.PageTexts.Should().Equal($"i {Words("a", 0, 10)}", Words("a", 11, 20), "n0 z");
+        next.PageTexts.Should().Equal(chromium.PageTexts);
+        Word(next, "n0").Baseline.Should().Be(Word(chromium, "n0").Baseline);
+        Word(next, "z").Baseline.Should().Be(Word(chromium, "z").Baseline);
+        end.PageTexts[1].Should().Be(Words("a", 11, 19));
+    }
+
+    [Theory]
+    [InlineData("fr-continued-pad-past-taller-than-page", false)]
+    [InlineData("fr-continued-pad-past-taller-than-page-next-row", true)]
+    public void Padding_that_passes_by_more_than_the_page_area_takes_the_whole_next_page_and_the_rest_the_page_after(string caseName, bool nextRow)
+    {
+        // 220 pt of padding below the lines that end at 132 on page 2: 190.75 pt pass the page end with the line. Chromium
+        // paints the cell's sides over all of page 3 and to 52.5 on page 4 (52.75 laid out, its print on whole pixels),
+        // with the row "n0" below it there. Without the row it starts "z" at 22.5, over the sides (a documented limit:
+        // the engine starts "z" below what passed, as on one page).
+        var chromium = PrintedPages.Chromium(caseName);
+        var next = PrintedPadded(ContinuedPadding(220, nextRow), TableEndOverflow.ContinuesOnNextPage);
+
+        chromium.PageTexts.Should().Equal($"i {Words("a", 0, 10)}", Words("a", 11, 20), "", nextRow ? "n0 z" : "z");
+        chromium.Pages[2].Rectangles.Should().HaveCount(2).And.OnlyContain(box => box.Y0 == 12 && box.Y1 == 162);
+        next.PageTexts.Should().Equal(chromium.PageTexts);
+        next.Pages[2].Rectangles.Where(box => box.Y0 < 162).Should().HaveCount(2).And.OnlyContain(box => box.Y0 == 12 && box.Y1 >= 162, "the sides, drawn past the page end here (BodyClip.None)");
+        next.Pages[3].Rectangles.Min(box => box.Y0).Should().Be(12);
+        next.Pages[3].Rectangles.Where(box => box.X1 - box.X0 > 200).Min(box => box.Y1).Should().Be(52.75);
+        if (nextRow)
+        {
+            // Below 40.75 pt of padding and line on page 4: 62.5; Chromium starts the row at 52.5, a whole pixel (70 px).
+            Word(chromium, "n0").Baseline.Should().Be(62.25);
+            Word(next, "n0").Baseline.Should().Be(62.5);
+        }
+        else
+        {
+            Word(chromium, "z").Baseline.Should().Be(22.5);
+            Word(next, "z").Baseline.Should().BeGreaterThan(52.75);
+        }
+    }
+
+    [Fact]
+    public void A_row_that_moved_to_the_next_page_whole_keeps_its_lines_and_its_bottom_padding_continues()
+    {
+        // Rule of the row moved whole where a cell has no room for its top padding (CellTopInsetTests): the row of w1..w7
+        // with 12 pt top and bottom padding moves to page 2, where its lines fit and its bottom padding passes by 0.75 pt
+        // and the line below by 0.75. Chromium keeps w7 on page 2; page 3 starts with 1.5 pt of the cell, then "z".
+        Element[] body =
+        [
+            Paragraph("i"),
+            Table(Columns(Fill(1)), [TableRow([Cell([Lines("a", 7)])]), TableRow([Cell([Paragraph([.. Enumerable.Range(1, 7).SelectMany(i => i == 1 ? new[] { Text($"w{i}") } : [LineBreak(), Text($"w{i}")])])]).PaddingTop(12.Pt()).PaddingBottom(12.Pt())])])
+                .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks().CellPadding(0.Pt(), 0.Pt()),
+            Paragraph("z"),
+        ];
+        var chromium = PrintedPages.Chromium("fr-row-later-page-padding-overflows");
+
+        chromium.PageTexts.Should().Equal($"i {Words("a", 0, 6)}", Words("w", 1, 7), "z");
+        PrintedPadded(body, TableEndOverflow.ContinuesOnNextPage, 12, 18, orphans: 3).PageTexts.Should().Equal(chromium.PageTexts);
+        PrintedPadded(body, TableEndOverflow.EndsOnPage, 12, 18, orphans: 3).PageTexts[1].Should().Be(Words("w", 1, 6));
     }
 
     [Fact]

@@ -73,7 +73,7 @@ internal static class HtmlCases
         ["sr-same-font"] = "A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run",
         ["sr-zwnj"] = "A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it",
         ["a4-continued-cell-pad-bottom-30-under-header"] = "A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header",
-        ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_is_refused",
+        ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank",
         ["fr-header-pad-box-72"] = "The_same_on_a_page_where_Chromium_repeats_the_header_is_printed",
         ["tl-fixed-fill-wide-word"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["tf-pages"] = "A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page",
@@ -82,6 +82,15 @@ internal static class HtmlCases
         ["a4-row-image-row"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
         ["a4-two-image-rows"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
         ["a4-slice4-cell-row-after"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
+        ["a4-header-image-360-image"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-row-image-row"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-row-image"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-two-image-rows"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-image-nested-table"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
+        ["a4-image-rowspan"] = "An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells",
+        ["a4-line-beside-lines"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
+        ["fr-f4-padding-page-start"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
+        ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -427,7 +436,7 @@ internal static class HtmlCases
     private static string? PaintedDifference(PrintedPage page, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
     {
         var (engine, chromium) = (Painted(page, ours), Painted(page, theirs));
-        var columns = (int)Math.Round(page.Width / 0.75, MidpointRounding.AwayFromZero);
+        var columns = ChromiumLayout.Pixel(page.Width);
         for (var cell = 0; cell < engine.Length; cell++)
         {
             if (engine[cell] != chromium[cell])
@@ -454,7 +463,7 @@ internal static class HtmlCases
     /// page's edges.</summary>
     private static string?[] Painted(PrintedPage page, IReadOnlyList<PrintedBox> boxes)
     {
-        static int Pixel(double length) => (int)Math.Round(length / 0.75, MidpointRounding.AwayFromZero);
+        static int Pixel(double length) => ChromiumLayout.Pixel(length);
         var (columns, rows) = (Pixel(page.Width), Pixel(page.Height));
         var cells = new string?[columns * rows];
         foreach (var box in boxes)
@@ -730,13 +739,26 @@ internal static class HtmlCases
     /// The same boxes on one page tall enough that nothing in them breaks: the page as tall as the model allows
     /// (<see cref="ModelLimits.MaxLength"/>, 14,400 pt; the longest document, <c>timesheet-pages</c>, is under 5,000 pt
     /// laid out), as wide, with the same margins and the same templates. The window <c>boxes.txt</c> is measured in is such
-    /// a layout. That nothing broke is checked, not assumed: the layout must be one page
-    /// (<see cref="SizeDifference"/>); a break the document forces, which a window ignores, gives a second page and is
-    /// then the difference. The header and footer areas (the HTML front-end's rows of page-margin boxes) stay: no box of
-    /// <c>boxes.txt</c> is in them, and they take from the page area what they take on a printed first page, so the body
-    /// starts where it starts there and is as wide.
+    /// a layout. A window has no pages, so it ignores a break the document forces (<c>break-before: page</c>): the forced
+    /// breaks are dropped too (case <c>fr-forced-table</c>: the cell cut after a forced break is one box in the window).
+    /// That nothing broke is checked, not assumed: the layout must be one page (<see cref="SizeDifference"/>). The header
+    /// and footer areas (the HTML front-end's rows of page-margin boxes) stay: no box of <c>boxes.txt</c> is in them, and
+    /// they take from the page area what they take on a printed first page, so the body starts where it starts there and is
+    /// as wide.
     /// </summary>
-    internal static StyledDocument Unbroken(StyledDocument document) => document with { Page = document.Page with { Height = ModelLimits.MaxLength } };
+    internal static StyledDocument Unbroken(StyledDocument document) =>
+        document with { Page = document.Page with { Height = ModelLimits.MaxLength }, Root = WithoutForcedBreaks(document.Root) };
+
+    /// <summary>The box and every box inside it without a forced break before or after it.</summary>
+    private static Box WithoutForcedBreaks(Box box) => box with
+    {
+        Style = box.Style with
+        {
+            BreakBefore = box.Style.BreakBefore == BreakBetween.Page ? BreakBetween.Auto : box.Style.BreakBefore,
+            BreakAfter = box.Style.BreakAfter == BreakBetween.Page ? BreakBetween.Auto : box.Style.BreakAfter,
+        },
+        Children = [.. box.Children.Select(child => child is Box inner ? WithoutForcedBreaks(inner) : child)],
+    };
 
     /// <summary>The first fragment of a page of the box with the id, in document order, and whether it is inside a
     /// repeated copy (<see cref="BoxFragment.IsRepeated"/>, set on the copy's row group, not on the boxes inside it); or
@@ -916,7 +938,8 @@ internal static class HtmlCases
             .MaxBy(run => run.Origin.X)!.Font.Metrics;
 
     /// <summary>
-    /// A length down or across the page as Chromium paints it: at the nearest whole CSS pixel of the page (0.75 pt).
+    /// A length down or across the page as Chromium paints it: at the nearest whole CSS pixel of the page (0.75 pt), half a
+    /// pixel up for either sign (<see cref="ChromiumLayout.Pixel"/>).
     /// Chromium paints a baseline at a whole pixel (docs/architecture.md, "Against Chromium"; <c>FontMetricRoundingTests</c>
     /// compares the same way) where the line holds text only (beside an image: <see cref="BaselineDifference"/>), and the
     /// edges of a filled rectangle and of an image area too. Measured: all 6,104 rectangle
@@ -925,7 +948,7 @@ internal static class HtmlCases
     /// 0.375 pt, so a difference that small in a baseline or an edge can stay inside one pixel; the x positions of words
     /// and the box heights of <c>boxes.txt</c> are not snapped in Chromium's files and are compared as they are.
     /// </summary>
-    private static double WholePixel(double length) => Math.Round(length / 0.75, MidpointRounding.AwayFromZero) * 0.75;
+    private static double WholePixel(double length) => ChromiumLayout.WholePixel(length);
 
     /// <summary>
     /// The engine's words as PyMuPDF finds them in Chromium's PDF (<c>positions.py</c>, <c>print.txt</c>): two runs of

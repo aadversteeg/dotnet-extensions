@@ -149,7 +149,7 @@ The whole algorithms and the other rules:
 | a font's line metrics (ascent, descent, line gap for `normal` and the strut): OS/2 typographic when the font sets USE_TYPO_METRICS, otherwise 'hhea' (where 'hhea' has none: typographic, then Windows), as Chromium reads them on Linux; for every front-end, not a policy | `Fonts/FontParser.cs` (`LineMetricsOf`), `FontMetrics.Line` | Skia `SkFontHost_FreeType.cpp`, Fontations `skrifa` `metrics.rs`; checked against Chromium's print (cases `d-typo-*`) |
 | orphans and widows: where a paragraph breaks, the best breakpoint inside a complete paragraph; a cut of a table row is as good as the breaks it makes inside its cells | `Layout/InlineLayout.cs` (`BreakWhereFull`, `BestBreakInside`), `Tracks/TableBreaks.cs` (`Cut`) | CSS Fragmentation 3 §3.3, §4.4 rule 3; checked against Chromium's print |
 | early breaks: a keep rule that reaches back into an earlier box's content, never into a box that continues from the page before; a box that breaks at its own early break keeps it and reports it as perfect, lowered only by the `break-inside: avoid` of the boxes the break lies inside (a table's row group kept together included, when the break lies between two of its rows), and its parent compares that with its own breakpoints (a tie keeps the break inside): a break against orphans, widows or a keep-with-next stays inside the box, a break inside a box or paragraph kept together loses to a better break before the box | `Layout/EarlyBreak.cs`, `FlowLayout.cs`, `InlineLayout.cs`, `BreakAvoidance.cs` (`Kept`), `Tracks/TablePage.cs`, `LayoutResult.cs` (`KeepsItsBreak`, `KeptAppeal`) | CSS Fragmentation 3 §4.4, §4.5; Chromium `MovePastBreakpoint`, `CalculateBreakAppealInside`, `kNeedsEarlierBreak`; checked against Chromium's print (cases `b-*`, `fr-keep-*`, `kb-*`) |
-| bottom padding and border that do not fit below a box's complete content: the box breaks at its best inner breakpoint and keeps it, at the appeal of a kept break (above: a box or paragraph kept together then moves whole where a better break lies before it, cases `kb-n*`); without one it breaks before its bottom padding and border, which start the next page (a last resort, so a box lower on the page moves whole); not in table cells | `Layout/SlicedBox.cs`, `FlowLayout.cs` | CSS Fragmentation 3 §4.1, §5.4; Chromium `FinishFragmentation`; checked against Chromium's print in block flow (cases `fr-pad-*`, `fr-border-*`, `a3-pad-*`) |
+| bottom padding and border that do not fit below a box's complete content: the box breaks at its best inner breakpoint and keeps it, at the appeal of a kept break (above: a box or paragraph kept together then moves whole where a better break lies before it, cases `kb-n*`); without one it breaks before its bottom padding and border, which start the next page (a last resort, so a box lower on the page moves whole); that box ends right below its content, and so does every box around it whose page ends only because of that break, where a box whose page ends at any other break fills the page (cases `fr-pad-ancestor-*`, `fr-pad-then-sibling`, `fr-header-pad-*-36`); not in table cells | `Layout/SlicedBox.cs`, `FlowLayout.cs` | CSS Fragmentation 3 §4.1, §5.4; Chromium `FinishFragmentation`; checked against Chromium's print in block flow (cases `fr-pad-*`, `fr-border-*`, `a3-pad-*`) |
 | where a page starts: a box that does not fit below margins, empty boxes or padding moves on; only content that starts the page is refused; the last-resort break | `Layout/ConstraintSpace.cs` (`IsAtPageStart`), `FlowLayout.cs`, `SlicedBox.cs`, `BreakAppeal.cs` (`LastResort`) | CSS Fragmentation 3 §4.1, §4.4, §5.2; checked against Chromium's print |
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
 | box slicing at page breaks | `Layout/SlicedBox.cs` | CSS Fragmentation 3 §5.2–§5.4 |
@@ -605,7 +605,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`, `CellsBesideSlices.Below`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -687,8 +687,9 @@ its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only f
 columns without one share what is left (fill columns of weight 1). A table of width `auto` is as wide as its columns
 need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
-it; the two agree while the content fits its column (case `tl-fixed-fill-wide-word`, listed;
-`HtmlListedDifferenceTests`). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
+it; the two agree while the content fits its column (cases `tl-fixed-fill-wide-word` and `a4-line-beside-lines`, a
+200 pt word in the first of two columns of 137.625 pt in Chromium, listed; `HtmlListedDifferenceTests`: the columns'
+widths are the whole difference). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
 the fixed layout of a table of width `100%`, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
 a percentage is of the width the columns share, the table's width less its outer half borders in the collapsing model
 (case `tp-outer-border`); percent columns alone grow or shrink in proportion to fill that width, whatever their sum
@@ -825,9 +826,20 @@ Each is documented next to its code as well.
   following page, over them (24.75 pt). The engine starts what follows below the last slice in every shape (72.75 pt), so
   no text is drawn over an image; that place is the whole difference (cases `a4-image-in-cell`,
   `a4-slice4-cell-row-after`, `a4-row-image-row`, `a4-two-image-rows`, listed; `HtmlListedDifferenceTests`). In a table
-  inside a cell (`a4-image-nested-table`, open) the engine also draws the inner table's bottom line and the outer row's
-  line one below the other (60 to 61.5 pt) where Chromium draws them as one (60 to 60.75 pt). The other cells of the
+  inside a cell (`a4-image-nested-table`, listed with them) the engine also draws the inner table's bottom line and the
+  outer row's line one below the other (60 to 61.5 pt) where Chromium draws them as one (60 to 60.75 pt): Chromium ends
+  the outer row as tall as the rest of the image as well, which comes with drawing over the slices; the test states
+  the 0.75 pt and finds no other difference. The other cells of the
   image's row go on below the slices, as Chromium prints them (`CellsBesideSlices.Below`).
+- **A repeated header row over a slice (HTML):** on a later page where a table repeats its header rows and goes on with
+  the slices of a piece taller than the page area (a row still to come), Chromium still moves the piece up a whole page
+  area, so the slice starts at the top of the page area (12 pt), and draws the header over it: 16.5 pt of the piece are
+  never shown. The engine draws the header, then the slice below it (28.125 pt), so the piece shows whole and once, and
+  what follows the slices in the table starts that much lower; where Chromium starts the next row in an empty part below
+  the header on the page of the last slice, that row goes on 0.375 pt higher on the next page than the engine's, which
+  starts it there. That is the whole difference (cases `a4-header-image-360-image`, `a4-header-row-image-row`,
+  `a4-header-image-row-image`, `a4-header-two-image-rows`, listed; `HtmlListedDifferenceTests`). A writer does not want
+  a header over an image, so the engine does not copy it.
 - **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
   without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
   column without a width they are refused, as are widths on cells and column groups. A percent column is never
@@ -854,7 +866,10 @@ Each is documented next to its code as well.
   cell's bottom padding is refused, where Chromium prints it (case `fr-header-cell-margin`); a table header taller than
   the page is refused (`Documents.Layout.DoesNotFit`; Chromium cuts it like a body row); a table row taller than the page
   only through its cells' padding is refused (Chromium prints it on a fresh page and lets the padding overflow; case
-  `fr-old-row-taller-by-padding`); a table
+  `fr-old-row-taller-by-padding`; through the HTML front-end the engine cuts that row on the first page as a last
+  resort, which then shows only the table's top line and the cell's sides, and prints "w" on the second with its padding
+  passing to the third, as Chromium does: Chromium's blank first page, with the 0.75 pt top line at the top of the
+  second, is the whole difference, `HtmlListedDifferenceTests`); a table
   row without cells is refused as input (`Documents.Input.Invalid.Table`; Chromium lays it out with no height) — each
   pinned with Chromium's pages in `ListedDifferenceTests`; under `EmptyRowParts.Avoid` and `MonolithicOverflow.Refuse`,
   the defaults, a table row that continues from the page before, whose rest fills the page area with only the half of
@@ -926,14 +941,28 @@ Each is documented next to its code as well.
   box kept together does not hide a better breakpoint before it (in Chromium it does, in one shape: `n0 n1 o0 o1 | p0`
   where the engine prints `n0 | n1 o0 o1 p0`); an empty box past the end of the last page adds no blank page; a paragraph that moved to a new page whole counts only
   its orphans before a break on that page, where Chromium counts its widows there too (it differs only where widows are
-  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). The rest of a cut cell aligned `middle` or `bottom` is aligned
-  in the rest of its row (Chromium puts it at the top); a margin dropped at a row cut does not stay in the row's height
-  (Chromium keeps the uncut height). Where a cell's lines all fit and only its bottom padding or grid line does not, at
-  the top of a page the engine cuts the row as a last resort, where Chromium leaves the first page blank and prints the
-  row whole on the next (cases `fr-f4-padding-page-start`, `a2-cells-end-page-top`); a row that starts a later page,
+  more than the page holds: 7 of 1,792 measured documents; `InlineLayout.BreakWhereFull`; cases `fr-moved-para-widows-4`, `fr-moved-para-widows-3-control`). Under `CutRowAlignment.RestAlignedInItsPart`, the code front-end's
+  default, the rest of a cut cell aligned `middle` or `bottom` is aligned in the rest of its row (Chromium puts the content of
+  every cell of a cut row at the top of its part on every page, which `TopOnEveryPage`, the HTML front-end's value, follows:
+  cases `fr-old-cut-cell-*`, `fr-cut-row-*`, `CutRowAlignmentTests`); a margin dropped at a row cut does not stay in the row's height
+  (Chromium keeps the uncut height: the rest of the row is 12 pt taller; case `fr-old-margin-at-row-cut`, listed
+  through the HTML front-end too, `HtmlListedDifferenceTests`, where that height is the whole difference). Where a
+  cell's lines all fit and only its bottom padding or grid line does not, at the top of a page the engine cuts the row
+  as a last resort, where Chromium leaves the first page blank and prints the row whole on the next (cases
+  `fr-f4-padding-page-start`, listed through the HTML front-end too, where the engine's first page is Chromium's
+  second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
   after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
   line, where Chromium prints all its lines on that page and lets the padding overflow (cases
-  `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`).
+  `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`). Under
+  `TableEndOverflow.ContinuesOnNextPage`, the HTML front-end's value, such a row and a row that continues from the page
+  before keep their lines and their padding continues on the next page, as Chromium prints it, where every cell of the
+  row passes the page end with content on the page (cases `fr-continued-pad-past-*`,
+  `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). Still cut so: a row
+  with a cell that ends above the page end, whose whole bottom padding Chromium gives the next page (13.5 pt in
+  `-two-cells`), and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
+  Padding that passes by more than the page area takes the whole next page and the rest the page after, as in Chromium;
+  without a row after the table Chromium then starts what follows 0.75 pt below the page's top, over the padding, where
+  the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, open).
   Under a repeated header row, a cell whose box's bottom padding does not fit on a page with the box's content: where
   the header is repeated, the engine leaves the header alone on the first page, where Chromium cuts the row below it
   because its line fits and only its padding does not (`fr-header-pad-box-72`). Where the header is more than a quarter
@@ -948,7 +977,10 @@ Each is documented next to its code as well.
   the same pages (cases `fr-kwn-pad-*`).
 - **Deliberate deviations from CSS:** header and footer areas are taken from the page area, not from the margins
   (as in RDL and Typst); an image with both width and height fits inside that box keeping its ratio (CSS would
-  stretch); a row span's missing height goes to its last row; a page that cannot hold a table's header plus some body
+  stretch); a row span's missing height goes to its last row (Chromium spreads it over the spanned rows: with an image
+  sliced in a cell that spans two rows, case `a4-image-rowspan`, the engine keeps the second row on the first page and
+  starts the next row below the last slice, where Chromium puts the second row beside the first slice and draws the
+  next one over the second slice; listed, `HtmlListedDifferenceTests`); a page that cannot hold a table's header plus some body
   continues without the header. A line breaks before and after an image in it also next to a character of the Unicode
   classes GL, WJ or ZWJ (a word joiner, a zero width joiner, a narrow no-break space), where CSS Text 3 §5.5 asks for
   no break ("with the exception of U+00A0 NO-BREAK SPACE, there must be no soft wrap opportunity between atomic inlines
@@ -1080,11 +1112,13 @@ Each is documented next to its code as well.
   The rule is not for a table that starts lower on the page: below a paragraph such a first row moves to the next
   page with its table, as in Chromium (`a2-row-end-below-paragraph`). Nor for a table that continues below an outer
   table's repeated header row, which does not start the page: under `Avoid` the row is cut below the header as Chromium
-  cuts it (`a2-row-end-nested-under-header`). (v) Under `Allow` the engine does not take that cut; that page goes on
-  without the outer header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and
-  Chromium repeats the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`). With
-  13.875 pt of top padding the same holds under `Slice`, and under `Refuse` the document is refused
-  (`Documents.Layout.DoesNotFit`; `a2-row-end-nested-under-header-13875`). With 9 lines below 12 pt of top padding the
+  cuts it (`a2-row-end-nested-under-header`; under `Allow` too, as the row, whose 14.25 pt of top padding do not fit
+  page 1, moves to page 2 whole). (v) With 13.875 pt of top padding, under `Allow` that page goes on without the outer
+  header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and Chromium repeats
+  the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`,
+  `a2-row-end-nested-under-header-13875`): below the header the engine starts the inner table 0.375 pt higher than
+  Chromium (its top line at 28.125, Chromium's at 28.5), so the row's ten lines fit there with only its line below past
+  the page end, and such a row is not cut. With 9 lines below 12 pt of top padding the
   rest of the inner table fits below the repeated header but for the outer table's bottom line: Chromium repeats the
   header and lets that line pass the page end (and draws it again on a third page that shows nothing else), and the
   engine goes on without the header under every profile (`H a0`..`a9`, `x0`..`x8 after`;
@@ -1138,15 +1172,48 @@ Each is documented next to its code as well.
   comes below the last slice (case `a4-image-rowspan`; Chromium breaks between the spanned rows and draws the next row
   over the slice).
   Under a repeated header row the content is sliced right below the header, on a page after one that showed no body row
-  other than slices of a piece that was itself sliced; after a page that did show one, the page holds only the header
-  and the row moves on once. That page with only the header is Chromium's: the first slice starts on Chromium's page and
-  at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`),
+  other than slices of a piece that was itself sliced; after a page that did show one, the page before the first slice
+  ends below the header and the row moves on once. That page is Chromium's: the first slice starts on Chromium's page
+  and at Chromium's place in all eleven measured cases (`a4-header-*`, `a4-intro-header-image-row`; `SliceUnderHeaderTests`),
   each with a header of at most a quarter of the page area; a taller header is not repeated (above), and the piece is
-  sliced as without a header.
-  **Deliberate deviation from Chromium:** on the later pages the engine repeats the header above every slice and makes
-  each slice as tall as the room below it, so the content is shown whole and once; Chromium moves the content up a whole
-  page area on each later page and either leaves the header out (`a4-header-image-row`) or draws the header over 16.5 pt
-  of the content that are never shown (`a4-header-row-image-row`).
+  sliced as without a header. Chromium never ends a page with a header that repeats alone: it cuts the first body row
+  below it and draws the row's cells empty down to the page end, their side lines and no line below them
+  (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-tall-line`, `a4-header-row-image-row`, and so every
+  `a4-header-*` case); a header that does not repeat ends its page alone (`a4-header-unrepeated-image-228`). Under
+  `EmptyRowParts.Allow`, the HTML front-end's value, the engine cuts the row there too, where the row's cells draw
+  nothing on that page; under `Avoid`, the code front-end's default, that page holds the header alone, and so it does
+  under `Allow` where a cell of the row would draw something on it (`fr-header-pad-box-72` above, where Chromium cuts
+  the row; with an image beside text, not measured). The cut row's cells then go on below the header on the next page,
+  where the part of a cell that continues starts at the centre of the grid line below the header, as in Chromium: below
+  a 0.75 pt line at 28.125 pt, half a pixel below a whole one, which Chromium paints at the next whole pixel, 28.5 pt
+  (`a4-header-image-228`; "c10" at 40.125 pt, painted at 40.5 pt, `a4-header-cut-row-image-row`; below a 2.25 pt line
+  28.875 pt, painted at 29.25 pt, `a4-header-line2-25-image-228`, `a4-header-line2-25-cut-text-row`). That is the
+  paint, not the layout: where the engine lays a baseline, an image edge or an edge of a horizontal grid line out half
+  a pixel below a whole one, Chromium paints it at the next whole pixel in every case, except at the end of the rest of
+  a sliced piece, which follows. On the page where a cell's part
+  holds nothing but the rest of a piece sliced on an earlier page, Chromium ends the part where the rest ends, without
+  its half of the grid line below it, so the line is centred on the rest's end (a 0.75 pt line at 75.75–76.5 pt below a
+  rest that ends at 76.125 pt, `a4-header-image-228`; a 2.25 pt line at 75–77.25 pt, `a4-header-image-228-line3-below`;
+  the text after the table that much higher, `a4-header-image-row`, `a4-header-image-174`, `-180`; in a cell with a
+  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, both open for
+  other reasons). A part that lays content out on
+  the page keeps its half (`a4-header-cut-text-row`). Under `SliceRestEnd.AtLineCentre`, the HTML front-end's value,
+  the engine does the same (`Tracks/TableSegments.cs`, `AtRestEnd`; `SliceRestEndTests`); under `InsideCell`, the code
+  front-end's default, the part holds its half as every cell does, and the line starts where the rest ends.
+  On the later pages the policy `RepeatedHeaderRows` decides. Chromium lays the piece out whole below the header of the
+  page where it starts, also a piece no taller than the page area, and lets it pass the page end; it repeats the header
+  on every later page where the table still lays content out (a row still to come, a cell beside the piece that goes on),
+  and not on a page that only shows the rest of content laid out before: there the rest starts at the top of the page
+  area (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-row-image-228`, `a4-header-image-row`,
+  `a4-header-tall-line`, `a4-header-image-170`, `-174`, `-180`). Under `WhereContentIsLaidOut`, the HTML front-end's
+  value, the engine does the same (`SliceUnderHeaderTests`). Under `AboveEverySlice`, the code front-end's default, a
+  deliberate deviation from Chromium, the engine repeats the header above every slice and makes each slice as tall as the
+  room below it, so the content is shown whole and once, and a piece taller than the room below the header but not than
+  the page area goes on without the header. Under both values, on a page where the header is repeated over a slice,
+  Chromium still moves the content up a whole page area and draws the header over 16.5 pt of it, which are never shown;
+  the engine draws the header above the slice, the slice below it (Known limits, "A repeated header row over a slice").
+  With text beside the image (`a4-header-image-beside-lines`, open) the engine also differs on the first page: it leaves
+  the header alone where the cut row's other cell would draw text, where Chromium starts the row.
   A piece that fits the page area alone, but not with the insets around it in its table cell (the cell's padding and
   grid lines), is sliced too: the test for slicing is "the piece with its insets does not fit a page", not "the piece is
   taller than the page area" (`Tracks/TableSegments.cs`, `SlicedAboveBottomInset`; `SliceAboveInsetTests`, cases
@@ -1157,8 +1224,10 @@ Each is documented next to its code as well.
   177 pt image in a cell with 3 pt padding), and what follows starts lower on the next page. Under `Refuse` such a piece
   is refused as before. **Listed difference from Chromium:** the same holds for content that fits the page area only
   without its cell's bottom padding when the cell continues from the page before. Chromium places the rest of the
-  cell on the page and lets the padding pass the page end; the engine never lets a cell's bottom padding pass the
-  page end, and records no breakpoint inside content that continues from the page before (`FlowLayout`), so under
+  cell on the page and lets the padding pass the page end; under `TableEndOverflow.EndsOnPage`, the code front-end's
+  default, the engine never lets a cell's bottom padding pass the page end (under `ContinuesOnNextPage` it does, as
+  Chromium, see the cut rows above: `a4-continued-cell-pad-bottom-30` is equal through the HTML front-end), and
+  records no breakpoint inside content that continues from the page before (`FlowLayout`), so under
   `Refuse` the table is refused (`Documents.Layout.DoesNotFit`), and under `Slice` the content is laid out again above
   the bottom padding and breaks earlier: a cell with 30 pt bottom padding around a table whose rest on page 2 fits the
   page area gives `t34 t35 t36 t37 t39 t40 t41 t42` on page 2 in Chromium and `t34 t35 t36 t37`, then `t39 t40 t41 t42`
@@ -1234,8 +1303,8 @@ Each is documented next to its code as well.
   a pixel one pixel thick from its top edge, which gives Chromium's pixels, and moves nothing (cases `a2-cells-end`,
   `a2-row-break-line-1-5pt`, `a2-row-break-line-2-25pt`; `TableBreakLineHalfTests`). Where a cell that spans rows
   continues over the break, the next page draws nothing of the line, in any column, and keeps the half's room (case
-  `b4-row-span-6pt`). In case `a2-split-line-1px` the next page's first row starts 0.375 pt lower in Chromium than in the
-  engine; a difference of layout, pinned in `RowPartTests`; `Clone`, the code front-end's default for tables, ends the
+  `b4-row-span-6pt`). In case `a2-split-line-1px` the next page's first row starts 0.375 pt, half a pixel, below the
+  page area's top, and Chromium paints its text at the next whole pixel, 0.375 pt lower (pinned in `RowPartTests`); `Clone`, the code front-end's default for tables, ends the
   page with the whole line and starts the next page with it again (the engine's own rule for collapsed borders,
   modelled on `clone` and on word processors). A row fits when it fits with what of the line its page draws. At a
   break inside a row, `Slice` draws no line at the cut (a box cut by a break gets no border there); `Clone` closes the

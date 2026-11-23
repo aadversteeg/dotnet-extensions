@@ -63,7 +63,8 @@ internal static class TableSegments
     /// it no longer ends there and does not take it again. Returns
     /// the fragment, stretched to the slice, where the cell continues, and the appeal of the break inside the cell's
     /// content (its own keep rules, orphans and widows): perfect for a cell that ends in the slice or places nothing of
-    /// itself; for a cell that keeps its break (its content broke at a breakpoint it chose,
+    /// itself (under <see cref="EmptyRowParts.Allow"/> a last resort for a fresh cell that places nothing, see
+    /// <see cref="StartsNothing"/>); for a cell that keeps its break (its content broke at a breakpoint it chose,
     /// <see cref="LayoutResult.Placed.KeepsItsBreak"/>: the row keeps that break too, as Chromium follows such a break,
     /// case <c>fr-f9-cell-orphans3</c>) the kept appeal, perfect unless the break lies inside a box kept together
     /// (<see cref="LayoutResult.Placed.KeptAppeal"/>, cases <c>kb-n5-*</c>, <c>kb-n6-*</c>); a last resort for a cell whose lines all fit the slice and only its bottom padding
@@ -116,9 +117,23 @@ internal static class TableSegments
                     : placed.KeepsItsBreak ? placed.KeptAppeal
                     : placed.Appeal,
                     placed.Continuation is not null && placed.KeepsItsBreak && !endsInItsBottomEdge),
-                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false), endsInItsBottomEdge ? BreakAppeal.LastResort : BreakAppeal.Perfect, false),
+                _ => (EmptyCell(box, width, sliceHeight), new CellBreak(cell.Cell, cell.Token, false),
+                    endsInItsBottomEdge || StartsNothing(table, cell) ? BreakAppeal.LastResort : BreakAppeal.Perfect, false),
             });
     }
+
+    /// <summary>
+    /// Under <see cref="EmptyRowParts.Allow"/>, whether a cell that starts on this page and has no room for its top border
+    /// and padding makes a cut inside its row a last resort: the cell has no breakpoint on this page (a break inside its
+    /// top insets is none, CSS Fragmentation 3 §4.1), so the row is not cut where its cells can break, and moves to the
+    /// next page whole where a break before it is valid, as Chromium prints it (cases
+    /// <c>fr-row-later-page-padding-overflows</c>, <c>fr-row-later-padding-beside-line</c>: also beside a cell whose first
+    /// line fits, <c>fr-row-later-padding-under-header</c>, <c>a2-row-end-nested-under-header</c>). A cell whose insets
+    /// fit and whose first line does not already breaks at a last resort (<see cref="SlicedBox"/>, case
+    /// <c>fr-row-later-padding-fits-line-not</c>). Under <see cref="EmptyRowParts.Avoid"/> such a cut stays as it was.
+    /// </summary>
+    private static bool StartsNothing(TableGeometry table, ActiveCell cell) =>
+        table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow && cell.Token is null;
 
     /// <summary>
     /// Under <see cref="MonolithicOverflow.Slice"/>, a cell that starts the page and ends there, but whose content and
@@ -177,6 +192,30 @@ internal static class TableSegments
             ? table.HorizontalWidth(segment.Above.Above, segment.Above.Below, segment.Above.Context) / 2
             : 0;
 
+    /// <summary>
+    /// Under <see cref="SliceRestEnd.AtLineCentre"/>, the measured fragment of a cell that continues from an earlier page
+    /// and holds nothing but the rest of a piece sliced there (its later slices end where its own half of the line below
+    /// it starts, and its content draws nothing beside them): made as tall as that rest, without the half, so its row ends
+    /// where the rest ends and the line below is centred there, as Chromium prints it (<see cref="SliceRestEnd.AtLineCentre"/>;
+    /// cases <c>a4-header-image-228</c>, <c>a4-header-image-228-line3-below</c>). The cell's own background does not
+    /// decide it (<c>a4-header-image-228-background</c>). The half takes no part in the cell's paint: the table draws the grid lines. Any other
+    /// fragment as it is.
+    /// </summary>
+    private static BoxFragment AtRestEnd(TableGeometry table, ActiveCell cell, BoxFragment fragment)
+    {
+        if (table.Environment.Profile.SliceRestEnd != SliceRestEnd.AtLineCentre || cell.Token is null)
+        {
+            return fragment;
+        }
+
+        var rest = ContinuedSliceBottom(fragment);
+        var half = LineBelowInside(table, table.Grid.Cells[cell.Cell]);
+        return rest > 0 && half > 0 && Math.Abs(rest + half - fragment.Size.Height) < 1e-6
+            && !fragment.Children.Any(child => DrawnContent.DrawsOutsideSlices(child.Fragment))
+            ? new BoxFragment(fragment.Box, new Size(fragment.Size.Width, rest), fragment.Children, fragment.Border, fragment.IsRepeated)
+            : fragment;
+    }
+
     /// <summary>A fragment moved <paramref name="inset"/> down inside itself, and that much taller.</summary>
     private static BoxFragment Lowered(BoxFragment fragment, double inset) =>
         inset <= 0
@@ -199,13 +238,18 @@ internal static class TableSegments
         return content with { Rows = rows, Cells = cells, Lines = lines, Bottom = segment.Top + segment.Height };
     }
 
-    /// <summary>A whole cell: its natural fragment stretched to the rows it covers, content aligned (§17.5.3).</summary>
+    /// <summary>A whole cell: its natural fragment stretched to the rows it covers, content aligned (§17.5.3); the rest of a
+    /// cell cut on an earlier page at the top under <see cref="CutRowAlignment.TopOnEveryPage"/>, as every part of a cut
+    /// row is on the page where it is cut (<see cref="Slice"/>).</summary>
     internal static PlacedCell Whole(TableGeometry table, Segment segment, ActiveCell cell)
     {
         var info = table.Grid.Cells[cell.Cell];
         var height = segment.RowsHeight(cell.StartRow, info.LastRow);
+        var align = cell.Token is not null && table.Environment.Profile.CutRowAlignment == CutRowAlignment.TopOnEveryPage
+            ? VerticalAlign.Top
+            : info.Box.Style.VerticalAlign;
         var fragment = segment.Natural.TryGetValue(cell.Cell, out var natural)
-            ? Stretch(natural, height, info.Box.Style.VerticalAlign)
+            ? Stretch(natural, height, align)
             : EmptyCell(CellLayoutBox(table, segment, cell), table.CellWidth(info), height);
         return new PlacedCell(cell.Cell, cell.StartRow, fragment);
     }
@@ -221,7 +265,7 @@ internal static class TableSegments
             .TraverseAll(cell => table.Environment
                 .Layout(CellLayoutBox(table, shell, cell), Unlimited(table, table.CellWidth(table.Grid.Cells[cell.Cell])), cell.Token)
                 .OnSuccessBind(result => result is LayoutResult.Placed { Continuation: null } placed
-                    ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, Lowered(placed.Fragment, ReopenedInset(table, shell, cell))))
+                    ? Result<KeyValuePair<int, BoxFragment>, Error>.Success(KeyValuePair.Create(cell.Cell, AtRestEnd(table, cell, Lowered(placed.Fragment, ReopenedInset(table, shell, cell)))))
                     : Result<KeyValuePair<int, BoxFragment>, Error>.Failure(
                         LayoutErrors.InvalidContent(table.Grid.Cells[cell.Cell].Box, "a table cell cannot hold a forced page break."))))
             .OnSuccessMap(natural =>
@@ -343,7 +387,7 @@ internal static class TableSegments
         var grid = table.Grid;
         var info = grid.Cells[cell.Cell];
         var top = cell.Token is null && !withoutLineAbove ? LineAboveInside(table, segment, cell) : 0;
-        var bottom = table.HorizontalWidth(info.LastRow, TablePage.Next(grid, info.LastRow), TablePage.EdgeContext(grid, info.LastRow), info) / 2;
+        var bottom = LineBelowInside(table, info);
         var halves = new Edges(
             top.Pt(),
             (CollapsedBorders.OwnVerticalWidth(table.Box, grid, info, info.Column + info.ColumnSpan) / 2).Pt(),
@@ -351,6 +395,10 @@ internal static class TableSegments
             (CollapsedBorders.OwnVerticalWidth(table.Box, grid, info, info.Column) / 2).Pt());
         return TracksLayout.CellBox(info, halves);
     }
+
+    /// <summary>The half of the cell's own part of the line below its last row that lies inside the cell.</summary>
+    private static double LineBelowInside(TableGeometry table, TableGrid.Cell info) =>
+        table.HorizontalWidth(info.LastRow, TablePage.Next(table.Grid, info.LastRow), TablePage.EdgeContext(table.Grid, info.LastRow), info) / 2;
 
     /// <summary>The half of the cell's own part of the line above it that lies inside the cell when it starts on this
     /// page.</summary>

@@ -40,7 +40,7 @@ public class BodyClipTests
     /// counts them.</summary>
     private static HashSet<(int X, int Y)> Pixels(PrintedPage page)
     {
-        static int Pixel(double length) => (int)Math.Round(length / 0.75, MidpointRounding.AwayFromZero);
+        static int Pixel(double length) => ChromiumLayout.Pixel(length);
         var pixels = new HashSet<(int X, int Y)>();
         foreach (var box in page.Rectangles)
         {

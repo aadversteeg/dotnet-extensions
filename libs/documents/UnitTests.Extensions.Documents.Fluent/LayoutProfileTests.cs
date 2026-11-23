@@ -59,6 +59,39 @@ public class LayoutProfileTests
     }
 
     [Fact]
+    public void The_cut_row_alignment_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
+    {
+        var model = DocumentTranslator.ToModel(Doc().CutRowAlignment(CutRowAlignment.TopOnEveryPage)).Value;
+        var undefined = DocumentTranslator.ToModel(Doc() with { Profile = new LayoutProfile { CutRowAlignment = (CutRowAlignment)4 } });
+
+        LayoutProfile.Default.CutRowAlignment.Should().Be(CutRowAlignment.RestAlignedInItsPart);
+        model.Profile.Should().Be(new LayoutProfile { CutRowAlignment = CutRowAlignment.TopOnEveryPage });
+        undefined.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LayoutProfile);
+    }
+
+    [Fact]
+    public void The_slice_rest_end_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
+    {
+        var model = DocumentTranslator.ToModel(Doc().SliceRestEnd(SliceRestEnd.AtLineCentre)).Value;
+        var undefined = DocumentTranslator.ToModel(Doc() with { Profile = new LayoutProfile { SliceRestEnd = (SliceRestEnd)4 } });
+
+        LayoutProfile.Default.SliceRestEnd.Should().Be(SliceRestEnd.InsideCell);
+        model.Profile.Should().Be(new LayoutProfile { SliceRestEnd = SliceRestEnd.AtLineCentre });
+        undefined.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LayoutProfile);
+    }
+
+    [Fact]
+    public void The_repeated_header_rows_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
+    {
+        var model = DocumentTranslator.ToModel(Doc().RepeatedHeaderRows(RepeatedHeaderRows.WhereContentIsLaidOut)).Value;
+        var undefined = DocumentTranslator.ToModel(Doc() with { Profile = new LayoutProfile { RepeatedHeaderRows = (RepeatedHeaderRows)4 } });
+
+        LayoutProfile.Default.RepeatedHeaderRows.Should().Be(RepeatedHeaderRows.AboveEverySlice);
+        model.Profile.Should().Be(new LayoutProfile { RepeatedHeaderRows = RepeatedHeaderRows.WhereContentIsLaidOut });
+        undefined.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LayoutProfile);
+    }
+
+    [Fact]
     public void The_cells_beside_slices_modifier_sets_its_policy_and_a_value_it_does_not_name_is_refused()
     {
         var model = DocumentTranslator.ToModel(Doc().CellsBesideSlices(CellsBesideSlices.Below)).Value;

@@ -188,7 +188,9 @@ public class RowPartTests
         // Case a2-split-line-1px; .SplitLinesAtBreaks(): the 0.75 pt line is split at the break, its upper half ends page 1
         // and its lower half starts page 2 at the page area's top. Chromium draws each half, half a pixel, one pixel
         // thick (SplitLineHalves.AtLeastOnePixel); under the default, Exact, each is 0.375 pt. Layout is the same under
-        // both: page 2's first row starts 0.375 pt higher than in Chromium either way, a difference pinned here.
+        // both: page 2's first row starts 0.375 pt, half a pixel, below the page area's top, and Chromium paints its text
+        // at the next whole pixel, 0.375 pt lower, as it paints every half-pixel position of the cases but the end of the
+        // rest of a sliced piece (SliceRestEnd); pinned here.
         var engine = PrintAllowed(Mirror(133.5, 4.5), SplitLineHalves.AtLeastOnePixel).Value;
         var exact = PrintAllowed(Mirror(133.5, 4.5)).Value;
         var chromium = PrintedPages.Chromium("a2-split-line-1px");

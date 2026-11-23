@@ -28,9 +28,12 @@ internal static class SlicedBox
     /// where it ran out of room (<see cref="LayoutResult.Placed.KeepsItsBreak"/>).</param>
     /// <param name="KeptAppeal">For content that keeps its break, that break's appeal for the parent's comparison
     /// (<see cref="LayoutResult.Placed.KeptAppeal"/>).</param>
+    /// <param name="EndsBelowContent">For content that breaks, true when it breaks inside a child whose fragment ends right
+    /// below its content (<see cref="LayoutResult.Placed.EndsBelowContent"/>): the box's fragment then ends below its
+    /// content too (see <see cref="Layout"/>).</param>
     public sealed record Content(
         ValueList<PlacedFragment> Children, double Height, BreakToken? Continuation, BreakAppeal Appeal = BreakAppeal.Perfect, EarlyBreak? BestBreak = null,
-        BreakToken? AtEnd = null, bool KeepsItsBreak = false, BreakAppeal KeptAppeal = BreakAppeal.Perfect);
+        BreakToken? AtEnd = null, bool KeepsItsBreak = false, BreakAppeal KeptAppeal = BreakAppeal.Perfect, bool EndsBelowContent = false);
 
     /// <summary>
     /// Lays out an algorithm's content in a content area of the given size, ending at <paramref name="breakAt"/> when
@@ -48,13 +51,14 @@ internal static class SlicedBox
     /// <param name="atEnd">For complete content, the token that resumes after all of it (<see cref="Content.AtEnd"/>).</param>
     /// <param name="keepsItsBreak">For content that breaks, whether it broke at a breakpoint it chose (<see cref="Content.KeepsItsBreak"/>).</param>
     /// <param name="keptAppeal">For content that keeps its break, that break's appeal for the comparison (<see cref="Content.KeptAppeal"/>).</param>
+    /// <param name="endsBelowContent">For content that breaks, whether it breaks inside a child that ends below its content (<see cref="Content.EndsBelowContent"/>).</param>
     /// <returns>The successful content result.</returns>
     public static Result<Maybe<Content>, Error> Placed(
         ValueList<PlacedFragment> children, double height, BreakToken? continuation, BreakAppeal appeal = BreakAppeal.Perfect, EarlyBreak? bestBreak = null,
-        BreakToken? atEnd = null, bool keepsItsBreak = false, BreakAppeal keptAppeal = BreakAppeal.Perfect) =>
+        BreakToken? atEnd = null, bool keepsItsBreak = false, BreakAppeal keptAppeal = BreakAppeal.Perfect, bool endsBelowContent = false) =>
         Result<Maybe<Content>, Error>.Success(Maybe.From(new Content(
             children, height, continuation, appeal, continuation is null ? bestBreak : null, continuation is null ? atEnd : null, continuation is not null && keepsItsBreak,
-            continuation is not null && keepsItsBreak ? keptAppeal : BreakAppeal.Perfect)));
+            continuation is not null && keepsItsBreak ? keptAppeal : BreakAppeal.Perfect, continuation is not null && endsBelowContent)));
 
     /// <summary>The result for a box of which not even the first piece of content fits.</summary>
     public static Result<Maybe<Content>, Error> NothingFits => Result<Maybe<Content>, Error>.Success(Maybe<Content>.None);
@@ -103,7 +107,14 @@ internal static class SlicedBox
     /// are not part of a fragment that breaks.</item>
     /// <item>A fragment that breaks fills the rest of the page: "When a box breaks, its content box extends to
     /// fill any remaining fragmentainer extent" (CSS Fragmentation 3 §5.3), so its background reaches the page
-    /// end.</item>
+    /// end. Except where the page ends at a break before bottom padding and border (the last resort below): the box
+    /// that breaks there ends right below its content, and so does every box around it whose page ends only because of
+    /// that break, through any number of them (<see cref="LayoutResult.Placed.EndsBelowContent"/>; cases
+    /// <c>fr-pad-ancestor-boxes</c>, two bordered boxes; <c>fr-pad-ancestor-background</c>, a background;
+    /// <c>fr-header-pad-box-20</c>, <c>-box-36</c>, <c>-grid-36</c> and <c>-none-36</c>, a bordered box in a table cell). A box whose page ends at
+    /// any other break fills the page, also where a box inside it broke before its bottom padding on the page before
+    /// (case <c>fr-pad-then-sibling</c>: the box ends below the line on the first page and fills the second, where it
+    /// breaks between two paragraphs).</item>
     /// <item>THE RULE FOR BOTTOM PADDING AND BORDER THAT DO NOT FIT, as Chromium has it (<c>FinishFragmentation</c> in
     /// <c>third_party/blink/renderer/core/layout/fragmentation_utils.cc</c>): the content is complete, but the bottom
     /// padding and border no longer fit below it. They are no place for a valid break (§4.1: a class C break needs a gap
@@ -183,7 +194,7 @@ internal static class SlicedBox
 
         var content = first.Value.Value;
         var endsHere = content.Continuation is null;
-        var fillsPage = true;
+        var fillsPage = !content.EndsBelowContent;
         if (endsHere && !Fitting.Fits(topInset + content.Height + bottomInset, space.AvailableHeight))
         {
             var progress = topInset + content.Height > 0 && Fitting.Fits(topInset + content.Height, space.AvailableHeight);
@@ -214,14 +225,16 @@ internal static class SlicedBox
             }
         }
 
-        return LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, content, fillsPage), content.Continuation, content.Appeal, content.BestBreak, content.KeepsItsBreak, content.KeptAppeal);
+        return LayoutResult.Place(
+            Wrap(box, space, incoming is null, topInset, bottomInset, content, fillsPage), content.Continuation, content.Appeal, content.BestBreak, content.KeepsItsBreak, content.KeptAppeal,
+            endsBelowContent: !fillsPage);
     }
 
     /// <summary>
     /// The box fragment around the content: the content moved inside the border and padding; the height is the top
     /// inset plus the content plus the bottom inset on the last fragment, or the whole remaining page on a fragment
-    /// that breaks (§5.3) — except before its bottom padding and border (<paramref name="fillsPage"/> false), where it
-    /// ends right below its content, as Chromium prints it. The fragment paints the left and right border always, the
+    /// that breaks (§5.3) — except where the page ends before its own bottom padding and border or before those of a box
+    /// inside it (<paramref name="fillsPage"/> false), where it ends right below its content, as Chromium prints it. The fragment paints the left and right border always, the
     /// top one on the first fragment and the bottom one on the last (slice, §5.4).
     /// </summary>
     private static BoxFragment Wrap(Box box, ConstraintSpace space, bool isFirst, double topInset, double bottomInset, Content content, bool fillsPage = true)
