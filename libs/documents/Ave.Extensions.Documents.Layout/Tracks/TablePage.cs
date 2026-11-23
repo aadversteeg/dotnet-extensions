@@ -741,19 +741,18 @@ internal static class TablePage
     /// <summary>
     /// Under <see cref="TableEndOverflow.ContinuesOnNextPage"/>, as Chromium prints it: in a table that continues from the
     /// page before, a row that starts its page area and is a unit of its own (a row that continues from the page before,
-    /// or one that moved to this page whole), each of whose cells has content on the page that fits and a bottom padding
-    /// and border that do not, is placed whole: the padding and the line below pass the page end, by more than a line
+    /// or one that moved to this page whole), each of whose cells that pass the page end has content on the page that fits
+    /// and a bottom padding and border that do not, beside cells that end above the page end, is placed whole: the padding and the line below pass the page end, by more than a line
     /// where the padding is taller, and continue on the next page (<see cref="Passed"/>). Chromium keeps the lines on the
     /// page and does not move the last of them so that the padding fits (cases <c>fr-continued-pad-past-33</c>,
     /// <c>-45</c>, <c>-60</c>: 3, 15 and 30 pt of padding past the page end; <c>fr-continued-pad-past-33-next-row</c>,
     /// with a row after it; <c>fr-row-later-page-padding-overflows</c>, a row that moved to the page whole;
     /// <c>a4-continued-cell-pad-bottom-30</c>, a nested table as the content). Where a cell's content does not fit, the
-    /// row is cut as before, and its last lines go to the next page with the padding. Also as before: a row with a cell
-    /// that ends above the page end, where Chromium gives the next page what passed plus the largest whole bottom padding
-    /// of the cells that ended (cases <c>fr-row-later-page-padding-overflows-two-cells</c>: the line below centred at
-    /// 13.125 pt beside 12 pt of padding, where the cell that passes leaves 1.125; <c>-two-cells-pad-6</c>: 7.125 beside
-    /// 6; <c>-three-cells</c>: 19.125 beside 6 and 18), and
-    /// a cell whose rest is only padding, without content (not measured).
+    /// row is cut as before, and its last lines go to the next page with the padding. The cells that end above the page
+    /// end give the next page nothing, where Chromium gives it the largest of their bottom paddings again (a documented
+    /// limit; cases <c>fr-row-later-page-padding-overflows-two-cells</c>, <c>-two-cells-pad-6</c>, <c>-three-cells</c>:
+    /// the line below 13.125, 7.125 and 19.125 pt below the next page's top as Chromium prints it, beside 12, 6, and 6
+    /// and 18 pt of padding). Also as before: a cell whose rest is only padding, without content (not measured).
     /// Under <see cref="TableEndOverflow.EndsOnPage"/> nothing changes.
     /// </summary>
     private static bool PassesByItsBottomPadding(TableGeometry table, TableSegments.Segment segment, int row, double height)
@@ -768,8 +767,8 @@ internal static class TablePage
             .Select(cell => (Top: segment.RowTop(cell.StartRow), Bottom: segment.RowTop(cell.StartRow) + segment.Natural[cell.Cell].Size.Height,
                 Inset: SlicedBox.BottomInset(TableSegments.CellLayoutBox(table, segment, cell).Style)))
             .ToList();
-        return cells.Count > 0 && cells.All(cell =>
-            !Fitting.Fits(cell.Bottom, height) && cell.Bottom - cell.Inset > cell.Top + Fitting.TolerancePoints && Fitting.Fits(cell.Bottom - cell.Inset, height));
+        return cells.Any(cell => !Fitting.Fits(cell.Bottom, height)) && cells.All(cell => Fitting.Fits(cell.Bottom, height)
+            || (cell.Bottom - cell.Inset > cell.Top + Fitting.TolerancePoints && Fitting.Fits(cell.Bottom - cell.Inset, height)));
     }
 
     /// <summary>Whether the table's fragment passes the page area where a unit placed whole lets its line below pass the

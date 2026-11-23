@@ -100,6 +100,9 @@ internal static class HtmlCases
         ["a2-row-end-pad-past"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["a2-row-end-pad-past-after"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
+        ["fr-row-later-page-padding-overflows-two-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
+        ["fr-row-later-page-padding-overflows-two-cells-pad-6"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
+        ["fr-row-later-page-padding-overflows-three-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
         ["fr-continued-pad-past-taller-than-page"] = "What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding",
     };
 

@@ -963,21 +963,24 @@ Each is documented next to its code as well.
   `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`). Under
   `TableEndOverflow.ContinuesOnNextPage`, the HTML front-end's value, such a row and a row that continues from the page
   before keep their lines and their padding continues on the next page, as Chromium prints it, where every cell of the
-  row passes the page end with content on the page (cases `fr-continued-pad-past-*`,
+  row that passes the page end has content on the page that fits, beside cells that end above it (cases `fr-continued-pad-past-*`,
   `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). With a row after
   it, the line between the two rows is drawn there once, as the upper half that passed, and the next row keeps the room
   of the lower half without drawing it (cases `fr-continued-pad-past-33-next-row`, with a 6 pt and a 2.25 pt line
-  `-line-6pt`, `-line-2-25pt`, and `-taller-than-page-next-row`). Still cut so: a row
-  with a cell that ends above the page end, where Chromium gives the next page what passed of the cell that passes
-  (1.125 pt with the line's upper half) plus the largest whole bottom padding of the cells that ended above the page
-  end, the line below centred 13.125 pt below the page's top beside 12 pt of padding (`-two-cells`), 7.125 pt beside
-  6 pt (`-two-cells-pad-6`), 19.125 pt beside 6 and 18 pt (`-three-cells`): not the rule above, which carries only
-  what passed; and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
+  `-line-6pt`, `-line-2-25pt`, and `-taller-than-page-next-row`). Still cut so: a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
   Padding that passes by more than the page area takes the whole next page and the rest the page after, as in Chromium;
   without a row after the table Chromium then starts what follows 0.75 pt below the page's top, over the padding, where
   the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, listed through the HTML front-end,
   `HtmlListedDifferenceTests`, where that start is the whole difference: text over a table is not what a writer wants,
   as with what follows a sliced image).
+  Beside a cell whose bottom padding passes the page end, the cells of the row that ended above the page end give the
+  next page nothing: it continues only what passed. Chromium gives the next page, besides what passed, the largest
+  whole bottom padding of those cells, which had its room on the page before: empty space printed a second time, which
+  no writer wants. The line below the row lies, as Chromium prints it, 13.125 pt below the next page's top beside 12 pt
+  of padding (`fr-row-later-page-padding-overflows-two-cells`), 7.125 pt beside 6 pt (`-two-cells-pad-6`) and 19.125 pt
+  beside 6 and 18 pt (`-three-cells`), where the engine's lies 1.125 pt below it, as Chromium's does beside no such cell
+  (`fr-row-later-page-padding-overflows`); listed through the HTML front-end, `HtmlListedDifferenceTests`, where that
+  padding is the whole difference.
   Under a repeated header row, a cell whose box's bottom padding does not fit on a page with the box's content: where
   the header is repeated, Chromium cuts the row below it because its line fits and only its padding does not, and so
   does the HTML front-end (`EmptyRowParts.Allow`); on the next page Chromium repeats the header above the rest of the

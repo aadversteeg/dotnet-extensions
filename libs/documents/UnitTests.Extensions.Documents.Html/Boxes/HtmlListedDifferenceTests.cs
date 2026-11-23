@@ -210,6 +210,49 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// A row at the top of a page whose tallest cell passes the page end only by its bottom padding, beside cells that
+    /// end above the page end (12 pt top and bottom padding, 18 pt lines, page area 12 to 162; then "z"): both keep every
+    /// line on page 2 and continue on page 3 with what passed of the tallest cell, its bottom padding past the page end
+    /// and the line below (<c>TableEndOverflow.ContinuesOnNextPage</c>). Chromium also gives page 3 the whole bottom
+    /// padding of the cell that ended above the page end, the largest of them where there are two, though it had its
+    /// room on page 2: empty space printed a second time, which no writer wants; the engine continues only what passed
+    /// (docs/architecture.md, "Known limits"). Chromium's line below the row lies, as printed, 13.125 pt below page 3's
+    /// top beside 12 pt of padding (<c>fr-row-later-page-padding-overflows-two-cells</c>), 7.125 pt beside 6 pt
+    /// (<c>-two-cells-pad-6</c>) and 19.125 pt beside 6 and 18 pt (<c>-three-cells</c>); the engine's 1.125 pt, as
+    /// Chromium prints a row without such a cell (<c>fr-row-later-page-padding-overflows</c>, equal). That padding is the
+    /// whole difference: with it put back into the engine's page 3 at the top of that line (the line and what follows
+    /// lowered by it, the cells' sides lengthened), the engine's pages are Chromium's.
+    /// </summary>
+    /// <param name="name">The case.</param>
+    /// <param name="added">The bottom padding Chromium gives page 3 again: the largest of the cells that ended.</param>
+    /// <param name="chromiumLine">The centre of Chromium's line below the row on page 3, below the page's top, as printed.</param>
+    [Theory]
+    [InlineData("fr-row-later-page-padding-overflows-two-cells", 12, 13.125)]
+    [InlineData("fr-row-later-page-padding-overflows-two-cells-pad-6", 6, 7.125)]
+    [InlineData("fr-row-later-page-padding-overflows-three-cells", 18, 19.125)]
+    public void Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again(
+        string name, double added, double chromiumLine)
+    {
+        var (engine, chromium) = (Engine(name), Chromium(name));
+        static PrintedBox Line(PrintedPage page) => page.Rectangles.Where(box => box.X1 - box.X0 > box.Y1 - box.Y0).MaxBy(box => box.Y0)!;
+
+        engine.PageTexts.Should().Equal(chromium.PageTexts);
+        engine.PageTexts[2].Should().Be("z");
+        var (theirs, ours) = (chromium.Pages[2], engine.Pages[2]);
+        ((Line(theirs).Y0 + Line(theirs).Y1) / 2).Should().Be(12 + chromiumLine);
+        ((ChromiumLayout.WholePixel(Line(ours).Y0) + ChromiumLayout.WholePixel(Line(ours).Y1)) / 2).Should().Be(13.125, "the engine's line, printed on whole pixels");
+        HtmlCases.Difference(engine, chromium).Should().NotBeNull();
+
+        var at = Line(ours).Y0;
+        var lowered = ours with
+        {
+            Words = [.. ours.Words.Select(word => word.Baseline > at ? word with { Baseline = word.Baseline + added } : word)],
+            Rectangles = [.. ours.Rectangles.Select(box => box.Y0 >= at ? box with { Y0 = box.Y0 + added, Y1 = box.Y1 + added } : box.Y1 > at ? box with { Y1 = box.Y1 + added } : box)],
+        };
+        HtmlCases.Difference(new PrintedPages([.. engine.Pages.Take(2), lowered]), chromium).Should().BeNull("the padding given again is the whole difference");
+    }
+
+    /// <summary>
     /// Bottom padding taller than a page area, then a paragraph (case <c>fr-continued-pad-past-taller-than-page</c>: 220 pt
     /// of padding below ten lines that end at 132 pt on page 2, 190.75 pt past the page end with the line below, in a page
     /// area of 150 pt): both paint the cell's sides over all of page 3 and down to 52.5 pt on page 4, with the table's bottom
