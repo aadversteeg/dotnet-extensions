@@ -188,9 +188,8 @@ public class RowEndTests
     public void The_95_documents_that_were_refused_print_the_words_of_Chromium_on_the_same_pages_and_in_87_at_the_same_places()
     {
         // Same words on the same pages in all 95, at the same places in 87. In the 8 with a first row of 10 or 11 lines and
-        // a second of 23 (in the four table shapes), page 2 starts below the line between the rows, which the engine splits at the break and Chromium
-        // draws whole on both pages: page 2 is 0.375 pt higher (the pinned difference of RowPartTests, the a2 split-line
-        // cases).
+        // a second of 23 (in the four table shapes), page 2 starts below the line between the rows, split at the break in
+        // both: page 2 is 0.375 pt higher in the engine (the pinned difference of RowPartTests, the a2 split-line cases).
         var chromium = ChromiumFamily();
         chromium.Should().HaveCount(95);
         var differences = new List<string>();
@@ -299,8 +298,9 @@ public class RowEndTests
     [Fact]
     public void A_table_that_starts_the_page_and_ends_the_document_with_such_a_first_row_has_a_page_less_than_in_Chromium()
     {
-        // Limit, docs/architecture.md, row end (i): the same row with nothing after the table. Chromium ends the document
-        // with a second page that shows nothing; the engine has the one page.
+        // Limit, docs/architecture.md, row end (i), under TableEndOverflow.EndsOnPage, the default: the same row with
+        // nothing after the table. Chromium ends the document with a second page that shows nothing; the engine has the
+        // one page. Under ContinuesOnNextPage it has Chromium's two (TableEndOverflowTests).
         PrintedPages.Chromium("a2-row-end-first-row-half-alone").PageTexts.Should().Equal("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10", "");
         foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
         {
@@ -431,9 +431,10 @@ public class RowEndTests
     [Fact]
     public void The_line_below_passes_the_page_area_whole_as_in_Chromium_but_the_engine_does_not_draw_it_again_on_a_next_page()
     {
-        // Limit (i), docs/architecture.md: the whole bottom line, 192 to 192.75, on page 2 in both. Chromium draws the
-        // overflowing border again on a page 3 that holds only that line; the table ends the document, and the engine
-        // ends with page 2.
+        // Limit (i), docs/architecture.md, under TableEndOverflow.EndsOnPage, the default: the whole bottom line, 192 to
+        // 192.75, on page 2 in both. Chromium draws the overflowing border again on a page 3 that holds only that line; the
+        // table ends the document, and the engine ends with page 2. Under ContinuesOnNextPage it draws that page 3 too
+        // (TableEndOverflowTests).
         var engine = Printed(Smallest());
         var chromium = PrintedPages.Chromium("a2-row-end");
 
@@ -450,9 +451,10 @@ public class RowEndTests
     [InlineData("a2-row-end-6pt-after", 6)]
     public void Content_after_the_table_starts_on_the_next_page_higher_than_in_Chromium_by_the_line_s_width(string caseName, double width)
     {
-        // Limit (ii): Chromium starts "after" below the line it draws again at the top of page 3; the engine starts it at
-        // the top of page 3, higher by the line's width. No reserved offset without the line (a gap without a line would
-        // be a third behaviour); both become equal when borders are sliced.
+        // Limit (ii), under TableEndOverflow.EndsOnPage, the default: Chromium starts "after" below the line it draws
+        // again at the top of page 3; the engine starts it at the top of page 3, higher by the line's width. Under
+        // ContinuesOnNextPage the engine draws what passed again and starts "after" where Chromium does
+        // (TableEndOverflowTests).
         var body = Smallest(after: true);
         if (width > 1)
         {
@@ -517,7 +519,8 @@ public class RowEndTests
         // (as Chromium prints a break inside a spanning cell, case b4-row-span-6pt), keeping the half's room: the first
         // line on page 3 is the table's bottom line, 12.375 to 13.125. Chromium lets the whole line pass the end of page 2
         // and draws it again at the top of page 3, so "after" is 0.375 pt higher than in Chromium (+1.125 below the top of
-        // the page against +1.5).
+        // the page against +1.5). That is under TableEndOverflow.EndsOnPage, the default; under ContinuesOnNextPage page 3
+        // takes the passed part of the upper half again and "after" is where Chromium prints it (TableEndOverflowTests).
         var engine = Printed(Spanning());
         var chromium = PrintedPages.Chromium("a2-row-end-span");
         var engineAfter = Printed(Spanning(after: true));

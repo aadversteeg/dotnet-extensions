@@ -34,6 +34,28 @@ internal static class TableFragments
     }
 
     /// <summary>
+    /// The grid lines of a page's fragment that pass <paramref name="end"/>, each cut there and moved up by it: the part
+    /// of the table that passed the page end, as the next page draws it at its top (<c>TablePage.Passed</c>). Chromium
+    /// draws the passed lines again on the next page offset up by the page area's height, clipped to that page's area, so
+    /// only the part below the page end shows (cases <c>a2-row-end</c>, <c>a2-row-end-after</c>, <c>a2-row-end-6pt-after</c>:
+    /// the side lines and the bottom line from the top of page 3, as tall as what passed).
+    /// </summary>
+    /// <param name="fragment">The page's fragment, with its grid lines as direct children.</param>
+    /// <param name="end">The page end, from the table's top edge.</param>
+    /// <returns>The passed lines, from the next page's top.</returns>
+    internal static ValueList<PlacedFragment> Below(BoxFragment fragment, double end) =>
+    [
+        .. fragment.Children
+            .Where(child => child.Fragment is RuleFragment && child.Offset.Y + child.Fragment.Size.Height > end + Tolerance)
+            .Select(child =>
+            {
+                var rule = (RuleFragment)child.Fragment;
+                var top = Math.Max(child.Offset.Y, end);
+                return new PlacedFragment(new Point(child.Offset.X, top - end), new RuleFragment(rule.Color, new Size(rule.Size.Width, child.Offset.Y + rule.Size.Height - top)));
+            }),
+    ];
+
+    /// <summary>
     /// Consecutive rows of the same group (and the same repeated flag) become one group fragment. Every cell is drawn
     /// inside the row it starts in, so that the structure markers keep it a kid of that row on every page (ISO 32000-1
     /// §14.8.4.3.4: a TD or TH is a kid of its TR). A cell that spans rows and continues from an earlier page has its
