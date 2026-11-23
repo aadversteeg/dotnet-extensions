@@ -36,7 +36,8 @@ internal static class LayoutErrors
         new Error(
                 LayoutErrorCodes.TableBreak,
                 $"{Describe(table)} has separated borders and breaks in {Room(available)} where this version does not draw the break: "
-                + "a cell over several rows across it, content sliced in a cell, a row cut beside a cell aligned at the middle or bottom, "
+                + "a cell over several rows across it, content sliced in a cell, a row cut beside a cell aligned at the middle or bottom "
+                + "under the profile's CutRowAlignment RestAlignedInItsPart, "
                 + "box-decoration-break: clone, or a part past the page end. Give the table the room on one page, or draw it with collapsed borders.")
             .With(ErrorMetadataKeys.Node, table.Id.ToString())
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))

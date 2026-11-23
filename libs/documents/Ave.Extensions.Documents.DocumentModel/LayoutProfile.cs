@@ -133,8 +133,11 @@ public enum RepeatedHeaderRows
 /// <c>fr-cut-row-uncut-bottom-cell</c>: a bottom-aligned cell that fits beside a cell that is cut); a row that no break
 /// cuts is aligned as its cells' <see cref="VerticalAlign"/> says under both values.
 /// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) a cut row whose cells are all aligned at the top is
-/// drawn as under both values (cases <c>ts-break-cut</c>, <c>ts-break-move</c>); one with a cell aligned at the middle
-/// or bottom is refused (<c>Documents.Layout.TableBreak</c>), as no case measures it.</para>
+/// drawn as under both values (cases <c>ts-break-cut</c>, <c>ts-break-move</c>). One with a cell aligned at the middle or
+/// bottom is drawn under <see cref="TopOnEveryPage"/>, as Chromium prints it: every cell at the top of its part on both
+/// pages (cases <c>ts-break-cut-middle</c>, the user agent's <c>middle</c>, and <c>ts-break-cut-bottom</c>, one cell at the
+/// bottom); under <see cref="RestAlignedInItsPart"/> it is refused (<c>Documents.Layout.TableBreak</c>), as no case
+/// measures that value with separated borders.</para>
 /// </summary>
 public enum CutRowAlignment
 {

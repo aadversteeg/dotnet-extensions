@@ -101,10 +101,10 @@ rows, once; Chromium repeats a small one on every page of a table that breaks (K
 `border-collapse`: both models are drawn. A table with separated borders (`separate`, the initial value) keeps its
 border, padding and background, each cell paints its own border, and `border-spacing` lies between the cells and
 around them, in whole CSS pixels (another spacing is refused). Such a table breaks over pages as Chromium prints it,
-sliced: between rows and inside rows of top-aligned cells, with a repeated header. It is refused at the table's line
-where it breaks with a cell over several rows across the break, with content sliced in a cell, beside a cut cell
-aligned at the middle or bottom, or with `box-decoration-break: clone`. A border on a row or a row group of such a
-table is refused; put borders and backgrounds on the cells.
+sliced: between rows and inside rows, the cells of a cut row at the top of each part whatever their alignment, with a
+repeated header. It is refused at the table's line where it breaks with a cell over several rows across the break,
+with content sliced in a cell, or with `box-decoration-break: clone`. A border on a row or a row group of such a table
+is refused; put borders and backgrounds on the cells.
 
 ### Supported at the initial value only
 

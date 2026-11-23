@@ -628,7 +628,7 @@ start tag, with the property and the value) only where it would change the print
 | Properties | Drawn | Refused |
 | --- | --- | --- |
 | `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
-| `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders breaks over pages, sliced | a table with separated borders that breaks with a cell over several rows across the break, content sliced in a cell, a cut row beside a cell aligned at the middle or bottom, `box-decoration-break: clone`, or past the page end (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
+| `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders breaks over pages, sliced | a table with separated borders that breaks with a cell over several rows across the break, content sliced in a cell, `box-decoration-break: clone`, or past the page end (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
 | `border-spacing` | whole CSS pixels on a table with separated borders; any value with collapsed borders (no effect) | other lengths on a table with separated borders |
 | table width, column widths, `table-layout` | the table at `auto` and `100%`; lengths of column elements; `table-layout: fixed` at width `100%` (at width `auto` the table is laid out automatically, as Chromium does) | percentages on column elements, any width on a cell or a column group, other table widths: see **Tables** |
 | margins | lengths of 0 or more; `auto` as 0 (width is auto); on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
@@ -729,12 +729,15 @@ and one spacing between the header and the first body row (`ts-break-rows`, `ts-
 ends with the spacing, padding and border below the last row, and a last row that fits only without them moves to the
 next page (`ts-break-end`). A row cut inside itself slices each of its cells, and a cell whose content ended above the
 cut goes on, empty, as tall as the row, its bottom border on the next page (`ts-break-cut`); rows are cut and moved by
-the rules of collapsed tables (`ts-break-move`, `ts-break-first-row`). Refused by layout with
+the rules of collapsed tables (`ts-break-move`, `ts-break-first-row`); the cells of a cut row, aligned at the middle
+(the user agent's) or at the bottom, start at the top of their part on both pages, as in the collapsing model
+(`CutRowAlignment.TopOnEveryPage`; `ts-break-cut-middle`, `ts-break-cut-bottom`). Refused by layout with
 `Documents.Layout.TableBreak` at the table's source line, where no case shows a rule: a cell over several rows across
 the break (`ts-break-span`: Chromium starts the next row one spacing below the page's top while the spanning cell's
 rest ends higher); content sliced in a cell, or a row cut empty below a repeated header (`ts-break-image`: Chromium
 moves the image's row to the next page with its cells empty and draws the last fragment twice); a cut row with a cell
-aligned at the middle or bottom; `box-decoration-break: clone`; a page of the table that would pass the page end. The
+aligned at the middle or bottom under `CutRowAlignment.RestAlignedInItsPart` (not measured in this model);
+`box-decoration-break: clone`; a page of the table that would pass the page end. The
 policies of `LayoutProfile` say what each means in this model. The code front-end keeps collapsed grid lines; the
 separated model is reached through HTML.
 
@@ -1354,9 +1357,8 @@ Each is documented next to its code as well.
   keeps every recursive step of the engine far from the stack limit; no length is longer than 14 400 pt
   (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
 - **Separated borders:** a table with separated borders (`BoxStyle.BorderModel` `Separate`) breaks between rows and
-  inside rows of top-aligned cells, as Chromium prints it; it is refused (`Documents.Layout.TableBreak`) where it breaks
-  with a cell over several rows across the break, with content sliced in a cell, with a cut row beside a cell aligned
-  at the middle or bottom, with `box-decoration-break: clone`, or past the page end (cases `ts-break-span`,
+  inside rows, as Chromium prints it; it is refused (`Documents.Layout.TableBreak`) where it breaks with a cell over
+  several rows across the break, with content sliced in a cell, with `box-decoration-break: clone`, or past the page end (cases `ts-break-span`,
   `ts-break-image`; the others not measured). The code front-end has no separated model (its tables keep collapsed grid
   lines). Measured with spacings of whole CSS pixels only, which is what the HTML front-end draws.
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as

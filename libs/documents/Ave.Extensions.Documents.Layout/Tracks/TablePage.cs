@@ -321,7 +321,9 @@ internal static class TablePage
     /// here); content taller than the page sliced in a cell, or a row cut empty below a repeated header (case
     /// <c>ts-break-image</c>: Chromium moves the image's row to the next page with its cells empty, slices the image on the
     /// pages after it and draws the table's last fragment twice); a cut row with a cell aligned at the middle or bottom
-    /// (<see cref="CutRowAlignment"/> is not measured for separated borders); a table of
+    /// under <see cref="CutRowAlignment.RestAlignedInItsPart"/> (under <see cref="CutRowAlignment.TopOnEveryPage"/> such a
+    /// row is drawn, its cells at the top of their part on every page, as in the collapsing model: cases
+    /// <c>ts-break-cut-middle</c>, <c>ts-break-cut-bottom</c>); a table of
     /// <see cref="BoxDecorationBreak.Clone"/> (not measured for separated borders).
     /// </summary>
     private static bool SeparatedBreakIsDrawn(TableGeometry table, TracksBreakToken? incoming, Outcome outcome)
@@ -340,7 +342,8 @@ internal static class TablePage
                 return false;
             }
 
-            if (token.RowIsSplit && token.Cells.Any(cell => grid.Cells[cell.Cell].Box.Style.VerticalAlign != VerticalAlign.Top))
+            if (token.RowIsSplit && table.Environment.Profile.CutRowAlignment != CutRowAlignment.TopOnEveryPage
+                && token.Cells.Any(cell => grid.Cells[cell.Cell].Box.Style.VerticalAlign != VerticalAlign.Top))
             {
                 return false;
             }

@@ -530,8 +530,8 @@ tp-sum-above equal
 tp-sum-below equal
 tp-thirds equal
 ts-break-cut equal
-ts-break-cut-bottom refused Documents.Layout.TableBreak 136.5 at 4
-ts-break-cut-middle refused Documents.Layout.TableBreak 136.5 at 4
+ts-break-cut-bottom equal
+ts-break-cut-middle equal
 ts-break-end equal
 ts-break-first-row equal
 ts-break-header equal

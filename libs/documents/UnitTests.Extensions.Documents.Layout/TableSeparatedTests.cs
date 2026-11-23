@@ -257,10 +257,41 @@ public class TableSeparatedTests
     }
 
     /// <summary>
+    /// The cells of a cut row start at the top of their part whatever their alignment, as in the collapsing model
+    /// (<see cref="CutRowAlignment.TopOnEveryPage"/>, the HTML front-end's): cases <c>ts-break-cut-middle</c> (every cell at
+    /// the user agent's <c>middle</c>) and <c>ts-break-cut-bottom</c> (the one-line cell at the bottom): beside the cell of
+    /// ten lines, "short" and the three lines of "mid" start on the cut row's first line (Chromium: all three at 61.5 pt on
+    /// page 1), where the same row on one page would put them in its middle or at its bottom.
+    /// </summary>
+    [Theory]
+    [InlineData(VerticalAlign.Middle, VerticalAlign.Middle)]
+    [InlineData(VerticalAlign.Bottom, VerticalAlign.Middle)]
+    public void The_cells_of_a_cut_row_start_at_the_top_of_their_part_whatever_their_alignment(VerticalAlign shortCell, VerticalAlign others)
+    {
+        var t = new TableModels(ExactSize);
+        Box Aligned(Box cell, VerticalAlign align) => cell with { Style = cell.Style with { VerticalAlign = align } };
+        Box Cell(string text) => Aligned(t.Cell(text), others);
+        var lines = t.Lines([.. Enumerable.Range(1, 10).Select(line => $"line {line}")]);
+        var cut = t.Row(Aligned(lines, others), Aligned(t.Cell("short"), shortCell), Aligned(t.Lines(["mid", "mid 2", "mid 3"]), others));
+        var table = t.Table([TrackSize.Auto.Instance, TrackSize.Auto.Instance, TrackSize.Auto.Instance], t.Body(
+            t.Row(Cell("one"), Cell("text 1"), Cell("more 1")), cut, t.Row(Cell("three"), Cell("text 3"), Cell("more 3"))));
+        var document = TableModels.Page(276, 136, Broken(table)) with { Profile = LayoutProfile.Default with { CutRowAlignment = CutRowAlignment.TopOnEveryPage } };
+
+        var pages = Pages(document);
+
+        pages.Should().HaveCount(2);
+        var row = Cells(pages[0]).Skip(3).ToList();
+        row.Select(cell => cell.Box.Children[0].Offset.Y).Should().Equal(
+            Enumerable.Repeat(row[0].Box.Children[0].Offset.Y, 3), "every cell of the cut row starts at its top");
+        Layout(TableModels.Page(276, 136, Broken(table))).Error.Code.Should().Be(LayoutErrorCodes.TableBreak, "not measured under RestAlignedInItsPart");
+    }
+
+    /// <summary>
     /// Where no measured case says how Chromium breaks a table with separated borders, the table is refused with
     /// <see cref="LayoutErrorCodes.TableBreak"/> at its source line: a cell over three rows across the break (case
     /// <c>ts-break-span</c>: Chromium starts the next row 6 pt below the page's top while the spanning cell's rest ends
-    /// at 27 pt), a cut row with a cell aligned at the middle, and a table that clones its decoration at a break. The
+    /// at 27 pt), a cut row with a cell aligned at the middle under <see cref="CutRowAlignment.RestAlignedInItsPart"/>, and a
+    /// table that clones its decoration at a break. The
     /// same tables with collapsed borders break, on a smaller page.
     /// </summary>
     [Fact]
