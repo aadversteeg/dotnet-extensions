@@ -57,4 +57,12 @@ public static class LayoutErrorCodes
     /// break at the early break it reported). Reported instead of an exception, so pagination always ends and the caller
     /// gets an answer; a document that shows it is worth a bug report. Metadata: Value (which contract), Node.</summary>
     public static readonly ErrorCode EngineDefect = _ / "EngineDefect";
+
+    /// <summary>Content of a box with a height (<c>BoxStyle.SpecifiedHeight</c>, <c>MaxHeight</c>) that goes on past a
+    /// page break after the box's height has ended on the page: content that overflows the box down past the page end,
+    /// or a forced break inside it. Chromium 159 ends the box on that page, starts what follows the box below its end there,
+    /// and prints the rest of the content on the next page (cases <c>sz-height-overflow-page</c>, <c>sz-height-forced</c>);
+    /// the engine's pages show a box's content before what follows the box, so it refuses. Metadata: Node, Value (the
+    /// height of the box's rest on the page, in points), SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode OverflowAcrossPages = _ / "OverflowAcrossPages";
 }

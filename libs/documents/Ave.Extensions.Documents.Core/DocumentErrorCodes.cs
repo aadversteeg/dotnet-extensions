@@ -153,6 +153,12 @@ public static class DocumentErrorCodes
             /// <summary>A tab in a run whose white space is preserved (<c>white-space-collapse: preserve</c>): it would move
             /// the text to the next tab stop, and tab stops are not built. Metadata: Value, Property, Offset.</summary>
             public static readonly ErrorCode PreservedTab = _ / "PreservedTab";
+
+            /// <summary>A width, minimum or maximum width or an auto horizontal margin where layout does not take it: on a
+            /// box laid out by another algorithm than flow or inline, or on a box inside a table or a row of page-margin
+            /// boxes, whose columns are sized by the intrinsic widths of their content (a sized box's share in them is not
+            /// built). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Size = _ / "Size";
         }
     }
 }

@@ -72,13 +72,14 @@ internal static class MarginCollapsing
 
     /// <summary>True when the box's bottom margin adjoins its last child's (§8.3.1, "bottom margin of a last in-flow
     /// child and bottom margin of its parent if the parent has 'auto' computed height"): a flow box without
-    /// bottom padding and bottom border.</summary>
+    /// bottom padding, bottom border and height (<see cref="BoxStyle.SpecifiedHeight"/>).</summary>
     public static bool BottomAdjoinsChildren(Box box) =>
-        box.Layout == LayoutAlgorithmId.Flow && box.Style.Padding.Bottom.Points == 0 && !box.Style.Border.Bottom.IsVisible;
+        box.Layout == LayoutAlgorithmId.Flow && box.Style.Padding.Bottom.Points == 0 && !box.Style.Border.Bottom.IsVisible && box.Style.SpecifiedHeight is null;
 
     /// <summary>
     /// True when the box's own top and bottom margins adjoin (§8.3.1, last case: a box with "zero or 'auto'
-    /// computed 'height', and no in-flow children"): no vertical padding or border, and either a flow box whose
+    /// computed 'height', and no in-flow children", and a zero 'min-height'): no vertical padding or border, no height
+    /// or minimum height above 0 (<see cref="BoxStyle.SpecifiedHeight"/>, <see cref="BoxStyle.MinHeight"/>), and either a flow box whose
     /// children are all empty, or an inline box that makes no line boxes (CSS 2.1 §9.4.2: such line boxes "must be
     /// treated as zero-height line boxes for the purposes of determining the positions of any elements inside of them
     /// … and must be treated as not existing for any other purpose", margin collapsing included).
@@ -88,6 +89,8 @@ internal static class MarginCollapsing
         && box.Style.Padding.Bottom.Points == 0
         && !box.Style.Border.Top.IsVisible
         && !box.Style.Border.Bottom.IsVisible
+        && !(box.Style.SpecifiedHeight?.Points > 0)
+        && !(box.Style.MinHeight?.Points > 0)
         && (box.Layout == LayoutAlgorithmId.Flow ? box.Children.All(child => child is Box inner && IsEmpty(inner))
             : box.Layout == LayoutAlgorithmId.Inline && !InlineLayout.HasLineBoxes(box));
 

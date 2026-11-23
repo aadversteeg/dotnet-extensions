@@ -98,6 +98,7 @@ public static class FlowLayout
     {
         not FlowBreakToken => "it is the token of another layout algorithm",
         FlowBreakToken { ChildIndex: < 0 } flow => $"child {flow.ChildIndex} is outside the box's {childCount} children",
+        FlowBreakToken flow when !(flow.Consumed >= 0 && double.IsFinite(flow.Consumed)) => $"a box cannot have shown {InvariantNumber.Format(flow.Consumed)}pt of its height",
         FlowBreakToken flow when flow.ChildIndex > childCount || (flow.ChildIndex == childCount && flow.ChildToken is not null) =>
             $"child {flow.ChildIndex} is outside the box's {childCount} children",
         _ => null,
@@ -319,7 +320,7 @@ public static class FlowLayout
                 // here): no progress, so nothing of the box fits here, as SlicedBox has it for content of which nothing
                 // fits.
                 var lastResort = new FlowBreakToken(index, childResume);
-                if (best is null && lastResort.Equals(incoming))
+                if (best is null && lastResort.Equals(incoming is FlowBreakToken resumed ? resumed with { Consumed = 0 } : incoming))
                 {
                     return Result<Maybe<Stacked>, Error>.Success(Maybe<Stacked>.None);
                 }

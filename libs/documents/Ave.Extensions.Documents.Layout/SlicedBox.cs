@@ -187,14 +187,65 @@ internal static class SlicedBox
         {
             // A last resort that resumes where this fragment resumed leaves nothing of the box on the page: no progress, so
             // nothing of the box fits here.
-            return ContentIsAtPageStart(box.Style, space, incoming) || start.Equals(incoming)
-                ? LayoutResult.NothingFits(box, space)
-                : LayoutResult.Place(Wrap(box, space, incoming is null, topInset, bottomInset, new Content([], 0, start, BreakAppeal.LastResort)), start, BreakAppeal.LastResort);
+            if (ContentIsAtPageStart(box.Style, space, incoming) || start.Equals(incoming))
+            {
+                return LayoutResult.NothingFits(box, space);
+            }
+
+            var resumed = Wrap(box, space, incoming is null, topInset, bottomInset, new Content([], 0, start, BreakAppeal.LastResort));
+            if (BlockSizes.Of(box.Style) is not { } sized)
+            {
+                return LayoutResult.Place(resumed, start, BreakAppeal.LastResort);
+            }
+
+            var consumedBefore = Consumed(incoming);
+            return Fitting.Fits(sized.Rest(consumedBefore).High, space.AvailableHeight)
+                ? Result<LayoutResult, Error>.Failure(LayoutErrors.OverflowAcrossPages(box, sized.Rest(consumedBefore).High))
+                : LayoutResult.Place(resumed, WithConsumed(start, consumedBefore + resumed.Size.Height), BreakAppeal.LastResort);
         }
 
         var content = first.Value.Value;
         var endsHere = content.Continuation is null;
         var fillsPage = !content.EndsBelowContent;
+        var consumed = Consumed(incoming);
+        if (BlockSizes.Of(box.Style) is { } sizes)
+        {
+            var (low, high) = sizes.Rest(consumed);
+            if (!endsHere)
+            {
+                // The box's height ends on this page, its content goes on past the break (sz-height-overflow-page, -forced).
+                if (Fitting.Fits(high, space.AvailableHeight))
+                {
+                    return Result<LayoutResult, Error>.Failure(LayoutErrors.OverflowAcrossPages(box, high));
+                }
+            }
+            else
+            {
+                var natural = topInset + content.Height + bottomInset;
+                var height = Math.Clamp(natural, low, high);
+                if (Fitting.Fits(height, space.AvailableHeight))
+                {
+                    // The last fragment: the rest of the height; taller content overflows it (sz-height, sz-max-height).
+                    var last = Wrap(box, space, incoming is null, topInset, bottomInset, content);
+                    return LayoutResult.Place(new BoxFragment(box, last.Size with { Height = height }, last.Children, last.Border), null, content.Appeal, content.BestBreak);
+                }
+
+                if (height > natural || Fitting.Fits(natural, space.AvailableHeight))
+                {
+                    // The content ends here, the height goes on: the fragment fills the page and the next one shows the
+                    // rest (sz-height-break, sz-height-rest-short, sz-min-height-break).
+                    if (content.AtEnd is not { } rest)
+                    {
+                        return Result<LayoutResult, Error>.Failure(LayoutErrors.EngineDefect(box, "has a height that goes on past the page, but no token after its content"));
+                    }
+
+                    content = content with { Continuation = rest, AtEnd = null, BestBreak = null };
+                    endsHere = false;
+                    fillsPage = true;
+                }
+            }
+        }
+
         if (endsHere && !Fitting.Fits(topInset + content.Height + bottomInset, space.AvailableHeight))
         {
             var progress = topInset + content.Height > 0 && Fitting.Fits(topInset + content.Height, space.AvailableHeight);
@@ -225,10 +276,29 @@ internal static class SlicedBox
             }
         }
 
+        var fragment = Wrap(box, space, incoming is null, topInset, bottomInset, content, fillsPage);
+        var continuation = BlockSizes.Of(box.Style) is null || content.Continuation is null ? content.Continuation : WithConsumed(content.Continuation, consumed + fragment.Size.Height);
         return LayoutResult.Place(
-            Wrap(box, space, incoming is null, topInset, bottomInset, content, fillsPage), content.Continuation, content.Appeal, content.BestBreak, content.KeepsItsBreak, content.KeptAppeal,
+            fragment, continuation, content.Appeal, content.BestBreak, content.KeepsItsBreak, content.KeptAppeal,
             endsBelowContent: !fillsPage);
     }
+
+    /// <summary>How much of the box's height the pages before showed (<see cref="FlowBreakToken.Consumed"/>,
+    /// <see cref="InlineBreakToken.Consumed"/>); 0 on the first fragment.</summary>
+    private static double Consumed(BreakToken? incoming) => incoming switch
+    {
+        FlowBreakToken flow => flow.Consumed,
+        InlineBreakToken inline => inline.Consumed,
+        _ => 0,
+    };
+
+    /// <summary>The token of the box's own algorithm with the height the pages up to this one showed.</summary>
+    private static BreakToken WithConsumed(BreakToken token, double consumed) => token switch
+    {
+        FlowBreakToken flow => flow with { Consumed = consumed },
+        InlineBreakToken inline => inline with { Consumed = consumed },
+        _ => token,
+    };
 
     /// <summary>
     /// The box fragment around the content: the content moved inside the border and padding; the height is the top
