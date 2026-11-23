@@ -1718,7 +1718,7 @@ public class MeasuredReferenceFilesTests
         ["kb-v9-padded-box-kept-table-row.words.txt"] = 5,
         ["li-bare.boxes.txt"] = 1,
         ["li-bare.lines.txt"] = 3,
-        ["li-bare.print.txt"] = 17,
+        ["li-bare.print.txt"] = 20,
         ["li-bare.words.txt"] = 13,
         ["li-counter-styles.boxes.txt"] = 1,
         ["li-counter-styles.lines.txt"] = 0,
