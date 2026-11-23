@@ -144,7 +144,8 @@ internal static class TablePage
         LowerHalf,
 
         /// <summary>Nothing of the line, though the page keeps the room of its lower half: the line at the start of the
-        /// next page where a cell that spans rows is cut by the break between them (see <see cref="ContinuationLine"/>).</summary>
+        /// next page where a cell that spans rows is cut by the break between them, or below part of a cell that passed
+        /// the page end (see <see cref="ContinuationLine"/>).</summary>
         Unpainted,
     }
 
@@ -334,7 +335,7 @@ internal static class TablePage
     /// </summary>
     private static Result<LayoutResult, Error> BelowPassed(TableGeometry table, ConstraintSpace space, TracksBreakToken passed)
     {
-        var rest = passed with { Passed = 0, PaintsPassed = false, PassedLines = [] };
+        var rest = passed with { Passed = 0, PaintsPassed = false, PassedLines = [], FollowsPassed = passed.PaintsPassed };
         if (!Fitting.Fits(passed.Passed, space.AvailableHeight))
         {
             return !space.IsAtPageStart ? LayoutResult.NothingFits(table.Box, space)
@@ -528,7 +529,7 @@ internal static class TablePage
 
         var continuesAfterBreak = !isFirst && !includeHeader && (!resume.RowIsSplit || reopensCutRow);
         var firstLine = continuesAfterBreak
-            ? ContinuationLine(table, firstRow.Value, resumeContext)
+            ? ContinuationLine(table, firstRow.Value, resumeContext, resume.FollowsPassed)
             : new LineAt(null, firstRow, topContext, table.HorizontalWidth(null, firstRow, topContext) / 2);
         var content = Empty(firstLine.Y) with { Lines = [firstLine] };
         if (includeHeader)
@@ -821,8 +822,13 @@ internal static class TablePage
     /// continues over the break (with slice), the page draws nothing of the lower half, in any column, and keeps its
     /// room: Chromium prints no line at the top of that page, while the first row's content starts below the half
     /// (case <c>b4-row-span-6pt</c>: page 2 has no rectangle at 12 pt, and row r8's text starts at 15 pt = 12 + 3, half of the
-    /// 6 pt line, as in <c>a2-row-break-line-6pt</c>; case <c>b4-row-span</c> with a 0.75 pt line likewise).</summary>
-    private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context)
+    /// 6 pt line, as in <c>a2-row-break-line-6pt</c>; case <c>b4-row-span</c> with a 0.75 pt line likewise). Below part of a
+    /// cell that passed the page end (<paramref name="followsPassed"/>, <see cref="TracksBreakToken.FollowsPassed"/>) the
+    /// page draws nothing of the lower half either and keeps its room: the upper half that passed is the line Chromium
+    /// prints there (cases <c>fr-continued-pad-past-33-next-row-line-6pt</c>: the 3 pt upper half at 15 to 18 pt and the
+    /// next row's text from 21 pt; <c>-line-2-25pt</c>: 15 to 16.5 pt at whole pixels; <c>-33-next-row</c> and
+    /// <c>-taller-than-page-next-row</c> with a 0.75 pt line, the half drawn one pixel thick).</summary>
+    private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context, bool followsPassed = false)
     {
         if (firstRow == 0)
         {
@@ -832,7 +838,7 @@ internal static class TablePage
 
         return IsCloned(table)
             ? new LineAt(firstRow - 1, firstRow, context, table.HorizontalWidth(firstRow - 1, firstRow, context) / 2)
-            : new LineAt(firstRow - 1, firstRow, context, 0, context.CutCells.Count > 0 ? LinePart.Unpainted : LinePart.LowerHalf);
+            : new LineAt(firstRow - 1, firstRow, context, 0, context.CutCells.Count > 0 || followsPassed ? LinePart.Unpainted : LinePart.LowerHalf);
     }
 
     /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,

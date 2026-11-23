@@ -222,7 +222,8 @@ public enum TableEndOverflow
     /// continues from the page before, a row at the top of the page (continued, or moved there whole) whose cells' content
     /// fits and whose bottom padding passes the page end keeps its lines there, and the padding and the line below
     /// continue on the next page, painted, however much taller than a line they are (cases <c>fr-continued-pad-past-33</c>,
-    /// <c>-45</c>, <c>-60</c>: 3, 15 and 30 pt of padding past the page end; <c>-33-next-row</c>;
+    /// <c>-45</c>, <c>-60</c>: 3, 15 and 30 pt of padding past the page end; <c>-33-next-row</c>, where the line to the
+    /// next row is drawn once, as the upper half that passed, also 6 and 2.25 pt wide: <c>-line-6pt</c>, <c>-line-2-25pt</c>;
     /// <c>fr-row-later-page-padding-overflows</c>; <c>a4-continued-cell-pad-bottom-30</c>). Where what passed is taller
     /// than the next page area, that page takes the whole area and the rest passes again (cases
     /// <c>fr-continued-pad-past-taller-than-page</c>, <c>-next-row</c>); every page takes the page area, so it ends.

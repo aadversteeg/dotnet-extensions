@@ -964,7 +964,10 @@ Each is documented next to its code as well.
   `TableEndOverflow.ContinuesOnNextPage`, the HTML front-end's value, such a row and a row that continues from the page
   before keep their lines and their padding continues on the next page, as Chromium prints it, where every cell of the
   row passes the page end with content on the page (cases `fr-continued-pad-past-*`,
-  `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). Still cut so: a row
+  `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). With a row after
+  it, the line between the two rows is drawn there once, as the upper half that passed, and the next row keeps the room
+  of the lower half without drawing it (cases `fr-continued-pad-past-33-next-row`, with a 6 pt and a 2.25 pt line
+  `-line-6pt`, `-line-2-25pt`, and `-taller-than-page-next-row`). Still cut so: a row
   with a cell that ends above the page end, whose whole bottom padding Chromium gives the next page (13.5 pt in
   `-two-cells`), and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
   Padding that passes by more than the page area takes the whole next page and the rest the page after, as in Chromium;

@@ -136,6 +136,14 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     /// </summary>
     internal ValueList<PlacedFragment> PassedLines { get; init; }
 
+    /// <summary>
+    /// True on the token of the rows that follow, on the same page, part of a cell that passed the page end at a break
+    /// between rows (<see cref="Passed"/>, <see cref="PaintsPassed"/>): the line between the rows is drawn there by the
+    /// upper half that passed, and the next row keeps the room of the lower half without drawing it, as Chromium prints
+    /// it (<see cref="TablePage"/>, ContinuationLine). Not part of the position, as <see cref="PassedLines"/>.
+    /// </summary>
+    internal bool FollowsPassed { get; init; }
+
     /// <summary>Equal when the positions are equal (<see cref="Prepared"/> and <see cref="PassedLines"/> are not compared).</summary>
     /// <param name="other">The other token.</param>
     /// <returns>True for the same position.</returns>
