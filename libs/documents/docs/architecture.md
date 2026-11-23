@@ -766,8 +766,9 @@ bottom row from right to left, the order Chromium paints them in whatever the or
 `pm-paint-order`); the row keeps that order and places each box by its place. Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
-leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4
-prints 594.96 × 841.92 pt). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
+leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch computed in single precision (A4
+prints 594.96 × 841.92 pt; at the tie 75 pt prints 75.12, case `h-page-size-hundred-px`, and 201 pt 200.88, case
+`li-page-break`). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
 area reaches past the sheet (cases `h-page-size-*`, `h-page-area-*`, `h-page-margin-*`).
 
 **The status file.** `tools/reference/chromium/html-status.txt` has one line per reference case, written by

@@ -434,7 +434,7 @@ li-none equal
 li-ol-12 equal
 li-ol-attrs equal
 li-ol-nested equal
-li-page-break open page 1 is 300x201.12, Chromium 300x200.88 (print.txt)
+li-page-break equal
 li-symbol-sizes equal
 li-types refused Documents.Layout.MarkerOutsideSheet -32.461 at 13
 li-ul-levels equal
