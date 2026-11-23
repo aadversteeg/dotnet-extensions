@@ -112,7 +112,10 @@ internal static class HtmlCases
     /// page-margin box (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration,
     /// where Chromium draws it over its box), or a table whose columns do not fit the width it is given
     /// (<see cref="LayoutErrorCodes.ColumnsDoNotFit"/>, at the table's source line, where Chromium lets the table pass its
-    /// container: case <c>tw-pref</c>, a table that needs 157.805 pt in a box of 150 pt). Any other error, also
+    /// container: case <c>tw-pref</c>, a table that needs 157.805 pt in a box of 150 pt), or a box with a height whose
+    /// content goes on past a page break after the height ended (<see cref="LayoutErrorCodes.OverflowAcrossPages"/>, at the
+    /// box's source line, where Chromium prints that content on the next page: cases <c>sz-height-overflow-page</c>,
+    /// <c>sz-height-forced</c>). Any other error, also
     /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
@@ -141,6 +144,7 @@ internal static class HtmlCases
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
         LayoutErrorCodes.ColumnsDoNotFit.ToString(),
+        LayoutErrorCodes.OverflowAcrossPages.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -352,7 +356,7 @@ internal static class HtmlCases
         return (line, column) switch
         {
             ({ }, { }) => $"refused {first.Code} {what} at {line}:{column}",
-            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit => $"refused {first.Code} {what} at {line}",
+            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages => $"refused {first.Code} {what} at {line}",
             _ => $"failed {first.Code} {what}: a refusal without its line and column",
         };
     }

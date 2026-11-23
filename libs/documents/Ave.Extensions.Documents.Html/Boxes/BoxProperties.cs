@@ -46,8 +46,8 @@ internal static class BoxProperties
         "font-feature-settings", "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
         "font-variant-alternates", "font-variant-caps", "font-variant-east-asian", "font-variant-emoji",
         "font-variant-ligatures", "font-variant-numeric", "font-variant-position", "font-variation-settings", "hyphens",
-        "image-rendering", "isolation", "left", "letter-spacing", "line-break", "list-style-image", "max-height",
-        "min-height", "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
+        "image-rendering", "isolation", "left", "letter-spacing", "line-break", "list-style-image",
+        "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
         "quotes", "right", "row-gap", "tab-size", "text-align-last", "text-decoration-thickness", "text-indent",
         "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-transform", "text-underline-offset",
         "text-underline-position", "text-wrap-style", "top",
@@ -156,14 +156,26 @@ internal static class BoxProperties
             : TableProperties.IsPart(facts) || facts.IsReplaced ? "a maximum width on a table part or an image is not drawn in this version"
             : BlockSize(value));
 
-        // A fixed height takes room of its own across a page break, which the block algorithm does not build; measured
-        // (cases sz-height, sz-height-break, sz-height-box-sizing), not drawn.
-        yield return new("height", "auto; a positive length on an image; no effect on an inline box", (value, facts) =>
-            IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null : "a height is not drawn in this version: a box's own height across a page break is not built");
+        // A block box takes a height of a length, and a percentage of a parent with a height of a length, which the box
+        // generator resolves (BoxStyle.SpecifiedHeight; cases sz-height*); min-height and max-height of a length
+        // (sz-min-height-break, sz-max-height, sz-min-max-height). A percentage minimum or maximum is not measured.
+        yield return new("height", "auto; a length or a percentage on a block box; a positive length on an image; no effect on an inline box", (value, facts) =>
+            IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null
+            : facts.IsReplaced ? "an image is drawn at a positive length height in this version"
+            : TableProperties.IsPart(facts) ? "a height on a table part is not drawn in this version"
+            : BlockSize(value));
+        yield return new("min-height", "auto or 0; a length on a block box; no effect on an inline box", (value, facts) =>
+            IsKeyword(value, "auto") || IsZero(value) || !facts.IsBlock ? null
+            : TableProperties.IsPart(facts) || facts.IsReplaced ? "a minimum height on a table part or an image is not drawn in this version"
+            : value is CssLength ? null : "a percentage or calculated minimum height is not drawn in this version");
+        yield return new("max-height", "none; a length on a block box; no effect on an inline box", (value, facts) =>
+            IsKeyword(value, "none") || !facts.IsBlock ? null
+            : TableProperties.IsPart(facts) || facts.IsReplaced ? "a maximum height on a table part or an image is not drawn in this version"
+            : value is CssLength ? null : "a percentage or calculated maximum height is not drawn in this version");
 
-        // CSS Box Model 3 §4.3: read for the width of a block box; on an image its padding and border would change the
+        // CSS Box Model 3 §4.3: read for the width and the height of a block box; on an image its padding and border would change the
         // image's size under border-box, which the image algorithm does not take.
-        yield return new("box-sizing", "both values on a block box (read for its width; a height is refused); content-box on an image with padding or a border", (value, facts) =>
+        yield return new("box-sizing", "both values on a block box (read for its width and height); content-box on an image with padding or a border", (value, facts) =>
             facts.IsReplaced && IsKeyword(value, "border-box") && HasInsets(facts.Style) ? "border-box on an image with padding or a border is not drawn in this version" : null);
 
         // CSS Display 3 §2.

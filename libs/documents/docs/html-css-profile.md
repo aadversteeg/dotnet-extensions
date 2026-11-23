@@ -62,7 +62,9 @@ names nothing.
 | `margin-left` | no | `0pt` | `<length-percentage [0,∞]> \| auto` | CSS Box Model 3 §5.1 |
 | `margin-right` | no | `0pt` | `<length-percentage [0,∞]> \| auto` | CSS Box Model 3 §5.1 |
 | `margin-top` | no | `0pt` | `<length-percentage [0,∞]> \| auto` | CSS Box Model 3 §5.1 |
+| `max-height` | no | `none` | `none \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
 | `max-width` | no | `none` | `none \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
+| `min-height` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
 | `min-width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.2 |
 | `orphans` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `outline-color` | no | `currentcolor` | `<color> (nothing is drawn: outline-style is only none; Chromium 159 does not take auto)` | CSS UI 4 §3.4 |
@@ -106,9 +108,18 @@ as in Chromium. Laid out as Chromium lays them out: a length cut toward zero to 
 of two auto margins floored to it (cases `sz-*`). Refused: a calculated or intrinsic size (`calc()` with a
 percentage, `fit-content`), a minimum or maximum width on a table part or an image, and a width, minimum or maximum
 on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`: their columns are sized by
-their content's widths, and a sized box's share in them is not built). `height` on a block box is refused: a fixed
-height takes room of its own across a page break, which is not built (measured: cases `sz-height`,
-`sz-height-box-sizing`, `sz-height-break`). `min-height` and `max-height` stay at their initial value.
+their content's widths, and a sized box's share in them is not built).
+
+`height`, `min-height` and `max-height` on a block box: a length, cut toward zero to 1/64 px, for the content box or
+the border box; `max-height` limits the height and `min-height` wins over both. A percentage height is of the
+parent's height where that is a length in a content box, floored to 1/64 px, and `auto` where the parent's height
+depends on its content. Content taller than the box overflows it and is drawn, and what follows the box starts at its
+end. Across a page break the box takes the rest of the page and the next page shows what the pages before did not
+take, also a minimum height, as in Chromium (cases `sz-height*`, `sz-min-*`, `sz-max-height`). Refused: a percentage
+height elsewhere (on the root, of a parent's percentage, border-box, minimum or maximum height), a percentage minimum
+or maximum, a height on a table part, and content that goes on past a page break after the box's height ended on
+the page (`Documents.Layout.OverflowAcrossPages`: Chromium prints the rest of it on the next page while what follows
+the box stays on the first, cases `sz-height-overflow-page`, `sz-height-forced`).
 
 ### Supported at the initial value only
 
@@ -171,8 +182,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `letter-spacing` | `normal` | `normal` | CSS Text 3 §7.2 |
 | `line-break` | `auto` | `auto` | CSS Text 3 §5.3 |
 | `list-style-image` | `none` | `none` | CSS Lists 3 §3.4 |
-| `max-height` | `none` | `none` | CSS Sizing 3 §3.2 |
-| `min-height` | `auto` | `auto` | CSS Sizing 3 §3.2 |
 | `mix-blend-mode` | `normal` | `normal` | Compositing 1 §3.2 |
 | `object-fit` | `fill` | `fill` | CSS Images 3 §5.5 |
 | `opacity` | `1` | `1` | CSS Color 4 §11.2 |

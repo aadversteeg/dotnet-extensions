@@ -110,6 +110,18 @@ public static partial class PropertyRegistry
             reader => ParseSize(reader, "height", "auto"),
             (value, context) => context.LengthPercentage(value));
 
+        yield return new PropertyDefinition(
+            "min-height", inherited: false, new CssKeyword("auto"), "all elements that accept width or height", "auto | <length-percentage [0,∞]>",
+            PropertySupport.Supported, "CSS Sizing 3 §3.2",
+            reader => ParseSize(reader, "min-height", "auto"),
+            (value, context) => context.LengthPercentage(value));
+
+        yield return new PropertyDefinition(
+            "max-height", inherited: false, new CssKeyword("none"), "all elements that accept width or height", "none | <length-percentage [0,∞]>",
+            PropertySupport.Supported, "CSS Sizing 3 §3.2",
+            reader => ParseSize(reader, "max-height", "none"),
+            (value, context) => context.LengthPercentage(value));
+
         yield return Keywords("box-sizing", inherited: false, "content-box", ["content-box", "border-box"], [], "all elements that accept width or height", "CSS Box Model 3 §4.3");
 
         // hidden and clip clip the content to the padding box; the user-agent style sheet sets them on hr and img.

@@ -156,6 +156,8 @@ public static class ModelCheck
     /// horizontal margins, only on a box laid out by <see cref="LayoutAlgorithmId.Flow"/> or <see cref="LayoutAlgorithmId.Inline"/>
     /// that is not inside a table or a row of page-margin boxes (<paramref name="measured"/>): those size their columns by
     /// the intrinsic widths of their content, and a sized box's share in them is not built (else Input.Unsupported.Size).
+    /// The same for a height, a minimum and a maximum height (CSS Sizing 3 §3.1–3.2), each a length: in a table a row's
+    /// height and in a page-margin box the row's are measured from the content, a sized box's share in them is not either.
     /// </summary>
     private static Error? Sizes(Box box, bool measured)
     {
@@ -176,6 +178,15 @@ public static class ModelCheck
             }
         }
 
+        var heights = new[] { (style.SpecifiedHeight, "height"), (style.MinHeight, "min-height"), (style.MaxHeight, "max-height") };
+        foreach (var (height, name) in heights)
+        {
+            if (height is { } length && !(IsBounded(length) && length.Points >= 0))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Length, $"A {name} must be a length of 0 or more and at most {ModelLimits.MaxLength}.", length.ToString(), name, box);
+            }
+        }
+
         string? value = null;
         var property = "margin";
         foreach (var (size, name) in sizes)
@@ -183,6 +194,14 @@ public static class ModelCheck
             if (size is not null && value is null)
             {
                 (value, property) = (size.ToString(), name);
+            }
+        }
+
+        foreach (var (height, name) in heights)
+        {
+            if (height is { } length && value is null)
+            {
+                (value, property) = (length.ToString(), name);
             }
         }
 

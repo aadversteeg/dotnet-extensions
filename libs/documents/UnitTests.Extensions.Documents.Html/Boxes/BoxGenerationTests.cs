@@ -195,7 +195,9 @@ public class BoxGenerationTests
     // Each pair: a value without effect where it is (accepted), and the same value where it changes the print (refused).
     [InlineData("<div style=\"box-sizing:border-box\">a</div>", null)]
     [InlineData("<div style=\"width:10pt\">a</div>", null)]
-    [InlineData("<div style=\"height:10pt\">a</div>", "height")]
+    [InlineData("<div style=\"height:10pt\">a</div>", null)]
+    [InlineData("<div style=\"min-height:10%\">a</div>", "min-height")]
+    [InlineData("<div style=\"max-height:10%\">a</div>", "max-height")]
     [InlineData("<p><span style=\"height:10pt\">a</span></p>", null)]
     [InlineData("<div style=\"min-width:fit-content\">a</div>", "min-width")]
     [InlineData("<p><span style=\"width:10pt\">a</span></p>", null)]
@@ -283,6 +285,26 @@ public class BoxGenerationTests
         (sized.Style.MinWidth, sized.Style.MaxWidth).Should().Be(((SizeValue?)null, (SizeValue?)new SizeValue.Percentage(50)));
         (sized.Style.BoxSizing, sized.Style.AutoMargins).Should().Be((BoxSizing.BorderBox, AutoMargins.Both));
         (plain.Style.SpecifiedWidth, plain.Style.AutoMargins).Should().Be(((SizeValue?)null, AutoMargins.None), "auto margins without a size are 0");
+    }
+
+    [Fact]
+    public void A_block_box_takes_its_height_minimum_and_maximum_in_Chromium_s_layout_unit_and_a_percentage_of_its_parent_s_height()
+    {
+        // sz-height-percent: 100pt is 133.328125 px (8533/64); 50% of it 66.65625 px, 33.3% 44.390625 px, floored to 1/64 px;
+        // of a parent whose height is auto a percentage is auto (CSS 2.1 §10.5).
+        const double Unit = 0.75 / 64;
+        var body = Body(Doc("<div style=\"height:100pt\"><div style=\"height:50%\">a</div><div style=\"height:33.3%;min-height:0;max-height:20pt\">b</div></div><div><div style=\"height:50%;min-height:10pt\">c</div></div>"));
+        var parent = (Box)body.Children[0];
+        var (half, third) = ((Box)parent.Children[0], (Box)parent.Children[1]);
+        var auto = (Box)((Box)body.Children[1]).Children[0];
+
+        parent.Style.SpecifiedHeight.Should().Be((8533 * Unit).Pt());
+        half.Style.SpecifiedHeight.Should().Be((4266 * Unit).Pt());
+        (third.Style.SpecifiedHeight, third.Style.MinHeight, third.Style.MaxHeight).Should().Be(((2841 * Unit).Pt(), (Length?)null, (1706 * Unit).Pt()));
+        (auto.Style.SpecifiedHeight, auto.Style.MinHeight).Should().Be(((Length?)null, (853 * Unit).Pt()));
+
+        var refused = Refusals(Doc("<div style=\"min-height:10pt\"><p style=\"height:50%\">a</p></div>")).Single();
+        (refused.Code, refused.Metadata![ErrorMetadataKeys.Property]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "height"), "a percentage of a height its minimum decides is not measured");
     }
 
     [Fact]

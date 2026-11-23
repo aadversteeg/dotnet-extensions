@@ -28,6 +28,18 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(box.Source);
 
+    /// <summary>Content of a box with a height that goes on past a page break after the box's height ended on the page
+    /// (<see cref="LayoutErrorCodes.OverflowAcrossPages"/>).</summary>
+    /// <param name="box">The box.</param>
+    /// <param name="rest">The height of the box's rest on the page.</param>
+    public static Error OverflowAcrossPages(Box box, double rest) =>
+        new Error(
+                LayoutErrorCodes.OverflowAcrossPages,
+                $"{Describe(box)} ends on this page, {InvariantNumber.Format(rest)}pt below its top here, and its content goes on past a page break; content that overflows a box onto a later page is not drawn in this version.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(rest))
+            .WithSource(box.Source);
+
     /// <summary>A header or footer area's content that does not fit in the area: an area never breaks.</summary>
     /// <param name="content">The area's content.</param>
     /// <param name="height">The area's height: its fixed height, or the page area's.</param>

@@ -85,8 +85,27 @@ public sealed record BoxStyle
     /// <summary>The largest width of such a box (CSS Sizing 3 §3.2, <c>max-width</c>), or null for <c>none</c>.</summary>
     public SizeValue? MaxWidth { get; init; }
 
-    /// <summary>Which box <see cref="SpecifiedWidth"/>, <see cref="MinWidth"/> and <see cref="MaxWidth"/> measure (CSS Box
-    /// Model 3 §4.3); <see cref="BoxSizing.ContentBox"/>, the CSS initial value, unless set.</summary>
+    /// <summary>The height of a box laid out by <see cref="LayoutAlgorithmId.Flow"/> or <see cref="LayoutAlgorithmId.Inline"/>
+    /// in block flow (CSS Sizing 3 §3.1, <c>height</c>; CSS 2.1 §10.6.3), or null for <c>auto</c>, the initial value: the box
+    /// is then as tall as its content. Content taller than the box overflows it and is drawn (<c>overflow: visible</c>, CSS
+    /// 2.1 §11.1.1), and what follows the box starts at the box's end (case <c>sz-height</c>). Across a page break the box
+    /// takes the rest of the page and the next page shows what the pages before did not take (CSS Fragmentation 3 §5.3;
+    /// cases <c>sz-height-break</c>, <c>sz-height-rest-short</c>). Not for a box inside a table or a row of page-margin
+    /// boxes (<see cref="ModelCheck"/>).</summary>
+    public Length? SpecifiedHeight { get; init; }
+
+    /// <summary>The smallest height of such a box (CSS Sizing 3 §3.2, <c>min-height</c>), or null for <c>auto</c>, which is
+    /// 0 for a block box; it wins over <see cref="MaxHeight"/> and limits <see cref="SpecifiedHeight"/> (CSS 2.1 §10.7;
+    /// case <c>sz-min-max-height</c>), and is shared over pages as a height is (case <c>sz-min-height-break</c>).</summary>
+    public Length? MinHeight { get; init; }
+
+    /// <summary>The largest height of such a box (CSS Sizing 3 §3.2, <c>max-height</c>), or null for <c>none</c>: taller
+    /// content overflows it as it overflows a height (case <c>sz-max-height</c>).</summary>
+    public Length? MaxHeight { get; init; }
+
+    /// <summary>Which box <see cref="SpecifiedWidth"/>, <see cref="MinWidth"/>, <see cref="MaxWidth"/>,
+    /// <see cref="SpecifiedHeight"/>, <see cref="MinHeight"/> and <see cref="MaxHeight"/> measure (CSS Box Model 3 §4.3);
+    /// <see cref="BoxSizing.ContentBox"/>, the CSS initial value, unless set.</summary>
     public BoxSizing BoxSizing { get; init; }
 
     /// <summary>Which horizontal margins are <c>auto</c> (CSS 2.1 §10.3.3); each is 0 in <see cref="Margin"/>. They take

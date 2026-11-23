@@ -635,7 +635,8 @@ start tag, with the property and the value) only where it would change the print
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
 | `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
 | `width`, `min-width`, `max-width`, `box-sizing` | on a block box a length or a percentage, for the content or the border box (`BoxStyle.SpecifiedWidth`, `MinWidth`, `MaxWidth`, `BoxSizing`; layout: `InFlowChild.Horizontal`, CSS 2.1 §10.3.3, §10.4); any on an inline box; on an image a positive `width`; on a table part what **Tables** says | calculated and intrinsic sizes; `min-width` and `max-width` on a table part or an image; a size on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`, by the model check: the intrinsic widths of a sized box are not built); `border-box` on an image with padding or a border |
-| `height`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `height`, `auto` with a ratio (the natural one) and any `overflow` | other values on a block box (`height`: a box's own height across a page break is not built; cases `sz-height*`) |
+| `height`, `min-height`, `max-height` | on a block box a length, for the content or the border box, and a `height` percentage of a parent whose height is a length in a content box, or `auto` (`BoxStyle.SpecifiedHeight`, `MinHeight`, `MaxHeight`; layout: `BlockSizes`, `SlicedBox`, CSS 2.1 §10.5–10.7; the height the pages before showed is carried in the box's break token); any on an inline box; on an image a positive `height` | calculated and intrinsic sizes; another percentage height; a percentage `min-height` or `max-height`; a height on a table part, or on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`); content that goes on past a page break after the box's height ended (`Documents.Layout.OverflowAcrossPages`) |
+| `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
 | `border-spacing`, `empty-cells`, `caption-side`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (collapsed borders, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
@@ -806,10 +807,16 @@ Each is documented next to its code as well.
 - **Sizes of block boxes (HTML):** `width`, `min-width`, `max-width`, `box-sizing` and auto horizontal margins are drawn
   on a block box in block flow (cases `sz-*`), not on a box inside a table cell or a page-margin box, whose columns are
   sized by the intrinsic widths of their content: a sized box's share in them is not built
-  (`Documents.Input.Unsupported.Size`, `ModelCheck`). `height` is refused: Chromium carries a fixed height across a page
-  break (case `sz-height-break`: a 300 pt box is 167.25 pt on page 1 and 132.75 pt on page 2, and the next box follows
-  it there) and lets content taller than the height pass its end, under the next box (case `sz-height`); the block
-  algorithm sizes a box by its content and breaks by it, so a box's own height across a break is not built.
+  (`Documents.Input.Unsupported.Size`, `ModelCheck`). `height`, `min-height` and `max-height` are drawn there too: a
+  box takes the rest of the page where its height passes the page end, and the next page shows what the pages before
+  did not take (case `sz-height-break`: a 300 pt box is 167.25 pt on page 1 and 132.75 pt on page 2); content taller
+  than the box passes its end, under what follows it (case `sz-height`). Refused: content that goes on past a page break
+  after the box's height ended on the page (`Documents.Layout.OverflowAcrossPages`): Chromium ends the box there, puts
+  what follows it below its end on that page and prints the rest of the content on the next page (cases
+  `sz-height-overflow-page`, content past the page end; `sz-height-forced`, a forced break inside), where the engine's
+  pages show a box's content before what follows the box. Not measured, so as CSS says: the last child's bottom margin
+  stays inside a box with a height (CSS 2.1 §8.3.1); a forced break inside a box whose height passes the page end fills
+  the page with the box, as any box that breaks does (CSS Fragmentation 3 §5.3).
 - **The page area past the sheet (HTML):** Chromium rounds the page area up to whole pixels even where it then reaches
   past the printed sheet, as on A4 without margins, the default page (794 × 1123 px, 595.5 × 842.25 pt, on a sheet of
   594.96 × 841.92 pt); the model holds no page area larger than its sheet, so the engine's ends at the sheet: 0.54 pt

@@ -176,7 +176,7 @@ d-strut-normal equal
 d-typo-lato equal
 d-typo-theano equal
 dl-end equal
-dl-fraction refused Documents.Html.Unsupported.Value height: 7.875pt at 5:1
+dl-fraction equal
 dl-height equal
 dl-image equal
 dl-join equal
@@ -477,19 +477,19 @@ sr-line-left equal
 sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
 sz-box-sizing equal
-sz-height refused Documents.Html.Unsupported.Value height: 60pt at 3:1
-sz-height-box-sizing refused Documents.Html.Unsupported.Value height: 40pt at 3:1
-sz-height-box-sizing-break refused Documents.Html.Unsupported.Value height: 300pt at 4:1
-sz-height-break refused Documents.Html.Unsupported.Value height: 300pt at 4:1
-sz-height-forced refused Documents.Html.Unsupported.Value height: 100pt at 4:1
-sz-height-overflow-page refused Documents.Html.Unsupported.Value height: 100pt at 4:1
-sz-height-percent refused Documents.Html.Unsupported.Value height: 100pt at 3:1
-sz-height-rest-short refused Documents.Html.Unsupported.Value height: 170pt at 4:1
+sz-height equal
+sz-height-box-sizing equal
+sz-height-box-sizing-break equal
+sz-height-break equal
+sz-height-forced refused Documents.Layout.OverflowAcrossPages 99.996 at 4
+sz-height-overflow-page refused Documents.Layout.OverflowAcrossPages 99.996 at 4
+sz-height-percent equal
+sz-height-rest-short equal
 sz-margin-auto equal
-sz-max-height refused Documents.Css.Unsupported.Value max-height: 20pt at 3:20
-sz-min-height-break refused Documents.Css.Unsupported.Value min-height: 300pt at 4:20
+sz-max-height equal
+sz-min-height-break equal
 sz-min-max equal
-sz-min-max-height refused Documents.Css.Unsupported.Value min-height: 50pt at 3:34
+sz-min-max-height equal
 sz-width-break equal
 sz-width-fraction equal
 sz-width-length equal
