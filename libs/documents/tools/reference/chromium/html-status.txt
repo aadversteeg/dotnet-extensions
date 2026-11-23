@@ -121,7 +121,7 @@ b-three-deep equal
 b1-repeat equal
 b2-split-row open box td 'r05' height 76.453, Chromium 304.734 (boxes.txt)
 b3-keep-group equal
-b4-row-span open page 1 painted area: the pixel at (100.5, 171): the engine paints it and Chromium does not; the engine paints 3197 px #000000, Chromium 3196 px (print.txt)
+b4-row-span open box td 'm1' height 59.719, Chromium 100.406 (boxes.txt)
 b4-row-span-6pt open box td 's' height 51, Chromium 63 (boxes.txt)
 b5-row-span-kept-cell equal
 c-cell-first-line refused Documents.Html.Unsupported.Value width: 50% at 3:58
@@ -404,14 +404,14 @@ sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)
 sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
-te-bottom open page 1 painted area: the pixel at (36, 54): the engine paints it #ff0000, Chromium #000000; the engine paints 1174 px #ff0000, Chromium 1172 px (print.txt)
-te-break open page 1 painted area: the pixel at (36, 12): the engine paints it and Chromium does not; the engine paints 5757 px #000000, Chromium 5706 px (print.txt)
-te-left-first open page 1 painted area: the pixel at (136.5, 12): the engine paints it #000000, Chromium #ff0000; the engine paints 1954 px #000000, Chromium 1936 px (print.txt)
-te-left-later open page 1 painted area: the pixel at (36, 12): the engine paints it and Chromium does not; the engine paints 2212 px #000000, Chromium 2192 px (print.txt)
-te-right-first open page 1 painted area: the pixel at (134.25, 12): the engine paints it #ff0000, Chromium #000000; the engine paints 736 px #ff0000, Chromium 736 px (print.txt)
-te-right-later open page 1 painted area: the pixel at (234, 12): the engine paints it and Chromium does not; the engine paints 4480 px #000000, Chromium 4448 px (print.txt)
-te-table-border open page 1 painted area: the pixel at (36, 12): the engine paints it and Chromium does not; the engine paints 2648 px #0000ff, Chromium 2628 px (print.txt)
-te-top open page 1 painted area: the pixel at (135, 15): the engine paints it #000000, Chromium #ff0000; the engine paints 2022 px #000000, Chromium 2012 px (print.txt)
+te-bottom open box table 't' is not one element with that id that starts its line (boxes.txt)
+te-break open box table 't' is not one element with that id that starts its line (boxes.txt)
+te-left-first open box table 't' is not one element with that id that starts its line (boxes.txt)
+te-left-later open box table 't' is not one element with that id that starts its line (boxes.txt)
+te-right-first open box table 't' is not one element with that id that starts its line (boxes.txt)
+te-right-later open box table 't' is not one element with that id that starts its line (boxes.txt)
+te-table-border open box table 't3' is not one element with that id that starts its line (boxes.txt)
+te-top open box table 't' is not one element with that id that starts its line (boxes.txt)
 tf-after equal
 tf-before equal
 tf-empty refused Documents.Html.Unsupported.Table tfoot without rows at 6:9
@@ -420,6 +420,14 @@ tf-pages listed A_footer_group_is_drawn_once_after_the_body_where_Chromium_repea
 tf-pages-auto equal
 tf-top-border equal
 tf-two equal
+tj-break open box table 't' is not one element with that id that starts its line (boxes.txt)
+tj-cell-table open box table 't' is not one element with that id that starts its line (boxes.txt)
+tj-four open box table 't' is not one element with that id that starts its line (boxes.txt)
+tj-order open box table 't' is not one element with that id that starts its line (boxes.txt)
+tj-outer open box table 't' is not one element with that id that starts its line (boxes.txt)
+tj-right-edge open box table 't' is not one element with that id that starts its line (boxes.txt)
+tj-same-cell open box table 't' is not one element with that id that starts its line (boxes.txt)
+tj-top-edge open box table 't' is not one element with that id that starts its line (boxes.txt)
 tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.485, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
 tp-beside-auto equal

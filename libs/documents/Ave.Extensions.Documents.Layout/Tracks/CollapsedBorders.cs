@@ -26,7 +26,7 @@ namespace Ave.Extensions.Documents.Layout;
 internal static class CollapsedBorders
 {
     /// <summary>Where a border comes from, in the priority order of §17.6.2.1 rule 4 (higher wins).</summary>
-    private enum Origin
+    internal enum Origin
     {
         Table,
         RowGroup,
@@ -43,24 +43,33 @@ internal static class CollapsedBorders
     /// <param name="row">The row.</param>
     /// <param name="boundary">The column boundary.</param>
     /// <returns>The resolved border.</returns>
-    public static BorderSide Vertical(Box table, TableGrid grid, int row, int boundary)
+    public static BorderSide Vertical(Box table, TableGrid grid, int row, int boundary) => VerticalEdge(table, grid, row, boundary).Side;
+
+    /// <summary>The vertical line of <see cref="Vertical"/> with the box it comes from.</summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="grid">The grid.</param>
+    /// <param name="row">The row.</param>
+    /// <param name="boundary">The column boundary.</param>
+    /// <returns>The resolved edge.</returns>
+    public static Edge VerticalEdge(Box table, TableGrid grid, int row, int boundary)
     {
         var left = grid.CellAt(row, boundary - 1);
         var right = grid.CellAt(row, boundary);
         if (left is not null && left == right)
         {
-            return BorderSide.None;
+            return Edge.None;
         }
 
         var rowInfo = grid.Rows[row];
         var isLeftEdge = boundary == 0;
         var isRightEdge = boundary == grid.ColumnCount;
-        IEnumerable<(BorderSide, Origin)> candidates =
+        var group = GroupIndex(grid, row);
+        IEnumerable<Edge> candidates =
         [
-            .. isLeftEdge ? [(table.Style.Border.Left, Origin.Table), (rowInfo.Group.Style.Border.Left, Origin.RowGroup), (rowInfo.Box.Style.Border.Left, Origin.Row)] : Nothing,
-            .. left is { } leftCell ? [(grid.Cells[leftCell].Box.Style.Border.Right, Origin.Cell)] : Nothing,
-            .. right is { } rightCell ? [(grid.Cells[rightCell].Box.Style.Border.Left, Origin.Cell)] : Nothing,
-            .. isRightEdge ? [(rowInfo.Box.Style.Border.Right, Origin.Row), (rowInfo.Group.Style.Border.Right, Origin.RowGroup), (table.Style.Border.Right, Origin.Table)] : Nothing,
+            .. isLeftEdge ? [new Edge(table.Style.Border.Left, Origin.Table, 0), new Edge(rowInfo.Group.Style.Border.Left, Origin.RowGroup, group), new Edge(rowInfo.Box.Style.Border.Left, Origin.Row, row)] : Nothing,
+            .. left is { } leftCell ? [new Edge(grid.Cells[leftCell].Box.Style.Border.Right, Origin.Cell, leftCell)] : Nothing,
+            .. right is { } rightCell ? [new Edge(grid.Cells[rightCell].Box.Style.Border.Left, Origin.Cell, rightCell)] : Nothing,
+            .. isRightEdge ? [new Edge(rowInfo.Box.Style.Border.Right, Origin.Row, row), new Edge(rowInfo.Group.Style.Border.Right, Origin.RowGroup, group), new Edge(table.Style.Border.Right, Origin.Table, 0)] : Nothing,
         ];
         return Winner(candidates);
     }
@@ -97,13 +106,24 @@ internal static class CollapsedBorders
     /// <param name="edge">Whether the table's own border takes part at a top or bottom edge, and which cells are cut
     /// at this line.</param>
     /// <returns>The resolved border.</returns>
-    public static BorderSide Horizontal(Box table, TableGrid grid, int? above, int? below, int column, LineContext edge)
+    public static BorderSide Horizontal(Box table, TableGrid grid, int? above, int? below, int column, LineContext edge) =>
+        HorizontalEdge(table, grid, above, below, column, edge).Side;
+
+    /// <summary>The horizontal line of <see cref="Horizontal"/> with the box it comes from.</summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="grid">The grid.</param>
+    /// <param name="above">The row above the line, or null at the top of the page's grid.</param>
+    /// <param name="below">The row below the line, or null at the bottom of the page's grid.</param>
+    /// <param name="column">The column.</param>
+    /// <param name="edge">Whether the table's own border takes part, and which cells are cut at this line.</param>
+    /// <returns>The resolved edge.</returns>
+    public static Edge HorizontalEdge(Box table, TableGrid grid, int? above, int? below, int column, LineContext edge)
     {
         var upper = above is { } a ? grid.CellAt(a, column) : null;
         var lower = below is { } b ? grid.CellAt(b, column) : null;
         if (upper is not null && upper == lower && !edge.ClosesCutCells)
         {
-            return BorderSide.None;
+            return Edge.None;
         }
 
         // A cell takes part with its bottom border when it ends above the line and with its top border when it starts
@@ -111,18 +131,18 @@ internal static class CollapsedBorders
         var upperRow = above is { } top ? grid.Rows[top] : null;
         var lowerRow = below is { } bottom ? grid.Rows[bottom] : null;
         var groupBoundary = upperRow is null || lowerRow is null || upperRow.Group != lowerRow.Group;
-        var upperCell = upper is { } u && (grid.Cells[u].LastRow == above || edge.ClosesCutCells) && !edge.IsCut(u) ? grid.Cells[u] : null;
-        var lowerCell = lower is { } l && (grid.Cells[l].Row == below || edge.ClosesCutCells) && !edge.IsCut(l) ? grid.Cells[l] : null;
-        IEnumerable<(BorderSide, Origin)> candidates =
+        var upperCell = upper is { } u && (grid.Cells[u].LastRow == above || edge.ClosesCutCells) && !edge.IsCut(u) ? upper : null;
+        var lowerCell = lower is { } l && (grid.Cells[l].Row == below || edge.ClosesCutCells) && !edge.IsCut(l) ? lower : null;
+        IEnumerable<Edge> candidates =
         [
-            .. upperRow is null && edge.IncludesTable ? [(table.Style.Border.Top, Origin.Table)] : Nothing,
-            .. upperRow is not null && groupBoundary ? [(upperRow.Group.Style.Border.Bottom, Origin.RowGroup)] : Nothing,
-            .. upperRow is not null ? [(upperRow.Box.Style.Border.Bottom, Origin.Row)] : Nothing,
-            .. upperCell is not null ? [(upperCell.Box.Style.Border.Bottom, Origin.Cell)] : Nothing,
-            .. lowerCell is not null ? [(lowerCell.Box.Style.Border.Top, Origin.Cell)] : Nothing,
-            .. lowerRow is not null && !edge.RowBelowIsCut ? [(lowerRow.Box.Style.Border.Top, Origin.Row)] : Nothing,
-            .. lowerRow is not null && groupBoundary ? [(lowerRow.Group.Style.Border.Top, Origin.RowGroup)] : Nothing,
-            .. lowerRow is null && edge.IncludesTable ? [(table.Style.Border.Bottom, Origin.Table)] : Nothing,
+            .. upperRow is null && edge.IncludesTable ? [new Edge(table.Style.Border.Top, Origin.Table, 0)] : Nothing,
+            .. above is { } groupAbove && groupBoundary ? [new Edge(upperRow!.Group.Style.Border.Bottom, Origin.RowGroup, GroupIndex(grid, groupAbove))] : Nothing,
+            .. above is { } rowAbove ? [new Edge(upperRow!.Box.Style.Border.Bottom, Origin.Row, rowAbove)] : Nothing,
+            .. upperCell is { } cellAbove ? [new Edge(grid.Cells[cellAbove].Box.Style.Border.Bottom, Origin.Cell, cellAbove)] : Nothing,
+            .. lowerCell is { } cellBelow ? [new Edge(grid.Cells[cellBelow].Box.Style.Border.Top, Origin.Cell, cellBelow)] : Nothing,
+            .. below is { } rowBelow && !edge.RowBelowIsCut ? [new Edge(lowerRow!.Box.Style.Border.Top, Origin.Row, rowBelow)] : Nothing,
+            .. below is { } groupBelow && groupBoundary ? [new Edge(lowerRow!.Group.Style.Border.Top, Origin.RowGroup, GroupIndex(grid, groupBelow))] : Nothing,
+            .. lowerRow is null && edge.IncludesTable ? [new Edge(table.Style.Border.Bottom, Origin.Table, 0)] : Nothing,
         ];
         return Winner(candidates);
     }
@@ -132,17 +152,61 @@ internal static class CollapsedBorders
     /// among equal widths the higher origin; among equal origins the first (further left or up). A zero width is
     /// <c>none</c>, which only wins when every candidate is <c>none</c>.
     /// </summary>
-    private static BorderSide Winner(IEnumerable<(BorderSide Side, Origin Origin)> candidates) =>
+    private static Edge Winner(IEnumerable<Edge> candidates) =>
         candidates
             .Where(candidate => candidate.Side.IsVisible)
-            .Select((candidate, order) => (candidate.Side, candidate.Origin, Order: order))
-            .OrderByDescending(candidate => candidate.Side.Width.Points)
-            .ThenByDescending(candidate => candidate.Origin)
+            .Select((candidate, order) => (Edge: candidate, Order: order))
+            .OrderByDescending(candidate => candidate.Edge.Side.Width.Points)
+            .ThenByDescending(candidate => candidate.Edge.Origin)
             .ThenBy(candidate => candidate.Order)
-            .Select(candidate => candidate.Side)
-            .FirstOrDefault();
+            .Select(candidate => candidate.Edge)
+            .DefaultIfEmpty(Edge.None)
+            .First();
 
-    private static IEnumerable<(BorderSide, Origin)> Nothing => [];
+    private static IEnumerable<Edge> Nothing => [];
+
+    /// <summary>The index of a row's group, as the index of the group's first row: groups in table order.</summary>
+    private static int GroupIndex(TableGrid grid, int row)
+    {
+        var first = row;
+        while (first > 0 && !grid.Rows[first].IsFirstOfGroup)
+        {
+            first--;
+        }
+
+        return first;
+    }
+
+    /// <summary>
+    /// A resolved line segment with the box it comes from: the border that won the segment's conflict, where it comes
+    /// from, and which box of that kind (the cell's index, in document order; the row's index; the index of the row
+    /// group's first row; 0 for the table).
+    /// </summary>
+    /// <param name="Side">The border.</param>
+    /// <param name="Origin">The kind of box it comes from.</param>
+    /// <param name="Source">Which box of that kind, in table order.</param>
+    internal readonly record struct Edge(BorderSide Side, Origin Origin, int Source)
+    {
+        /// <summary>No line.</summary>
+        public static Edge None { get; } = new(BorderSide.None, Origin.Table, 0);
+
+        /// <summary>
+        /// True when this edge wins over <paramref name="other"/> where they meet, by the order of §17.6.2.1 applied to
+        /// edges: the wider; with equal widths the higher origin; with equal origins the box earlier in the table.
+        /// </summary>
+        /// <param name="other">The other edge.</param>
+        /// <returns>Whether this edge wins.</returns>
+        public bool Beats(Edge other) =>
+            Side.Width.Points != other.Side.Width.Points ? Side.Width.Points > other.Side.Width.Points
+            : Origin != other.Origin ? Origin > other.Origin
+            : Source < other.Source;
+
+        /// <summary>True when the two edges are as wide as each other and come from the same box.</summary>
+        /// <param name="other">The other edge.</param>
+        /// <returns>Whether neither wins over the other.</returns>
+        public bool Ties(Edge other) =>
+            Side.Width.Points == other.Side.Width.Points && Origin == other.Origin && Source == other.Source;
+    }
 
     /// <summary>
     /// What a horizontal line needs to know about the page: whether the table's border joins an edge, which cells and
