@@ -218,7 +218,7 @@ assemblies by `UnitTests.Extensions.Documents.Architecture`.
                                          templates and the page-count fixpoint; painter          ← uses Typesetting
         │
         ▼
- Ave.Extensions.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, images,
+ Ave.Extensions.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, paths, images,
                                          structure markers)
         │  render
         ▼
@@ -229,7 +229,7 @@ assemblies by `UnitTests.Extensions.Documents.Architecture`.
         ▼
  PDF bytes
 
- Ave.Extensions.Documents.Render.Raster  page model → pixels (beside Render.Pdf): glyph outlines, rectangles, images
+ Ave.Extensions.Documents.Render.Raster  page model → pixels (beside Render.Pdf): glyph outlines, rectangles, paths, images
                                          ← uses Graphics
 
  Ave.Extensions.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping,
