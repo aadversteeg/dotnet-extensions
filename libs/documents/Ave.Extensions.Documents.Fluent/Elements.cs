@@ -83,6 +83,55 @@ public static class Elements
         [CallerLineNumber] int callerLine = 0) =>
         new(children, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
 
+    /// <summary>A bulleted list: each item with a bullet beside its first line, drawn as a shape sized from the item's font
+    /// (a disc; in a list inside another list a circle, deeper a square; <see cref="ListElement.Bullet"/> sets one). The list
+    /// is indented by 30 pt unless a left padding is set, and the bullets sit in that indent.</summary>
+    /// <param name="items">The items, made with <see cref="ListItem(ValueList{Element}, string, int)"/>; at least one.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The list.</returns>
+    public static ListElement BulletedList(
+        ValueList<ListItemElement> items,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(items, IsNumbered: false, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>A numbered list: each item with its number, "1. ", "2. " …, beside its first line, right-aligned to the
+    /// item's start; <see cref="ListElement.Start"/> sets the first number. The list is indented by 30 pt unless a left
+    /// padding is set.</summary>
+    /// <param name="items">The items, made with <see cref="ListItem(ValueList{Element}, string, int)"/>; at least one.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The list.</returns>
+    public static ListElement NumberedList(
+        ValueList<ListItemElement> items,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(items, IsNumbered: true, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>An item of a list, of any elements: paragraphs, blocks, images, tables, and lists, which nest one level
+    /// deeper. Its text formatting is inherited by its content and gives its bullet or number its font, size and colour.</summary>
+    /// <param name="content">The item's elements, top to bottom.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The item.</returns>
+    public static ListItemElement ListItem(
+        ValueList<Element> content,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(content, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>An item of a list that is one paragraph of plain text.</summary>
+    /// <param name="text">The text. Runs of spaces, tabs and line breaks show as one space.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The item.</returns>
+    public static ListItemElement ListItem(
+        string text,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        ListItem([Paragraph(text, callerFile, callerLine)], callerFile, callerLine);
+
     /// <summary>A paragraph of plain text in one format.</summary>
     /// <param name="text">The text. Runs of spaces, tabs and line breaks show as one space.</param>
     /// <param name="callerFile">Filled in by the compiler.</param>

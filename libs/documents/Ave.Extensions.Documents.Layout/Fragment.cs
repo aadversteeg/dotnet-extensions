@@ -56,7 +56,12 @@ public sealed record RuleFragment(Color Color, Size Size) : Fragment(Size);
 /// <param name="Size">The line's content width and its height (CSS 2.1 §10.8).</param>
 /// <param name="Children">The text fragments and atomic inlines on the line, left to right, and the text decoration lines
 /// of each text fragment around it, in painting order (<see cref="RuleFragment"/>).</param>
-public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children) : Fragment(Size);
+public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children) : Fragment(Size)
+{
+    /// <summary>Where the line's baseline lies below its top edge, in points: the strut's and every piece's part above the
+    /// baseline, the largest of them (CSS 2.1 §10.8). A list item's label sits on the baseline of its body's first line.</summary>
+    public double Baseline { get; init; }
+}
 
 /// <summary>
 /// The part of one <see cref="InlineRun"/> that lies on one line. Its top edge is <see cref="Ascent"/> above the
@@ -69,6 +74,15 @@ public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children)
 /// <param name="Size">The glyphs' total advance and the font's ascent plus descent.</param>
 public sealed record TextFragment(InlineRun Run, TrueTypeFont Font, double Ascent, ValueList<ShapedGlyph> Glyphs, Size Size)
     : Fragment(Size);
+
+/// <summary>
+/// A list item's bullet drawn as a shape (<see cref="DocumentModel.MarkerSymbol"/>), the only child of its label's box
+/// fragment: a disc and a circle fill the circle inscribed in the fragment (the circle as a ring one CSS pixel wide, centred
+/// on that circle), a square the fragment.
+/// </summary>
+/// <param name="Symbol">The document node.</param>
+/// <param name="Size">The bullet's box: w × w, w from the font's ascent (<see cref="ListItemLayout"/>).</param>
+public sealed record MarkerFragment(MarkerSymbol Symbol, Size Size) : Fragment(Size);
 
 /// <summary>
 /// One page's slice of monolithic content taller than the page area — an image, or a line box — under

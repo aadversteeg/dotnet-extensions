@@ -191,8 +191,6 @@ public class HtmlStyleResolverTests
     [InlineData("<table frame=box></table>", "frame")]
     [InlineData("<table rules=all></table>", "rules")]
     [InlineData("<body background=x.png>", "background")]
-    [InlineData("<ol start=3><li>x</ol>", "start")]
-    [InlineData("<ol><li value=3>x</ol>", "value")]
     [InlineData("<table><caption align=bottom></caption></table>", "align")]
     [InlineData("<br clear=all>", "clear")]
     [InlineData("<iframe width=10></iframe>", "width")]

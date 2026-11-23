@@ -19,7 +19,8 @@ internal static class StructureObjects
     /// <item>one structure element per node (Table 323): <c>/S</c> its type, <c>/P</c> its parent, <c>/Pg</c> its first
     /// page, <c>/K</c> its kids — child elements by reference, its content on its first page as plain MCIDs, and on
     /// other pages as marked-content references with their own <c>/Pg</c> (§14.7.4.2, Table 324) — plus <c>/Alt</c> for a
-    /// figure (§14.9.3) and <c>/A</c>, the attributes of table cells and the bounding box of figures and tables
+    /// figure (§14.9.3), <c>/ActualText</c> for a list label that is a drawn bullet (§14.9.4: the bullet's character, on
+    /// the structure element only, so the text of the page stays what is drawn) and <c>/A</c>, the attributes of table cells and the bounding box of figures and tables
     /// (<see cref="StructureTypes.Attributes"/>).</item>
     /// </list>
     /// </summary>
@@ -46,6 +47,7 @@ internal static class StructureObjects
         ("Pg", new PdfReference(plan.Page(element.FirstPage).Page)),
         ("K", new PdfArray([.. element.Kids.Select(kid => Kid(kid, element.FirstPage, plan))])),
         ("Alt", element.Start.Role is SemanticRole.FigureRole { AlternativeText: { } text } ? PdfString.FromText(text) : null),
+        ("ActualText", element.Start.Role is SemanticRole.ListLabelRole { ReplacementText: { } replacement } ? PdfString.FromText(replacement) : null),
         ("A", StructureTypes.Attributes(element.Start.Role, element.Start.Span, box)));
 
     private static PdfObject Kid(StructureKid kid, int elementPage, ObjectPlan plan) => kid switch

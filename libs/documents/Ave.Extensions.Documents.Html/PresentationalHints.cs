@@ -46,7 +46,7 @@ internal static class PresentationalHints
         ("div, p", "align (-webkit-left/right/center, or one text-align value)", ""),
         ("hr", "align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width", ""),
         ("img", "width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom", "align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG)"),
-        ("ol, ul, li", "type", "ol start, ol reversed, li value"),
+        ("ol, ul, li", "type; ol start, ol reversed and li value number the items (box generation)", "a start or value beyond a 32-bit integer; li value in a reversed ol, or outside an ol where its list shows numbers"),
         ("pre", "wrap", ""),
         ("br", "", "clear"),
         ("font", "color, face (one font-family value), size", ""),
@@ -371,18 +371,8 @@ internal static class PresentationalHints
 
                 break;
             case "ol" or "ul" or "li":
+                // start, reversed and value are no hints: box generation numbers the items (Boxes/HtmlBoxGenerator.Lists.cs).
                 ListType(html, hints);
-                if (html.LocalName == "ol")
-                {
-                    RefuseIfPresent("start", "sets where the list's numbering starts");
-                    RefuseIfPresent("reversed", "numbers the list backwards");
-                }
-
-                if (html.LocalName == "li")
-                {
-                    RefuseIfPresent("value", "sets the item's number");
-                }
-
                 break;
             case "pre":
                 if (Attr("wrap") is not null)

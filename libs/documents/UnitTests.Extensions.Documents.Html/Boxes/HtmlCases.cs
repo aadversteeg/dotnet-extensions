@@ -115,8 +115,9 @@ internal static class HtmlCases
     /// container: case <c>tw-pref</c>, a table that needs 157.805 pt in a box of 150 pt), or a box with a height whose
     /// content goes on past a page break after the height ended (<see cref="LayoutErrorCodes.OverflowAcrossPages"/>, at the
     /// box's source line, where Chromium prints that content on the next page: cases <c>sz-height-overflow-page</c>,
-    /// <c>sz-height-forced</c>). Any other error, also
-    /// another code under the same parent, is a failure of the case.</summary>
+    /// <c>sz-height-forced</c>), or a list item's label that would start left of the sheet
+    /// (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>, at the item's source line, where Chromium cuts the label at the
+    /// sheet's edge or leaves it out). Any other error, also another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
         CssErrorCodes.Unsupported.Property.ToString(),
@@ -140,11 +141,13 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        HtmlStyleErrorCodes.Unsupported.List.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
         LayoutErrorCodes.ColumnsDoNotFit.ToString(),
         LayoutErrorCodes.OverflowAcrossPages.ToString(),
+        LayoutErrorCodes.MarkerOutsideSheet.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -356,7 +359,7 @@ internal static class HtmlCases
         return (line, column) switch
         {
             ({ }, { }) => $"refused {first.Code} {what} at {line}:{column}",
-            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages => $"refused {first.Code} {what} at {line}",
+            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages || first.Code == LayoutErrorCodes.MarkerOutsideSheet => $"refused {first.Code} {what} at {line}",
             _ => $"failed {first.Code} {what}: a refusal without its line and column",
         };
     }

@@ -1,8 +1,9 @@
 namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
-/// Names the layout algorithm of a box: its inner display type (CSS Display 3 §2.2). The engine ships five —
-/// <see cref="Flow"/>, <see cref="Inline"/>, <see cref="Tracks"/>, <see cref="Image"/> and <see cref="MarginBoxes"/> —
+/// Names the layout algorithm of a box: its inner display type (CSS Display 3 §2.2). The engine ships six —
+/// <see cref="Flow"/>, <see cref="Inline"/>, <see cref="Tracks"/>, <see cref="Image"/>, <see cref="MarginBoxes"/> and
+/// <see cref="ListItem"/> —
 /// and layout looks them up by this name. The parts of a table are not algorithms (<see cref="TableDisplay"/>).
 /// </summary>
 /// <param name="Name">The algorithm name, for example <c>flow</c>.</param>
@@ -29,6 +30,13 @@ public readonly record struct LayoutAlgorithmId(string Name)
     /// of a header or footer area with a fixed height (<see cref="PageArea.Height"/>), whose height it takes.
     /// </summary>
     public static LayoutAlgorithmId MarginBoxes => new("margin-boxes");
+
+    /// <summary>
+    /// A list item (CSS Lists 3 §3, <c>display: list-item</c> with an outside marker): its body, a flow box, laid out as
+    /// block flow, and its label beside the body's first line, outside the item's content box. Its children are an
+    /// optional label (<see cref="Core.SemanticRole.ListLabel"/>) and then its body (<see cref="Core.SemanticRole.ListBody"/>).
+    /// </summary>
+    public static LayoutAlgorithmId ListItem => new("list-item");
 
     /// <summary>Returns the name.</summary>
     /// <returns>The text form.</returns>

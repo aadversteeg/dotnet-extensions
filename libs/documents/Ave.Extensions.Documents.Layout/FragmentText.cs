@@ -52,6 +52,7 @@ public static class FragmentText
                     + QuotedText.Quote(string.Concat(text.Glyphs.Select(glyph => glyph.Text)))],
             ImageFragment image => [$"{indent}image {image.Image.Id} {position} {image.Image.Image.Describe()}"],
             RuleFragment rule => [$"{indent}rule {position} {rule.Color}"],
+            MarkerFragment marker => [$"{indent}marker {marker.Symbol.Id} {marker.Symbol.Shape.ToString().ToLowerInvariant()} {position} {marker.Symbol.Style.Color}"],
             SliceFragment slice =>
                 [$"{indent}slice {position}{(slice.IsContinuation ? " continued" : string.Empty)}", .. FragmentLines(slice.Content, depth + 1)],
             _ => [$"{indent}unknown {placed.Fragment.GetType().Name} {position}"],

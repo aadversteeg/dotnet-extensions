@@ -29,11 +29,11 @@ public static class PagePainter
     private static Page PaintPage(PageFragment page) =>
         new(page.PageSize,
         [
-            .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, page.PageSize.Width)) : [],
+            .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null))) : [],
             .. page.BodyClip is { } body
-                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width))
-                : Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width),
-            .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, page.PageSize.Width)) : [],
+                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, body)))
+                : Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, null)),
+            .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null))) : [],
         ]);
 
     /// <summary>
@@ -55,25 +55,74 @@ public static class PagePainter
     /// the innermost structure marker around it. <paramref name="inArtifact"/> is true inside an artifact, where no
     /// further markers are written: artifacts do not nest and hold no structure. The slices of content taller than a page
     /// (<see cref="SliceFragment"/>) are clipped, each to its own top and bottom across the whole width of the page
-    /// (<paramref name="pageWidth"/>). The slices of an image are all content of its figure, as the pages of a paragraph
+    /// (<c>sheet.Width</c>). The slices of an image are all content of its figure, as the pages of a paragraph
     /// are content of the paragraph: each page shows another part of the image, and its alternative text is on the
     /// figure, read once. Every slice of a line of text after the first is an artifact
     /// (<see cref="ArtifactKind.SliceContinuation"/>, a stated choice): the first slice delivers the line's text, and the
     /// later ones draw the same glyphs again.
     /// </remarks>
-    private static IEnumerable<DrawItem> Items(Fragment fragment, Point origin, bool inArtifact, double pageWidth) => fragment switch
+    private static IEnumerable<DrawItem> Items(Fragment fragment, Point origin, bool inArtifact, Sheet sheet) => fragment switch
     {
-        BoxFragment box => Box(box, origin, inArtifact, pageWidth),
-        LineFragment line => Children(line.Children, origin, inArtifact, pageWidth),
+        BoxFragment box => Box(box, origin, inArtifact, sheet),
+        LineFragment line => Children(line.Children, origin, inArtifact, sheet),
         TextFragment text => Glyphs(text, origin) is { Glyphs.Count: > 0 } run ? [run] : [],
         ImageFragment image => [new DrawImage(new Rect(origin, image.Size), image.Image.Image)],
+        MarkerFragment marker => Bullet(marker, origin),
         RuleFragment rule => Decoration([new FillRectangle(new Rect(origin, rule.Size), rule.Color)], inArtifact),
-        SliceFragment slice => Clipped(new Rect(new Point(0, origin.Y), new Size(pageWidth, slice.Size.Height)),
+        SliceFragment slice => Clipped(new Rect(new Point(0, origin.Y), new Size(sheet.Width, slice.Size.Height)),
             slice.IsContinuation && !inArtifact && slice.Content.Fragment is LineFragment
-                ? Artifact(ArtifactKind.SliceContinuation, Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact: true, pageWidth))
-                : Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact, pageWidth)),
+                ? Artifact(ArtifactKind.SliceContinuation, Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact: true, sheet))
+                : Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact, sheet)),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };
+
+    /// <summary>The page being painted: its width, for the clips of slices, and the rectangle its body is clipped to, or
+    /// null for a page area or a page whose body is not clipped.</summary>
+    private sealed record Sheet(double Width, Rect? BodyClip);
+
+    private static bool Overlaps(Rect a, Rect b) =>
+        a.Origin.X < b.Origin.X + b.Size.Width && b.Origin.X < a.Origin.X + a.Size.Width
+        && a.Origin.Y < b.Origin.Y + b.Size.Height && b.Origin.Y < a.Origin.Y + a.Size.Height;
+
+    /// <summary>
+    /// A list item's bullet (<see cref="MarkerFragment"/>, Chromium 159's shapes, case <c>li-symbol-sizes</c>): a disc is the
+    /// circle inscribed in its box, four cubic curves, filled; a circle a ring one CSS pixel wide centred on that circle, two
+    /// circles filled under the even-odd rule (Chromium strokes the circle with a line one pixel wide; the ring paints the
+    /// same area); a square its box, filled. A bullet of no size draws nothing.
+    /// </summary>
+    private static IEnumerable<DrawItem> Bullet(MarkerFragment marker, Point origin)
+    {
+        var size = marker.Size;
+        if (size.Width <= 0)
+        {
+            return [];
+        }
+
+        var color = marker.Symbol.Style.Color;
+        var (cx, cy, r) = (origin.X + size.Width / 2, origin.Y + size.Height / 2, size.Width / 2);
+        const double halfPixel = 0.375;
+        return marker.Symbol.Shape switch
+        {
+            MarkerShape.Disc => [new FillPath([Circle(cx, cy, r)], PathFillRule.NonZero, color)],
+            MarkerShape.Circle => [new FillPath([Circle(cx, cy, r + halfPixel), Circle(cx, cy, r - halfPixel)], PathFillRule.EvenOdd, color)],
+            _ => [new FillRectangle(new Rect(origin, size), color)],
+        };
+    }
+
+    /// <summary>A circle as four cubic curves, each a quarter, with the control points at κ = 0.5522847498 times the
+    /// radius along the tangents (the usual approximation, radial error below 0.03 %).</summary>
+    private static PathContour Circle(double cx, double cy, double r)
+    {
+        const double kappa = 0.5522847498;
+        var k = kappa * r;
+        return new PathContour(new Point(cx + r, cy),
+        [
+            new PathCubic(new Point(cx + r, cy + k), new Point(cx + k, cy + r), new Point(cx, cy + r)),
+            new PathCubic(new Point(cx - k, cy + r), new Point(cx - r, cy + k), new Point(cx - r, cy)),
+            new PathCubic(new Point(cx - r, cy - k), new Point(cx - k, cy - r), new Point(cx, cy - r)),
+            new PathCubic(new Point(cx + k, cy - r), new Point(cx + r, cy - k), new Point(cx + r, cy)),
+        ]);
+    }
 
     /// <summary>The items between a clip start and end; nothing at all when there are no items.</summary>
     private static IEnumerable<DrawItem> Clipped(Rect area, IEnumerable<DrawItem> items)
@@ -82,16 +131,22 @@ public static class PagePainter
         return content.IsEmpty ? [] : [new ClipStart(area), .. content, ClipEnd.Instance];
     }
 
-    private static IEnumerable<DrawItem> Box(BoxFragment box, Point origin, bool inArtifact, double pageWidth)
+    private static IEnumerable<DrawItem> Box(BoxFragment box, Point origin, bool inArtifact, Sheet sheet)
     {
+        if (box.Box.Role is SemanticRole.ListLabelRole && sheet.BodyClip is { } clip && !Overlaps(new Rect(origin, box.Size), clip))
+        {
+            // Chromium 159 leaves out a list marker that lies wholly outside the clipped body, text or shape (case li-marker-clip).
+            return [];
+        }
+
         if (inArtifact)
         {
-            return [.. Background(box, origin), .. Border(box, origin), .. Children(box.Children, origin, inArtifact: true, pageWidth)];
+            return [.. Background(box, origin), .. Border(box, origin), .. Children(box.Children, origin, inArtifact: true, sheet)];
         }
 
         if (box.IsRepeated || box.Box.Role == SemanticRole.Decorative)
         {
-            return Artifact(box.IsRepeated ? ArtifactKind.Repeated : ArtifactKind.Layout, Box(box, origin, inArtifact: true, pageWidth));
+            return Artifact(box.IsRepeated ? ArtifactKind.Repeated : ArtifactKind.Layout, Box(box, origin, inArtifact: true, sheet));
         }
 
         // The box's own background and border go inside its markers, before its children: they are a layout
@@ -101,13 +156,13 @@ public static class PagePainter
         [
             new StructureStart(box.Box.Id, box.Box.Role, box.Box.Source) { Span = box.Box.Style.Span },
             .. Decoration([.. Background(box, origin), .. Border(box, origin)], inArtifact: false),
-            .. Children(box.Children, origin, inArtifact: false, pageWidth),
+            .. Children(box.Children, origin, inArtifact: false, sheet),
             new StructureEnd(box.Box.Id),
         ];
     }
 
-    private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, double pageWidth) =>
-        children.SelectMany(child => Items(child.Fragment, origin + child.Offset, inArtifact, pageWidth));
+    private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, Sheet sheet) =>
+        children.SelectMany(child => Items(child.Fragment, origin + child.Offset, inArtifact, sheet));
 
     /// <summary>Decoration outside an artifact becomes a layout artifact of its own; inside one it is drawn as is.</summary>
     private static IEnumerable<DrawItem> Decoration(ImmutableArray<DrawItem> items, bool inArtifact) =>

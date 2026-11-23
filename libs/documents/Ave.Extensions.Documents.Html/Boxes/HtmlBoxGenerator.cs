@@ -119,6 +119,25 @@ public static partial class HtmlBoxGenerator
         public bool ForcedBreakPending { get; set; }
 
         public bool ForcedBreakBefore { get; set; }
+
+        /// <summary>A block, a list element's list or a list item.</summary>
+        public FrameKind Kind { get; init; }
+
+        /// <summary>An item's label, the label's run or symbol, its body, and the body's box of lines.</summary>
+        public (NodeId Label, NodeId Mark, NodeId Body, NodeId Lines)? ItemIds { get; init; }
+
+        /// <summary>The list box open around a run of items outside a list element.</summary>
+        public (NodeId Id, ListNumbering Numbering, List<Node> Items, SourceLocation Source)? Implied { get; set; }
+
+        /// <summary>The lists around the box, its own included.</summary>
+        public int Lists { get; init; }
+    }
+
+    private enum FrameKind
+    {
+        Block,
+        List,
+        Item,
     }
 
     /// <summary>An inline element whose content is being added to <see cref="Target"/>.</summary>
@@ -291,6 +310,7 @@ public static partial class HtmlBoxGenerator
         /// content's), every check made once per element.</summary>
         private Box Build(StyledElement root)
         {
+            Number(root);
             Check(root, isBlock: true);
             var stack = new Stack<object>();
             stack.Push(Frame(root, NewId(), 0));
@@ -317,7 +337,7 @@ public static partial class HtmlBoxGenerator
                         else
                         {
                             var parent = (BlockFrame)stack.Peek();
-                            parent.Nodes.Add(box);
+                            (block.Kind == FrameKind.Item && parent.Implied is { } implied ? implied.Items : parent.Nodes).Add(box);
                             parent.ForcedBreakPending = forcedAfter;
                         }
 
@@ -332,7 +352,7 @@ public static partial class HtmlBoxGenerator
             return result!;
         }
 
-        private BlockFrame Frame(StyledElement element, NodeId id, int depth)
+        private BlockFrame Frame(StyledElement element, NodeId id, int depth, FrameKind kind = FrameKind.Block, int lists = 0, (NodeId, NodeId, NodeId, NodeId)? itemIds = null)
         {
             var children = element.Children;
             var kinds = new bool[children.Count];
@@ -366,7 +386,7 @@ public static partial class HtmlBoxGenerator
                 }
             }
 
-            return new BlockFrame(element, id, depth, kinds, dropped);
+            return new BlockFrame(element, id, depth, kinds, dropped) { Kind = kind, Lists = lists, ItemIds = itemIds };
         }
 
         private bool Deeper(int depth, TextPosition position)
@@ -389,9 +409,21 @@ public static partial class HtmlBoxGenerator
         private void Child(Stack<object> stack, BlockFrame block, int index)
         {
             var node = block.Element.Children[index];
-            if (block.Dropped[index] || (node is StyledElement hidden && Display(hidden) == "none") || TableChild(stack, block, node))
+            if (block.Dropped[index] || (node is StyledElement hidden && Display(hidden) == "none"))
             {
                 RefuseBreakBetweenBlocks(block.Dropped[index] ? node : null);
+                return;
+            }
+
+            var bareItem = block.Kind != FrameKind.List && node is StyledElement candidate && IsListItem(candidate);
+            if (!bareItem)
+            {
+                CloseImplied(block);
+            }
+
+            if (RefusedInList(block, node) || TableChild(stack, block, node))
+            {
+                RefuseBreakBetweenBlocks(null);
                 return;
             }
 
@@ -399,6 +431,12 @@ public static partial class HtmlBoxGenerator
             {
                 var element = (StyledElement)node;
                 CloseAnonymous(block);
+                if (IsListItem(element))
+                {
+                    ListItem(stack, block, element, bareItem);
+                    return;
+                }
+
                 if (IsHtml(element, "img"))
                 {
                     Image(block, element);
@@ -416,7 +454,14 @@ public static partial class HtmlBoxGenerator
                     return;
                 }
 
-                var frame = Frame(element, NewId(), block.Depth + 1);
+                ReportListRefusals(element);
+                var isList = IsListElement(element);
+                if (isList && ListTooLarge(element, block.Lists + 1))
+                {
+                    return;
+                }
+
+                var frame = isList ? Frame(element, NewId(), block.Depth + 1, FrameKind.List, block.Lists + 1) : Frame(element, NewId(), block.Depth + 1, lists: block.Lists);
                 frame.ForcedBreakBefore = block.ForcedBreakPending;
                 block.ForcedBreakPending = false;
                 stack.Push(frame);
@@ -448,6 +493,35 @@ public static partial class HtmlBoxGenerator
             }
 
             Inline(stack, new InlineFrame(block.Element, target, depth), node);
+        }
+
+        /// <summary>A list item: in its list, or in the list box opened around it (outside a list element); its frame holds
+        /// the ids of its label and body, so they follow the item's in pre-order.</summary>
+        private void ListItem(Stack<object> stack, BlockFrame block, StyledElement element, bool bare)
+        {
+            if (!Check(element, isBlock: true))
+            {
+                return;
+            }
+
+            ReportListRefusals(element);
+            if (bare && (ListTooLarge(element, block.Lists + 1, (block.Implied?.Items.Count ?? 0) + 1) || !OpenImplied(block, element)))
+            {
+                return;
+            }
+
+            // The item, its body and the body's box of lines lie between the list and the item's content.
+            var depth = block.Depth + (bare ? 2 : 1);
+            if (Deeper(depth + 2, element.Element.Position))
+            {
+                return;
+            }
+
+            var id = NewId();
+            var frame = Frame(element, id, depth + 2, FrameKind.Item, block.Lists + (bare ? 1 : 0), (NewId(), NewId(), NewId(), NewId()));
+            frame.ForcedBreakBefore = block.ForcedBreakPending;
+            block.ForcedBreakPending = false;
+            stack.Push(frame);
         }
 
         private static TextPosition Position(StyledNode node) => node is StyledElement element ? element.Element.Position : ((StyledText)node).Text.Position;
@@ -528,9 +602,10 @@ public static partial class HtmlBoxGenerator
         private (Box Box, bool ForcedAfter) Finish(BlockFrame block, StyledElement? parent)
         {
             CloseAnonymous(block);
+            CloseImplied(block);
             var element = block.Element;
             var (layout, children) = block.HasBlockChildren ? (LayoutAlgorithmId.Flow, (ValueList<Node>)[.. block.Nodes]) : Content(block.Nodes);
-            var style = BoxStyleOf(element) with { Text = layout == LayoutAlgorithmId.Inline ? TextStyleOf(element) : null };
+            var style = BoxStyleOf(element) with { Text = layout == LayoutAlgorithmId.Inline && block.Kind == FrameKind.Block ? TextStyleOf(element) : null };
             if (HtmlBoxGenerator.PartOf(element.Style[PropertyRegistry.Display]) == TablePart.None)
             {
                 style = Sized(element, style, parent);
@@ -543,7 +618,13 @@ public static partial class HtmlBoxGenerator
 
             // CSS Fragmentation 3 §3.1: a forced break after the last child is a break after this box.
             var forcedAfter = block.ForcedBreakPending || Value(element, "break-after") is CssKeyword { Name: "page" };
-            return (TablePartBox(block, new Box(block.Id, RoleOf(element), layout, style, children, Source(element.Element.Position))), forcedAfter);
+            var box = block.Kind switch
+            {
+                FrameKind.Item => Item(block, layout, children, style),
+                FrameKind.List => ListBox(block, children, style),
+                _ => TablePartBox(block, new Box(block.Id, RoleOf(element), layout, style, children, Source(element.Element.Position))),
+            };
+            return (box, forcedAfter);
         }
 
         private SemanticRole RoleOf(StyledElement element)

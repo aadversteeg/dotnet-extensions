@@ -53,7 +53,11 @@ Document ──DocumentTranslator.ToModel──▶ StyledDocument ──Document
   meant, with CSS semantics and only computed values: a tree of `Box` (with a `SemanticRole` and a
   `LayoutAlgorithmId`), `TextRun`/`CounterRun` and `ImageNode`. Every node has an id (pre-order) and the source
   location of the call that made it. Roles (`Core/SemanticRole.cs`) are separate from layout: a box laid out as a
-  table is not necessarily a table for a screen reader. Any front-end (code now, markup later) produces this model.
+  table is not necessarily a table for a screen reader. A list is a box with the list role, which carries its numbering
+  (`ListNumbering`, the values of ISO 32000-1 Table 347); each of its children is a list item, a box laid out by the
+  list-item algorithm, whose children are an optional label (inline: text runs such as "1. ", or one `MarkerSymbol`, a
+  disc, circle or square the layout draws) and then its body, a flow box with the item's content. A front-end computes
+  a label's text; layout places the label. Any front-end (code now, markup later) produces this model.
   The document also carries its layout profile (`DocumentModel/LayoutProfile.cs`): the policies its front-end chose
   where layout has a choice (see the policy table below).
 - **Fragment tree** (`Layout/Fragment.cs`). The output of layout per page: boxes cut at page breaks, lines, text,
@@ -86,7 +90,7 @@ paginator (`Layout/Paginator.cs`) calls the root algorithm once per page with th
 is left. When the document shows its page count, it repeats the whole document until that count settles (at most 5
 passes); otherwise one pass is all.
 
-The five algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
+The six algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
 that another box's layout returned. Each algorithm checks the token it is given, and a token it cannot have returned for
 the box — another algorithm's kind, a child, line, row or cell the box does not have, a height shown that is negative,
 not finite, or the whole height of the sliced image or line or more — is the error `Documents.Layout.InvalidBreakToken`,
@@ -117,7 +121,7 @@ here, which paints at 307.5); the widths computed in 1/64 px would give Chromium
 
 **The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
 and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the
-engine ships five algorithms (flow, inline, tracks, image, margin-boxes) and registering another is internal
+engine ships six algorithms (flow, inline, tracks, image, margin-boxes, list-item) and registering another is internal
 (`LayoutEnvironment.WithAlgorithm`); `BreakToken` can only be derived inside the layout assembly, and the parts of a
 table are a display type (`TableDisplay`), not algorithms. When a front-end needs an algorithm of its own, these are
 the three places to open, with that front-end as their first user.
@@ -158,6 +162,7 @@ The whole algorithms and the other rules:
 | inline layout, line boxes | `Layout/InlineLayout.cs`, `LineBoxes.cs` | CSS 2.1 §9.4.2, §10.8 |
 | tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
 | images | `Layout/ImageLayout.cs` | CSS 2.1 §10.3.2 (with a stated deviation for width + height) |
+| list items (outside markers): the body laid out as block flow, the label outside the item's content box on the baseline of the body's first line (found down the first children, past empty boxes; an image, a table or no line first: a line of the label's own at the item's top, which an empty item grows to), only with the fragment of the first line. A bullet is w × w px with A the font's ascent in px as the profile's font metric rounding gives it, o = ⌊2A/3⌋, w = ⌊(o + 1)/2⌋, its left edge o + 7 px left of the content edge, its top ⌊3(A − o)/2⌋ − A px from the baseline; a disc is a filled circle of four cubics, a circle a ring one pixel wide under even-odd, a square a filled rectangle. A text label is right-aligned so its advance (the space after the number included) ends on the content edge, its width on 1/64 px under `LengthRounding.SixtyFourthPixels`. A label left of the sheet is refused (`Documents.Layout.MarkerOutsideSheet`, `ListMarkers`); one wholly outside a clipped body's area is not drawn (`PagePainter`). LIMIT: an item whose first fragment has no line and breaks gets its label at that fragment's top | `Layout/ListItemLayout.cs` (THE RULE FOR THE LABEL), `ListMarkers.cs`, `PagePainter.cs` (`Bullet`), `DocumentModel/ModelCheck.cs` (`List`), `Fluent/ListTranslator.cs`, `Html/Boxes/HtmlBoxGenerator.Lists.cs` | CSS Lists 3 §3, §3.1; CSS Counter Styles 3 §6.1 (`disc`, `circle`, `square`); ISO 32000-1 §14.8.4.3.3; checked against Chromium's print (cases `li-symbol-sizes`, `li-ol-12`, `li-ol-nested`, `li-ul-levels`, `li-first-line`, `li-page-break`, `li-marker-clip`, `li-marker-sheet`; `ListLayoutTests`) |
 | page templates, page counters | `Layout/PageAreas.cs`, `Paginator.cs`, `PageContext.cs` | CSS Paged Media 3 §4.2.2, §5, §6.1 |
 | what is content and what is an artifact (a repeated header row and every slice of a line of text after the first are pagination artifacts; every slice of an image is content of its figure) | `Layout/PagePainter.cs` | ISO 32000-1 §14.8.2.2 |
 | clips in PDF: `q x y w h re W n` … `Q` between marked-content sequences, never across one | `Render.Pdf/PageContentStream.cs` (`Clips`) | ISO 32000-1 §8.4.2, §8.5.4 |
@@ -391,6 +396,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | coordinates the graphics library draws with | ±10^150 after the transform; a clip box within ±2^30 pixels | `Graphics/Canvas.cs` | `Documents.Graphics.InvalidValue` |
 | PDF/UA grid of one table | the first row's width; 4 194 304 slots | `Render.Pdf/Tagging/TableRegularity.cs` | `Documents.Pdf.Conformance.PdfUa1.TableTooLarge` |
 | nesting of elements | 64 levels | `Fluent/InputLimits.cs` | `Documents.Input.Invalid.TooDeep` |
+| a list: its items, how deep lists nest, the text of one label | 10 000 items; 16 lists one inside another; 64 UTF-16 code units | `DocumentModel/ModelLimits.cs` | `Documents.Input.Invalid.List` |
 | nesting of arrays and dictionaries in one PDF object | 64 levels | `Pdf/PdfSerializer.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | nesting of arrays and structures in one XMP property | 64 levels | `Pdf/Xmp/XmpPacket.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
@@ -624,6 +630,7 @@ Where each rule lives:
 | line height in Chromium's layout unit (a length rounded to 1/64 px, a number times the font size floored to it) | `HtmlBoxGenerator.LineHeightOf` |
 | margins and padding in Chromium's layout unit (cut toward zero to 1/64 px) | `HtmlBoxGenerator.LayoutUnits` |
 | tables: the parts, their structure, column sizes, spans; what the model's table cannot show | `Html/Boxes/TableBoxes.cs`; the values in `Html/Boxes/TableProperties.cs` |
+| lists: list elements and items, the numbering, each label's text, items outside a list element | `Html/Boxes/HtmlBoxGenerator.Lists.cs` |
 
 **The refusal table.** `BoxProperties.Rows` holds one row per longhand of the property registry: what is drawn, and
 where a value has no effect, the condition. A value is refused (`Documents.Html.Unsupported.Value`, at the element's
@@ -631,7 +638,7 @@ start tag, with the property and the value) only where it would change the print
 
 | Properties | Drawn | Refused |
 | --- | --- | --- |
-| `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
+| `display` | `block`, `inline`, `none`, `list-item` (see **Lists** below), `table` and its parts | `table-caption`; every other type |
 | `border-collapse` | `collapse` on a table | `separate` (the initial value, and HTML's) |
 | table width, column widths, `table-layout` | the table at `auto` and `100%`; lengths of column elements; `table-layout: fixed` at width `100%` (at width `auto` the table is laid out automatically, as Chromium does) | percentages on column elements, any width on a cell or a column group, other table widths: see **Tables** |
 | margins | lengths of 0 or more; horizontal `auto` on a block box with a width shares the width it leaves (`BoxStyle.AutoMargins`), else 0; on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
@@ -641,7 +648,8 @@ start tag, with the property and the value) only where it would change the print
 | `width`, `min-width`, `max-width`, `box-sizing` | on a block box a length or a percentage, for the content or the border box (`BoxStyle.SpecifiedWidth`, `MinWidth`, `MaxWidth`, `BoxSizing`; layout: `InFlowChild.Horizontal`, CSS 2.1 §10.3.3, §10.4); any on an inline box; on an image a positive `width`; on a table part what **Tables** says | calculated and intrinsic sizes; `min-width` and `max-width` on a table part or an image; a size on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`, by the model check: the intrinsic widths of a sized box are not built); `border-box` on an image with padding or a border |
 | `height`, `min-height`, `max-height` | on a block box a length, for the content or the border box, and a `height` percentage of a parent whose height is a length in a content box, or `auto` (`BoxStyle.SpecifiedHeight`, `MinHeight`, `MaxHeight`; layout: `BlockSizes`, `SlicedBox`, CSS 2.1 §10.5–10.7; the height the pages before showed is carried in the box's break token); any on an inline box; on an image a positive `height` | calculated and intrinsic sizes; another percentage height; a percentage `min-height` or `max-height`; a height on a table part, or on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`); content that goes on past a page break after the box's height ended (`Documents.Layout.OverflowAcrossPages`) |
 | `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image `auto` with a ratio (the natural one) and any `overflow`; `overflow: hidden` on a block box with no children and a border, padding or height that is not 0 at its top or bottom (the clip covers nothing, and its margins do not collapse through it: hr, cases `hr-*`) | other values on a block box |
-| `border-spacing`, `empty-cells`, `caption-side`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (collapsed borders, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| `list-style-type`, `list-style-position` | the twelve counter styles the registry accepts (`disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha`, `lower-latin`, `upper-latin`, `none`), `outside`; no effect on a box that is not a list item | `inside`, `list-style-image` other than `none`, other counter styles and strings (by the registry); `::marker` rules (a selector the style sheet refuses) |
+| `border-spacing`, `empty-cells`, `caption-side`, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (collapsed borders, no caption, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
 | `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-decoration-skip-ink` | every line and combination, applied to the element's text and the text of every element inside it, through block boxes, not into an image: the parent's lines, then the element's own in the order underline, overline, line-through, each in the element's font and its decoration colour (`currentcolor` its `color`; `TextStyle.Decorations`); `solid`; `auto`, `none` from the element the text lies in (`TextStyle.DecorationSkipInk`) | a decoration colour of another alpha than 1; a text with more than 16 lines (at the start tag of the element it lies in); `blink`, `spelling-error`, `grammar-error`, other styles, a thickness, an underline offset or position other than `auto` and `skip-ink: all` (refused by the registry) |
@@ -650,6 +658,29 @@ start tag, with the property and the value) only where it would change the print
 | `font-kerning` | `auto`, `normal` (Chromium kerns with both: cases `h-kerning-*`) | `none` (refused by the registry) |
 | break properties, `orphans`, `widows`, `text-align`, font family, size, weight and style, `line-height` | every value (`avoid-page` as `avoid`; `break-after: page` as a forced break before the next box, none after the last box, as Chromium prints it) but a font size of 0 | a font size of 0; a family without a face (`Font`) |
 | the properties supported only at their initial value | the initial value | any other (the registry already refuses it) |
+
+**Lists** (`Html/Boxes/HtmlBoxGenerator.Lists.cs`; CSS Lists 3, HTML Standard §4.4.5–§4.4.8, §15.3.7). A `ul`, `ol`,
+`menu` or `dir` at `display: block` is the model's list (tagged `L` with the `ListNumbering` of its own
+`list-style-type`; an empty one is a plain block), each child of `display: list-item` one of its items (`LI`), with its
+label (`Lbl`) and its body (`LBody`, the item's content). The front-end computes each label: the `list-item` counter
+(CSS Lists 3 §4.6), counted in one pass before the boxes are built, instantiated by every list element and by an item
+with no counter in scope, whose scope runs on through the following siblings (case `li-div-list-item`: "2." and "3." on
+`div` items after a disc one); `ol start`, `ol reversed` (from the number of items down) and `li value`; the text in the
+item's `list-style-type` with the suffix ". " (CSS Counter Styles 3 §6.1: `decimal` with "-" before a negative number,
+`decimal-leading-zero` padded to two with the sign counted, the alphabetic styles from 1 and the roman ones from 1 to
+3999, `decimal` outside those ranges; cases `li-counter-styles`, `li-types`, `li-ol-attrs`); a disc, circle or square
+for the symbols, whose tag carries U+2022, U+25E6 or U+25AA; no label for `none` (the item still counts, case
+`li-none`). The label is in the item's own font, size and colour, not its first line's (case `li-font`). An item
+outside a list element (a bare `li`, case `li-bare`, or a `div` of `display: list-item`) draws as in a list; each run
+of such items among siblings is wrapped in a list box without margin or padding, tagged `L` with the first item's
+numbering, as PDF has no `LI` outside an `L`. Refused (`Documents.Html.Unsupported.List`, at the start tag): a child
+of a list element that is not a list item (text too); a `start` or `value` beyond a 32-bit integer, or a number that
+leaves it; `value` in a reversed `ol`, or outside an `ol` where its list shows numbers; an item outside a list element
+that a list's counter would number (inside a list's item, or after a list among its siblings), or whose number would
+continue the counter of an item with another parent; the marker of an item with text decorations. Lists deeper than
+16 or longer than 10 000 items fail under both policies. The style sheet refuses `list-style-position: inside`
+(case `li-inside`), `list-style-image`, `::marker` and the `counter-*` properties other than their initial value; layout
+refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types`).
 
 Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`):
 `wbr`, `q`. A `br` is the model's forced line break, the line separator U+2028, in its own text style (a block-level
@@ -661,7 +692,7 @@ or does not decode is refused (`Rendering`), and so is a width and a height in a
 Chromium stretches the image to and the image algorithm does not (`Value`, case `hi-stretch`). An `img` inside a line of text (`display: inline`) is the same image box
 among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
 in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
-break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: lists by `display`, a table without collapsed borders by
+break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: a table without collapsed borders by
 `border-collapse`, `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
@@ -738,8 +769,9 @@ bottom row from right to left, the order Chromium paints them in whatever the or
 `pm-paint-order`); the row keeps that order and places each box by its place. Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
-leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4
-prints 594.96 × 841.92 pt). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
+leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch computed in single precision (A4
+prints 594.96 × 841.92 pt; at the tie 75 pt prints 75.12, case `h-page-size-hundred-px`, and 201 pt 200.88, case
+`li-page-break`). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
 area reaches past the sheet (cases `h-page-size-*`, `h-page-area-*`, `h-page-margin-*`).
 
 **The status file.** `tools/reference/chromium/html-status.txt` has one line per reference case, written by
@@ -1359,8 +1391,10 @@ Each is documented next to its code as well.
   replacement text (`/ActualText`) where it is drawn.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
   nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
-  language, no Span, Link, List, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
-  marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above); empty structure elements are
+  language, no Span, Link, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
+  marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above) and on the `Lbl` structure
+  element of a drawn bullet (its character, U+2022, U+25E6 or U+25AA; lists are `L` with `ListNumbering`, `LI`, `Lbl`,
+  `LBody`, ISO 32000-1 §14.8.4.3.3, §14.8.5.5; from HTML, items outside a list element are an `L` of their own); empty structure elements are
   written for empty cells; the XMP packet has no padding; everything in page headers and footers is an artifact.
   Figures and tables wholly on one page carry their `/BBox` (ISO 32000-1 Table 344); a table that continues on
   another page has none, and no other layout attributes are written.
