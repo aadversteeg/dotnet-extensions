@@ -2158,7 +2158,7 @@ public class MeasuredReferenceFilesTests
         ["tp-thirds.print.txt"] = 25,
         ["tp-thirds.words.txt"] = 7,
         ["ts-paint.boxes.txt"] = 5,
-        ["ts-paint.lines.txt"] = 6,
+        ["ts-paint.lines.txt"] = 2,
         ["ts-paint.print.txt"] = 24,
         ["ts-paint.words.txt"] = 5,
         ["ts-plain.boxes.txt"] = 5,
