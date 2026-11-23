@@ -1,0 +1,5 @@
+table 104.086 104.719 t
+td 34.676 56.484 tall-cell
+td 39.410 56.484 beside-cell
+td 34.676 18.234 two-cell
+td 39.410 18.234 text 2

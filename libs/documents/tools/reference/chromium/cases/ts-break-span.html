@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Separated borders, a rowspan of three rows over the break. -->
+<style>@page { size: 300pt 160pt; margin: 12pt; } body { font-size: 10.5pt; } table { border-collapse: separate; border-spacing: 6pt; border: 3pt solid #ff0000; padding: 3pt; background: #ffff00; } td, th { border-color: #0000ff; }</style></head><body>
+<table id="t">
+<tr><td id="one-cell">one</td><td>text 1</td></tr>
+<tr><td id="two-cell">two</td><td>text 2</td></tr>
+<tr><td id="three-cell">three</td><td>text 3</td></tr>
+<tr><td id="span-cell" rowspan="3">span</td><td>text 4</td></tr><tr><td>text 5</td></tr><tr><td>text 6</td></tr>
+<tr><td id="seven-cell">seven</td><td>text 7</td></tr>
+</table>
+<p>after</p>
+</body></html>

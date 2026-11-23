@@ -529,6 +529,14 @@ tp-sum-100 equal
 tp-sum-above equal
 tp-sum-below equal
 tp-thirds equal
+ts-break-cut refused Documents.Layout.TableBreak 136.5 at 4
+ts-break-end refused Documents.Layout.TableBreak 128.25 at 4
+ts-break-first-row refused Documents.Layout.TableBreak 34.5 at 12
+ts-break-header refused Documents.Layout.TableBreak 136.5 at 4
+ts-break-image refused Documents.Layout.TableBreak 136.5 at 4
+ts-break-move refused Documents.Layout.TableBreak 136.5 at 4
+ts-break-rows refused Documents.Layout.TableBreak 136.5 at 4
+ts-break-span refused Documents.Layout.TableBreak 136.5 at 4
 ts-paint equal
 ts-plain equal
 ts-spacing-one equal
