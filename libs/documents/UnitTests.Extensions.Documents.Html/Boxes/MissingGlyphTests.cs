@@ -102,6 +102,18 @@ public class MissingGlyphTests
     }
 
     [Fact]
+    public void A_character_of_a_pseudo_element_s_text_is_refused_at_its_content_declaration()
+    {
+        var html = Document("<p class=\"g\">a</p>", "body { font-family: Lato } .g::before { content: \"y \\2714\" }");
+
+        var refusal = Refusals(html).Single();
+
+        refusal.Code.Should().Be(FontErrorCodes.GlyphMissing);
+        refusal.Metadata![ErrorMetadataKeys.CodePoint].Should().Be("U+2714");
+        Place(refusal).Should().Be(((object?)PlaceOf(html, "content").Line, (object?)PlaceOf(html, "content").Column));
+    }
+
+    [Fact]
     public void A_document_is_refused_for_at_most_the_bound_of_characters_in_source_order()
     {
         // 80 distinct CJK characters Lato does not have.
