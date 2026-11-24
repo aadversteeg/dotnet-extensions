@@ -77,7 +77,7 @@ public static partial class PropertyRegistry
 
         yield return new PropertyDefinition(
             "font-feature-settings", inherited: true, new CssKeyword("normal"), "all elements and text",
-            "normal | [ \"lnum\" | \"onum\" | \"pnum\" | \"tnum\" | \"ordn\" ] [ 0 | 1 | on | off ]?#", PropertySupport.Supported,
+            "normal | <feature-tag-value># (the tags \"lnum\", \"onum\", \"pnum\", \"tnum\" and \"ordn\", each with 0, 1, on or off)", PropertySupport.Supported,
             "CSS Fonts 4 §7.1", ParseFontFeatureSettings, AsSpecified);
 
         yield return Keywords("font-kerning", inherited: true, "auto", ["auto", "normal"], ["none"], "all elements and text",

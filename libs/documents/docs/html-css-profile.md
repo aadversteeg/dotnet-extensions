@@ -47,7 +47,7 @@ names nothing.
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
 | `empty-cells` | yes | `show` | `show` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
-| `font-feature-settings` | yes | `normal` | `normal \| [ "lnum" \| "onum" \| "pnum" \| "tnum" \| "ordn" ] [ 0 \| 1 \| on \| off ]?#` | CSS Fonts 4 §7.1 |
+| `font-feature-settings` | yes | `normal` | `normal \| <feature-tag-value># (the tags "lnum", "onum", "pnum", "tnum" and "ordn", each with 0, 1, on or off)` | CSS Fonts 4 §7.1 |
 | `font-kerning` | yes | `auto` | `auto \| normal` | CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured) |
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |
 | `font-style` | yes | `normal` | `normal \| italic` | CSS Fonts 4 §2.4 |
