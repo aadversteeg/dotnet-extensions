@@ -521,6 +521,10 @@ tp-sum-100 equal
 tp-sum-above equal
 tp-sum-below equal
 tp-thirds equal
+tt-capitalize refused Documents.Css.Unsupported.Value text-transform: capitalize at 4:6
+tt-inline refused Documents.Css.Unsupported.Value text-transform: capitalize at 4:40
+tt-special refused Documents.Css.Unsupported.Value text-transform: uppercase at 4:6
+tt-values refused Documents.Css.Unsupported.Value text-transform: uppercase at 4:6
 tw-auto refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-col refused Documents.Html.Unsupported.Value width: 300pt at 4:1
 tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1

@@ -2125,6 +2125,22 @@ public class MeasuredReferenceFilesTests
         ["tp-thirds.lines.txt"] = 17,
         ["tp-thirds.print.txt"] = 25,
         ["tp-thirds.words.txt"] = 7,
+        ["tt-capitalize.boxes.txt"] = 1,
+        ["tt-capitalize.lines.txt"] = 0,
+        ["tt-capitalize.print.txt"] = 75,
+        ["tt-capitalize.words.txt"] = 74,
+        ["tt-inline.boxes.txt"] = 1,
+        ["tt-inline.lines.txt"] = 0,
+        ["tt-inline.print.txt"] = 55,
+        ["tt-inline.words.txt"] = 50,
+        ["tt-special.boxes.txt"] = 1,
+        ["tt-special.lines.txt"] = 0,
+        ["tt-special.print.txt"] = 85,
+        ["tt-special.words.txt"] = 84,
+        ["tt-values.boxes.txt"] = 1,
+        ["tt-values.lines.txt"] = 0,
+        ["tt-values.print.txt"] = 61,
+        ["tt-values.words.txt"] = 60,
         ["tw-auto.boxes.txt"] = 29,
         ["tw-auto.lines.txt"] = 37,
         ["tw-auto.print.txt"] = 75,
@@ -2265,7 +2281,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(555);
+        cases.Should().HaveCount(559);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
