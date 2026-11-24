@@ -695,12 +695,10 @@ public static partial class HtmlBoxGenerator
 
         /// <summary>
         /// A text with its <c>text-transform</c> applied (<see cref="TextTransforms"/>), in the language of the element it
-        /// lies in. Capitalize looks at the character before the text: the last character of the text before it in the same
-        /// inline content, past inline elements without text; a space after an image or at the start (Chromium looks back
-        /// so, to the previous text in the tree past inline boxes, and takes a space at anything else). A text with a
+        /// lies in. Capitalize looks at the character before the text (<see cref="PreviousCharacter"/>). A text with a
         /// character the transform does not map is refused there, with its offset, and drawn as written.
         /// </summary>
-        private string Transformed(StyledText text, InlineFrame frame, string data)
+        private string Transformed(StyledText text, Stack<object> stack, InlineFrame frame, string data)
         {
             var transform = text.Style[PropertyRegistry.Find("text-transform")!] is CssKeyword { Name: var name } ? name : "none";
             if (transform == "none")
@@ -708,23 +706,7 @@ public static partial class HtmlBoxGenerator
                 return data;
             }
 
-            var previous = ' ';
-            for (var i = frame.Target.Count - 1; i >= 0; i--)
-            {
-                if (frame.Target[i] is TextRun { Text: var before })
-                {
-                    if (before.Length == 0)
-                    {
-                        continue;
-                    }
-
-                    previous = before[^1];
-                }
-
-                break;
-            }
-
-            var result = TextTransforms.Apply(data, transform, frame.Element.Language, previous);
+            var result = TextTransforms.Apply(data, transform, frame.Element.Language, PreviousCharacter(stack, frame));
             if (result.Reason is null)
             {
                 return result.Text;
@@ -734,6 +716,67 @@ public static partial class HtmlBoxGenerator
                 .With(ErrorMetadataKeys.Value, transform).With(ErrorMetadataKeys.Property, "text-transform").With(ErrorMetadataKeys.Offset, result.Offset)
                 .WithSource(_sourceName, text.Text.Position));
             return data;
+        }
+
+        /// <summary>
+        /// The character before a text in its inline content, for capitalize: the last character of the text before it, past
+        /// the edges of every inline element, a group's too (a link, an element with a language or with a box of its own,
+        /// a raised element), whether the text lies inside the element or after it, and past elements without text; generated
+        /// text counts as the text it is. A space after an image or at the start of the inline content. Chromium looks back
+        /// so, to the previous text in the tree, and takes a space at anything else: case <c>tt-inline</c> for plain spans,
+        /// case <c>tt-groups</c> for a link, a span with a language, with a background, with padding, a border or a margin,
+        /// a <c>sup</c> and generated text, each starting and ending inside a word (<c>wo&lt;a href&gt;rd&lt;/a&gt;</c> prints
+        /// "Word"; an edge that takes room starts no word either: "Wo rd").
+        /// </summary>
+        /// <param name="stack">The open frames: the groups being built around the text lie on it, innermost first.</param>
+        /// <param name="frame">The frame the text goes into.</param>
+        private static char PreviousCharacter(Stack<object> stack, InlineFrame frame)
+        {
+            // The contents to look back through, innermost first: the text's own, then for each group being built around it
+            // the content the group goes into. Closed groups in them are read from their end, with an explicit stack.
+            var contents = new List<IReadOnlyList<Node>> { frame.Target };
+            foreach (var open in stack)
+            {
+                if (open is not InlineFrame inline)
+                {
+                    break;
+                }
+
+                if ((inline.Link?.Parent ?? inline.Span?.Parent) is { } parent)
+                {
+                    contents.Add(parent);
+                }
+            }
+
+            var pending = new Stack<(IReadOnlyList<Node> Nodes, int Next)>();
+            foreach (var content in contents)
+            {
+                pending.Push((content, content.Count - 1));
+                while (pending.Count > 0)
+                {
+                    var (nodes, next) = pending.Pop();
+                    if (next < 0)
+                    {
+                        continue;
+                    }
+
+                    pending.Push((nodes, next - 1));
+                    switch (nodes[next])
+                    {
+                        case TextRun { Text.Length: 0 }:
+                            break;
+                        case TextRun { Text: var before }:
+                            return before[^1];
+                        case InlineGroup group:
+                            pending.Push((group.Children, group.Children.Count - 1));
+                            break;
+                        default:
+                            return ' ';
+                    }
+                }
+            }
+
+            return ' ';
         }
 
         private static TextPosition Position(StyledNode node) => node is StyledElement element ? element.Element.Position : ((StyledText)node).Text.Position;
@@ -755,7 +798,7 @@ public static partial class HtmlBoxGenerator
                     if (TextStyleOf(frame.Element) is { } style)
                     {
                         RefuseMissingGlyphs(text.Text.Data, frame.Element, frame.Element.Generated is { } declared ? _ => declared.Position : text.Text.PositionOf);
-                        var data = Transformed(text, frame, Characters(text.Text));
+                        var data = Transformed(text, stack, frame, Characters(text.Text));
                         var source = frame.Element.Generated is { } generated ? new SourceLocation(generated.SourceName, generated.Position.Line) : Source(text.Text.Position);
                         frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, source) { Generated = frame.Element.Generated is not null });
                     }

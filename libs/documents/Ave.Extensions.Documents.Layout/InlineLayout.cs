@@ -489,7 +489,10 @@ public static class InlineLayout
     /// THE RULE FOR SHAPING ACROSS RUNS: the groups of the paragraph's runs that are shaped as one text each. A run joins the
     /// group before it when it is set in the same font as the group's first run with text: the same family, size, weight and
     /// style, which choose and size the font. Its colour and its line height do not matter. A run without text joins the
-    /// group it lies in. CSS Text 3 §7.3, "Shaping Across Element Boundaries": "Text shaping must not be broken across inline
+    /// group it lies in. A run in another language than the group's first run with text (an inline group with a language of
+    /// its own) starts a new group: Chromium does not kern across that edge (case <c>tt-groups</c>: in "and wo", the "wo" in a
+    /// span with <c>lang</c>, the space keeps its whole advance, 2.692 pt at 10.5 pt Lato, where the pair of the space and
+    /// "w" takes 0.141 pt off it). CSS Text 3 §7.3, "Shaping Across Element Boundaries": "Text shaping must not be broken across inline
     /// box boundaries when there is no effective change in formatting, or if the only formatting changes do not affect the
     /// glyphs"; it "should not be broken across inline box boundaries otherwise, if it is reasonable and possible", which
     /// leaves a change of font to the user agent. As Chromium does it (Blink <c>InlineNode::ShapeText</c> and
@@ -511,7 +514,8 @@ public static class InlineLayout
         foreach (var member in members)
         {
             var joins = current.Count > 0 && member.Font.IsSuccess && current[0].Font.IsSuccess
-                && (member.Text.Length == 0 || first is null || (SameFont(first.Run.Style, member.Run.Style) && member.Text[0] != ZeroWidthNonJoiner));
+                && (member.Text.Length == 0 || first is null
+                    || (SameFont(first.Run.Style, member.Run.Style) && member.Text[0] != ZeroWidthNonJoiner && string.Equals(LanguageOf(first), LanguageOf(member), StringComparison.OrdinalIgnoreCase)));
             if (!joins && current.Count > 0)
             {
                 groups.Add(current);
@@ -532,6 +536,21 @@ public static class InlineLayout
 
     /// <summary>The zero width non-joiner U+200C.</summary>
     private const char ZeroWidthNonJoiner = '\u200C';
+
+    /// <summary>The language a run's text is in where an inline group gives it one (the innermost group with a language of
+    /// its own), or null for the paragraph's (<see cref="ShapingGroups"/>).</summary>
+    private static string? LanguageOf(GroupMember member)
+    {
+        for (var index = member.Groups.Count - 1; index >= 0; index--)
+        {
+            if (member.Groups[index].Node.Language is { } language)
+            {
+                return language;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>True when two runs' text is set in the same font at the same size, with the same spacing and font features
     /// (<see cref="ShapingGroups"/>; Chromium shapes text of another letter or word spacing as another font).</summary>

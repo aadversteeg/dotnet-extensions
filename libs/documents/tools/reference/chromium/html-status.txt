@@ -716,6 +716,7 @@ ts-table-border equal
 ts-table-padding equal
 ts-width-100 equal
 tt-capitalize equal
+tt-groups open page 1 painted area: the pixel at (90.75, 120): Chromium paints it and the engine does not; the engine paints 84 px #0000ee, Chromium 85 px (print.txt)
 tt-inline equal
 tt-special refused Documents.Html.Unsupported.Value text-transform: uppercase at 6:14
 tt-values equal

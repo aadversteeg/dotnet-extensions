@@ -14,11 +14,11 @@ public class MeasuredReferenceFilesTests
 {
     /// <summary>The cases whose print has an underline or overline cut around a glyph's ink, so that the read-back writes their
     /// gaps (<c>ink.py</c>, <c>&lt;case&gt;.ink.txt</c>).</summary>
-    private static readonly string[] InkCases = ["dl-skip", "lk-missing", "lk-same-page", "lk-top", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
+    private static readonly string[] InkCases = ["dl-skip", "lk-missing", "lk-same-page", "lk-top", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose", "tt-groups"];
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = ["dw-half", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "va-decorated", "va-link", "va-sub"];
+    private static readonly string[] LinkCases = ["dw-half", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "tt-groups", "va-decorated", "va-link", "va-sub"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -2923,6 +2923,12 @@ public class MeasuredReferenceFilesTests
         ["ts-width-100.lines.txt"] = 0,
         ["ts-width-100.print.txt"] = 17,
         ["ts-width-100.words.txt"] = 4,
+        ["tt-groups.boxes.txt"] = 1,
+        ["tt-groups.ink.txt"] = 4,
+        ["tt-groups.lines.txt"] = 11,
+        ["tt-groups.links.txt"] = 6,
+        ["tt-groups.print.txt"] = 63,
+        ["tt-groups.words.txt"] = 46,
         ["tv-baseline-height.boxes.txt"] = 10,
         ["tv-baseline-height.lines.txt"] = 13,
         ["tv-baseline-height.print.txt"] = 47,
@@ -3166,7 +3172,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(774);
+        cases.Should().HaveCount(775);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

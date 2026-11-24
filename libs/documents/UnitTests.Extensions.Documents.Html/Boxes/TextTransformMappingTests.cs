@@ -21,7 +21,8 @@ public class TextTransformMappingTests
             .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions()))
             .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic }));
 
-    /// <summary>The texts of the document's runs in order, the empty runs of inline elements left out.</summary>
+    /// <summary>The texts of the document's runs in order, inside inline groups too, the empty runs of inline elements left
+    /// out.</summary>
     private static string Texts(string html)
     {
         var result = Boxes(html);
@@ -37,6 +38,13 @@ public class TextTransformMappingTests
                     break;
                 case Box box:
                     foreach (var child in box.Children.Reverse())
+                    {
+                        pending.Push(child);
+                    }
+
+                    break;
+                case InlineGroup group:
+                    foreach (var child in group.Children.Reverse())
                     {
                         pending.Push(child);
                     }
@@ -77,6 +85,26 @@ public class TextTransformMappingTests
         Texts(Doc("<p>Word a<span style=\"text-transform: capitalize\">bc</span> <span style=\"text-transform: capitalize\">de</span>f</p>"))
             .Should().Be("Word a|bc| |De|f");
     }
+
+    /// <summary>The edges of case <c>tt-groups</c>, where Chromium 159 printed the letter after each edge as the rest of the
+    /// word: no edge of an inline element starts a word, a link's, a language's, a box's with padding, a border or a margin
+    /// (where the edge takes room: "Wo rd") and a sup's included, nor does the end of one; generated text is the text before
+    /// the element's own.</summary>
+    [Theory]
+    [InlineData("link wo<a href=\"https://example.com/\">rd</a>", "Link Wo|rd")]
+    [InlineData("lang wo<span lang=\"nl\">rd</span>", "Lang Wo|rd")]
+    [InlineData("back wo<span style=\"background-color: #ffd700\">rd</span>", "Back Wo|rd")]
+    [InlineData("pad wo<span style=\"padding: 0 2pt\">rd</span>", "Pad Wo|rd")]
+    [InlineData("edge wo<span style=\"border-left: 0.75pt solid #0000ff\">rd</span>", "Edge Wo|rd")]
+    [InlineData("margin wo<span style=\"margin-left: 2pt\">rd</span>", "Margin Wo|rd")]
+    [InlineData("sup wo<sup>rd</sup>", "Sup Wo|rd")]
+    [InlineData("out <a href=\"https://example.com/\">wo</a>rd", "Out |Wo|rd")]
+    [InlineData("out <span style=\"padding: 0 2pt\">wo</span>rd", "Out |Wo|rd")]
+    [InlineData("out <span lang=\"nl\">wo</span>rd", "Out |Wo|rd")]
+    [InlineData("gen <span class=\"g\" lang=\"nl\">ab</span>", "Gen |Xy|ab")]
+    [InlineData("gen <a class=\"g\" href=\"https://example.com/\">ab</a>", "Gen |Xy|ab")]
+    public void Capitalize_looks_back_across_every_edge_of_an_inline_element(string body, string expected) =>
+        Texts(Doc($"<p style=\"text-transform: capitalize\">{body}</p>", ".g::before { content: \"xy\"; }")).Should().Be(expected);
 
     [Theory]
     [InlineData("tr", "uppercase", "istanbul ığne", "İSTANBUL IĞNE")]
