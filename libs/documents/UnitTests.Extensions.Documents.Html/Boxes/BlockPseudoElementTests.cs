@@ -18,7 +18,7 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// A <c>::before</c> or <c>::after</c> of <c>display: block</c>: a block box, the first or the last child of its element,
 /// with the element's own text in anonymous boxes around it (cases <c>gc-block-margins</c>, <c>gc-block-box</c>,
 /// <c>gc-block-anonymous</c>, <c>gc-block-break</c>); one without text is decoration; one on an element that is not a block
-/// is refused (<c>gc-block-span</c>).
+/// is refused (<c>gc-block-span</c>); its width and height are a block's (<c>mx-gen-block-size</c>).
 /// </summary>
 public class BlockPseudoElementTests
 {
@@ -92,15 +92,16 @@ public class BlockPseudoElementTests
         refusal.ToString().Should().Contain(message);
     }
 
-    [Theory]
-    // Block sizes are not drawn in this version: refused as on any block, at the pseudo-element.
-    [InlineData("height")]
-    [InlineData("width")]
-    public void A_size_on_a_block_pseudo_element_is_refused_as_on_any_block(string property)
+    [Fact]
+    public void A_size_on_a_block_pseudo_element_is_taken_as_on_any_block()
     {
-        var refusal = Refusal(Doc("<p>a</p>", $"p::before {{ content: \"x\"; display: block; {property}: 20pt }}"));
+        // mx-gen-block-size: a width, a height, a percent width and a minimum height, in Chromium's layout unit.
+        const double Unit = 0.75 / 64;
+        var p = (Box)Body(Doc("<p>a</p>", "p::before { content: \"x\"; display: block; width: 120pt; height: 30pt } p::after { content: \"y\"; display: block; width: 50%; min-height: 20pt }")).Children.Single();
+        var (before, after) = ((Box)p.Children[0], (Box)p.Children[^1]);
 
-        refusal.Metadata![ErrorMetadataKeys.Property].Should().Be(property);
+        (before.Style.SpecifiedWidth, before.Style.SpecifiedHeight).Should().Be(((SizeValue?)new SizeValue.Fixed((10240 * Unit).Pt()), (Length?)(2560 * Unit).Pt()));
+        (after.Style.SpecifiedWidth, after.Style.MinHeight).Should().Be(((SizeValue?)new SizeValue.Percentage(50), (Length?)(1706 * Unit).Pt()));
     }
 
     private const string TaggedHtml = "<!doctype html><html lang=\"en\"><head><title>Blocks</title><style>@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf) } @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700 } body { font-family: Lato }"
