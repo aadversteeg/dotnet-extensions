@@ -80,8 +80,8 @@ public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children)
 public sealed record LineGroupPart(InlineGroup Group, Rect Area, int First, int Count)
 {
     /// <summary>For a group with a box (<see cref="InlineGroup.Box"/>): its border box on this line, relative to the line's
-    /// top-left corner, where its background and border are painted (THE INLINE BOX STYLE; on whole pixels under
-    /// <see cref="InlineBoxSnapping.WholePixels"/>); null for a group without a box.</summary>
+    /// top-left corner, where its background and border are painted (THE INLINE BOX STYLE; on whole pixels of the page under
+    /// <see cref="InlineBoxSnapping.WholePixels"/>, <see cref="InlineBoxPixels"/>); null for a group without a box.</summary>
     public Rect? Box { get; init; }
 }
 

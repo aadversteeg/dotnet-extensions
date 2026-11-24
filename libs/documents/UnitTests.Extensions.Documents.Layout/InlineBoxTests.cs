@@ -135,13 +135,18 @@ public class InlineBoxTests
     }
 
     [Theory]
-    [InlineData(InlineBoxSnapping.Exact, 0)]
-    [InlineData(InlineBoxSnapping.WholePixels, 0.75)]
-    public void Under_whole_pixels_the_box_is_painted_on_whole_pixels_and_its_text_drawn_from_its_rounded_top(InlineBoxSnapping snapping, double step)
+    [InlineData(InlineBoxSnapping.Exact, 10, 0)]
+    [InlineData(InlineBoxSnapping.WholePixels, 9.75, -0.35)]
+    [InlineData(InlineBoxSnapping.WholePixels, 10, 0.4)]
+    public void Under_whole_pixels_the_box_is_painted_on_whole_pixels_of_the_page_and_its_text_drawn_from_its_rounded_top(InlineBoxSnapping snapping, double margin, double shift)
     {
-        // A top padding of 0.4 pt (0.53 px): the box's top, 0.4 pt above the line's top, rounds to one pixel above it.
+        // A top padding of 0.4 pt (0.53 px) puts the box's top 0.4 pt above the line's top. With a page margin of 9.75 pt
+        // (13 px) the line's top is on a whole pixel and the box's, 12.47 px, is painted from 12 px: the text moves up by
+        // 0.47 px. With 10 pt (13.33 px) the box's top, 12.8 px, is painted from 13 px, where the line's top is painted too:
+        // the text moves down by the padding, 0.53 px.
         var document = Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(0.2, top: 0.4), Run(5, "bb"))])) with
         {
+            Page = new PageStyle(200.Pt(), 100.Pt(), Edges.All(margin.Pt())),
             Profile = LayoutProfile.Default with { FontMetricRounding = FontMetricRounding.WholePixels, InlineBoxSnapping = snapping },
         };
         var page = Laid(document).Pages[0];
@@ -149,19 +154,20 @@ public class InlineBoxTests
         var aa = RunWith(page, "aa ");
         var bb = RunWith(page, "bb");
         var fill = page.Items.OfType<FillRectangle>().Single().Area;
+        bb.Origin.Y.Should().BeApproximately(aa.Origin.Y + shift, 1e-9);
+
         // 10 pt Lato under whole pixels: ascent 9.87 pt (13.16 px) is 13 px, 9.75 pt.
-        if (step == 0)
+        var top = aa.Origin.Y - 9.75 - 0.4;
+        if (snapping == InlineBoxSnapping.Exact)
         {
-            bb.Origin.Y.Should().BeApproximately(aa.Origin.Y, 1e-9);
-            fill.Origin.Y.Should().BeApproximately(aa.Origin.Y - 9.75 - 0.4, 1e-9);
+            fill.Origin.Y.Should().BeApproximately(top, 1e-9);
             return;
         }
 
-        fill.Origin.Y.Should().BeApproximately(aa.Origin.Y - 9.75 - 0.75, 1e-9, "the box's top 0.4 pt above the line's top is painted from one pixel above it");
-        bb.Origin.Y.Should().BeApproximately(aa.Origin.Y - 0.35, 1e-9, "the text is drawn from the rounded top: 0.75 - 0.4 pt higher");
+        fill.Origin.Y.Should().BeApproximately(Math.Round(top / 0.75) * 0.75, 1e-9, "the box's top is painted from the nearest whole pixel of the page");
         foreach (var edge in new[] { fill.Origin.X, fill.Origin.X + fill.Size.Width, fill.Origin.Y + fill.Size.Height })
         {
-            (Math.Abs((edge - 10) / 0.75 - Math.Round((edge - 10) / 0.75)) < 1e-9).Should().BeTrue($"{edge} lies on a whole pixel of the line");
+            (Math.Abs(edge / 0.75 - Math.Round(edge / 0.75)) < 1e-9).Should().BeTrue($"{edge} lies on a whole pixel of the page");
         }
     }
 

@@ -391,6 +391,9 @@ ib-code-kbd equal
 ib-fraction equal
 ib-margin equal
 ib-nested equal
+ib-origin-cell equal
+ib-origin-margin equal
+ib-origin-page equal
 ib-padding equal
 ib-space equal
 ii-align refused Documents.Html.Unsupported.Value width: 100pt at 3:1

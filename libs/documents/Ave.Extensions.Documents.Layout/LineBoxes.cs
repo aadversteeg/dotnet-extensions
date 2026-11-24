@@ -147,10 +147,8 @@ internal static class LineBoxes
     /// their inline boxes count for the line's height all the same.</param>
     /// <param name="outlines">The glyph outlines decoded for the paragraph, for the gaps a decoration leaves around ink.</param>
     /// <returns>The line fragment with its text fragments, or the error of a glyph outline a decoration cannot read.</returns>
-    /// <param name="snapping">Where an inline box is painted and its text drawn (the document's profile).</param>
     public static Result<LineFragment, Error> Build(
-        TextLine broken, IReadOnlyList<Item> runs, double width, TextAlign align, bool isLastLine, Strut? strut, FontMetricRounding rounding, InkOutlines outlines, IReadOnlyList<ShapedRun>? empty = null,
-        InlineBoxSnapping snapping = InlineBoxSnapping.Exact)
+        TextLine broken, IReadOnlyList<Item> runs, double width, TextAlign align, bool isLastLine, Strut? strut, FontMetricRounding rounding, InkOutlines outlines, IReadOnlyList<ShapedRun>? empty = null)
     {
         var (line, offset) = LineJustification.Place(broken, width, align, isLastLine);
         var pieces = line.Segments
@@ -172,7 +170,7 @@ internal static class LineBoxes
         var above = extents.Max(extent => extent.Above);
         var below = extents.Max(extent => extent.Below);
         var children = ImmutableArray.CreateBuilder<PlacedFragment>(pieces.Length);
-        var groups = new LineGroups(above, rounding, snapping);
+        var groups = new LineGroups(above, rounding);
         var x = offset;
         foreach (var (segment, item, extent) in pieces)
         {
@@ -191,14 +189,13 @@ internal static class LineBoxes
 
             // The baseline lies `above` below the line's top; this piece's top edge is its ascent above that. An atomic
             // inline's border box lies inside its margin box, whose bottom is on the baseline. Text inside an inline box is
-            // drawn where the profile puts it (InlineBoxSnapping).
-            var shift = groups.TextShift(item.Groups);
+            // moved to whole pixels of the page only once the page is known (InlineBoxPixels).
             children.Add(item switch
             {
                 AtomicInline { Fragment: { } fragment } atomic => new PlacedFragment(
                     new Point(x + atomic.Box.Style.Margin.Left.Points, above - atomic.Box.Style.Margin.Bottom.Points - fragment.Size.Height), fragment),
                 ShapedRun run => new PlacedFragment(
-                    new Point(x, above - extent!.Ascent + shift), new TextFragment(run.Run, run.Font, extent.Ascent, segment.Glyphs, new Size(segment.Width, extent.Ascent + extent.Descent))),
+                    new Point(x, above - extent!.Ascent), new TextFragment(run.Run, run.Font, extent.Ascent, segment.Glyphs, new Size(segment.Width, extent.Ascent + extent.Descent))),
                 _ => throw new InvalidOperationException("An atomic inline is placed on a line only once it is laid out."),
             });
             if (item is ShapedRun { Decorations.Count: > 0 } decorated)
@@ -239,7 +236,7 @@ internal static class LineBoxes
     /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller). The edges
     /// are exact, not rounded to whole pixels as Chromium writes them: they are not printed.
     /// </summary>
-    private sealed class LineGroups(double baseline, FontMetricRounding rounding, InlineBoxSnapping snapping)
+    private sealed class LineGroups(double baseline, FontMetricRounding rounding)
     {
         /// <summary>The open parts, outermost first: the group, its first child, its left and right edges, where it stands in
         /// <see cref="parts"/>, and whether its start and end edge lie on this line.</summary>
@@ -280,30 +277,6 @@ internal static class LineBoxes
         public void Edge(Edge edge) =>
             open[^1] = edge.Side == InlineBoxEdge.Start ? open[^1] with { Start = true } : open[^1] with { End = true };
 
-        /// <summary>
-        /// How far the text of a piece in <paramref name="groups"/> is drawn below the line's baseline: under
-        /// <see cref="InlineBoxSnapping.WholePixels"/> the text of the innermost group with a box is drawn from that box's top
-        /// rounded to a whole pixel (THE INLINE BOX STYLE in the profile), so it moves by the rounding; else 0.
-        /// </summary>
-        public double TextShift(ValueList<Group> groups)
-        {
-            if (snapping != InlineBoxSnapping.WholePixels)
-            {
-                return 0;
-            }
-
-            for (var index = groups.Count - 1; index >= 0; index--)
-            {
-                if (groups[index].Node.Box is not null)
-                {
-                    var top = BorderTop(groups[index]);
-                    return CssPixels.Round(top) - top;
-                }
-            }
-
-            return 0;
-        }
-
         /// <summary>The top of a group's border box below the line's top: its font's ascent above the baseline, then its top
         /// padding and border.</summary>
         private double BorderTop(Group group)
@@ -339,18 +312,14 @@ internal static class LineBoxes
         /// The border box of a group's box that lies whole on the line: in the inline direction from after its start margin to
         /// before its end margin, in the block direction from its top border and padding above its font's ascent to its bottom
         /// padding and border below its descent (CSS 2.1 §10.6.1: the height of an inline box's content area is that of its
-        /// font, and its vertical padding, border and margin start from it); each edge on the nearest whole pixel under
-        /// <see cref="InlineBoxSnapping.WholePixels"/>.
+        /// font, and its vertical padding, border and margin start from it), exact: under
+        /// <see cref="InlineBoxSnapping.WholePixels"/> its edges are put on whole pixels of the page once the page is known
+        /// (<see cref="InlineBoxPixels"/>).
         /// </summary>
         private Rect BorderBox(Group group, InlineBoxStyle box, double left, double right, InlineExtent extent)
         {
             var top = BorderTop(group);
             var bottom = baseline + extent.Descent + box.Padding.Bottom.Points + box.Border.Bottom.Width.Points;
-            if (snapping == InlineBoxSnapping.WholePixels)
-            {
-                (left, right, top, bottom) = (CssPixels.Round(left), CssPixels.Round(right), CssPixels.Round(top), CssPixels.Round(bottom));
-            }
-
             return new Rect(new Point(left, top), new Size(right - left, bottom - top));
         }
     }

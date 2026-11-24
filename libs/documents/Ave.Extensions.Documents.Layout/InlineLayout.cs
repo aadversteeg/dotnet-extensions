@@ -50,7 +50,7 @@ public static class InlineLayout
         return ShapeRuns(environment, box).OnSuccessBind(shaped => WithDecorationFonts(environment, shaped)).OnSuccessBind(items => StrutOf(environment, box).OnSuccessBind(strut =>
             SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
                 LaidOut(environment, items, width).OnSuccessBind(runs =>
-                    StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, environment.Profile.FontSizeRounding, environment.Profile.LengthRounding, environment.Profile.InlineBoxSnapping, width, height, breakAt switch
+                    StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, environment.Profile.FontSizeRounding, environment.Profile.LengthRounding, width, height, breakAt switch
                     {
                         null => null,
                         InlineEarlyBreak line => line,
@@ -581,7 +581,7 @@ public static class InlineLayout
     /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
     /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, FontSizeRounding sizes, LengthRounding lengths, InlineBoxSnapping snapping, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
+        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, FontSizeRounding sizes, LengthRounding lengths, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
         var style = box.Style;
         var firstLine = start.LineIndex;
@@ -603,7 +603,7 @@ public static class InlineLayout
                 return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index), target.Appeal);
             }
 
-            var built = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut, rounding, outlines, empty[index], snapping);
+            var built = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut, rounding, outlines, empty[index]);
             if (built.IsFailure)
             {
                 return Result<Maybe<SlicedBox.Content>, Error>.Failure(built.Error);
