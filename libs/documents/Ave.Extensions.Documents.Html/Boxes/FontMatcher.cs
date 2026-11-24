@@ -35,8 +35,10 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
     /// <summary>The face for an element's computed font, or the refusal.</summary>
     /// <param name="style">The computed style.</param>
     /// <param name="position">The element's start tag, for the refusal.</param>
+    /// <param name="source">The name of the source <paramref name="position"/> is in, when it is not the document: the
+    /// style sheet of the <c>content</c> declaration of a <c>::before</c> or <c>::after</c>.</param>
     /// <returns>The face, or the error.</returns>
-    public Result<TrueTypeFont, Error> Match(ComputedStyle style, TextPosition position)
+    public Result<TrueTypeFont, Error> Match(ComputedStyle style, TextPosition position, string? source = null)
     {
         var families = style[PropertyRegistry.FontFamily] is CssList list ? list.Items : [];
         var weight = style[PropertyRegistry.FontWeight] is CssNumber number ? (int)number.Value : 400;
@@ -55,13 +57,13 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
 
         if (match is { IsFailure: true } failed && failed.Error.Metadata?.ContainsKey(ErrorMetadataKeys.SourceLine) != true)
         {
-            return Result<TrueTypeFont, Error>.Failure(failed.Error.WithSource(sourceName, position));
+            return Result<TrueTypeFont, Error>.Failure(failed.Error.WithSource(source ?? sourceName, position));
         }
 
         return match ?? Result<TrueTypeFont, Error>.Failure(
             new Error(HtmlStyleErrorCodes.Unsupported.Font, $"No family of 'font-family: {text}' gives a face of weight {weight}{(italic ? " italic" : string.Empty)}: give the font in a @font-face rule or in the fonts of the options (there are no system fonts).")
                 .With(ErrorMetadataKeys.Value, text)
-                .WithSource(sourceName, position));
+                .WithSource(source ?? sourceName, position));
     }
 
     /// <summary>The face of the first family that has any, or null when none has one; an error when that family's faces

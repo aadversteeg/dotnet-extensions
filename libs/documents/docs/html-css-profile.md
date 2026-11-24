@@ -44,6 +44,9 @@ names nothing.
 | `caption-side` | yes | `top` | `top` | CSS 2.1 §17.4.1 |
 | `color` | yes | `rgb(0, 0, 0)` | `<color>` | CSS Color 4 §3.1; the initial value is black (HTML Standard §15.3.4) |
 | `color-scheme` | yes | `normal` | `normal \| light` | CSS Color Adjust 1 §2.1 |
+| `counter-increment` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.3 |
+| `counter-reset` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.2 |
+| `counter-set` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.4 |
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
 | `empty-cells` | yes | `show` | `show` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
@@ -133,9 +136,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `contain` | `none` | `none` | CSS Containment 2 §2 |
 | `content` | `normal` | `normal` | CSS Generated Content 3 §1 |
 | `content-visibility` | `visible` | `visible` | CSS Containment 2 §4 |
-| `counter-increment` | `none` | `none` | CSS Lists 3 §4.3 |
-| `counter-reset` | `none` | `none` | CSS Lists 3 §4.2 |
-| `counter-set` | `none` | `none` | CSS Lists 3 §4.4 |
 | `direction` | `ltr` | `ltr` | CSS Writing Modes 4 §2.1 |
 | `filter` | `none` | `none` | Filter Effects 1 §5 |
 | `float` | `none` | `none` | CSS 2.1 §9.5.1 |

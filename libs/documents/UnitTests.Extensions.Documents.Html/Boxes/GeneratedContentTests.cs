@@ -143,6 +143,10 @@ public class GeneratedContentTests
     [InlineData("<p>a</p>", "p::before { content: \"x\" } p::before { content: initial } p::after { content: \"y\"; all: unset }")]
     [InlineData("<p>a<br>b <img src=\"data:,x\" alt=\"\" style=\"display: none\"></p>", "br::after { content: \"BR\"; position: absolute } img::before { content: \"IMG\" }")]
     [InlineData("<p>a</p>", "p::before { padding: 6pt; float: left; position: absolute; display: block }")]
+    // A pseudo-element of display: none says nothing: not its refused content, values or host (Chromium generates no box).
+    [InlineData("<p>a</p>", "p::before { content: \"x\"; display: none; position: absolute; padding: 6pt; transform: rotate(1deg) }")]
+    [InlineData("<p>a</p>", "p::before { content: open-quote counter(x, thai); display: none }")]
+    [InlineData("<table><tr><td>a</td></tr></table>", "table { border-collapse: collapse } tr::before { content: \"TR\"; display: none }")]
     public void What_Chromium_does_not_draw_is_left_out_without_a_word(string body, string css)
     {
         var runs = FirstLines(Body(Doc(body, css))).Children.OfType<TextRun>();
@@ -151,8 +155,6 @@ public class GeneratedContentTests
     }
 
     [Theory]
-    [InlineData("p::before { content: counter(x) }", "counter() and counters() come in a later version")]
-    [InlineData("p::before { content: counters(x, \".\") }", "counter() and counters() come in a later version")]
     [InlineData("p::after { content: \" \" counter(page) }", "page numbers exist only in page-margin boxes; a browser prints 0 here")]
     [InlineData("p::after { content: counter(pages) }", "page numbers exist only in page-margin boxes; a browser prints 0 here")]
     [InlineData("p::before { content: open-quote }", "write the quotation marks as strings")]
@@ -247,16 +249,32 @@ public class GeneratedContentTests
         Runs("<p>a<span style=\"display: none\">b</span></p>", "span::before { content: \"x\"; position: absolute }").Should().Be("a");
     }
 
+    private const string TaggedHtml = "<!doctype html><html lang=\"en\"><head><title>Generated</title><style>@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf) } @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700 } body { font-family: Lato }"
+        + " h1::before { content: \"Part \" } p::before { content: \"Note: \" } p::after { content: \" (\" attr(data-x) \")\" }</style></head>"
+        + "<body><h1>One</h1><p data-x=\"seven\">A paragraph with generated text.</p></body></html>";
+
+    private static HtmlRenderOptions TaggedOptions { get; } = new() { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
+
+    [Fact]
+    public void In_the_structure_tree_generated_text_is_text_of_its_element_in_reading_order()
+    {
+        var pdf = HtmlRendering.ToPdf(TaggedHtml, TaggedOptions, new PdfRenderOptions(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero)) { Profile = PdfProfile.PdfUa1 });
+        pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);
+
+        var elements = PdfStructureReadBack.Read(pdf.Value.Output).SelectMany(element => element.DepthFirst()).Where(element => element.Text.Length > 0).ToList();
+
+        elements.Select(element => (element.Type, element.Text)).Should().Equal(("H1", "Part One"), ("P", "Note: A paragraph with generated text. (seven)"));
+        PdfStructureReadBack.ParentTreeDifferences(pdf.Value.Output).Should().BeEmpty();
+    }
+
     [DockerTheory]
     [Trait("Category", "Reference")]
     [InlineData("3a")]
     [InlineData("ua1")]
     public void A_tagged_PDF_with_generated_text_in_a_heading_and_a_paragraph_passes_veraPDF(string flavour)
     {
-        var html = "<!doctype html><html lang=\"en\"><head><title>Generated</title><style>@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf) } @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700 } body { font-family: Lato }"
-            + " h1::before { content: \"Part \" } p::before { content: \"Note: \" } p::after { content: \" (\" attr(data-x) \")\" }</style></head>"
-            + "<body><h1>One</h1><p data-x=\"seven\">A paragraph with generated text.</p></body></html>";
-        var options = new HtmlRenderOptions { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
+        var html = TaggedHtml;
+        var options = TaggedOptions;
         var profile = flavour == "3a" ? PdfProfile.PdfA3a : PdfProfile.PdfUa1;
         var pdf = HtmlRendering.ToPdf(html, options, new PdfRenderOptions(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero)) { Profile = profile });
         pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);

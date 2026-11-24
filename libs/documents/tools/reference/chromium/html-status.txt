@@ -324,6 +324,16 @@ fr-row-later-page-padding-overflows equal
 fr-row-later-page-padding-overflows-two-cells open page 2 reads 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6', Chromium 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7' (print.txt)
 gc-attr equal
 gc-cell equal
+gc-counter-bound refused Documents.Html.Unsupported.Counter counter-increment: n at 9:44
+gc-counter-headings equal
+gc-counter-hidden equal
+gc-counter-implicit equal
+gc-counter-list-item equal
+gc-counter-order equal
+gc-counter-scope equal
+gc-counter-set equal
+gc-counter-styles listed Each_item_of_generated_content_is_rounded_up_to_a_64th_pixel_in_Chromium: page 1 '-1' x0 133.9, Chromium 134.004 (print.txt)
+gc-counters-nested equal
 gc-list-item equal
 gc-nothing equal
 gc-string-block equal

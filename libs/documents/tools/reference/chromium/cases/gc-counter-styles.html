@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p, div { margin: 0 0 4pt; }
+.s { counter-reset: s -2; } .s p { counter-increment: s; }
+.s p::before { content: counter(s, disc) " " counter(s, circle) " " counter(s, none) counter(s, decimal) " " counter(s, decimal-leading-zero) " " counter(s, lower-roman) " "; }
+.s p::after { content: " " counter(s, upper-roman) " " counter(s, lower-alpha) " " counter(s, upper-alpha) " " counter(s, lower-latin) " " counter(s, upper-latin); }
+.t { counter-reset: r 3998; } .t p { counter-increment: r; } .t p::before { content: counter(r, upper-roman) " " counter(r, lower-alpha) " "; }
+.u { counter-reset: k 25; } .u p { counter-increment: k; } .u p::before { content: counter(k, lower-alpha) " " counters(k, "-", upper-roman) " "; }
+.v { counter-reset: lz -11; } .v p { counter-increment: lz 10; } .v p::before { content: counter(lz, decimal-leading-zero) " "; }
+</style></head><body>
+<div class="s"><p>minus</p><p>zero</p><p>one</p><p>two</p></div>
+<div class="t"><p>last</p><p>past</p></div>
+<div class="u"><p>zed</p><p>double</p></div>
+<div class="v"><p>lead</p><p>nine</p><p>nineteen</p></div>
+</body></html>

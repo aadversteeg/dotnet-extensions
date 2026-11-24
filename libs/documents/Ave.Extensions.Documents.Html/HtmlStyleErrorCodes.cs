@@ -69,6 +69,15 @@ public static class HtmlStyleErrorCodes
         /// (these fail under every policy). Metadata: Value (what is refused), SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode List = _ / "List";
 
+        /// <summary>A counter the engine does not count as Chromium does (<c>Boxes/HtmlBoxGenerator.Counters.cs</c>): a
+        /// <c>counter-reset</c>, <c>counter-increment</c> or <c>counter-set</c> that takes a counter beyond a 32-bit integer
+        /// (Chromium clamps it; refused at the declaration); a <c>counters()</c> of more levels than
+        /// <see cref="Css.CssInputLimits.MaxCountersLevels"/>, or generated text longer than
+        /// <see cref="Css.CssInputLimits.MaxGeneratedTextLength"/> once the counters are in it (refused at the <c>content</c>
+        /// declaration, the text left out); more live counters than <see cref="Css.CssInputLimits.MaxLiveCounters"/> (fails
+        /// under every policy). Metadata: Value (the counter), Property, SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode Counter = _ / "Counter";
+
         /// <summary>A background on the root or body element, which Chromium paints on the page canvas (CSS Backgrounds 3
         /// §2.11.2); the document model has no page background. Metadata: Property, Value, SourceFile, SourceLine,
         /// SourceColumn.</summary>

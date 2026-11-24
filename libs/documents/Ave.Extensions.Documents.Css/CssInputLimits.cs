@@ -81,6 +81,18 @@ public static class CssInputLimits
     /// values together: 4 096. More is refused at the <c>content</c> declaration, not cut.</summary>
     public const int MaxGeneratedTextLength = 4096;
 
+    /// <summary>The most counters one <c>counter-reset</c>, <c>counter-increment</c> or <c>counter-set</c> names: 16. A
+    /// longer list is refused at its declaration.</summary>
+    public const int MaxCounterNames = 16;
+
+    /// <summary>The most counters that are live at one place of a document, every name and every nested level
+    /// together: 1 000. Counting past it fails box generation; nothing on paper comes near it.</summary>
+    public const int MaxLiveCounters = 1000;
+
+    /// <summary>The most levels one <c>counters()</c> joins: 32. A deeper nesting is refused at the <c>content</c>
+    /// declaration, and the generated text is left out.</summary>
+    public const int MaxCountersLevels = 32;
+
     /// <summary>The most diagnostics one reading of a style sheet, one cascade or one HTML resolution keeps: 10 000.
     /// Past it one <see cref="Core.DocumentErrorCodes.TooManyDiagnostics"/> says how many were left out, how many of them
     /// are refusals and the first of those, and the document is refused: every diagnostic costs memory, and hostile

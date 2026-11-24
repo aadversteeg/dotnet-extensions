@@ -309,6 +309,37 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// The items of a pseudo-element's <c>content</c> are each a text of their own in Chromium, and each one's width seems
+    /// rounded up to a 64th of a pixel (0.0117 pt), as Chromium rounds the width of an inline item to its layout unit; the
+    /// engine draws the whole content as one run. Case <c>gc-counter-styles</c>, where every word is a counter and a string
+    /// (11 counters a line): each word starts at most 2 × 0.0117 pt further right than the one before it compared with the
+    /// engine, never less far, and the gap grows to 0.116 pt at the end of the first line (Chromium 146.695, the engine
+    /// 146.579). With Chromium's x read as the engine's, the case is equal: the rounding is the whole difference.
+    /// </summary>
+    [Fact]
+    public void Each_item_of_generated_content_is_rounded_up_to_a_64th_pixel_in_Chromium()
+    {
+        var (engine, chromium) = (Engine("gc-counter-styles"), Chromium("gc-counter-styles"));
+        var ours = engine.Pages.Single().Words;
+        var theirs = chromium.Pages.Single().Words;
+        ours.Select(word => word.Text).Should().Equal(theirs.Select(word => word.Text));
+        const double item = 0.75 / 64;
+        foreach (var line in ours.Select((word, i) => (Line: theirs[i].Baseline, Gap: theirs[i].X0 - word.X0)).GroupBy(entry => entry.Line))
+        {
+            var gaps = line.Select(entry => entry.Gap).ToList();
+            gaps[0].Should().BeApproximately(0, 0.001, "a line starts at the content edge");
+            gaps.Zip(gaps.Skip(1), (before, after) => after - before).Should().OnlyContain(step => step >= -0.001 && step <= (2 * item) + 0.001);
+        }
+
+        ours.Zip(theirs, (mine, their) => their.X0 - mine.X0).Max().Should().BeGreaterThan(0.1);
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select((word, i) => word with { X0 = ours[i].X0, X1 = ours[i].X1 })],
+        })]);
+        HtmlCases.Difference(engine, read).Should().BeNull();
+    }
+
+    /// <summary>
     /// A face of an <c>@font-face</c> family that only a page-margin box uses: Chromium has not loaded it when it prints
     /// the margin boxes and prints that box's text in its fallback serif face, the engine draws the face (case
     /// <c>pm-family-unused</c>: the body uses Lato Regular only, <c>@bottom-left</c> asks for Lato Bold; three prints of

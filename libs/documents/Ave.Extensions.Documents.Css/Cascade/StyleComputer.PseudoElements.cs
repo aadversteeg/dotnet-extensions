@@ -18,10 +18,18 @@ namespace Ave.Extensions.Documents.Css.Cascade;
 /// </summary>
 /// <param name="PseudoElement">Which one: <c>before</c> or <c>after</c>.</param>
 /// <param name="Style">Its computed style, inheriting from its originating element.</param>
-/// <param name="Text">The text: its strings and attribute values in order; may be empty (<c>content: ""</c>).</param>
+/// <param name="Text">The text of its strings and attribute values in order; may be empty (<c>content: ""</c>). When
+/// the content reads counters, their text is added where the counters are counted, in document order
+/// (<see cref="Items"/>).</param>
 /// <param name="SourceName">The style sheet of the <c>content</c> declaration that won.</param>
 /// <param name="Position">Where that declaration is written: the place reported for the generated text.</param>
-public sealed record GeneratedContent(string PseudoElement, ComputedStyle Style, string Text, string SourceName, TextPosition Position);
+public sealed record GeneratedContent(string PseudoElement, ComputedStyle Style, string Text, string SourceName, TextPosition Position)
+{
+    /// <summary>The items of the content in order: strings (an attribute's value read already) and the counters it
+    /// reads (<see cref="CssContentNamedCounter"/>, <see cref="CssContentNamedCounters"/>); empty when it reads none,
+    /// and <see cref="Text"/> is all of it.</summary>
+    public ValueList<CssContentItem> Items { get; init; } = [];
+}
 
 public sealed partial class StyleComputer
 {
@@ -73,6 +81,7 @@ public sealed partial class StyleComputer
         }
 
         _element = element;
+        var mark = ReportMark();
         var candidates = new Candidates();
         var blocks = new List<PreparedBlock>();
         foreach (var rule in _index.Candidates(element))
@@ -107,19 +116,14 @@ public sealed partial class StyleComputer
             return Result<GeneratedContent?, Error>.Failure(_failure!.Value);
         }
 
-        if (Content(candidates, element, pseudoElement) is not { } content)
+        var content = Content(candidates, element, pseudoElement);
+        if (content is null && ReportMark() == mark)
         {
-            return Result<GeneratedContent?, Error>.Success(null);
-        }
-
-        var (text, declaration) = content;
-        if (refusedHost is not null)
-        {
-            Report(declaration, CssErrorCodes.Unsupported.GeneratedContent, $"'::{pseudoElement}' on <{element.LocalName}> is not drawn: {refusedHost}; the generated text is left out.");
             return Result<GeneratedContent?, Error>.Success(null);
         }
 
         // content is read above, by its own grammar: the cascade of the other longhands never sees it.
+        var contentMark = ReportMark();
         candidates.Longhands[ContentProperty.Index] = null!;
         foreach (var block in blocks)
         {
@@ -136,6 +140,24 @@ public sealed partial class StyleComputer
         var display = style[PropertyRegistry.Display];
         if (display is CssKeyword { Name: "none" })
         {
+            // A pseudo-element of display: none generates no box (CSS Display 3 §2.5): nothing it says is reported,
+            // its content not either.
+            Rollback(mark);
+            return Result<GeneratedContent?, Error>.Success(null);
+        }
+
+        if (content is not { } generated)
+        {
+            // The content is refused: that is the one thing reported for this pseudo-element.
+            Rollback(contentMark);
+            return Result<GeneratedContent?, Error>.Success(null);
+        }
+
+        var (text, items, declaration) = generated;
+        if (refusedHost is not null)
+        {
+            Rollback(contentMark);
+            Report(declaration, CssErrorCodes.Unsupported.GeneratedContent, $"'::{pseudoElement}' on <{element.LocalName}> is not drawn: {refusedHost}; the generated text is left out.");
             return Result<GeneratedContent?, Error>.Success(null);
         }
 
@@ -171,7 +193,7 @@ public sealed partial class StyleComputer
             drawn = false;
         }
 
-        return Result<GeneratedContent?, Error>.Success(drawn ? new GeneratedContent(pseudoElement, style, text, declaration.SourceName, declaration.Source.Position) : null);
+        return Result<GeneratedContent?, Error>.Success(drawn ? new GeneratedContent(pseudoElement, style, text, declaration.SourceName, declaration.Source.Position) { Items = items } : null);
     }
 
     /// <summary>Whether any rule's selector ends in this pseudo-element; looked at once per name.</summary>
@@ -197,7 +219,7 @@ public sealed partial class StyleComputer
     /// <c>revert-layer</c>, <c>var()</c> and a value <see cref="ContentValue.ParseGenerated"/> refuses are reported
     /// and generate nothing.
     /// </summary>
-    private (string Text, PreparedDeclaration Declaration)? Content(Candidates candidates, IStyleElement element, string pseudoElement)
+    private (string Text, ValueList<CssContentItem> Items, PreparedDeclaration Declaration)? Content(Candidates candidates, IStyleElement element, string pseudoElement)
     {
         var (own, all) = (Highest(candidates.Longhands[ContentProperty.Index]), Highest(candidates.All));
         if (own is not { } winner || (all is { } shared && shared.Priority.CompareTo(winner.Priority) > 0))
@@ -236,14 +258,24 @@ public sealed partial class StyleComputer
         }
 
         var text = new StringBuilder();
+        var items = new List<CssContentItem>(parsed.Items.Count);
+        var counts = false;
         foreach (var item in parsed.Items)
         {
+            if (item is CssContentNamedCounter or CssContentNamedCounters)
+            {
+                counts = true;
+                items.Add(item);
+                continue;
+            }
+
             var piece = item switch
             {
                 CssContentString literal => literal.Value,
                 CssContentAttribute attribute => element.GetAttribute(element.IsHtml ? InfraAscii.ToLower(attribute.Name) : attribute.Name) ?? string.Empty,
                 _ => string.Empty,
             };
+            items.Add(new CssContentString(piece));
             _budget.Charge(CascadeBudget.CharactersCost(piece.Length));
             if (text.Length + piece.Length > CssInputLimits.MaxGeneratedTextLength)
             {
@@ -255,6 +287,6 @@ public sealed partial class StyleComputer
             text.Append(piece);
         }
 
-        return (text.ToString(), declaration);
+        return (text.ToString(), counts ? [.. items] : [], declaration);
     }
 }

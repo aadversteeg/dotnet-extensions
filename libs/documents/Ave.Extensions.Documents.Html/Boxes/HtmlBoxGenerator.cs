@@ -213,7 +213,7 @@ public static partial class HtmlBoxGenerator
         /// (UAX #14 class BK). One pass over the text and at most one refusal per text, as the parser keeps its own
         /// diagnostics bounded: it names the first such character, its offset and how many the text holds.
         /// </summary>
-        private string Characters(HtmlText text)
+        private string Characters(HtmlText text, string? sourceName = null)
         {
             var data = text.Data;
             var first = -1;
@@ -249,7 +249,7 @@ public static partial class HtmlBoxGenerator
             var others = count == 1 ? string.Empty : $" ({count.ToString(CultureInfo.InvariantCulture)} such characters in this text)";
             var error = new Error(HtmlStyleErrorCodes.Unsupported.Character, $"The character U+{codePoint:X4} is not drawn in this version{others}: only text, tab, line feed and carriage return are.")
                 .With(ErrorMetadataKeys.Value, $"U+{codePoint:X4}").With(ErrorMetadataKeys.Offset, first).With(ErrorMetadataKeys.Count, count);
-            Refusals.Add(error.WithSource(_sourceName, text.Position));
+            Refusals.Add(error.WithSource(sourceName ?? _sourceName, text.Position));
             return kept.ToString();
 
             // A surrogate pair is one character; a lone surrogate is one code unit.
@@ -274,6 +274,7 @@ public static partial class HtmlBoxGenerator
         /// </summary>
         private bool Check(StyledElement element, bool isBlock)
         {
+            ReportCounterRefusals(element);
             var html = element.Element;
             if (html.Namespace == ElementNamespace.Html && RefusedRenderings.TryGetValue(html.LocalName, out var rendering))
             {
@@ -311,6 +312,7 @@ public static partial class HtmlBoxGenerator
         private Box Build(StyledElement root)
         {
             Number(root);
+            Count(root);
             Check(root, isBlock: true);
             var stack = new Stack<object>();
             stack.Push(Frame(root, NewId(), 0));
@@ -538,10 +540,19 @@ public static partial class HtmlBoxGenerator
                         return;
                     }
 
-                    var preservedTab = RefusePreservedTab(text);
+                    // The text of a ::before or ::after that reads counters is what the counting found; none when it
+                    // was refused there.
+                    if (frame.Element.Generated is { Items.Count: > 0 } && !_generatedTexts.TryGetValue(frame.Element, out _))
+                    {
+                        break;
+                    }
+
+                    var counted = frame.Element.Generated is { Items.Count: > 0 } ? new StyledText(new HtmlText(_generatedTexts[frame.Element], text.Text.Position), text.Style) : text;
+                    var sourceName = frame.Element.Generated?.SourceName ?? _sourceName;
+                    var preservedTab = RefusePreservedTab(counted, sourceName);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        var data = Characters(text.Text);
+                        var data = Characters(counted.Text, sourceName);
                         var source = frame.Element.Generated is { } generated ? new SourceLocation(generated.SourceName, generated.Position.Line) : Source(text.Text.Position);
                         frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, source) { Generated = frame.Element.Generated is not null });
                     }
@@ -718,7 +729,7 @@ public static partial class HtmlBoxGenerator
             }
 
             TextStyle? style = null;
-            var face = Fonts.Match(element.Style, element.Element.Position);
+            var face = Fonts.Match(element.Style, element.Element.Position, element.Generated?.SourceName);
             if (face.IsFailure)
             {
                 Failures.Add(face.Error);
