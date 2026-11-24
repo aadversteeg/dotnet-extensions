@@ -3147,11 +3147,6 @@ public class MeasuredReferenceFilesTests
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
         cases.Should().HaveCount(770);
-        cases.Should().HaveCount(770);
-        cases.Should().HaveCount(770);
-        cases.Should().HaveCount(770);
-        cases.Should().HaveCount(770);
-        cases.Should().HaveCount(770);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");
