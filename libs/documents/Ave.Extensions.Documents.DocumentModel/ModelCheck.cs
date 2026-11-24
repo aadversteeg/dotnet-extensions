@@ -312,6 +312,11 @@ public static class ModelCheck
             }
         }
 
+        if (!(double.IsFinite(style.BaselineShift.Points) && System.Math.Abs(style.BaselineShift.Points) <= ModelLimits.MaxLength.Points))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.BaselineShift, $"The baseline shift must be a finite length of at most {ModelLimits.MaxLength} either way.", style.BaselineShift.ToString(), "vertical-align", node);
+        }
+
         var lineHeight = style.LineHeight switch
         {
             LineHeight.Factor factor => (double?)factor.Value,

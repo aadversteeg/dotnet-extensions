@@ -67,7 +67,8 @@ internal static class TextDecorations
     /// <param name="decorations">The piece's decorations, in order.</param>
     /// <param name="x">The piece's start.</param>
     /// <param name="glyphs">The piece's glyphs.</param>
-    /// <param name="baseline">The line's baseline, from the line box's top.</param>
+    /// <param name="baseline">The piece's own baseline, from the line box's top: the line's, less the run's
+    /// <see cref="TextStyle.BaselineShift"/> (<see cref="LineBoxes.Build"/>, THE RULE FOR A SHIFTED RUN ON THE LINE).</param>
     /// <param name="ascent">The ascent of the piece's own font, as the line box takes it.</param>
     /// <param name="rounding">How the fonts' metrics are taken (the document's profile).</param>
     /// <param name="ink">The piece's own font, size and <c>text-decoration-skip-ink</c>, and the paragraph's decoded outlines.</param>

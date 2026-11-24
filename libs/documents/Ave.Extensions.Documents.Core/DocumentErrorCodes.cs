@@ -70,6 +70,10 @@ public static class DocumentErrorCodes
             /// Property.</summary>
             public static readonly ErrorCode Spacing = _ / "Spacing";
 
+            /// <summary>A baseline shift that is not a finite length of at most the front-end's longest length either way
+            /// (CSS Inline 3 §4, <c>vertical-align</c> raises or lowers a box). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BaselineShift = _ / "BaselineShift";
+
             /// <summary>A text decoration with a line its enum does not have, a decorating font that is not valid (as
             /// <see cref="FontFamily"/>, <see cref="FontSize"/> and <see cref="FontWeight"/> say for a run's own font), or a run
             /// with more decorations than <c>ModelLimits.MaxDecorations</c>. Metadata: Value, Property.</summary>
