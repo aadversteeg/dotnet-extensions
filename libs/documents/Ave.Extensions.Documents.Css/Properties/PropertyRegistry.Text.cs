@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
 
@@ -55,6 +56,12 @@ public static partial class PropertyRegistry
         // Inherited; the value of the text decides, not that of the decorating box.
         yield return Keywords("text-decoration-skip-ink", inherited: true, "auto", ["auto", "none"], ["all"], "all elements", "CSS Text Decoration 4 §2.10.4");
 
+        yield return new PropertyDefinition(
+            "text-transform", inherited: true, new CssKeyword("none"), "text", "none | capitalize | uppercase | lowercase", PropertySupport.Supported,
+            "CSS Text 3 §2.1",
+            ParseTextTransform,
+            AsSpecified);
+
         yield return Keywords(
             "print-color-adjust", inherited: true, "economy", ["economy", "exact"], [], "all elements", "CSS Color Adjust 1 §3.1");
     }
@@ -109,6 +116,44 @@ public static partial class PropertyRegistry
         }
 
         return ParsedValue.Of(lines.Count == 1 ? lines[0] : new CssList([.. lines], CommaSeparated: false));
+    }
+
+    /// <summary>The case transforms of text-transform the engine draws (CSS Text 3 §2.1).</summary>
+    private static readonly string[] CaseTransforms = ["capitalize", "uppercase", "lowercase"];
+
+    /// <summary>
+    /// text-transform (CSS Text 3 §2.1): <c>none | [ capitalize | uppercase | lowercase ] || full-width || full-size-kana |
+    /// math-auto</c>. <c>none</c> and one case transform alone are drawn; <c>full-width</c>, <c>full-size-kana</c> and
+    /// <c>math-auto</c>, alone or with a case transform, are refused: they map characters to other forms (full-width
+    /// characters, full-size kana, mathematical italic letters) that the engine does not map; the author can write those
+    /// characters in the text.
+    /// </summary>
+    private static ParsedValue ParseTextTransform(ValueReader reader)
+    {
+        if (reader.Count == 1 && reader.Keyword(["none", .. CaseTransforms]) is { } single)
+        {
+            return ParsedValue.Of(new CssKeyword(single));
+        }
+
+        if (reader.Count == 1 && reader.Keyword("math-auto") is not null)
+        {
+            return ParsedValue.Refused("'text-transform: math-auto' is not supported: write the mathematical italic letters in the text");
+        }
+
+        var seen = new List<string>();
+        while (!reader.AtEnd)
+        {
+            var keyword = reader.Keyword([.. CaseTransforms, "full-width", "full-size-kana"]);
+            if (keyword is null || seen.Contains(keyword) || (CaseTransforms.Contains(keyword) && seen.Exists(other => CaseTransforms.Contains(other))))
+            {
+                return ParsedValue.Invalid("not a value of text-transform");
+            }
+
+            seen.Add(keyword);
+        }
+
+        var form = seen.Find(keyword => !CaseTransforms.Contains(keyword));
+        return ParsedValue.Refused($"'text-transform: {form}' is not supported: write the {(form == "full-width" ? "full-width characters" : "full-size kana")} in the text");
     }
 
     /// <summary>The computed colour (CSS Color 4 §3.1, §6.4): <c>currentcolor</c> in <c>color</c> itself is the inherited

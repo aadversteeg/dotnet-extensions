@@ -49,7 +49,7 @@ internal static class BoxProperties
         "image-rendering", "isolation", "left", "letter-spacing", "line-break", "list-style-image", "max-height",
         "min-height", "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
         "quotes", "right", "row-gap", "tab-size", "text-align-last", "text-decoration-thickness", "text-indent",
-        "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-transform", "text-underline-offset",
+        "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-underline-offset",
         "text-underline-position", "text-wrap-style", "top",
         "transform", "visibility", "word-break", "word-spacing", "writing-mode", "z-index",
     ];
@@ -189,6 +189,7 @@ internal static class BoxProperties
                 ? null : "a decoration colour with an alpha other than 1 is not drawn");
         yield return new("text-decoration-style", "solid, the only value the style sheet accepts", (_, _) => null);
         yield return new("text-decoration-skip-ink", "auto, none", (_, _) => null);
+        yield return new("text-transform", "none, uppercase, lowercase, capitalize, mapped in each text (a character the transform does not map is refused at its text)", (_, _) => null);
 
         // CSS Fragmentation 3 §3.1, §3.2, §5.4; break properties apply to block-level boxes only.
         yield return new("break-before", "every value (avoid-page as avoid); no effect on an inline box", (_, _) => null);

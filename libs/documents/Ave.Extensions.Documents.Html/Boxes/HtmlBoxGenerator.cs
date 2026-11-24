@@ -450,6 +450,49 @@ public static partial class HtmlBoxGenerator
             Inline(stack, new InlineFrame(block.Element, target, depth), node);
         }
 
+        /// <summary>
+        /// A text with its <c>text-transform</c> applied (<see cref="TextTransforms"/>), in the language of the element it
+        /// lies in. Capitalize looks at the character before the text: the last character of the text before it in the same
+        /// inline content, past inline elements without text; a space after an image or at the start (Chromium looks back
+        /// so, to the previous text in the tree past inline boxes, and takes a space at anything else). A text with a
+        /// character the transform does not map is refused there, with its offset, and drawn as written.
+        /// </summary>
+        private string Transformed(StyledText text, InlineFrame frame, string data)
+        {
+            var transform = text.Style[PropertyRegistry.Find("text-transform")!] is CssKeyword { Name: var name } ? name : "none";
+            if (transform == "none")
+            {
+                return data;
+            }
+
+            var previous = ' ';
+            for (var i = frame.Target.Count - 1; i >= 0; i--)
+            {
+                if (frame.Target[i] is TextRun { Text: var before })
+                {
+                    if (before.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    previous = before[^1];
+                }
+
+                break;
+            }
+
+            var result = TextTransforms.Apply(data, transform, frame.Element.Language, previous);
+            if (result.Reason is null)
+            {
+                return result.Text;
+            }
+
+            Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"'text-transform: {transform}' is not drawn for this text: {result.Reason}.")
+                .With(ErrorMetadataKeys.Value, transform).With(ErrorMetadataKeys.Property, "text-transform").With(ErrorMetadataKeys.Offset, result.Offset)
+                .WithSource(_sourceName, text.Text.Position));
+            return data;
+        }
+
         private static TextPosition Position(StyledNode node) => node is StyledElement element ? element.Element.Position : ((StyledText)node).Text.Position;
 
         /// <summary>One child of inline content: a text becomes a run in its parent's text style; an inline element's
@@ -467,7 +510,7 @@ public static partial class HtmlBoxGenerator
                     var preservedTab = RefusePreservedTab(text);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        var data = Characters(text.Text);
+                        var data = Transformed(text, frame, Characters(text.Text));
                         frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, Source(text.Text.Position)));
                     }
 

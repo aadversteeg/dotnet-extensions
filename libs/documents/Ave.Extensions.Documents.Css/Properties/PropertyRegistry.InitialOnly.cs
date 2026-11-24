@@ -80,7 +80,6 @@ public static partial class PropertyRegistry
                     ? ParsedValue.Of(zero.Value is CssPercentage ? new CssPercentage(0) : Zero)
                     : ParsedValue.Refused("'word-spacing' is supported only at its initial value, normal"),
             AsSpecified);
-        yield return InitialKeyword("text-transform", true, "none", ["capitalize", "uppercase", "lowercase", "full-width", "full-size-kana", "math-auto"], true, "text", "CSS Text 3 §2.1");
         yield return InitialKeyword("text-overflow", false, "clip", ["ellipsis"], true, "block containers", "CSS Overflow 3 §5.1");
         yield return InitialKeyword("text-align-last", true, "auto", ["start", "end", "left", "right", "center", "justify", "match-parent"], false, "block containers", "CSS Text 3 §6.2");
         yield return InitialKeyword("text-justify", true, "auto", ["none", "inter-word", "inter-character", "distribute"], false, "text", "CSS Text 3 §6.4");

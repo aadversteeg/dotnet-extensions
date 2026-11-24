@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Cascade;
+using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html.Parsing;
@@ -133,6 +134,15 @@ public static partial class HtmlBoxGenerator
             var source = Source(box.Position) with { Column = box.Position.Column };
             var runs = new List<Node>();
             var text = TextStyleOf(stand);
+            if (box.Style[PropertyRegistry.Find("text-transform")!] is CssKeyword { Name: not "none" and var transform })
+            {
+                // The page context inherits text-transform from the root element (CSS Paged Media 3 §4.2); Chromium's
+                // margin boxes with a transform are not measured, so the content is refused rather than drawn otherwise.
+                Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"'text-transform: {transform}' reaches the page-margin box from the root element and is not drawn there in this version: set it on the elements inside the root element instead.")
+                    .With(ErrorMetadataKeys.Value, transform).With(ErrorMetadataKeys.Property, "text-transform")
+                    .WithSource(_sourceName, box.Position));
+            }
+
             foreach (var item in box.Content.Items)
             {
                 switch (item)
