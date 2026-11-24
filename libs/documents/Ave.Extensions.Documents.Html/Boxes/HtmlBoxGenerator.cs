@@ -1085,8 +1085,10 @@ public static partial class HtmlBoxGenerator
                         var shaded => new BorderSide(width.Value, color is CssKeyword { Name: "currentcolor" } ? new Color(0xee, 0xee, 0xee) : drawn, shaded == "inset" ? BorderStyle.Inset : BorderStyle.Outset),
                     }
                     : BorderSide.None;
-            // A corner radius as computed: a length or a percentage of the border box, resolved by layout (RoundedBox).
-            CornerRadius Radius(string corner) => Value(element, $"border-{corner}-radius") switch
+            // A corner radius as computed: a length or a percentage of the border box, resolved by layout (RoundedBox). One
+            // refused corner carries the refusal of all four (BoxProperties), so then the box keeps square corners.
+            var squared = new[] { "top-left", "top-right", "bottom-right", "bottom-left" }.Any(corner => Value(element, $"border-{corner}-radius") is null);
+            CornerRadius Radius(string corner) => squared ? CornerRadius.Zero : Value(element, $"border-{corner}-radius") switch
             {
                 CssLength length => new CornerRadius(length.Value),
                 CssPercentage percentage => CornerRadius.OfPercent(percentage.Value),

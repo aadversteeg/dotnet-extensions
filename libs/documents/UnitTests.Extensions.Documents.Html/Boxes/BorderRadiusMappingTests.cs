@@ -23,10 +23,10 @@ public class BorderRadiusMappingTests
     private static string Doc(string body, string css = "") =>
         $"<!doctype html><html lang=\"en\"><head><title>t</title><style>body {{ font-family: Lato; margin: 0 }} {css}</style></head><body>{body}</body></html>";
 
-    private static Result<HtmlBoxes, Error> Boxes(string html) =>
+    private static Result<HtmlBoxes, Error> Boxes(string html, UnsupportedPolicy policy = UnsupportedPolicy.Refuse) =>
         HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions()))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic }));
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Unsupported = policy }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Unsupported = policy }));
 
     private static List<Error> Refusals(string html) => Boxes(html) is { IsFailure: true } failed ? [.. failed.Error.Parts()] : [];
 
@@ -61,6 +61,29 @@ public class BorderRadiusMappingTests
         radius.Should().ContainSingle();
         radius[0].Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Value);
         radius[0].Message.Should().Contain("border-radius").And.Contain(reason);
+    }
+
+    [Theory]
+    [InlineData("<p>a <span style=\"display: inline-block; border-radius: 0 3px 3px 3px; background: #ff0000\">b</span> c</p>")]
+    [InlineData("<ul><li style=\"border-radius: 3px 0 6px; background: #ff0000\">b</li></ul>")]
+    public void Under_the_warning_policy_a_refused_radius_leaves_every_corner_square_and_the_document_is_drawn(string body)
+    {
+        var boxes = Boxes(Doc(body), UnsupportedPolicy.Warn);
+        boxes.IsSuccess.Should().BeTrue(boxes.IsFailure ? boxes.Error.ToString() : string.Empty);
+        boxes.Value.Diagnostics.Should().ContainSingle(error => error.Message.Contains("border-radius", StringComparison.Ordinal));
+
+        var pending = new Stack<Node>([boxes.Value.Document.Root]);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            (node is Box box ? box.Style.BorderRadius : BorderRadius.None).IsZero.Should().BeTrue();
+            foreach (var child in node switch { Box parent => parent.Children, InlineGroup group => group.Children, _ => [] })
+            {
+                pending.Push(child);
+            }
+        }
+
+        DocumentLayout.Run(boxes.Value.Document, boxes.Value.Fonts).IsSuccess.Should().BeTrue();
     }
 
     [Fact]
