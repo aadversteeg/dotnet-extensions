@@ -128,7 +128,17 @@ public static partial class HtmlBoxGenerator
         public List<Node> Target { get; } = target;
         public int Depth { get; } = depth;
         public int Next { get; set; }
+
+        /// <summary>For the frame of an <c>a</c> element that is a link: the group being built, whose content is
+        /// <see cref="Target"/>; null otherwise.</summary>
+        public LinkFrame? Link { get; init; }
+
+        /// <summary>Whether the frame lies inside a link.</summary>
+        public bool InLink { get; init; }
     }
+
+    /// <summary>A link being built: the content of its parent it goes into, its id, its URI and its text style.</summary>
+    private sealed record LinkFrame(List<Node> Parent, NodeId Id, string Uri, TextStyle Style);
 
     private sealed partial class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
     {
@@ -280,6 +290,7 @@ public static partial class HtmlBoxGenerator
             }
 
             _refused[element] = refused;
+            RefuseBlockLink(element, isBlock);
             return true;
         }
 
@@ -301,6 +312,11 @@ public static partial class HtmlBoxGenerator
                 {
                     case InlineFrame inline when inline.Next >= inline.Element.Children.Count:
                         stack.Pop();
+                        if (inline.Link is { } link)
+                        {
+                            FinishLink(inline, link);
+                        }
+
                         break;
                     case InlineFrame inline:
                         Inline(stack, inline, inline.Element.Children[inline.Next++]);
@@ -483,6 +499,11 @@ public static partial class HtmlBoxGenerator
                 case StyledElement element when Display(element) == "inline":
                     if (Check(element, isBlock: false) && !Deeper(frame.Depth, element.Element.Position))
                     {
+                        if (StartLink(stack, frame, element))
+                        {
+                            break;
+                        }
+
                         // CSS 2.1 §10.8.1: every inline box, also one without a glyph, has a line height that counts
                         // for the line box ("empty inline elements ... still have margins, padding, borders and a line
                         // height"); the model has no inline box, so an empty run in the element's style carries it.
@@ -491,7 +512,7 @@ public static partial class HtmlBoxGenerator
                             frame.Target.Add(new TextRun(NewId(), string.Empty, own, Source(element.Element.Position)));
                         }
 
-                        stack.Push(new InlineFrame(element, frame.Target, frame.Depth));
+                        stack.Push(new InlineFrame(element, frame.Target, frame.Depth) { InLink = frame.InLink });
                     }
 
                     break;

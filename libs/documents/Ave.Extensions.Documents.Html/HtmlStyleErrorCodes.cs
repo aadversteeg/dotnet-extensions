@@ -86,6 +86,14 @@ public static class HtmlStyleErrorCodes
         /// per text that holds any: Value (the first such code point), Offset (its place in the text), Count (how many
         /// the text holds), SourceFile, SourceLine, SourceColumn (where the text starts).</summary>
         public static readonly ErrorCode Character = _ / "Character";
+
+        /// <summary>An <c>a</c> element with an <c>href</c> whose link is not made: its URL by THE RULE FOR A LINK'S URL IN
+        /// HTML (<c>LinkUrls</c>) leads inside the document (<c>#…</c>), is relative without an <c>http</c> or <c>https</c>
+        /// base, or is refused by THE RULE FOR A LINK'S URI (<c>LinkUris</c>: a scheme other than http, https, mailto and tel,
+        /// such as javascript, file or data); or the link lies inside another link, or outside a line of text. Metadata:
+        /// Property (<c>href</c>, or <c>title</c> for a description text may not hold), Value (the href), SourceFile,
+        /// SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode Link = _ / "Link";
     }
 
     /// <summary>A document with no element (made in code; the parser always makes the html element): there is nothing to

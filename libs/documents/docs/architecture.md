@@ -632,6 +632,7 @@ Where each rule lives:
 | line height in Chromium's layout unit (a length rounded to 1/64 px, a number times the font size floored to it) | `HtmlBoxGenerator.LineHeightOf` |
 | margins and padding in Chromium's layout unit (cut toward zero to 1/64 px) | `HtmlBoxGenerator.LayoutUnits` |
 | tables: the parts, their structure, column sizes, spans; what the model's table cannot show | `Html/Boxes/TableBoxes.cs`; the values in `Html/Boxes/TableProperties.cs` |
+| links: an `a` with `href` inside a line is an inline group with the link role around its content, its empty run first (so the line height is as without the link); the URI by THE RULE FOR A LINK'S URL IN HTML (white space removed as the URL Standard's basic URL parser removes it, a relative URL resolved by RFC 3986 §5.2 only against an `http` or `https` base, the scheme in lower case, the C0 controls, space, `"`, `<`, `>`, U+007F and every character beyond ASCII percent-encoded as UTF-8, the shared part of the URL Standard's percent-encode sets, §1.3), then THE RULE FOR A LINK'S URI of the model, the only rule on schemes; the description by THE RULE FOR A LINK'S DESCRIPTION (`title`, text, an image's `alt`, the URI); refusals at the start tag (`Documents.Html.Unsupported.Link`) | `Html/LinkUrls.cs`, `Html/Boxes/HtmlBoxGenerator.Links.cs`; `Core/LinkUris.cs`, `DocumentModel/LinkDescription.cs` |
 
 **The refusal table.** `BoxProperties.Rows` holds one row per longhand of the property registry: what is drawn, and
 where a value has no effect, the condition. A value is refused (`Documents.Html.Unsupported.Value`, at the element's
@@ -833,6 +834,10 @@ Each is documented next to its code as well.
   footer group, so the engine draws the footer once, after the last body row (case `tf-pages`, listed;
   `HtmlListedDifferenceTests`). With `break-inside: auto` on the footer group Chromium does not repeat it either
   (case `tf-pages-auto`), and a table on one page prints the same in both (case `tf-after`).
+- **A link in a repeated table header row (HTML):** the engine writes the link's annotation from the header row's first
+  copy only; the copies on later pages are artifacts, which carry no annotation (ISO 14289-1 §7.18.1: an annotation is
+  tagged). Chromium 159 writes the link twice on every page that shows the header, at the same rectangle (case
+  `lk-header-row`, listed; `HtmlListedDifferenceTests`). The print is the same.
 - **What follows the row of an image sliced in a table (HTML):** Chromium lays an image taller than the page area out
   whole on the page where it starts and draws it in slices on the following pages. It ends the image's row on the next
   page, as tall as the rest of the image, also past the page end. In a row of two or more cells the next row starts
@@ -1358,11 +1363,14 @@ Each is documented next to its code as well.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
   nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
   language written (an inline group holds one, the PDF does not carry it yet), no List, Caption, Note, Formula or TOC
-  structure elements, no bookmarks; Link and Span elements come from inline groups, which only the code front-end makes
-  so far (HTML's `a` is still plain text); a link leads only to a URI (no destinations inside the document); a link
+  structure elements, no bookmarks; Link elements come from inline groups, which the code front-end (`Link`) and the
+  HTML front-end (`a` with `href`) make, and Span elements from span groups, which no front-end makes yet; a link leads only to a
+  URI (no destinations inside the document: HTML's `href="#…"` is refused); a link
   inside an artifact (a page header or footer, a repeated copy of a table's header rows, a later slice of a line taller
   than the page) gets no annotation and no Link element, its text is only drawn, while the first, real occurrence of a
-  header row keeps its links; ActualText only on the
+  header row keeps its links (Chromium 159 writes such a link on every page, twice: case `lk-header-row`, a listed
+  difference); HTML's links: a host beyond ASCII is refused (no IDNA), dot segments of an absolute URL are written as
+  given, and a percent-encoded dot (`%2e`) is not read as a dot when a relative URL is resolved; ActualText only on the
   marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above); empty structure elements are
   written for empty cells; the XMP packet has no padding; everything in page headers and footers is an artifact.
   Figures and tables wholly on one page carry their `/BBox` (ISO 32000-1 Table 344); a table that continues on

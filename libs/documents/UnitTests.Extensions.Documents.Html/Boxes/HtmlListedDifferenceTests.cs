@@ -464,4 +464,26 @@ public class HtmlListedDifferenceTests
     /// <summary>Where each line of the only page ends: its last word's end, lines in order.</summary>
     private static double[] LineEnds(PrintedPages pages) =>
         [.. pages.Pages.Single().Words.GroupBy(word => word.Baseline).OrderBy(line => line.Key).Select(line => line.Max(word => word.X1))];
+
+    /// <summary>
+    /// A link in a table's header row that repeats on every page: the engine writes its annotation from the first copy only,
+    /// and the later copies are artifacts, which carry no link (ISO 14289-1 §7.18.1: an annotation is tagged, and an artifact
+    /// is no structure; docs/architecture.md, "Known limits"). Chromium 159 writes the link twice on every page that shows
+    /// the header, at the same rectangle (case <c>lk-header-row</c>): an annotation is not printed, so Chromium's is a fact
+    /// and not the rule. The print is the same, and the engine's one link is Chromium's first.
+    /// </summary>
+    [Fact]
+    public void A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page()
+    {
+        const string name = "lk-header-row";
+        var boxes = HtmlCases.Boxes(name).Value;
+        var pages = DocumentLayout.Run(boxes.Document, boxes.Fonts).Value;
+        var chromium = HtmlCases.Links(HtmlCases.Cases, name);
+
+        HtmlCases.Difference(PrintedPages.Engine(pages), Chromium(name)).Should().BeNull("the print is the same");
+        chromium.Select(link => link.Page).Should().Equal([1, 1, 2, 2], "Chromium writes the header's link twice on each page");
+        var first = chromium[0];
+        chromium.Select(link => (link.X0, link.Y0, link.X1, link.Y1, link.Target)).Should().AllBeEquivalentTo((first.X0, first.Y0, first.X1, first.Y1, first.Target), "every copy at the same rectangle, to the same target");
+        HtmlCases.LinkDifference(pages, [chromium[0]]).Should().BeNull("the engine's one link is Chromium's first");
+    }
 }

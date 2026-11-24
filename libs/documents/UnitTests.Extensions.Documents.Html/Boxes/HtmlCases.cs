@@ -92,6 +92,7 @@ internal static class HtmlCases
         ["a4-line-beside-lines"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["fr-f4-padding-page-start"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
+        ["lk-header-row"] = "A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -130,6 +131,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Link.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),

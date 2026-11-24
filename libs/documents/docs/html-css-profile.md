@@ -473,6 +473,21 @@ the box whatever its vertical alignment, unclipped, under the body; the box keep
   event handler attribute (`on…`) are refused; a data block (any other type) is not.
 - Style sheets: style elements, link rel=stylesheet (not alternate; the preferred title set), with media and type;
   linked sheets and imports through the caller's `ResourceResolver`; a sheet it does not give is refused.
+- Links: an `a` with `href` inside a line of text is a link to a URI (a link annotation; in a tagged PDF a Link element),
+  around all of its content: text, images and the inline elements inside it. Its URI is the `href` resolved as HTML
+  resolves it (`LinkUrls`): white space at the ends and tabs and line breaks inside removed, the scheme in lower case, a
+  relative URL resolved against the document base only when that base is `http` or `https`, and the C0 controls, space,
+  `"`, `<`, `>`, U+007F and every character beyond ASCII percent-encoded as UTF-8. Accepted are the schemes `http`, `https`,
+  `mailto` and `tel` (`LinkUris`, the model's one rule): a link opens a web page, a mail program or a phone call. Its
+  description (`/Contents`, which PDF/UA-1 needs) is the `title`, else the link's text, else the `alt` of an image in it,
+  else the URI. Refused at the start tag (`Documents.Html.Unsupported.Link`, with the `href`): any other scheme
+  (`javascript`, `vbscript`, `file`, `data`, `ftp`, …), also in mixed case or with white space, tabs or line breaks in it;
+  a relative URL without an `http` or `https` base (a document read from a file has a `file:` base, and Chromium would
+  write a path of the printing machine); a link inside the document (`#…`, also under a `base`); a host with characters
+  beyond ASCII; an `a` with `href` that is not inside a line (`display: block`, a table display). An `a` without `href`,
+  and an `a` with `href` that draws nothing, is no link, as in Chromium. A link in a table header row that repeats on
+  every page leads from its first copy only (the copies are artifacts); Chromium writes it on every page (a listed
+  difference, case `lk-header-row`).
 
 Presentational attributes (HTML Standard §15.2–§15.4):
 
