@@ -1,0 +1,22 @@
+page 1 300.000 300.000
+word 1 18.000 48.277 28.500 10.500 Words #000000 Lato-Regular
+word 1 50.965 80.947 28.500 10.500 before #000000 Lato-Regular
+word 1 83.635 88.854 28.500 10.500 a #000000 Lato-Regular
+word 1 91.542 116.904 28.500 10.500 much #000000 Lato-Regular
+word 1 119.592 148.625 28.500 10.500 longer #000000 Lato-Regular
+word 1 151.102 167.293 28.500 10.500 link #0000ee Lato-Regular
+word 1 169.980 188.523 28.500 10.500 that #0000ee Lato-Regular
+word 1 191.206 211.287 28.500 10.500 runs #0000ee Lato-Regular
+word 1 213.975 234.419 28.500 10.500 over #0000ee Lato-Regular
+word 1 236.886 252.053 28.500 10.500 the #0000ee Lato-Regular
+word 1 254.741 272.024 28.500 10.500 end #0000ee Lato-Regular
+word 1 18.000 27.523 41.250 10.500 of #0000ee Lato-Regular
+word 1 30.012 46.702 41.250 10.500 this #0000ee Lato-Regular
+word 1 49.390 65.791 41.250 10.500 line #0000ee Lato-Regular
+word 1 68.479 85.436 41.250 10.500 and #0000ee Lato-Regular
+word 1 88.124 109.554 41.250 10.500 onto #0000ee Lato-Regular
+word 1 112.242 127.410 41.250 10.500 the #0000ee Lato-Regular
+word 1 130.098 150.431 41.250 10.500 next #0000ee Lato-Regular
+word 1 153.122 172.883 41.250 10.500 end. #000000 Lato-Regular
+rect 1 151.102 29.250 272.027 30.000 #0000ee
+rect 1 18.000 42.000 150.434 42.750 #0000ee

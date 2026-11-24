@@ -1,0 +1,24 @@
+page 1 300.000 120.000
+word 1 18.000 42.496 29.250 10.500 Head #000000 Lato-Regular
+word 1 45.188 61.378 29.250 10.500 link #0000ee Lato-Regular
+word 1 18.000 38.365 44.250 10.500 Row #000000 Lato-Regular
+word 1 40.832 58.189 44.250 10.500 one #000000 Lato-Regular
+word 1 18.000 38.365 59.250 10.500 Row #000000 Lato-Regular
+word 1 40.832 58.724 59.250 10.500 two #000000 Lato-Regular
+word 1 18.000 38.365 74.250 10.500 Row #000000 Lato-Regular
+word 1 40.832 65.150 74.250 10.500 three #000000 Lato-Regular
+word 1 18.000 38.365 89.250 10.500 Row #000000 Lato-Regular
+word 1 40.832 59.968 89.250 10.500 four #000000 Lato-Regular
+rect 1 45.188 30.000 61.383 30.750 #0000ee
+page 2 300.000 120.000
+word 2 18.000 42.496 29.250 10.500 Head #000000 Lato-Regular
+word 2 45.188 61.378 29.250 10.500 link #0000ee Lato-Regular
+word 2 18.000 38.365 44.250 10.500 Row #000000 Lato-Regular
+word 2 40.832 57.658 44.250 10.500 five #000000 Lato-Regular
+word 2 18.000 38.365 59.250 10.500 Row #000000 Lato-Regular
+word 2 40.832 53.128 59.250 10.500 six #000000 Lato-Regular
+word 2 18.000 38.365 74.250 10.500 Row #000000 Lato-Regular
+word 2 40.832 67.481 74.250 10.500 seven #000000 Lato-Regular
+word 2 18.000 38.365 89.250 10.500 Row #000000 Lato-Regular
+word 2 40.832 63.911 89.250 10.500 eight #000000 Lato-Regular
+rect 2 45.188 30.000 61.383 30.750 #0000ee

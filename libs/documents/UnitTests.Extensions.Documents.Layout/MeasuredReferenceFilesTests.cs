@@ -18,7 +18,7 @@ public class MeasuredReferenceFilesTests
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = [];
+    private static readonly string[] LinkCases = ["lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-two-lines"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -1720,6 +1720,60 @@ public class MeasuredReferenceFilesTests
         ["kb-v9-padded-box-kept-table-row.lines.txt"] = 10,
         ["kb-v9-padded-box-kept-table-row.print.txt"] = 21,
         ["kb-v9-padded-box-kept-table-row.words.txt"] = 5,
+        ["lk-empty.boxes.txt"] = 1,
+        ["lk-empty.lines.txt"] = 0,
+        ["lk-empty.print.txt"] = 7,
+        ["lk-empty.words.txt"] = 6,
+        ["lk-fragment.boxes.txt"] = 1,
+        ["lk-fragment.lines.txt"] = 1,
+        ["lk-fragment.print.txt"] = 5,
+        ["lk-fragment.words.txt"] = 3,
+        ["lk-fragment.links.txt"] = 1,
+        ["lk-header-row.boxes.txt"] = 9,
+        ["lk-header-row.lines.txt"] = 2,
+        ["lk-header-row.print.txt"] = 24,
+        ["lk-header-row.words.txt"] = 20,
+        ["lk-header-row.links.txt"] = 4,
+        ["lk-image.boxes.txt"] = 1,
+        ["lk-image.lines.txt"] = 0,
+        ["lk-image.print.txt"] = 4,
+        ["lk-image.words.txt"] = 2,
+        ["lk-image.links.txt"] = 2,
+        ["lk-javascript.boxes.txt"] = 1,
+        ["lk-javascript.lines.txt"] = 1,
+        ["lk-javascript.print.txt"] = 5,
+        ["lk-javascript.words.txt"] = 3,
+        ["lk-javascript.links.txt"] = 1,
+        ["lk-larger-run.boxes.txt"] = 1,
+        ["lk-larger-run.lines.txt"] = 4,
+        ["lk-larger-run.print.txt"] = 10,
+        ["lk-larger-run.words.txt"] = 5,
+        ["lk-larger-run.links.txt"] = 1,
+        ["lk-mail-tel.boxes.txt"] = 1,
+        ["lk-mail-tel.lines.txt"] = 2,
+        ["lk-mail-tel.print.txt"] = 8,
+        ["lk-mail-tel.words.txt"] = 5,
+        ["lk-mail-tel.links.txt"] = 2,
+        ["lk-one-line.boxes.txt"] = 1,
+        ["lk-one-line.lines.txt"] = 1,
+        ["lk-one-line.print.txt"] = 5,
+        ["lk-one-line.words.txt"] = 3,
+        ["lk-one-line.links.txt"] = 1,
+        ["lk-page-break.boxes.txt"] = 1,
+        ["lk-page-break.lines.txt"] = 3,
+        ["lk-page-break.print.txt"] = 46,
+        ["lk-page-break.words.txt"] = 41,
+        ["lk-page-break.links.txt"] = 3,
+        ["lk-relative.boxes.txt"] = 1,
+        ["lk-relative.lines.txt"] = 1,
+        ["lk-relative.print.txt"] = 5,
+        ["lk-relative.words.txt"] = 3,
+        ["lk-relative.links.txt"] = 1,
+        ["lk-two-lines.boxes.txt"] = 1,
+        ["lk-two-lines.lines.txt"] = 2,
+        ["lk-two-lines.print.txt"] = 22,
+        ["lk-two-lines.words.txt"] = 19,
+        ["lk-two-lines.links.txt"] = 2,
         ["mf4-line-0.boxes.txt"] = 40,
         ["mf4-line-0.lines.txt"] = 106,
         ["mf4-line-0.print.txt"] = 169,
@@ -2269,7 +2323,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(555);
+        cases.Should().HaveCount(566);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

@@ -1,0 +1,46 @@
+page 1 300.000 90.000
+word 1 18.000 37.703 29.250 10.500 One #000000 Lato-Regular
+word 1 40.391 58.283 29.250 10.500 two #000000 Lato-Regular
+word 1 60.971 85.289 29.250 10.500 three #000000 Lato-Regular
+word 1 87.977 107.113 29.250 10.500 four #000000 Lato-Regular
+word 1 109.581 126.407 29.250 10.500 five #000000 Lato-Regular
+word 1 129.095 141.390 29.250 10.500 six #000000 Lato-Regular
+word 1 144.078 170.727 29.250 10.500 seven #000000 Lato-Regular
+word 1 173.415 193.197 29.250 10.500 nine #000000 Lato-Regular
+word 1 195.885 211.026 29.250 10.500 ten #000000 Lato-Regular
+word 1 213.714 243.838 29.250 10.500 eleven #000000 Lato-Regular
+word 1 246.526 277.302 29.250 10.500 twelve #000000 Lato-Regular
+word 1 18.000 54.650 44.250 10.500 thirteen #000000 Lato-Regular
+word 1 57.338 97.159 44.250 10.500 fourteen #000000 Lato-Regular
+word 1 99.847 129.966 44.250 10.500 fifteen #000000 Lato-Regular
+word 1 132.654 165.635 44.250 10.500 sixteen #000000 Lato-Regular
+word 1 168.323 215.583 44.250 10.500 seventeen #000000 Lato-Regular
+word 1 218.271 238.053 44.250 10.500 nine #000000 Lato-Regular
+word 1 240.741 255.882 44.250 10.500 ten #000000 Lato-Regular
+word 1 18.000 48.124 59.250 10.500 eleven #000000 Lato-Regular
+word 1 50.812 81.588 59.250 10.500 twelve #000000 Lato-Regular
+word 1 84.276 120.926 59.250 10.500 thirteen #000000 Lato-Regular
+word 1 123.621 163.442 59.250 10.500 fourteen #0000ee Lato-Regular
+word 1 166.130 196.249 59.250 10.500 fifteen #0000ee Lato-Regular
+word 1 198.937 231.918 59.250 10.500 sixteen #0000ee Lato-Regular
+word 1 234.606 281.866 59.250 10.500 seventeen #0000ee Lato-Regular
+rect 1 123.621 60.000 281.871 60.750 #0000ee
+page 2 300.000 90.000
+word 2 18.000 54.650 29.250 10.500 thirteen #0000ee Lato-Regular
+word 2 57.338 97.159 29.250 10.500 fourteen #0000ee Lato-Regular
+word 2 99.847 129.966 29.250 10.500 fifteen #0000ee Lato-Regular
+word 2 132.654 165.635 29.250 10.500 sixteen #0000ee Lato-Regular
+word 2 168.323 215.583 29.250 10.500 seventeen #0000ee Lato-Regular
+word 2 218.271 254.921 29.250 10.500 thirteen #0000ee Lato-Regular
+word 2 18.000 57.821 44.250 10.500 fourteen #0000ee Lato-Regular
+word 2 60.509 90.628 44.250 10.500 fifteen #0000ee Lato-Regular
+word 2 93.316 126.297 44.250 10.500 sixteen #0000ee Lato-Regular
+word 2 128.985 176.245 44.250 10.500 seventeen #0000ee Lato-Regular
+word 2 178.938 196.221 44.250 10.500 end #000000 Lato-Regular
+word 2 198.909 208.432 44.250 10.500 of #000000 Lato-Regular
+word 2 210.921 226.088 44.250 10.500 the #000000 Lato-Regular
+word 2 228.776 244.788 44.250 10.500 last #000000 Lato-Regular
+word 2 247.471 263.872 44.250 10.500 line #000000 Lato-Regular
+word 2 18.000 41.032 59.250 10.500 here. #000000 Lato-Regular
+rect 2 18.000 30.000 254.930 30.750 #0000ee
+rect 2 18.000 45.000 176.250 45.750 #0000ee
