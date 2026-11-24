@@ -59,6 +59,39 @@ public class FontSynthesisTests
         result.Error.Message.Should().EndWith(" Give the face, or write font-synthesis: none to print in the nearest face.");
     }
 
+    /// <summary>The order of CSS Fonts 4 §5.2 among several faces on one side of the weight, with <c>@font-face</c> rules
+    /// that declare the files at other weights: Lato-Bold at 700, Lato-Regular at 900 and at 200, Lato-Italic (as upright)
+    /// at 300.</summary>
+    [Theory]
+    [InlineData(600, "Lato-Bold")]
+    [InlineData(800, "Lato-Regular")]
+    [InlineData(950, "Lato-Regular")]
+    [InlineData(350, "Lato-Italic")]
+    [InlineData(250, "Lato-Regular")]
+    [InlineData(100, "Lato-Regular")]
+    [InlineData(450, "Lato-Italic")]
+    [InlineData(500, "Lato-Italic")]
+    public void The_nearest_weight_follows_the_order_of_the_font_matching_rule(int weight, string face)
+    {
+        var html = "<!doctype html><html><head><style>" +
+                   "@font-face { font-family: Body; src: url(bold.ttf); font-weight: 700 }" +
+                   "@font-face { font-family: Body; src: url(regular.ttf); font-weight: 900 }" +
+                   "@font-face { font-family: Body; src: url(regular.ttf); font-weight: 200 }" +
+                   "@font-face { font-family: Body; src: url(italic.ttf); font-weight: 300 }" +
+                   $" @page {{ size: 300pt 200pt; margin: 12pt }} body {{ margin: 0; font-family: Body; font-synthesis: none }} p {{ font-weight: {weight} }}</style></head><body><p>alpha</p></body></html>";
+        var files = new Dictionary<string, string> { ["bold.ttf"] = "Lato-Bold.ttf", ["regular.ttf"] = "Lato-Regular.ttf", ["italic.ttf"] = "Lato-Italic.ttf" };
+        var options = new HtmlRenderOptions
+        {
+            Style = HtmlStyleOptions.Default with { Resources = url => files.TryGetValue(url, out var file) ? new HtmlResource(TestFonts.Bytes(file)) : null },
+            SourceName = "doc.html",
+        };
+
+        var pages = HtmlRendering.ToPages(html, options);
+
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+        PrintedPages.Engine(pages.Value.Output).Pages.Single().Words.Single().Face.Should().Be(face);
+    }
+
     [Fact]
     public void A_face_of_a_font_face_rule_is_matched_the_same_way()
     {
