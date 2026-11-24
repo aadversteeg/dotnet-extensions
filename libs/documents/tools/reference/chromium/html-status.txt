@@ -422,16 +422,21 @@ kb-t2-kept-row-group-after-a-row equal
 kb-t3-row-group-not-kept-control equal
 kb-v8-padded-box-kept-para equal
 kb-v9-padded-box-kept-table-row equal
+lk-cell equal
 lk-empty equal
 lk-fragment equal
 lk-header-row listed A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page: link 2: Chromium's rectangle on page 1 at (45, 18.75) to uri https://example.com/head has none in the engine, which has 1 (links.txt)
 lk-image equal
 lk-javascript refused Documents.Html.Unsupported.Link href: javascript:alert(1) at 2:11
 lk-larger-run equal
+lk-later-heading equal
 lk-mail-tel equal
+lk-missing refused Documents.Html.Unsupported.Link href: #nowhere at 2:14
 lk-one-line equal
 lk-page-break equal
 lk-relative refused Documents.Html.Unsupported.Link href: other.html at 2:13
+lk-same-page equal
+lk-top equal
 lk-two-lines equal
 mf4-line-0 equal
 mf4-line-075 equal

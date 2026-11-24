@@ -14,11 +14,11 @@ public class MeasuredReferenceFilesTests
 {
     /// <summary>The cases whose print has an underline or overline cut around a glyph's ink, so that the read-back writes their
     /// gaps (<c>ink.py</c>, <c>&lt;case&gt;.ink.txt</c>).</summary>
-    private static readonly string[] InkCases = ["dl-skip", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
+    private static readonly string[] InkCases = ["dl-skip", "lk-missing", "lk-same-page", "lk-top", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = ["lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-two-lines"];
+    private static readonly string[] LinkCases = ["lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -1720,6 +1720,11 @@ public class MeasuredReferenceFilesTests
         ["kb-v9-padded-box-kept-table-row.lines.txt"] = 10,
         ["kb-v9-padded-box-kept-table-row.print.txt"] = 21,
         ["kb-v9-padded-box-kept-table-row.words.txt"] = 5,
+        ["lk-cell.boxes.txt"] = 3,
+        ["lk-cell.lines.txt"] = 1,
+        ["lk-cell.print.txt"] = 18,
+        ["lk-cell.words.txt"] = 16,
+        ["lk-cell.links.txt"] = 1,
         ["lk-empty.boxes.txt"] = 1,
         ["lk-empty.lines.txt"] = 0,
         ["lk-empty.print.txt"] = 7,
@@ -1749,11 +1754,21 @@ public class MeasuredReferenceFilesTests
         ["lk-larger-run.print.txt"] = 10,
         ["lk-larger-run.words.txt"] = 5,
         ["lk-larger-run.links.txt"] = 1,
+        ["lk-later-heading.boxes.txt"] = 1,
+        ["lk-later-heading.lines.txt"] = 1,
+        ["lk-later-heading.print.txt"] = 25,
+        ["lk-later-heading.words.txt"] = 22,
+        ["lk-later-heading.links.txt"] = 1,
         ["lk-mail-tel.boxes.txt"] = 1,
         ["lk-mail-tel.lines.txt"] = 2,
         ["lk-mail-tel.print.txt"] = 8,
         ["lk-mail-tel.words.txt"] = 5,
         ["lk-mail-tel.links.txt"] = 2,
+        ["lk-missing.boxes.txt"] = 1,
+        ["lk-missing.ink.txt"] = 3,
+        ["lk-missing.lines.txt"] = 1,
+        ["lk-missing.print.txt"] = 10,
+        ["lk-missing.words.txt"] = 8,
         ["lk-one-line.boxes.txt"] = 1,
         ["lk-one-line.lines.txt"] = 1,
         ["lk-one-line.print.txt"] = 5,
@@ -1769,6 +1784,18 @@ public class MeasuredReferenceFilesTests
         ["lk-relative.print.txt"] = 5,
         ["lk-relative.words.txt"] = 3,
         ["lk-relative.links.txt"] = 1,
+        ["lk-same-page.boxes.txt"] = 1,
+        ["lk-same-page.ink.txt"] = 8,
+        ["lk-same-page.lines.txt"] = 2,
+        ["lk-same-page.print.txt"] = 39,
+        ["lk-same-page.words.txt"] = 36,
+        ["lk-same-page.links.txt"] = 2,
+        ["lk-top.boxes.txt"] = 1,
+        ["lk-top.ink.txt"] = 10,
+        ["lk-top.lines.txt"] = 2,
+        ["lk-top.print.txt"] = 26,
+        ["lk-top.words.txt"] = 22,
+        ["lk-top.links.txt"] = 2,
         ["lk-two-lines.boxes.txt"] = 1,
         ["lk-two-lines.lines.txt"] = 2,
         ["lk-two-lines.print.txt"] = 22,
@@ -2323,7 +2350,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(566);
+        cases.Should().HaveCount(571);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

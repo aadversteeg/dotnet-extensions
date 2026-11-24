@@ -403,7 +403,7 @@ public class LinkMappingTests
     [InlineData("ua1")]
     public void The_link_cases_as_tagged_PDF_pass_veraPDF(string flavour)
     {
-        string[] names = ["lk-one-line", "lk-two-lines", "lk-larger-run", "lk-image", "lk-page-break", "lk-mail-tel", "lk-header-row", "lk-fragment"];
+        string[] names = ["lk-one-line", "lk-two-lines", "lk-larger-run", "lk-image", "lk-page-break", "lk-mail-tel", "lk-header-row", "lk-fragment", "lk-same-page", "lk-top", "lk-cell"];
         var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-html-links-").FullName;
         try
         {
