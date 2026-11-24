@@ -99,6 +99,42 @@ internal static class InlineBoxPixels
         }
     }
 
+    /// <summary>
+    /// The first inline group whose box reaches above <paramref name="top"/> on a page, or null. THE RULE FOR AN INLINE BOX
+    /// OVER A PAGE BREAK: a box broken between two of its lines is two parts on two pages, each painted on its own page (case
+    /// <c>ib-break-page</c>); a box on a line that starts a later page and whose top lies above that page's area is refused,
+    /// since Chromium paints it there and also paints the part above the page area at the bottom of the page before, in
+    /// its place in the continuous flow (measured: a box 31 px high whose line moved to page 2 shows a strip at page 1's end).
+    /// </summary>
+    /// <param name="placed">A page's body, its offset relative to the page's top-left corner.</param>
+    /// <param name="top">The top of the page area, in points from the page's top.</param>
+    /// <returns>The group, or null.</returns>
+    public static InlineGroup? AboveArea(PlacedFragment placed, double top)
+    {
+        var pending = new Stack<(Fragment Fragment, Point Origin)>();
+        pending.Push((placed.Fragment, placed.Offset));
+        while (pending.Count > 0)
+        {
+            var (fragment, origin) = pending.Pop();
+            if (fragment is LineFragment line)
+            {
+                if (line.Groups.FirstOrDefault(part => part.Box is { } box && origin.Y + box.Origin.Y < top - 1e-9) is { } above)
+                {
+                    return above.Group;
+                }
+
+                continue;
+            }
+
+            foreach (var child in ChildrenOf(fragment))
+            {
+                pending.Push((child.Fragment, origin + child.Offset));
+            }
+        }
+
+        return null;
+    }
+
     private static IReadOnlyList<PlacedFragment> ChildrenOf(Fragment fragment) => fragment switch
     {
         BoxFragment box => box.Children,

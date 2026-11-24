@@ -1584,6 +1584,26 @@ public class MeasuredReferenceFilesTests
         ["ib-border.lines.txt"] = 3,
         ["ib-border.print.txt"] = 16,
         ["ib-border.words.txt"] = 9,
+        ["ib-break-align.boxes.txt"] = 1,
+        ["ib-break-align.lines.txt"] = 10,
+        ["ib-break-align.print.txt"] = 25,
+        ["ib-break-align.words.txt"] = 14,
+        ["ib-break-fraction.boxes.txt"] = 1,
+        ["ib-break-fraction.lines.txt"] = 4,
+        ["ib-break-fraction.print.txt"] = 22,
+        ["ib-break-fraction.words.txt"] = 17,
+        ["ib-break-nested.boxes.txt"] = 1,
+        ["ib-break-nested.lines.txt"] = 14,
+        ["ib-break-nested.print.txt"] = 32,
+        ["ib-break-nested.words.txt"] = 17,
+        ["ib-break-page.boxes.txt"] = 1,
+        ["ib-break-page.lines.txt"] = 3,
+        ["ib-break-page.print.txt"] = 25,
+        ["ib-break-page.words.txt"] = 20,
+        ["ib-break-space.boxes.txt"] = 1,
+        ["ib-break-space.lines.txt"] = 11,
+        ["ib-break-space.print.txt"] = 21,
+        ["ib-break-space.words.txt"] = 9,
         ["ib-code-kbd.boxes.txt"] = 1,
         ["ib-code-kbd.lines.txt"] = 2,
         ["ib-code-kbd.print.txt"] = 13,
@@ -2410,7 +2430,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(586);
+        cases.Should().HaveCount(591);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

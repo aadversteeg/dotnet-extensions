@@ -388,6 +388,11 @@ ib-align equal
 ib-alone equal
 ib-background equal
 ib-border equal
+ib-break-align equal
+ib-break-fraction equal
+ib-break-nested equal
+ib-break-page equal
+ib-break-space equal
 ib-code-kbd equal
 ib-empty-alone equal
 ib-fraction equal

@@ -83,6 +83,15 @@ public sealed record LineGroupPart(InlineGroup Group, Rect Area, int First, int 
     /// top-left corner, where its background and border are painted (THE INLINE BOX STYLE; on whole pixels of the page under
     /// <see cref="InlineBoxSnapping.WholePixels"/>, <see cref="InlineBoxPixels"/>); null for a group without a box.</summary>
     public Rect? Box { get; init; }
+
+    /// <summary>True when the group's start edge (<see cref="InlineBoxStyle.Start"/>) lies in this part: the part paints the
+    /// box's left border. A box over two or more lines is sliced (<c>box-decoration-break: slice</c>): its first part holds the
+    /// start edge, its last the end edge, a part between them neither (THE RULE FOR AN INLINE BOX OVER LINES).</summary>
+    public bool HoldsStart { get; init; }
+
+    /// <summary>True when the group's end edge (<see cref="InlineBoxStyle.End"/>) lies in this part: the part paints the box's
+    /// right border.</summary>
+    public bool HoldsEnd { get; init; }
 }
 
 /// <summary>

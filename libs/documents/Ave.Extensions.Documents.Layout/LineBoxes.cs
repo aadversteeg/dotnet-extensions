@@ -234,9 +234,18 @@ internal static class LineBoxes
         }
 
         var parts = groups.End();
-        if (parts.FirstOrDefault(part => part is { Group.Box: not null, Box: null }) is { } overTwoLines)
+
+        // THE RULE FOR AN INLINE BOX OVER LINES, its limits, measured against Chromium's print: a justified line that a box goes
+        // on from is widened by more than its room (each space 0.244 pt wider, the line 0.73 pt past its end, where the engine
+        // widens nothing), and a line that ends at a shown soft hyphen inside a box is shaped again here without its hyphen.
+        if (align == TextAlign.Justify && !isLastLine && parts.FirstOrDefault(part => part is { Group.Box: not null, HoldsEnd: false }) is { } justified)
         {
-            return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(overTwoLines.Group, "it breaks over two lines, and this version draws an inline box on one line only; keep its content on one line (white-space: nowrap) or make it shorter"));
+            return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(justified.Group, "it breaks over two lines of a justified paragraph, which this version does not draw; keep its content on one line (white-space: nowrap) or align the paragraph to the start"));
+        }
+
+        if (pieces.FirstOrDefault(piece => piece.Run is ShapedRun && piece.Segment.Glyphs.Count > 0 && piece.Segment.Glyphs[^1].Text.EndsWith('\u00AD') && piece.Run.Groups.Any(group => group.Node.Box is not null)) is { Run: { } hyphenated })
+        {
+            return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(hyphenated.Groups.Last(group => group.Node.Box is not null).Node, "it breaks over two lines at a soft hyphen, which this version does not draw; leave out the soft hyphen or keep the word on one line"));
         }
 
         return Result<LineFragment, Error>.Success(new LineFragment(new Size(x, above + below), children.ToImmutable()) { Groups = parts });
@@ -252,6 +261,17 @@ internal static class LineBoxes
     /// descent below it, at the group's font size and under the profile's font metric rounding, whatever the sizes of the
     /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller). The edges
     /// are exact, not rounded to whole pixels as Chromium writes them: they are not printed.
+    /// <para>THE RULE FOR AN INLINE BOX OVER LINES (<c>box-decoration-break: slice</c>, CSS Fragmentation 3 §5.4): a group with a
+    /// box has a part on each line it lies on, its border box from its first to its last piece there; the start edge (left
+    /// margin, border and padding) lies in the first part only and the end edge in the last only, each where the line
+    /// breaker put it (THE RULE FOR AN INLINE BOX'S EDGES IN A LINE), and the top and bottom padding and border on every
+    /// part. As Chromium prints it: a box from "aa" to "ff" over two lines paints 54..98.25 pt and 18..73.5 pt, a box inside
+    /// it its own parts over them (case <c>ib-break-nested</c>); a box whose first character is a space at the end of a line
+    /// paints its start padding alone on that line, 82.5..87 pt after the word, and its text from the next line's start;
+    /// one whose last character is a space there ends its background 3 pt (its padding) after the last glyph, the space
+    /// carrying none (<c>ib-break-space</c>); centred and right-aligned lines place each part with the line
+    /// (<c>ib-break-align</c>); a fractional top padding moves the text of every part by its own rounding
+    /// (<c>ib-break-fraction</c>); between two lines over a page break, a part on each page (<c>ib-break-page</c>).</para>
     /// </summary>
     private sealed class LineGroups(double baseline, FontMetricRounding rounding)
     {
@@ -320,14 +340,17 @@ internal static class LineBoxes
                 var extent = InlineExtent.Of(group.Font, style.FontSize.Points, style.LineHeight, rounding);
                 parts[part] = new LineGroupPart(group.Node, new Rect(new Point(left, baseline - extent.Ascent), new Size(right - left, extent.Ascent + extent.Descent)), first, lastEnd - first)
                 {
-                    Box = group.Node.Box is { } box && start && end ? BorderBox(group, box, left, right, extent) : null,
+                    Box = group.Node.Box is { } box ? BorderBox(group, box, left, right, extent) : null,
+                    HoldsStart = start,
+                    HoldsEnd = end,
                 };
             }
         }
 
         /// <summary>
-        /// The border box of a group's box that lies whole on the line: in the inline direction from after its start margin to
-        /// before its end margin, in the block direction from its top border and padding above its font's ascent to its bottom
+        /// The border box of a group's box on the line (THE RULE FOR AN INLINE BOX OVER LINES): in the inline direction from
+        /// after its start margin, or from its first piece on the line where its start edge lies on an earlier line, to before
+        /// its end margin, or to the end of its last piece where its end edge lies on a later line, in the block direction from its top border and padding above its font's ascent to its bottom
         /// padding and border below its descent (CSS 2.1 §10.6.1: the height of an inline box's content area is that of its
         /// font, and its vertical padding, border and margin start from it), exact: under
         /// <see cref="InlineBoxSnapping.WholePixels"/> its edges are put on whole pixels of the page once the page is known

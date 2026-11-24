@@ -224,7 +224,7 @@ public static class PagePainter
 
                 if (part is { Box: { } area, Group.Box: { } box })
                 {
-                    items.AddRange(Decoration([.. InlineBox(box, new Rect(origin + area.Origin, area.Size))], inArtifact));
+                    items.AddRange(Decoration([.. InlineBox(box, part, new Rect(origin + area.Origin, area.Size))], inArtifact));
                 }
 
                 if (part.Count == 0)
@@ -254,10 +254,13 @@ public static class PagePainter
         return items;
     }
 
-    /// <summary>The background and then the border sides of an inline box, in its border box <paramref name="area"/> (THE RULE
-    /// FOR PAINTING AN INLINE BOX): the sides as a box's (<see cref="Border(BoxFragment, Point)"/>).</summary>
-    private static IEnumerable<DrawItem> InlineBox(InlineBoxStyle box, Rect area) =>
-        [.. box.Background is { } color ? [new FillRectangle(area, color)] : Array.Empty<DrawItem>(), .. Sides(box.Border, area.Origin, area.Size)];
+    /// <summary>The background and then the border sides of an inline box's part, in its border box <paramref name="area"/>
+    /// (THE RULE FOR PAINTING AN INLINE BOX): the sides as a box's (<see cref="Border(BoxFragment, Point)"/>), the left one
+    /// only on the part that holds the start edge and the right one only on the part that holds the end edge (THE RULE FOR AN
+    /// INLINE BOX OVER LINES).</summary>
+    private static IEnumerable<DrawItem> InlineBox(InlineBoxStyle box, LineGroupPart part, Rect area) =>
+        [.. box.Background is { } color ? [new FillRectangle(area, color)] : Array.Empty<DrawItem>(),
+            .. Sides(box.Border with { Left = part.HoldsStart ? box.Border.Left : BorderSide.None, Right = part.HoldsEnd ? box.Border.Right : BorderSide.None }, area.Origin, area.Size)];
 
     private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, double pageWidth, Anchors anchors) =>
         children.SelectMany(child => Items(child.Fragment, origin + child.Offset, inArtifact, pageWidth, anchors));

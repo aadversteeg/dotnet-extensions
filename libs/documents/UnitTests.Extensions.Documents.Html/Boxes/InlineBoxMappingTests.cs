@@ -163,9 +163,9 @@ public class InlineBoxMappingTests
     }
 
     [Fact]
-    public void A_box_over_two_lines_is_refused_by_layout_at_the_element()
+    public void A_box_over_two_lines_of_a_justified_paragraph_is_refused_by_layout_at_the_element()
     {
-        var boxes = Boxes($"<p style=\"width: auto\">Start <span style=\"background-color: #ff0000\">{string.Join(" ", Enumerable.Repeat("word", 200))}</span>.</p>");
+        var boxes = Boxes($"<p style=\"text-align: justify\">Start <span style=\"background-color: #ff0000\">{string.Join(" ", Enumerable.Repeat("word", 200))}</span>.</p>");
 
         var laid = boxes.OnSuccessBind(value => DocumentLayout.Run(value.Document, value.Fonts));
 
@@ -175,25 +175,32 @@ public class InlineBoxMappingTests
     }
 
     /// <summary>The inline box cases through the HTML path into a tagged PDF (PDF/A-3a and PDF/UA-1 together, each case with
-    /// a title and a language added): a badge, a mark, code and a key inside paragraphs, a box with a language. veraPDF
-    /// passes both.</summary>
+    /// a title and a language added): a badge, a mark, code and a key inside paragraphs, a box with a language, boxes alone,
+    /// boxes over lines and over a page break, and a box with a language over two lines. veraPDF passes both.</summary>
     [DockerTheory]
     [Trait("Category", "Reference")]
     [InlineData("3a")]
     [InlineData("ua1")]
     public void The_inline_box_cases_as_tagged_PDF_pass_veraPDF(string flavour)
     {
-        string[] names = ["ib-align", "ib-background", "ib-border", "ib-code-kbd", "ib-fraction", "ib-margin", "ib-nested", "ib-padding", "ib-space"];
+        string[] names = ["ib-align", "ib-alone", "ib-background", "ib-border", "ib-break-align", "ib-break-fraction", "ib-break-nested", "ib-break-page", "ib-break-space", "ib-code-kbd",
+            "ib-empty-alone", "ib-fraction", "ib-margin", "ib-nested", "ib-only-boxes", "ib-origin-cell", "ib-origin-margin", "ib-origin-page", "ib-padding", "ib-space"];
         var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-html-inline-boxes-").FullName;
         try
         {
-            foreach (var name in names.Append("badge-language"))
+            foreach (var name in names.Append("badge-language").Append("broken-language"))
             {
-                var path = Path.Combine(HtmlCases.Folder(), (name == "badge-language" ? "ib-background" : name) + ".html");
+                var path = Path.Combine(HtmlCases.Folder(), (name switch { "badge-language" => "ib-background", "broken-language" => "ib-break-nested", _ => name }) + ".html");
                 var html = File.ReadAllText(path).Replace("<html>", "<html lang=\"en\">", StringComparison.Ordinal).Replace("<head>", "<head><title>Inline boxes</title>", StringComparison.Ordinal);
                 if (name == "badge-language")
                 {
                     html = html.Replace("<span style=\"background-color: #ff0000\">red</span>", "<span lang=\"fr\" style=\"background-color: #ff0000\">rouge</span>", StringComparison.Ordinal);
+                }
+
+                if (name == "broken-language")
+                {
+                    html = html.Replace("<p>Nested <span style=", "<p>Nested <span lang=\"fr\" style=", StringComparison.Ordinal);
+                    html.Should().Contain("lang=\"fr\"");
                 }
 
                 var baseUrl = new System.Uri(path).AbsoluteUri;
@@ -208,7 +215,7 @@ public class InlineBoxMappingTests
 
             var results = VeraPdf.Validate(folder, flavour);
 
-            results.Should().HaveCount(names.Length + 1);
+            results.Should().HaveCount(names.Length + 2);
             results.Should().OnlyContain(result => result.IsCompliant && result.PassedChecks > 0, VeraPdf.Describe(results));
         }
         finally

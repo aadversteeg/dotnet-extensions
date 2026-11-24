@@ -119,13 +119,57 @@ public class InlineBoxTests
     }
 
     [Fact]
-    public void A_box_that_breaks_over_two_lines_is_refused_at_the_group()
+    public void A_box_over_lines_is_sliced_its_left_side_on_its_first_part_and_its_right_side_on_its_last()
     {
-        var error = Refused(Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(2), Run(5, string.Join(" ", Enumerable.Repeat("word", 30))))])));
+        var sides = new Border(BorderSide.None, new BorderSide(1.Pt(), Blue), BorderSide.None, new BorderSide(1.Pt(), Blue));
+        var text = string.Join(" ", Enumerable.Repeat("word", 30));
+        var page = Laid(Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(2, border: sides), Run(5, text)), Run(4, " end")]))).Pages[0];
+
+        var fills = page.Items.OfType<FillRectangle>().ToList();
+        var backgrounds = fills.Where(fill => fill.Color == Red).Select(fill => fill.Area).ToList();
+        var borders = fills.Where(fill => fill.Color == Blue).Select(fill => fill.Area).ToList();
+        var words = page.Items.OfType<GlyphRun>().Where(run => run.Glyphs.Any(glyph => glyph.Text.Contains('w'))).ToList();
+
+        backgrounds.Count.Should().BeGreaterThanOrEqualTo(3, "one part per line");
+        borders.Should().HaveCount(2, "the left side on the first part, the right side on the last");
+        borders[0].Origin.X.Should().BeApproximately(backgrounds[0].Origin.X, 1e-9);
+        borders[1].Origin.X.Should().BeApproximately(backgrounds[^1].Origin.X + backgrounds[^1].Size.Width - 1, 1e-9);
+        backgrounds[1].Origin.X.Should().BeApproximately(10, 1e-9, "a middle part starts at its first glyph, at the line's start");
+        words[0].Origin.X.Should().BeApproximately(backgrounds[0].Origin.X + 3, 1e-9, "the start edge, border and padding, before the first part's text");
+        words[1].Origin.X.Should().BeApproximately(10, 1e-9, "no start edge on the next line");
+    }
+
+    [Fact]
+    public void A_box_over_two_lines_of_a_justified_paragraph_is_refused_at_the_group()
+    {
+        var text = string.Join(" ", Enumerable.Repeat("word", 30));
+        var error = Refused(Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(2), Run(5, text))], BoxStyle.Initial with { TextAlign = TextAlign.Justify })));
 
         error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
-        error.Message.Should().Contain("two lines");
+        error.Message.Should().Contain("justified");
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(3);
+    }
+
+    [Fact]
+    public void A_box_over_two_lines_at_a_soft_hyphen_is_refused_at_the_group()
+    {
+        var half = "abcdefghijklmnopqrstuvwxyzabcdefghijkl";
+        var error = Refused(Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(2), Run(5, half + "\u00AD" + half))])));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
+        error.Message.Should().Contain("soft hyphen");
+    }
+
+    [Fact]
+    public void A_box_on_a_later_page_that_reaches_above_its_page_area_is_refused_and_one_that_does_not_is_drawn()
+    {
+        StyledDocument Pages(double top) => Document([.. Enumerable.Range(0, 6).Select(index => (Node)Line(10 + index, [Run(20 + index, "aa")])),
+            Line(1, [Run(2, "bb "), Boxed(3, Padded(1, top: top), Run(5, "cc"))])]) with { Page = new PageStyle(200.Pt(), 100.Pt(), Edges.All(10.Pt())) };
+
+        var error = Refused(Pages(3));
+        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
+        error.Message.Should().Contain("reaches above its page area");
+        Laid(Pages(0)).Pages.Should().HaveCount(2);
     }
 
     [Fact]
