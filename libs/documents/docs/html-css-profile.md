@@ -583,6 +583,11 @@ the character, its code point, the face, the list and what to do, and a later fa
 here, and the engine takes no glyph from another font: put the character in an element whose font has it, or use an
 image. The family 'Theano Didot' of the list has it: set 'Theano Didot' on an element around the character."
 
+The text is checked as it is drawn, after its `text-transform`: a character only the transform makes (a capital, a
+small letter, the final sigma) is refused at the place of the character it is made of, and the message says so: "The
+character 'Ɑ' (U+2C6D), which 'text-transform: uppercase' makes of 'ɑ' (U+0251) written here, has no glyph in the face
+'Lato-Regular' …"
+
 The check is the shaper's own rule, which `HtmlRendering` passes in (`HtmlBoxOptions.MissingCharacters`); a caller of
 `HtmlBoxGenerator` alone who leaves it out gets layout's refusal of the first paragraph with a missing character, at
 the line of its text. Never missing: the characters that need no glyph (Default_Ignorable_Code_Point, among them the

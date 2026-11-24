@@ -339,7 +339,21 @@ public static partial class HtmlBoxGenerator
         /// <param name="element">The element whose face draws it.</param>
         /// <param name="place">The place of an offset in <paramref name="data"/>: the character's own place for text from
         /// the document, the declaration for generated text.</param>
-        private void RefuseMissingGlyphs(string data, StyledElement element, Func<int, TextPosition> place)
+        private void RefuseMissingGlyphs(string data, StyledElement element, Func<int, TextPosition> place) => RefuseMissingGlyphs(data, data, "none", element, place);
+
+        /// <summary>
+        /// Refuses each character of a text as it is drawn that the face has no glyph for (<see
+        /// cref="RefuseMissingGlyphs(string, StyledElement, Func{int, TextPosition})"/>): after its <c>text-transform</c>, which
+        /// keeps every offset where it is, so a character the transform makes (a capital, a small letter) is checked and
+        /// refused at the place of the character it is made of, with both named.
+        /// </summary>
+        /// <param name="data">The text as written with its transform applied (<see cref="Drawn"/>).</param>
+        /// <param name="written">The text as written, as long as <paramref name="data"/>.</param>
+        /// <param name="transform">The text's computed <c>text-transform</c>.</param>
+        /// <param name="element">The element whose face draws it.</param>
+        /// <param name="place">The place of an offset: the character's own place for text from the document, the declaration
+        /// for generated text.</param>
+        private void RefuseMissingGlyphs(string data, string written, string transform, StyledElement element, Func<int, TextPosition> place)
         {
             if (options.MissingCharacters is not { } missingCharacters || _missingGlyphs.Count >= MaxMissingGlyphs || !_faces.TryGetValue(element, out var face))
             {
@@ -375,7 +389,8 @@ public static partial class HtmlBoxGenerator
                 if (face.RequireGlyph(character) is { IsFailure: true } raised && _missingGlyphs.Add((face, character.Value)))
                 {
                     var later = Fonts.Describe(element.Style, face, other => missingCharacters(character.ToString(), other).IsEmpty);
-                    Failures.Add(MissingGlyph(raised.Error, face, character, later).WithSource(_sourceName, place(offset)));
+                    var madeOf = Rune.TryGetRuneAt(written, offset, out var source) && source != character ? (transform, source) : ((string, Rune)?)null;
+                    Failures.Add(MissingGlyph(raised.Error, face, character, later, madeOf).WithSource(_sourceName, place(offset)));
                 }
             }
         }
@@ -384,15 +399,16 @@ public static partial class HtmlBoxGenerator
         /// and code point, <see cref="TrueTypeFont.RequireGlyph"/>), with a message that names the character, its code
         /// point, the face, the family list in effect and what to do; and the later family of that list that has it, when
         /// one does.</summary>
-        private static Error MissingGlyph(Error raised, TrueTypeFont face, Rune character, (string Families, string? Later) list)
+        private static Error MissingGlyph(Error raised, TrueTypeFont face, Rune character, (string Families, string? Later) list, (string Transform, Rune Source)? madeOf = null)
         {
             var (families, later) = list;
             var codePoint = $"U+{character.Value:X4}";
+            var made = madeOf is { } of ? $", which 'text-transform: {of.Transform}' makes of '{of.Source}' (U+{of.Source.Value:X4}) written here," : string.Empty;
             var hint = later is null
                 ? string.Empty
                 : $" The family '{later}' of the list has it: set '{later}' on an element around the character.";
             return new Error(raised.Code,
-                    $"The character '{character}' ({codePoint}) has no glyph in the face '{face.Names.PostScriptName}' that {families} gives here, and the engine takes no glyph from another font: put the character in an element whose font has it, or use an image.{hint}",
+                    $"The character '{character}' ({codePoint}){made} has no glyph in the face '{face.Names.PostScriptName}' that {families} gives here, and the engine takes no glyph from another font: put the character in an element whose font has it, or use an image.{hint}",
                     raised.Metadata)
                 .With(ErrorMetadataKeys.Value, codePoint);
         }
@@ -693,20 +709,30 @@ public static partial class HtmlBoxGenerator
             }
         }
 
+        /// <summary>The computed <c>text-transform</c> of a text: <c>none</c>, <c>uppercase</c>, <c>lowercase</c> or
+        /// <c>capitalize</c>.</summary>
+        private static string TransformOf(StyledText text) =>
+            text.Style[PropertyRegistry.Find("text-transform")!] is CssKeyword { Name: var name } ? name : "none";
+
+        /// <summary>The text as written with its transform applied, for the glyph check (<see cref="RefuseMissingGlyphs(string, string, string, StyledElement, Func{int, TextPosition})"/>):
+        /// the same length, so each offset is the source's; the text as written where the transform does not map it (that
+        /// text is refused and drawn as written, <see cref="Transformed"/>).</summary>
+        private static string Drawn(string written, string transform, InlineFrame frame, char previous) =>
+            transform == "none" ? written : TextTransforms.Apply(written, transform, frame.Element.Language, previous) is { Reason: null } result ? result.Text : written;
+
         /// <summary>
         /// A text with its <c>text-transform</c> applied (<see cref="TextTransforms"/>), in the language of the element it
         /// lies in. Capitalize looks at the character before the text (<see cref="PreviousCharacter"/>). A text with a
         /// character the transform does not map is refused there, with its offset, and drawn as written.
         /// </summary>
-        private string Transformed(StyledText text, Stack<object> stack, InlineFrame frame, string data)
+        private string Transformed(StyledText text, string transform, InlineFrame frame, char previous, string data)
         {
-            var transform = text.Style[PropertyRegistry.Find("text-transform")!] is CssKeyword { Name: var name } ? name : "none";
             if (transform == "none")
             {
                 return data;
             }
 
-            var result = TextTransforms.Apply(data, transform, frame.Element.Language, PreviousCharacter(stack, frame));
+            var result = TextTransforms.Apply(data, transform, frame.Element.Language, previous);
             if (result.Reason is null)
             {
                 return result.Text;
@@ -797,8 +823,12 @@ public static partial class HtmlBoxGenerator
                     RefuseUnspacedCharacter(text);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        RefuseMissingGlyphs(text.Text.Data, frame.Element, frame.Element.Generated is { } declared ? _ => declared.Position : text.Text.PositionOf);
-                        var data = Transformed(text, stack, frame, Characters(text.Text));
+                        // The glyphs are checked in the text as it is drawn, after its transform, at the source's places.
+                        var transform = TransformOf(text);
+                        var previous = transform == "none" ? ' ' : PreviousCharacter(stack, frame);
+                        RefuseMissingGlyphs(Drawn(text.Text.Data, transform, frame, previous), text.Text.Data, transform, frame.Element,
+                            frame.Element.Generated is { } declared ? _ => declared.Position : text.Text.PositionOf);
+                        var data = Transformed(text, transform, frame, previous, Characters(text.Text));
                         var source = frame.Element.Generated is { } generated ? new SourceLocation(generated.SourceName, generated.Position.Line) : Source(text.Text.Position);
                         frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, source) { Generated = frame.Element.Generated is not null });
                     }

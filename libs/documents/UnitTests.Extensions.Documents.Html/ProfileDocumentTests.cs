@@ -305,6 +305,11 @@ public class ProfileDocumentTests
         Line("here, and the engine takes no glyph from another font: put the character in an element whose font has it, or use an");
         Line("image. The family 'Theano Didot' of the list has it: set 'Theano Didot' on an element around the character.\"");
         Line();
+        Line("The text is checked as it is drawn, after its `text-transform`: a character only the transform makes (a capital, a");
+        Line("small letter, the final sigma) is refused at the place of the character it is made of, and the message says so: \"The");
+        Line("character 'Ɑ' (U+2C6D), which 'text-transform: uppercase' makes of 'ɑ' (U+0251) written here, has no glyph in the face");
+        Line("'Lato-Regular' …\"");
+        Line();
         Line("The check is the shaper's own rule, which `HtmlRendering` passes in (`HtmlBoxOptions.MissingCharacters`); a caller of");
         Line("`HtmlBoxGenerator` alone who leaves it out gets layout's refusal of the first paragraph with a missing character, at");
         Line("the line of its text. Never missing: the characters that need no glyph (Default_Ignorable_Code_Point, among them the");

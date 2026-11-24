@@ -3,8 +3,10 @@ using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Html;
 using Ave.Extensions.Documents.Html.Boxes;
+using Ave.Extensions.Documents.Html.Parsing;
 using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace UnitTests.Extensions.Documents.Html.Boxes;
 
@@ -129,6 +131,59 @@ public class MissingGlyphTests
     /// <summary>The characters that need no glyph, in the Roboto subset, which has a glyph for none of them (only I and
     /// U+0197): the soft hyphen where no line breaks at it, and default-ignorable characters (Default_Ignorable_Code_Point:
     /// zero width space, the joiners, word joiner, U+FEFF, a variation selector, the Mongolian vowel separator).</summary>
+    /// <summary>A character that only text-transform makes is checked as it is drawn: Lato has the Latin alpha ɑ but not
+    /// its capital Ɑ (U+2C6D), so uppercase refuses the capital at the place of the ɑ, naming both.</summary>
+    [Fact]
+    public void A_capital_that_only_uppercase_makes_is_refused_at_the_letter_it_is_made_of()
+    {
+        var html = Document("<p style=\"text-transform: uppercase\">word a\u0251b</p>");
+
+        var refusal = Refusals(html).Single();
+
+        refusal.Code.Should().Be(FontErrorCodes.GlyphMissing);
+        refusal.Metadata![ErrorMetadataKeys.CodePoint].Should().Be("U+2C6D");
+        Place(refusal).Should().Be(((object?)PlaceOf(html, "\u0251").Line, (object?)PlaceOf(html, "\u0251").Column));
+        refusal.Message.Should().StartWith("The character '\u2C6D' (U+2C6D), which 'text-transform: uppercase' makes of '\u0251' (U+0251) written here, has no glyph in the face 'Lato-Regular'");
+    }
+
+    /// <summary>The other direction, on the small subset of Roboto the tests have (only I and Ɨ): lowercase makes ɨ
+    /// (U+0268), which the subset has not, refused at the Ɨ. No face of the family's assets has a capital without its small
+    /// letter apart from this subset.</summary>
+    [Fact]
+    public void A_small_letter_that_only_lowercase_makes_is_refused_at_the_letter_it_is_made_of()
+    {
+        var html = Document("<p style=\"font-family: Roboto; text-transform: lowercase\">\u0197</p>", string.Empty);
+
+        var refusal = Refusals(html).Single();
+
+        refusal.Metadata![ErrorMetadataKeys.CodePoint].Should().Be("U+0268");
+        Place(refusal).Should().Be(((object?)PlaceOf(html, "\u0197").Line, (object?)PlaceOf(html, "\u0197").Column));
+        refusal.Message.Should().Contain("which 'text-transform: lowercase' makes of '\u0197' (U+0197) written here");
+    }
+
+    /// <summary>A capital sigma at a word's end lowercases to the final sigma ς, and the check is given that text: every face
+    /// of the family's assets that has Σ and σ has ς too, so no refusal can show it, and the check's input is read here.</summary>
+    [Fact]
+    public void The_glyph_check_reads_the_final_sigma_that_lowercase_makes()
+    {
+        var seen = new List<string>();
+        var html = Document("<p style=\"text-transform: lowercase\">\u039F\u0394\u039F\u03A3 word</p>");
+        var result = HtmlParser.Parse(html, new HtmlParseOptions("doc.html"))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions()))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions
+            {
+                Fonts = new FontSet([TestFonts.Regular]),
+                MissingCharacters = (text, face) =>
+                {
+                    seen.Add(text);
+                    return [];
+                },
+            }));
+
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        seen.Should().Contain(text => text.Contains("\u03BF\u03B4\u03BF\u03C2", StringComparison.Ordinal), "the check reads οδος, its last letter the final sigma");
+    }
+
     [Theory]
     [InlineData("&#xAD;")]
     [InlineData("&#x200B;")]
