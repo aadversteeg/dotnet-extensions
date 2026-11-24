@@ -212,7 +212,6 @@ public class GeneratedContentTests
     }
 
     [Theory]
-    [InlineData("li::marker { color: red }", "a list marker is drawn from list-style-type alone")]
     [InlineData("p::first-line { color: red }", "put the first line's text in a span")]
     [InlineData("p:first-letter { color: red }", "put the first letter in a span")]
     public void The_other_tree_abiding_pseudo_elements_stay_refused_with_what_to_write(string css, string message)

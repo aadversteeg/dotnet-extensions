@@ -342,6 +342,10 @@ gc-counters-nested equal
 gc-items-break equal
 gc-items-kern equal
 gc-list-item equal
+gc-marker-color equal
+gc-marker-content equal
+gc-marker-font refused Documents.Css.Unsupported.GeneratedContent font-size: 16pt at 13:17
+gc-marker-weight equal
 gc-nothing equal
 gc-string-block equal
 gc-string-children equal

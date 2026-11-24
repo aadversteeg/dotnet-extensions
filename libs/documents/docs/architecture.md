@@ -648,7 +648,7 @@ start tag, with the property and the value) only where it would change the print
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
 | `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
 | `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `width` and `height`, `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
-| `list-style-type`, `list-style-position` | the twelve counter styles the registry accepts (`disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha`, `lower-latin`, `upper-latin`, `none`), `outside`; no effect on a box that is not a list item | `inside`, `list-style-image` other than `none`, other counter styles and strings (by the registry); `::marker` rules (a selector the style sheet refuses) |
+| `list-style-type`, `list-style-position` | the twelve counter styles the registry accepts (`disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha`, `lower-latin`, `upper-latin`, `none`), `outside`; no effect on a box that is not a list item | `inside`, `list-style-image` other than `none`, other counter styles and strings (by the registry); a `::marker` declaration other than `color`, `font-weight`, `font-style` and a `content` of strings (refused at it) |
 | `box-sizing`, `border-spacing`, `empty-cells`, `caption-side`, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, collapsed borders, no caption, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
@@ -679,7 +679,8 @@ leaves it; `value` in a reversed `ol`, or outside an `ol` where its list shows n
 that a list's counter would number (inside a list's item, or after a list among its siblings), or whose number would
 continue the counter of an item with another parent; the marker of an item with text decorations. Lists deeper than
 16 or longer than 10 000 items fail under both policies. The style sheet refuses `list-style-position: inside`
-(case `li-inside`), `list-style-image`, `::marker` and writes to the `list-item` counter (**Counters**); layout
+(case `li-inside`), `list-style-image`, the `::marker` declarations the marker does not draw (below) and writes to the
+`list-item` counter (**Counters**); layout
 refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types`).
 
 **Generated text** (`Css/Cascade/StyleComputer.PseudoElements.cs`, `HtmlStyleResolver.Generated`; CSS Pseudo 4 §4.1, CSS
@@ -707,8 +708,12 @@ alternative text after `/`, `var()` and `revert`; `display` other than `inline`,
 element that is not a block (Chromium breaks an inline element's lines around it: case `gc-block-span`); on an inline
 one a margin, padding, border or background (they need inline boxes); a position or a float that differs from what an
 inline child of the element has without it; the pseudo-elements of `table`, its row groups and rows (Chromium draws them in an anonymous cell), of a
-list element (its children are its items here) and of the other void elements. `::marker`, `::first-line` and
-`::first-letter` stay refused at their selector. Text past the limits below is refused, never cut. The `content` of
+list element (its children are its items here) and of the other void elements. A `::marker` rule (cascaded the same
+way, on a list item) gives the marker its `color`, `font-weight` and `font-style`, a shape as a number (cases
+`gc-marker-color`, `gc-marker-weight`), and a `content` of strings replaces the marker's text, right-aligned as a
+number, also in place of a shape (`gc-marker-content`); its other declarations are refused at their place (a larger
+`font-size` makes the item's first line taller in Chromium: case `gc-marker-font`), and so are a counter or `none` in
+its `content`. `::first-line` and `::first-letter` stay refused at their selector. Text past the limits below is refused, never cut. The `content` of
 page-margin boxes keeps its own grammar (`ContentValue.Parse`): a document's counter is refused there (Chromium 159
 prints 0 for it on every page, measured). A refusal raised in box generation inside generated text (a character, a
 font) names the style sheet of the `content` declaration.

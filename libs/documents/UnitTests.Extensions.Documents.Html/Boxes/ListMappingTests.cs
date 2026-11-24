@@ -176,9 +176,9 @@ public class ListMappingTests
     }
 
     [Fact]
-    public void A_marker_rule_is_refused_at_its_selector()
+    public void A_marker_rule_with_a_property_the_marker_does_not_draw_is_refused_at_its_declaration()
     {
-        var refusal = Refusal(Doc("<ul><li>a</ul>", "li::marker { color: red }"));
+        var refusal = Refusal(Doc("<ul><li>a</ul>", "li::marker { font-size: 20pt }"));
         refusal.ToString().Should().Contain("::marker");
         refusal.Metadata!.ContainsKey(ErrorMetadataKeys.SourceColumn).Should().BeTrue();
     }

@@ -164,7 +164,6 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
     /// the others.</summary>
     private static string Advice(string name) => name.TrimStart(':') switch
     {
-        "marker" => ": a list marker is drawn from list-style-type alone; remove the rule",
         "first-line" => ": put the first line's text in a span and style the span",
         "first-letter" => ": put the first letter in a span and style the span",
         _ => string.Empty,

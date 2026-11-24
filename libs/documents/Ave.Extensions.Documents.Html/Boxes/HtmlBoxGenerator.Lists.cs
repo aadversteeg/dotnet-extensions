@@ -317,7 +317,14 @@ public static partial class HtmlBoxGenerator
         private Box? Label(StyledElement element, NodeId id, NodeId mark, SourceLocation source)
         {
             var type = ListStyleType(element);
-            if (type == "none" || FaceStyleOf(element) is not { } face)
+            if (type == "none" && element.Marker is { Text: not null })
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.List, $"The content of the ::marker of <{element.Element.LocalName}>, whose list-style-type is none, is not drawn in this version: remove list-style-type: none.", "content", element.Element.Position);
+            }
+
+            // CSS Lists 3 §3.1: a ::marker rule gives the marker its colour, weight and style, a shape as a number, and a
+            // content of strings its text (cases gc-marker-color, gc-marker-font, gc-marker-content).
+            if (type == "none" || FaceStyleOf(element.Marker is { } marker ? element with { Style = marker.Style } : element) is not { } face)
             {
                 return null;
             }
@@ -328,7 +335,7 @@ public static partial class HtmlBoxGenerator
             }
 
             var style = face with { WhiteSpaceCollapse = WhiteSpaceCollapse.Preserve, TextWrapMode = TextWrapMode.NoWrap };
-            var (replacement, content) = type switch
+            var (replacement, content) = element.Marker?.Text is { } text ? ((string?)null, (Node)new TextRun(mark, text, style, source)) : type switch
             {
                 "disc" => ("•", (Node)new MarkerSymbol(mark, MarkerShape.Disc, face, source)),
                 "circle" => ("◦", new MarkerSymbol(mark, MarkerShape.Circle, face, source)),
