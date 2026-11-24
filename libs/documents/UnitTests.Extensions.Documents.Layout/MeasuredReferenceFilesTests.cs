@@ -1632,6 +1632,18 @@ public class MeasuredReferenceFilesTests
         ["ib-image-span.lines.txt"] = 2,
         ["ib-image-span.print.txt"] = 17,
         ["ib-image-span.words.txt"] = 8,
+        ["ib-justify-padding.boxes.txt"] = 1,
+        ["ib-justify-padding.lines.txt"] = 6,
+        ["ib-justify-padding.print.txt"] = 40,
+        ["ib-justify-padding.words.txt"] = 33,
+        ["ib-justify-place.boxes.txt"] = 1,
+        ["ib-justify-place.lines.txt"] = 6,
+        ["ib-justify-place.print.txt"] = 50,
+        ["ib-justify-place.words.txt"] = 43,
+        ["ib-justify-two.boxes.txt"] = 1,
+        ["ib-justify-two.lines.txt"] = 5,
+        ["ib-justify-two.print.txt"] = 29,
+        ["ib-justify-two.words.txt"] = 23,
         ["ib-link-button-break.boxes.txt"] = 1,
         ["ib-link-button-break.lines.txt"] = 10,
         ["ib-link-button-break.print.txt"] = 37,
@@ -2479,7 +2491,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(601);
+        cases.Should().HaveCount(604);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

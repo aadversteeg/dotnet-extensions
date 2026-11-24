@@ -238,6 +238,9 @@ internal static class LineBoxes
         // THE RULE FOR AN INLINE BOX OVER LINES, its limits, measured against Chromium's print: a justified line that a box goes
         // on from is widened by more than its room (each space 0.244 pt wider, the line 0.73 pt past its end, where the engine
         // widens nothing), and a line that ends at a shown soft hyphen inside a box is shaped again here without its hyphen.
+        // Seven other justified lines a box goes on from (start padding only, end padding only, none, two boxes, a part at
+        // a line's start, middle and end: cases ib-justify-*) Chromium widens by their room, as this rule would; what makes
+        // the two lines of ib-break-justify wider is not known, so the refusal stays for all of them.
         if (align == TextAlign.Justify && !isLastLine && parts.FirstOrDefault(part => part is { Group.Box: not null, HoldsEnd: false }) is { } justified)
         {
             return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(justified.Group, "it breaks over two lines of a justified paragraph, which this version does not draw; keep its content on one line (white-space: nowrap) or align the paragraph to the start"));
