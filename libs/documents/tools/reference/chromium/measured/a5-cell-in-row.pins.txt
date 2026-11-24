@@ -1,0 +1,4 @@
+a5-cell-in-row.boxes.txt 4
+a5-cell-in-row.lines.txt 15
+a5-cell-in-row.print.txt 36
+a5-cell-in-row.words.txt 19

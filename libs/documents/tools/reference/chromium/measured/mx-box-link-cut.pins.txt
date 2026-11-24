@@ -1,0 +1,5 @@
+mx-box-link-cut.boxes.txt 2
+mx-box-link-cut.lines.txt 16
+mx-box-link-cut.links.txt 4
+mx-box-link-cut.print.txt 46
+mx-box-link-cut.words.txt 28

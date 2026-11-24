@@ -1,0 +1,5 @@
+va-decorated.boxes.txt 1
+va-decorated.lines.txt 3
+va-decorated.links.txt 1
+va-decorated.print.txt 32
+va-decorated.words.txt 28

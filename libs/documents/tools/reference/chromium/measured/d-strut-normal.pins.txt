@@ -1,0 +1,4 @@
+d-strut-normal.boxes.txt 1
+d-strut-normal.lines.txt 0
+d-strut-normal.print.txt 10
+d-strut-normal.words.txt 8

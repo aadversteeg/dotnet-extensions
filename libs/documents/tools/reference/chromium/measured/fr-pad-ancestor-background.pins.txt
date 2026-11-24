@@ -1,0 +1,4 @@
+fr-pad-ancestor-background.boxes.txt 1
+fr-pad-ancestor-background.lines.txt 8
+fr-pad-ancestor-background.print.txt 13
+fr-pad-ancestor-background.words.txt 2

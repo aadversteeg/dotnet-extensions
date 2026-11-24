@@ -1,0 +1,1 @@
+fr-kwn-pad-one-box equal

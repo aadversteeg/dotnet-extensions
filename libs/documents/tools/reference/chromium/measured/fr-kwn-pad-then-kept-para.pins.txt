@@ -1,0 +1,4 @@
+fr-kwn-pad-then-kept-para.boxes.txt 1
+fr-kwn-pad-then-kept-para.lines.txt 0
+fr-kwn-pad-then-kept-para.print.txt 11
+fr-kwn-pad-then-kept-para.words.txt 6

@@ -1,0 +1,4 @@
+fs-none-regular-bold.boxes.txt 1
+fs-none-regular-bold.lines.txt 0
+fs-none-regular-bold.print.txt 17
+fs-none-regular-bold.words.txt 16

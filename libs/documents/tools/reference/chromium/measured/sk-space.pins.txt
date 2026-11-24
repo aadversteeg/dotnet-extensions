@@ -1,0 +1,5 @@
+sk-space.boxes.txt 1
+sk-space.ink.txt 48
+sk-space.lines.txt 6
+sk-space.print.txt 20
+sk-space.words.txt 13

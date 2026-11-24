@@ -1,0 +1,4 @@
+tp-colgroup.boxes.txt 6
+tp-colgroup.lines.txt 17
+tp-colgroup.print.txt 25
+tp-colgroup.words.txt 7

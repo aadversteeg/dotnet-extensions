@@ -8,16 +8,19 @@ using Xunit.Abstractions;
 namespace UnitTests.Extensions.Documents.Html.Boxes;
 
 /// <summary>
-/// Every Chromium reference case through the HTML path, against the committed status file
-/// (<c>tools/reference/chromium/html-status.txt</c>): one line per case, <c>name status rest</c>, where the status, the
+/// Every Chromium reference case through the HTML path, against its committed status file
+/// (<c>tools/reference/chromium/measured/&lt;case&gt;.status.txt</c>): one line, <c>name status rest</c>, where the status, the
 /// second field, is <c>equal</c> (every fact of the case's measured files within its bound, <see cref="HtmlCases"/>),
 /// <c>listed</c> with the test that pins the limit and the difference it lists, <c>refused</c> with the first refusal's
 /// code, what it names, and its line and column, or <c>open</c> with a known difference, engine against Chromium. A case
-/// that lays out and differs otherwise fails, and so does a status that changes without the file changing: the file is
-/// the list of what the HTML front-end draws, and what it refuses is the work list of the packages after this one. With
-/// <c>DOCUMENTS_UPDATE_HTML_STATUS=1</c> the test writes the file instead; a case is <c>open</c> only where the committed
-/// file already says so, so a written file never accepts a new difference. The whole documents
-/// (<c>tools/reference/chromium/documents</c>) have a status file of their own, compared and written the same way.
+/// that lays out and differs otherwise fails, and so does a status that changes without its file changing, a case without
+/// a status file and a status file without a case: the status files are the list of what the HTML front-end draws, and
+/// what it refuses is the work list of the packages after this one. The test prints how many cases have each status. With
+/// <c>DOCUMENTS_UPDATE_HTML_STATUS=1</c> the test writes the status files instead (and deletes those without a case); a
+/// case is <c>open</c> or <c>listed</c> only where its committed file already says so, so a written file never accepts a
+/// new difference. Each case's status is a file of its own, so two changes that add different cases touch no status
+/// file in common. The whole documents (<c>tools/reference/chromium/documents</c>) have status files of their own, in
+/// <c>documents/measured</c>, compared and written the same way.
 /// </summary>
 public class CaseStatusTests(ITestOutputHelper output)
 {
@@ -25,7 +28,7 @@ public class CaseStatusTests(ITestOutputHelper output)
     public void Every_case_is_equal_to_Chromium_or_refused_as_the_status_file_says() => StatusesAreCommitted(HtmlCases.Cases);
 
     /// <summary>The timesheets (one page, a normal month, a long month) and the invoice, each compared whole, with the
-    /// same comparison as a case, against <c>documents/html-status.txt</c>.</summary>
+    /// same comparison as a case, against <c>documents/measured/&lt;document&gt;.status.txt</c>.</summary>
     [Fact]
     public void Every_document_is_equal_to_Chromium_or_refused_as_its_status_file_says()
     {
@@ -35,23 +38,34 @@ public class CaseStatusTests(ITestOutputHelper output)
 
     private void StatusesAreCommitted(CaseFolder folder)
     {
-        var committed = File.ReadAllLines(folder.StatusFile).Select(HtmlCases.Fields).ToDictionary(fields => fields.Name, fields => fields.Status, StringComparer.Ordinal);
-        var statuses = folder.Names.Select(name => $"{name} {HtmlCases.Status(folder, name, committed.GetValueOrDefault(name))}").ToList();
+        var statuses = folder.Names.Select(name => $"{name} {HtmlCases.Status(folder, name, folder.Committed(name))}").ToList();
         if (Environment.GetEnvironmentVariable("DOCUMENTS_UPDATE_HTML_STATUS") == "1")
         {
-            File.WriteAllText(folder.StatusFile, string.Join("\n", statuses) + "\n");
+            foreach (var status in statuses)
+            {
+                File.WriteAllText(folder.StatusFile(HtmlCases.Fields(status).Name), status + "\n");
+            }
+
+            foreach (var name in folder.StatusNames.Except(folder.Names))
+            {
+                File.Delete(folder.StatusFile(name));
+            }
         }
 
+        var counts = statuses.GroupBy(status => HtmlCases.Fields(status).Status).OrderByDescending(group => group.Count()).ThenBy(group => group.Key, StringComparer.Ordinal);
+        output.WriteLine($"{statuses.Count} files: {string.Join(", ", counts.Select(group => $"{group.Count()} {group.Key}"))}");
         var open = statuses.Where(status => HtmlCases.Fields(status).Status == "open").ToList();
         output.WriteLine($"{open.Count} open: {string.Join("; ", open)}");
         statuses.Where(status => !HtmlCases.Accepted.Contains(HtmlCases.Fields(status).Status))
             .Should().BeEmpty("a file that lays out is laid out as Chromium prints it");
-        File.ReadAllLines(folder.StatusFile).Should().Equal(statuses, "the status of each file is the committed one");
+        folder.StatusNames.Should().Equal(folder.Names, "every file has a status file, and every status file is of a file");
+        folder.Names.Select(name => File.Exists(folder.StatusFile(name)) ? string.Join("\n", File.ReadAllLines(folder.StatusFile(name))) : $"{name} has no status file")
+            .Should().Equal(statuses, "the status of each file is the committed one");
     }
 
     [Fact]
     public void At_least_ten_cases_are_equal_to_Chromium() =>
-        File.ReadAllLines(HtmlCases.StatusFile).Count(line => HtmlCases.Fields(line).Status == "equal").Should().BeGreaterThanOrEqualTo(10);
+        HtmlCases.Names.Count(name => HtmlCases.Cases.Committed(name) == "equal").Should().BeGreaterThanOrEqualTo(10);
 
     /// <summary>The three prints with a border Chromium strokes (one rectangle path, all four sides) are refused by the
     /// HTML path today, so no status line compares them; the comparison reads their strokes as what they paint: the same

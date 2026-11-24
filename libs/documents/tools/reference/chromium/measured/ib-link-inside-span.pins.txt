@@ -1,0 +1,5 @@
+ib-link-inside-span.boxes.txt 1
+ib-link-inside-span.lines.txt 4
+ib-link-inside-span.links.txt 2
+ib-link-inside-span.print.txt 18
+ib-link-inside-span.words.txt 9

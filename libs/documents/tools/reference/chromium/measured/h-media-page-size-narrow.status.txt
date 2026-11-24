@@ -1,0 +1,1 @@
+h-media-page-size-narrow equal

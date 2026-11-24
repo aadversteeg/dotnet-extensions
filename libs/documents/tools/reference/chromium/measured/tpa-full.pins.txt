@@ -1,0 +1,4 @@
+tpa-full.boxes.txt 17
+tpa-full.lines.txt 24
+tpa-full.print.txt 89
+tpa-full.words.txt 36

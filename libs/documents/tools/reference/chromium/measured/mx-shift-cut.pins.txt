@@ -1,0 +1,4 @@
+mx-shift-cut.boxes.txt 2
+mx-shift-cut.lines.txt 10
+mx-shift-cut.print.txt 42
+mx-shift-cut.words.txt 30

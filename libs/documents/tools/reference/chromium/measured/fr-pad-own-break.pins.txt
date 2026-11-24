@@ -1,0 +1,4 @@
+fr-pad-own-break.boxes.txt 1
+fr-pad-own-break.lines.txt 0
+fr-pad-own-break.print.txt 6
+fr-pad-own-break.words.txt 4

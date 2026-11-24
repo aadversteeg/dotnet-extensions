@@ -1,0 +1,4 @@
+fr-header-pad-box-72.boxes.txt 2
+fr-header-pad-box-72.lines.txt 10
+fr-header-pad-box-72.print.txt 18
+fr-header-pad-box-72.words.txt 5

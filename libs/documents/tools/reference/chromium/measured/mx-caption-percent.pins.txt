@@ -1,0 +1,4 @@
+mx-caption-percent.boxes.txt 6
+mx-caption-percent.lines.txt 17
+mx-caption-percent.print.txt 35
+mx-caption-percent.words.txt 17

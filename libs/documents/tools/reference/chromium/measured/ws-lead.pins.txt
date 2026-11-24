@@ -1,0 +1,4 @@
+ws-lead.boxes.txt 1
+ws-lead.lines.txt 0
+ws-lead.print.txt 10
+ws-lead.words.txt 9

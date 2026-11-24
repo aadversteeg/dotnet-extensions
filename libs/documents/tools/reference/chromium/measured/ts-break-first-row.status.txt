@@ -1,0 +1,1 @@
+ts-break-first-row equal

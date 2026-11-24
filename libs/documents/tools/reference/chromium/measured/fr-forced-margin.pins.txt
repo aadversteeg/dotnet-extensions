@@ -1,0 +1,4 @@
+fr-forced-margin.boxes.txt 1
+fr-forced-margin.lines.txt 0
+fr-forced-margin.print.txt 5
+fr-forced-margin.words.txt 2

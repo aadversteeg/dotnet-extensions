@@ -1,0 +1,4 @@
+pm-inherit.boxes.txt 1
+pm-inherit.lines.txt 0
+pm-inherit.print.txt 8
+pm-inherit.words.txt 7

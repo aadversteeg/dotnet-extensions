@@ -1,0 +1,4 @@
+a4-image-nested-table.boxes.txt 3
+a4-image-nested-table.lines.txt 25
+a4-image-nested-table.print.txt 34
+a4-image-nested-table.words.txt 2

@@ -1,0 +1,1 @@
+a4-header-image-360-image listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)

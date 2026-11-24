@@ -1,0 +1,4 @@
+pm-snap-image.boxes.txt 1
+pm-snap-image.lines.txt 6
+pm-snap-image.print.txt 14
+pm-snap-image.words.txt 1

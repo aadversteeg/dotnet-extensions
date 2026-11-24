@@ -1,0 +1,1 @@
+sk-misc listed An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen: page 1 reads 'gy py jump­ ing gyp fi fj ffi fly gy figure fjord', Chromium 'gy py jump­‐ ing gyp fi fj ffi fly gy figure fjord' (print.txt)

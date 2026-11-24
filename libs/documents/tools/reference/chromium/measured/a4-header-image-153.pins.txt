@@ -1,0 +1,4 @@
+a4-header-image-153.boxes.txt 2
+a4-header-image-153.lines.txt 7
+a4-header-image-153.print.txt 12
+a4-header-image-153.words.txt 2

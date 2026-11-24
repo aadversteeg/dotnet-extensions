@@ -1,0 +1,4 @@
+ts-spacing-one.boxes.txt 5
+ts-spacing-one.lines.txt 0
+ts-spacing-one.print.txt 26
+ts-spacing-one.words.txt 5

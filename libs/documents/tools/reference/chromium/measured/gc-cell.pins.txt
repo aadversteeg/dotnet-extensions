@@ -1,0 +1,4 @@
+gc-cell.boxes.txt 4
+gc-cell.lines.txt 0
+gc-cell.print.txt 8
+gc-cell.words.txt 7

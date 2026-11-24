@@ -1,0 +1,4 @@
+kb-n11-kept-table-in-padded-box.boxes.txt 2
+kb-n11-kept-table-in-padded-box.lines.txt 7
+kb-n11-kept-table-in-padded-box.print.txt 13
+kb-n11-kept-table-in-padded-box.words.txt 4

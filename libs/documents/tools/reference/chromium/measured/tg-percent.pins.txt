@@ -1,0 +1,4 @@
+tg-percent.boxes.txt 9
+tg-percent.lines.txt 21
+tg-percent.print.txt 33
+tg-percent.words.txt 11

@@ -1,0 +1,4 @@
+ts-break-cut-bottom.boxes.txt 10
+ts-break-cut-bottom.lines.txt 26
+ts-break-cut-bottom.print.txt 88
+ts-break-cut-bottom.words.txt 36

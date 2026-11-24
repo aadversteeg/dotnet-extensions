@@ -1,0 +1,4 @@
+tg-cell.boxes.txt 18
+tg-cell.lines.txt 28
+tg-cell.print.txt 76
+tg-cell.words.txt 23

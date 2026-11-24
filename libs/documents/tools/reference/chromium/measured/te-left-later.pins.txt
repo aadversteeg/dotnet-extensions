@@ -1,0 +1,4 @@
+te-left-later.boxes.txt 7
+te-left-later.lines.txt 17
+te-left-later.print.txt 25
+te-left-later.words.txt 7

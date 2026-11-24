@@ -1,0 +1,1 @@
+tt-groups open page 1 painted area: the pixel at (90.75, 120): Chromium paints it and the engine does not; the engine paints 84 px #0000ee, Chromium 85 px (print.txt)

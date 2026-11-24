@@ -1,0 +1,4 @@
+pm-zero-alone.boxes.txt 1
+pm-zero-alone.lines.txt 6
+pm-zero-alone.print.txt 10
+pm-zero-alone.words.txt 2

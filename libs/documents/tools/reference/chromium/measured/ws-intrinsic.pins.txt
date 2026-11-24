@@ -1,0 +1,4 @@
+ws-intrinsic.boxes.txt 14
+ws-intrinsic.lines.txt 49
+ws-intrinsic.print.txt 75
+ws-intrinsic.words.txt 25

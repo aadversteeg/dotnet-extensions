@@ -1,0 +1,1 @@
+a4-header-image-beside-lines listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 reads 'H G p20 p21 p22 p23 p24 p25', Chromium 'H G p20 p21 p22 p23 p24 p25 p26' (print.txt)

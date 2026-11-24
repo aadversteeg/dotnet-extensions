@@ -1,0 +1,4 @@
+ls-align.boxes.txt 1
+ls-align.lines.txt 0
+ls-align.print.txt 41
+ls-align.words.txt 40

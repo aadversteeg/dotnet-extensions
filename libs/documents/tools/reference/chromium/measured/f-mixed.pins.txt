@@ -1,0 +1,4 @@
+f-mixed.boxes.txt 1
+f-mixed.lines.txt 0
+f-mixed.print.txt 124
+f-mixed.words.txt 120

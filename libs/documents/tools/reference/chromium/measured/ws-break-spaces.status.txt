@@ -1,0 +1,1 @@
+ws-break-spaces equal

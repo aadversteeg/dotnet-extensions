@@ -1,0 +1,4 @@
+hi-attributes.boxes.txt 1
+hi-attributes.lines.txt 0
+hi-attributes.print.txt 6
+hi-attributes.words.txt 3

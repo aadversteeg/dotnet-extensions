@@ -1,0 +1,4 @@
+a2-padded-blocks.boxes.txt 6
+a2-padded-blocks.lines.txt 20
+a2-padded-blocks.print.txt 26
+a2-padded-blocks.words.txt 4

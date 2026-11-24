@@ -1,0 +1,6 @@
+lk-top.boxes.txt 1
+lk-top.ink.txt 10
+lk-top.lines.txt 2
+lk-top.links.txt 2
+lk-top.print.txt 26
+lk-top.words.txt 22

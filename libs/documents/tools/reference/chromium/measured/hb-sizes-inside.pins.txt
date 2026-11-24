@@ -1,0 +1,4 @@
+hb-sizes-inside.boxes.txt 1
+hb-sizes-inside.lines.txt 0
+hb-sizes-inside.print.txt 6
+hb-sizes-inside.words.txt 5

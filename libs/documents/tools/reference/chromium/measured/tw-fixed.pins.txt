@@ -1,0 +1,4 @@
+tw-fixed.boxes.txt 13
+tw-fixed.lines.txt 22
+tw-fixed.print.txt 34
+tw-fixed.words.txt 11

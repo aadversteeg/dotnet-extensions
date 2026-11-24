@@ -1,0 +1,4 @@
+li-bare.boxes.txt 1
+li-bare.lines.txt 3
+li-bare.print.txt 20
+li-bare.words.txt 13

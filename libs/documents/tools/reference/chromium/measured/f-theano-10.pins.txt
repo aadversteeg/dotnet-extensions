@@ -1,0 +1,4 @@
+f-theano-10.boxes.txt 1
+f-theano-10.lines.txt 0
+f-theano-10.print.txt 43
+f-theano-10.words.txt 40

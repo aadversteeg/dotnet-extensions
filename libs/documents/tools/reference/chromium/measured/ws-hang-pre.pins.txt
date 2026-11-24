@@ -1,0 +1,4 @@
+ws-hang-pre.boxes.txt 1
+ws-hang-pre.lines.txt 0
+ws-hang-pre.print.txt 53
+ws-hang-pre.words.txt 52

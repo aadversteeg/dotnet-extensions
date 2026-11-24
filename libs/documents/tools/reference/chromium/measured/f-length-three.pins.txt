@@ -1,0 +1,4 @@
+f-length-three.boxes.txt 1
+f-length-three.lines.txt 0
+f-length-three.print.txt 5
+f-length-three.words.txt 3

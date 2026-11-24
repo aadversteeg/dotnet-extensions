@@ -1,0 +1,1 @@
+a4-header-empty-rowspan-line-image equal

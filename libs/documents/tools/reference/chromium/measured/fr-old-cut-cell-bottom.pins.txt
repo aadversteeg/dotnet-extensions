@@ -1,0 +1,4 @@
+fr-old-cut-cell-bottom.boxes.txt 2
+fr-old-cut-cell-bottom.lines.txt 10
+fr-old-cut-cell-bottom.print.txt 26
+fr-old-cut-cell-bottom.words.txt 14

@@ -1,0 +1,4 @@
+fr-row-later-padding-beside-line.boxes.txt 4
+fr-row-later-padding-beside-line.lines.txt 14
+fr-row-later-padding-beside-line.print.txt 39
+fr-row-later-padding-beside-line.words.txt 23

@@ -1,0 +1,4 @@
+hr-attrs.boxes.txt 6
+hr-attrs.lines.txt 8
+hr-attrs.print.txt 27
+hr-attrs.words.txt 7

@@ -1,0 +1,4 @@
+tg-table.boxes.txt 40
+tg-table.lines.txt 63
+tg-table.print.txt 193
+tg-table.words.txt 72

@@ -1,0 +1,4 @@
+ws-pre.boxes.txt 1
+ws-pre.lines.txt 0
+ws-pre.print.txt 22
+ws-pre.words.txt 21

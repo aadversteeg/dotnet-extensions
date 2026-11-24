@@ -1,0 +1,4 @@
+b4-row-span-6pt.boxes.txt 18
+b4-row-span-6pt.lines.txt 50
+b4-row-span-6pt.print.txt 71
+b4-row-span-6pt.words.txt 19

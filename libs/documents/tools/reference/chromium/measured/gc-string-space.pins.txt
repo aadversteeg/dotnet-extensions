@@ -1,0 +1,4 @@
+gc-string-space.boxes.txt 3
+gc-string-space.lines.txt 0
+gc-string-space.print.txt 8
+gc-string-space.words.txt 7

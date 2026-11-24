@@ -1,0 +1,4 @@
+tk-table-caption.boxes.txt 10
+tk-table-caption.lines.txt 21
+tk-table-caption.print.txt 35
+tk-table-caption.words.txt 13

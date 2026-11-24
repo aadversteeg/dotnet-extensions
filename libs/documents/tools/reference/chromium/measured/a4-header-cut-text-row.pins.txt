@@ -1,0 +1,4 @@
+a4-header-cut-text-row.boxes.txt 2
+a4-header-cut-text-row.lines.txt 13
+a4-header-cut-text-row.print.txt 33
+a4-header-cut-text-row.words.txt 18

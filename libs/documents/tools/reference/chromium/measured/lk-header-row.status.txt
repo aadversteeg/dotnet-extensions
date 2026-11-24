@@ -1,0 +1,1 @@
+lk-header-row listed A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page: link 2: Chromium's rectangle on page 1 at (45, 18.75) to uri https://example.com/head has none in the engine, which has 1 (links.txt)

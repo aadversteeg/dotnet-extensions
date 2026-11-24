@@ -1,0 +1,4 @@
+hr-default.boxes.txt 5
+hr-default.lines.txt 8
+hr-default.print.txt 25
+hr-default.words.txt 4

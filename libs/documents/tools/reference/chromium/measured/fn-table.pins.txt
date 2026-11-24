@@ -1,0 +1,4 @@
+fn-table.boxes.txt 24
+fn-table.lines.txt 62
+fn-table.print.txt 87
+fn-table.words.txt 24

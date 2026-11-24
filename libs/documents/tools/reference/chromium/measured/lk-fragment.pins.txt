@@ -1,0 +1,5 @@
+lk-fragment.boxes.txt 1
+lk-fragment.lines.txt 1
+lk-fragment.links.txt 1
+lk-fragment.print.txt 5
+lk-fragment.words.txt 3

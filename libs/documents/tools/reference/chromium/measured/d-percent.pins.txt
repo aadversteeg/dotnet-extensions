@@ -1,0 +1,4 @@
+d-percent.boxes.txt 1
+d-percent.lines.txt 0
+d-percent.print.txt 14
+d-percent.words.txt 12

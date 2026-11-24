@@ -1,0 +1,4 @@
+f-mixed-lato.boxes.txt 1
+f-mixed-lato.lines.txt 0
+f-mixed-lato.print.txt 124
+f-mixed-lato.words.txt 120

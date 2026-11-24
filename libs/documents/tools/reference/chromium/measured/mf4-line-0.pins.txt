@@ -1,0 +1,4 @@
+mf4-line-0.boxes.txt 40
+mf4-line-0.lines.txt 106
+mf4-line-0.print.txt 169
+mf4-line-0.words.txt 60

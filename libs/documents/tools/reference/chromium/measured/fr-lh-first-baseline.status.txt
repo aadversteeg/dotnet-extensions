@@ -1,0 +1,1 @@
+fr-lh-first-baseline listed Under_an_explicit_line_height_the_first_baseline_is_within_the_measured_difference_of_Chromium_s: page 1 'a0' baseline 23.25 (laid out at 23.25), Chromium 22.5 (print.txt)

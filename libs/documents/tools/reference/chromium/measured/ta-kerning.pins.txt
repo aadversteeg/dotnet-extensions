@@ -1,0 +1,4 @@
+ta-kerning.boxes.txt 1
+ta-kerning.lines.txt 0
+ta-kerning.print.txt 91
+ta-kerning.words.txt 90

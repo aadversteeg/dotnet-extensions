@@ -1,0 +1,5 @@
+lk-image.boxes.txt 1
+lk-image.lines.txt 0
+lk-image.links.txt 2
+lk-image.print.txt 4
+lk-image.words.txt 2

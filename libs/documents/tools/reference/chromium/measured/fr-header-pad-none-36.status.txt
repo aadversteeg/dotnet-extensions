@@ -1,0 +1,1 @@
+fr-header-pad-none-36 equal

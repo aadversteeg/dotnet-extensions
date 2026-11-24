@@ -1,0 +1,1 @@
+fr-row-later-padding-beside-line equal

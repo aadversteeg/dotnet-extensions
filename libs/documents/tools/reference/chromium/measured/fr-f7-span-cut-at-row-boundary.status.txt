@@ -1,0 +1,1 @@
+fr-f7-span-cut-at-row-boundary equal

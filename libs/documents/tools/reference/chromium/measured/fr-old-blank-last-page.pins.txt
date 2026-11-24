@@ -1,0 +1,4 @@
+fr-old-blank-last-page.boxes.txt 1
+fr-old-blank-last-page.lines.txt 0
+fr-old-blank-last-page.print.txt 5
+fr-old-blank-last-page.words.txt 3

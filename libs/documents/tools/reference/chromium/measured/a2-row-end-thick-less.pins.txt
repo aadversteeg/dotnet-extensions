@@ -1,0 +1,4 @@
+a2-row-end-thick-less.boxes.txt 1
+a2-row-end-thick-less.lines.txt 4
+a2-row-end-thick-less.print.txt 18
+a2-row-end-thick-less.words.txt 12

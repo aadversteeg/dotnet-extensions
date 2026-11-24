@@ -1,0 +1,4 @@
+pm-image-url.boxes.txt 1
+pm-image-url.lines.txt 1
+pm-image-url.print.txt 5
+pm-image-url.words.txt 2

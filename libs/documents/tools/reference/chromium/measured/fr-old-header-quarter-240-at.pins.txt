@@ -1,0 +1,4 @@
+fr-old-header-quarter-240-at.boxes.txt 15
+fr-old-header-quarter-240-at.lines.txt 51
+fr-old-header-quarter-240-at.print.txt 69
+fr-old-header-quarter-240-at.words.txt 16

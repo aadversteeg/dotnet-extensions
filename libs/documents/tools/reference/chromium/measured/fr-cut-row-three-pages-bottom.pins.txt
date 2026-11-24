@@ -1,0 +1,4 @@
+fr-cut-row-three-pages-bottom.boxes.txt 2
+fr-cut-row-three-pages-bottom.lines.txt 13
+fr-cut-row-three-pages-bottom.print.txt 62
+fr-cut-row-three-pages-bottom.words.txt 46

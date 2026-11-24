@@ -1,0 +1,4 @@
+a4-image-rowspan.boxes.txt 5
+a4-image-rowspan.lines.txt 22
+a4-image-rowspan.print.txt 33
+a4-image-rowspan.words.txt 4

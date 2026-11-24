@@ -1,0 +1,6 @@
+mx-gen-link.boxes.txt 1
+mx-gen-link.ink.txt 10
+mx-gen-link.lines.txt 4
+mx-gen-link.links.txt 4
+mx-gen-link.print.txt 17
+mx-gen-link.words.txt 12

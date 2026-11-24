@@ -1,0 +1,4 @@
+fr-keep-inside-box.boxes.txt 1
+fr-keep-inside-box.lines.txt 0
+fr-keep-inside-box.print.txt 9
+fr-keep-inside-box.words.txt 7

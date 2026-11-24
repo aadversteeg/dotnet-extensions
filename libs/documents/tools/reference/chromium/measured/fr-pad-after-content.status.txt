@@ -1,0 +1,1 @@
+fr-pad-after-content equal

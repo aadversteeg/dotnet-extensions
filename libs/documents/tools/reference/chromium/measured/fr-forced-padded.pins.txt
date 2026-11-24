@@ -1,0 +1,4 @@
+fr-forced-padded.boxes.txt 1
+fr-forced-padded.lines.txt 0
+fr-forced-padded.print.txt 6
+fr-forced-padded.words.txt 3

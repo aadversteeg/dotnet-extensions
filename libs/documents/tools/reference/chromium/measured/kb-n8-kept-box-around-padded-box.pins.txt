@@ -1,0 +1,4 @@
+kb-n8-kept-box-around-padded-box.boxes.txt 1
+kb-n8-kept-box-around-padded-box.lines.txt 0
+kb-n8-kept-box-around-padded-box.print.txt 7
+kb-n8-kept-box-around-padded-box.words.txt 5

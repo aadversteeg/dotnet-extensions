@@ -1,0 +1,4 @@
+ib-alone.boxes.txt 6
+ib-alone.lines.txt 23
+ib-alone.print.txt 43
+ib-alone.words.txt 15

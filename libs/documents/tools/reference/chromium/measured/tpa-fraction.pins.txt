@@ -1,0 +1,4 @@
+tpa-fraction.boxes.txt 13
+tpa-fraction.lines.txt 17
+tpa-fraction.print.txt 70
+tpa-fraction.words.txt 28

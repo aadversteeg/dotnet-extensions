@@ -1,0 +1,4 @@
+ts-table-padding.boxes.txt 5
+ts-table-padding.lines.txt 0
+ts-table-padding.print.txt 26
+ts-table-padding.words.txt 5

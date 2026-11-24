@@ -1,0 +1,5 @@
+ib-link-button.boxes.txt 1
+ib-link-button.lines.txt 4
+ib-link-button.links.txt 3
+ib-link-button.print.txt 22
+ib-link-button.words.txt 13

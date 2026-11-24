@@ -1,0 +1,4 @@
+a4-header-empty-rowspan-line-image.boxes.txt 5
+a4-header-empty-rowspan-line-image.lines.txt 36
+a4-header-empty-rowspan-line-image.print.txt 43
+a4-header-empty-rowspan-line-image.words.txt 1

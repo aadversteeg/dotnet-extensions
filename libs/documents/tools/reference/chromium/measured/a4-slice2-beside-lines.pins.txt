@@ -1,0 +1,4 @@
+a4-slice2-beside-lines.boxes.txt 4
+a4-slice2-beside-lines.lines.txt 21
+a4-slice2-beside-lines.print.txt 58
+a4-slice2-beside-lines.words.txt 32

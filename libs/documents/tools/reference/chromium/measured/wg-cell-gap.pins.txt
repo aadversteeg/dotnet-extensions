@@ -1,0 +1,4 @@
+wg-cell-gap.boxes.txt 14
+wg-cell-gap.lines.txt 49
+wg-cell-gap.print.txt 75
+wg-cell-gap.words.txt 27

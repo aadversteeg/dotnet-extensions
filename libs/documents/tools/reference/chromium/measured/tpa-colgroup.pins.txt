@@ -1,0 +1,4 @@
+tpa-colgroup.boxes.txt 16
+tpa-colgroup.lines.txt 30
+tpa-colgroup.print.txt 78
+tpa-colgroup.words.txt 31

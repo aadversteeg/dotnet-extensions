@@ -1,0 +1,4 @@
+ws-forced.boxes.txt 1
+ws-forced.lines.txt 0
+ws-forced.print.txt 17
+ws-forced.words.txt 16

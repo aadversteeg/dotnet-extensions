@@ -1,0 +1,4 @@
+tc-wrap.boxes.txt 24
+tc-wrap.lines.txt 21
+tc-wrap.print.txt 107
+tc-wrap.words.txt 49

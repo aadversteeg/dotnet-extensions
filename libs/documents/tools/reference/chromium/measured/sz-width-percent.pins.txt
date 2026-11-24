@@ -1,0 +1,4 @@
+sz-width-percent.boxes.txt 3
+sz-width-percent.lines.txt 2
+sz-width-percent.print.txt 19
+sz-width-percent.words.txt 16

@@ -1,0 +1,4 @@
+fr-header-pad-box-50.boxes.txt 2
+fr-header-pad-box-50.lines.txt 10
+fr-header-pad-box-50.print.txt 17
+fr-header-pad-box-50.words.txt 3

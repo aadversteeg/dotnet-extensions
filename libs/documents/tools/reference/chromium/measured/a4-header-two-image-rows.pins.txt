@@ -1,0 +1,4 @@
+a4-header-two-image-rows.boxes.txt 3
+a4-header-two-image-rows.lines.txt 39
+a4-header-two-image-rows.print.txt 58
+a4-header-two-image-rows.words.txt 6

@@ -1,0 +1,4 @@
+fr-forced-table-in-box.boxes.txt 1
+fr-forced-table-in-box.lines.txt 6
+fr-forced-table-in-box.print.txt 12
+fr-forced-table-in-box.words.txt 3

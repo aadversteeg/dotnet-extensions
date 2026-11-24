@@ -1,0 +1,1 @@
+tf-pages listed A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page: page 1 reads 'row 1 body 1 row 2 body 2 row 3 body 3 row 4 body 4 row 5 body 5 row 6 body 6 row 7 body 7 row 8 body 8', Chromium 'row 1 body 1 row 2 body 2 row 3 body 3 row 4 body 4 row 5 body 5 row 6 body 6 row 7 body 7 total footer' (print.txt)

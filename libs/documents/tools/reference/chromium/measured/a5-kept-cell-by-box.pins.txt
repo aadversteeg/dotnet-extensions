@@ -1,0 +1,4 @@
+a5-kept-cell-by-box.boxes.txt 4
+a5-kept-cell-by-box.lines.txt 15
+a5-kept-cell-by-box.print.txt 44
+a5-kept-cell-by-box.words.txt 26

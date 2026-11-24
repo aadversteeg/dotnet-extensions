@@ -42,86 +42,9 @@ internal static class HtmlCases
     /// </summary>
     public const double Bound = 0.1;
 
-    /// <summary>
-    /// The cases whose difference is a listed limit of layout, pinned by name in the code front-end's tests
-    /// (<c>ListedDifferenceTests</c>, <c>PinnedDifferenceTests</c>, <c>PageBreakProgressTests</c>, <c>LineBoxReferenceTests</c> and
-    /// <c>FontMetricRoundingTests</c> of
-    /// <c>UnitTests.Extensions.Documents.Fluent</c>) or in <see cref="HtmlListedDifferenceTests"/>
-    /// (docs/architecture.md, "Known limits"):
-    /// the status file says <c>listed</c>, the test name and the first difference, so the case must still differ, and
-    /// differ first in the same fact by the same amount.
-    /// </summary>
-    public static readonly IReadOnlyDictionary<string, string> Listed = new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["fr-old-forced-after-empty"] = "A_forced_break_after_only_empty_boxes_is_not_taken",
-        ["fr-old-forced-in-keep-together"] = "A_forced_break_inside_a_box_kept_together_moves_the_whole_box_first",
-        ["fr-old-empty-box-past-end"] = "An_empty_box_whose_margin_carries_it_past_the_page_end_stays_on_the_page",
-        ["fr-old-blank-last-page"] = "An_empty_box_past_the_end_of_the_last_page_adds_no_page",
-        ["fr-old-keep-together-hides"] = "A_box_kept_together_does_not_hide_a_better_breakpoint_before_it",
-        ["fr-kwn-pad-on-inner-box"] = "Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own",
-        ["fr-kwn-pad-then-bordered-box-widows4"] = "Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own",
-        ["fr-kwn-pad-then-kept-para"] = "Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own",
-        ["fr-kwn-pad-then-para"] = "Keep_with_next_inside_a_box_holds_across_its_bottom_padding_on_a_page_of_its_own",
-        ["fr-moved-para-widows-4"] = "A_paragraph_that_moved_to_a_new_page_whole_counts_only_its_orphans_before_a_break_there",
-        ["fr-lh-first-baseline"] = "Under_an_explicit_line_height_the_first_baseline_is_within_the_measured_difference_of_Chromium_s",
-        ["f-tiny"] = "At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does",
-        ["f-tiny-038"] = "At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does",
-        ["h-wide-word-little"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
-        ["h-wide-word-much"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
-        ["hw-nowrap"] = "Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page",
-        ["h-page-a4-zero-right"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
-        ["h-page-a4-zero-justify"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
-        ["h-page-a4-zero-lines"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
-        ["sr-same-font"] = "A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run",
-        ["mx-gen-link"] = "A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest",
-        ["sr-zwnj"] = "A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it",
-        ["a4-continued-cell-pad-bottom-30-under-header"] = "A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header",
-        ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank",
-        ["fr-header-pad-box-72"] = "The_same_on_a_page_where_Chromium_repeats_the_header_is_printed",
-        ["tl-fixed-fill-wide-word"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
-        ["tf-pages"] = "A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page",
-        ["pm-family-unused"] = "A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face",
-        ["a4-image-in-cell"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
-        ["a4-row-image-row"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
-        ["a4-two-image-rows"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
-        ["a4-slice4-cell-row-after"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
-        ["a4-header-image-360-image"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-row-image-row"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-image-row-image"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-two-image-rows"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-image-beside-lines"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-image-228-beside-fit"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-image-228-beside-line"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-image-228-beside-two-pages"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-image-228-background-beside"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-row-image-228-beside-line"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-header-nested-image-228"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
-        ["a4-image-nested-table"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
-        ["a4-image-rowspan"] = "An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells",
-        ["a4-line-beside-lines"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
-        ["twd-table-narrow"] = "A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
-        ["fr-f4-padding-page-start"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
-        ["a2-row-end-pad-past"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
-        ["a2-row-end-pad-past-after"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
-        ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
-        ["ii-hyphen"] = "A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case",
-        ["ii-joiners"] = "A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners",
-        ["ws-border"] = "Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
-        ["ws-image-border"] = "Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
-        ["ws-soft"] = "A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them",
-        ["sk-misc"] = "An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen",
-        ["fr-row-later-page-padding-overflows-two-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
-        ["fr-row-later-page-padding-overflows-two-cells-pad-6"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
-        ["fr-row-later-page-padding-overflows-three-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
-        ["fr-continued-pad-past-taller-than-page"] = "What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding",
-        ["lk-header-row"] = "A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page",
-        ["ib-link-span-inside"] = "A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it",
-        ["ib-break-justify"] = "Where_an_inline_box_ends_on_a_justified_line_Chromium_may_shrink_the_page_and_justify_it_a_pixel_wider",
-    };
-
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
-    /// <c>listed</c> (a listed limit, <see cref="Listed"/>), <c>refused</c> (the first refusal, with its line and column)
-    /// and <c>open</c> (a known difference the committed file names; while one is open the branch is not ready for a pull
+    /// <c>listed</c> (a listed limit, <see cref="CommittedStatus"/>), <c>refused</c> (the first refusal, with its line and column)
+    /// and <c>open</c> (a known difference the committed status line names; while one is open the branch is not ready for a pull
     /// request). <c>different</c> and <c>failed</c> are never accepted.</summary>
     public static readonly IReadOnlySet<string> Accepted = new HashSet<string>(StringComparer.Ordinal) { "equal", "listed", "refused", "open" };
 
@@ -187,18 +110,13 @@ internal static class HtmlCases
     public static string Folder([CallerFilePath] string thisFile = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, "..", "..", "tools", "reference", "chromium", "cases"));
 
-    /// <summary>The reference cases: <c>cases</c>, their measured files in <c>measured</c> and their status file
-    /// <c>html-status.txt</c>, beside the folder.</summary>
-    public static CaseFolder Cases { get; } = new(Folder(), Path.Combine(Folder(), "..", "measured"), Path.Combine(Folder(), "..", "html-status.txt"));
+    /// <summary>The reference cases: <c>cases</c>, and their measured files and status files in <c>measured</c>, beside
+    /// the folder.</summary>
+    public static CaseFolder Cases { get; } = new(Folder(), Path.Combine(Folder(), "..", "measured"));
 
     /// <summary>The whole documents (<c>tools/reference/chromium/documents</c>: the timesheets and the invoice), compared as
-    /// the cases are: their measured files in the folder's <c>measured</c>, their status file <c>html-status.txt</c> in the
-    /// folder.</summary>
-    public static CaseFolder Documents { get; } = new(
-        Path.Combine(Folder(), "..", "documents"), Path.Combine(Folder(), "..", "documents", "measured"), Path.Combine(Folder(), "..", "documents", "html-status.txt"));
-
-    /// <summary>The committed status file of the cases: one line per case, <c>name status rest</c> (<see cref="Accepted"/>).</summary>
-    public static string StatusFile => Cases.StatusFile;
+    /// the cases are: their measured files and status files in the folder's <c>measured</c>.</summary>
+    public static CaseFolder Documents { get; } = new(Path.Combine(Folder(), "..", "documents"), Path.Combine(Folder(), "..", "documents", "measured"));
 
     /// <summary>Every case, by name, in ordinal order.</summary>
     public static IReadOnlyList<string> Names => Cases.Names;
@@ -250,20 +168,37 @@ internal static class HtmlCases
     }
 
     /// <summary>
+    /// The status a case's committed status line names (<see cref="CaseFolder.Committed"/>, its second field) and, where it
+    /// is <c>listed</c>, the test that pins the difference: a listed limit of layout, pinned by name in the code front-end's
+    /// tests (<c>ListedDifferenceTests</c>, <c>PinnedDifferenceTests</c>, <c>PageBreakProgressTests</c>,
+    /// <c>LineBoxReferenceTests</c> and <c>FontMetricRoundingTests</c> of <c>UnitTests.Extensions.Documents.Fluent</c>) or in
+    /// <see cref="HtmlListedDifferenceTests"/> (docs/architecture.md, "Known limits"). The line says <c>listed</c>, the test
+    /// name and the first difference, so the case must still differ, and differ first in the same fact by the same amount.
+    /// </summary>
+    /// <param name="committed">The committed status line without the case's name, or null.</param>
+    /// <returns>The committed status (empty where there is none) and the test of a listed case, or null.</returns>
+    private static (string Status, string? Listed) CommittedStatus(string? committed)
+    {
+        var fields = (committed ?? string.Empty).Split(' ', 2);
+        return (fields[0], fields[0] == "listed" ? (fields.Length > 1 ? fields[1] : string.Empty).Split(": ", 2)[0] : null);
+    }
+
+    /// <summary>
     /// The status of a case: <c>equal</c>; <c>listed test: difference</c>; <c>refused code what at line:column</c>;
     /// <c>open difference</c> where the committed status of the case is <c>open</c>; otherwise <c>different difference</c>
-    /// or <c>failed …</c>, which the status test never accepts. Only the committed file makes a case <c>open</c>, so writing
-    /// the file anew never turns a new difference into an accepted one.
+    /// or <c>failed …</c>, which the status test never accepts. Only the committed status line makes a case <c>open</c> or
+    /// <c>listed</c>, so writing the status files anew never turns a new difference into an accepted one.
     /// </summary>
     /// <param name="name">The case.</param>
-    /// <param name="committed">The status the committed file gives the case (its second field), or null.</param>
+    /// <param name="committed">The case's committed status line without its name (<see cref="CaseFolder.Committed"/>), or
+    /// null.</param>
     /// <returns>The status, without the name.</returns>
     public static string Status(string name, string? committed = null) => Status(Cases, name, committed);
 
     /// <summary>The status of an HTML file of a folder, by the same rules as a case's (<see cref="Status(string, string?)"/>).</summary>
-    /// <param name="folder">The folder of the file, its measured files and its status file.</param>
+    /// <param name="folder">The folder of the file, and of its measured files and its status file.</param>
     /// <param name="name">The file, without its extension.</param>
-    /// <param name="committed">The status the folder's committed file gives it (its second field), or null.</param>
+    /// <param name="committed">Its committed status line without its name, or null.</param>
     /// <returns>The status, without the name.</returns>
     public static string Status(CaseFolder folder, string name, string? committed = null)
     {
@@ -296,12 +231,13 @@ internal static class HtmlCases
             ?? PopplerDifference(pages.Value, engine, Rows(folder, name, "words"), LineTops(boxes.Value))
             ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"))
             ?? LinkDifference(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points);
-        return (difference, Listed.TryGetValue(name, out var listed)) switch
+        var (status, listed) = CommittedStatus(committed);
+        return (difference, listed) switch
         {
-            (null, false) => "equal",
-            (null, true) => "different equal to Chromium, but listed as a difference",
-            ({ } found, true) => $"listed {listed}: {found}",
-            ({ } found, false) => committed == "open" ? $"open {found}" : $"different {found}",
+            (null, null) => "equal",
+            (null, _) => "different equal to Chromium, but listed as a difference",
+            ({ } found, { } test) => $"listed {test}: {found}",
+            ({ } found, null) => status == "open" ? $"open {found}" : $"different {found}",
         };
     }
 
@@ -1241,13 +1177,33 @@ internal static class HtmlCases
 }
 
 /// <summary>A folder of HTML files compared with Chromium's prints of them (<see cref="HtmlCases.Status(CaseFolder, string, string?)"/>):
-/// the HTML files, the folder of their measured files and the committed status file, one line per file.</summary>
+/// the HTML files, and the folder of their measured files and committed status files, one status file per HTML file.</summary>
 /// <param name="Html">The folder of the HTML files.</param>
-/// <param name="Measured">The folder of the files measured for each (<c>&lt;name&gt;.print.txt</c> and the others).</param>
-/// <param name="StatusFile">The committed status file.</param>
-internal sealed record CaseFolder(string Html, string Measured, string StatusFile)
+/// <param name="Measured">The folder of the files measured for each (<c>&lt;name&gt;.print.txt</c> and the others) and of
+/// their status files.</param>
+internal sealed record CaseFolder(string Html, string Measured)
 {
+    /// <summary>The ending of a status file: <c>&lt;name&gt;.status.txt</c> holds the one line <c>name status rest</c>
+    /// (<see cref="HtmlCases.Accepted"/>).</summary>
+    public const string StatusEnding = ".status.txt";
+
     /// <summary>Every HTML file of the folder, by name without its extension, in ordinal order.</summary>
     public IReadOnlyList<string> Names =>
         [.. Directory.GetFiles(Html, "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal)!];
+
+    /// <summary>Every status file of the folder, by the name it is of, in ordinal order.</summary>
+    public IReadOnlyList<string> StatusNames =>
+        [.. Directory.GetFiles(Measured, "*" + StatusEnding).Select(file => Path.GetFileName(file)[..^StatusEnding.Length]).Order(StringComparer.Ordinal)];
+
+    /// <summary>The committed status file of an HTML file.</summary>
+    /// <param name="name">The file, without its extension.</param>
+    /// <returns>The path.</returns>
+    public string StatusFile(string name) => Path.Combine(Measured, name + StatusEnding);
+
+    /// <summary>The committed status line of an HTML file without its name, where its status file holds one line that
+    /// starts with the name; otherwise null.</summary>
+    /// <param name="name">The file, without its extension.</param>
+    /// <returns>The status, or null.</returns>
+    public string? Committed(string name) =>
+        File.Exists(StatusFile(name)) && File.ReadAllLines(StatusFile(name)) is [var line] && line.StartsWith(name + " ", StringComparison.Ordinal) ? line[(name.Length + 1)..] : null;
 }

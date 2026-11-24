@@ -1,0 +1,1 @@
+gc-string-block equal

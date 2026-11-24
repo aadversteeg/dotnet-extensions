@@ -1,0 +1,4 @@
+a4-header-cut-row-image-row.boxes.txt 3
+a4-header-cut-row-image-row.lines.txt 31
+a4-header-cut-row-image-row.print.txt 60
+a4-header-cut-row-image-row.words.txt 20

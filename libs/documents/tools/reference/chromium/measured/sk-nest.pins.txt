@@ -1,0 +1,5 @@
+sk-nest.boxes.txt 1
+sk-nest.ink.txt 69
+sk-nest.lines.txt 12
+sk-nest.print.txt 22
+sk-nest.words.txt 9

@@ -1,0 +1,4 @@
+tk-thick.boxes.txt 15
+tk-thick.lines.txt 30
+tk-thick.print.txt 68
+tk-thick.words.txt 17

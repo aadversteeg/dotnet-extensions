@@ -1,0 +1,4 @@
+fr-pad-after-content.boxes.txt 1
+fr-pad-after-content.lines.txt 0
+fr-pad-after-content.print.txt 7
+fr-pad-after-content.words.txt 3

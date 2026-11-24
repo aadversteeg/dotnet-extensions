@@ -1,0 +1,4 @@
+dl-image.boxes.txt 1
+dl-image.lines.txt 6
+dl-image.print.txt 17
+dl-image.words.txt 6

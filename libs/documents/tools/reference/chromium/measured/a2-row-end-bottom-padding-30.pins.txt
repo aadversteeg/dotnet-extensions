@@ -1,0 +1,4 @@
+a2-row-end-bottom-padding-30.boxes.txt 1
+a2-row-end-bottom-padding-30.lines.txt 4
+a2-row-end-bottom-padding-30.print.txt 18
+a2-row-end-bottom-padding-30.words.txt 12

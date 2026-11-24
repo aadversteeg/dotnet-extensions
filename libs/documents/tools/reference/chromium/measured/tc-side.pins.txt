@@ -1,0 +1,4 @@
+tc-side.boxes.txt 16
+tc-side.lines.txt 14
+tc-side.print.txt 58
+tc-side.words.txt 19

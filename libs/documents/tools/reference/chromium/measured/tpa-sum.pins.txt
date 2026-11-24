@@ -1,0 +1,4 @@
+tpa-sum.boxes.txt 12
+tpa-sum.lines.txt 14
+tpa-sum.print.txt 66
+tpa-sum.words.txt 27

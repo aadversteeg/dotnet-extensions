@@ -1,0 +1,4 @@
+ws-hang-break-spaces.boxes.txt 1
+ws-hang-break-spaces.lines.txt 0
+ws-hang-break-spaces.print.txt 53
+ws-hang-break-spaces.words.txt 52

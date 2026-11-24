@@ -1,0 +1,1 @@
+sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o' (print.txt)

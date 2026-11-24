@@ -1,0 +1,4 @@
+gc-counter-hidden.boxes.txt 1
+gc-counter-hidden.lines.txt 0
+gc-counter-hidden.print.txt 14
+gc-counter-hidden.words.txt 13

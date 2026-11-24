@@ -1,0 +1,1 @@
+sz-margin-auto equal

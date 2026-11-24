@@ -1,0 +1,4 @@
+tp-sum-100.boxes.txt 8
+tp-sum-100.lines.txt 22
+tp-sum-100.print.txt 32
+tp-sum-100.words.txt 9

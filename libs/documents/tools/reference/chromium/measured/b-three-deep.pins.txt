@@ -1,0 +1,4 @@
+b-three-deep.boxes.txt 1
+b-three-deep.lines.txt 0
+b-three-deep.print.txt 13
+b-three-deep.words.txt 11

@@ -1,0 +1,5 @@
+dw-half.boxes.txt 1
+dw-half.lines.txt 12
+dw-half.links.txt 3
+dw-half.print.txt 37
+dw-half.words.txt 24

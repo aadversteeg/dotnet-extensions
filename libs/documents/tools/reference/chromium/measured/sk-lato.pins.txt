@@ -1,0 +1,5 @@
+sk-lato.boxes.txt 1
+sk-lato.ink.txt 26
+sk-lato.lines.txt 6
+sk-lato.print.txt 25
+sk-lato.words.txt 18

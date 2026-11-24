@@ -1,0 +1,4 @@
+tg-text-header.boxes.txt 6
+tg-text-header.lines.txt 18
+tg-text-header.print.txt 47
+tg-text-header.words.txt 11

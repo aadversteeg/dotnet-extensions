@@ -1,0 +1,4 @@
+hi-inline.boxes.txt 1
+hi-inline.lines.txt 0
+hi-inline.print.txt 4
+hi-inline.words.txt 2

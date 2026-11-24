@@ -1,0 +1,4 @@
+ws-table.boxes.txt 20
+ws-table.lines.txt 70
+ws-table.print.txt 111
+ws-table.words.txt 40

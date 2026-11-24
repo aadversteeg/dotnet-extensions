@@ -1,0 +1,4 @@
+fr-forced-margin-a4.boxes.txt 1
+fr-forced-margin-a4.lines.txt 0
+fr-forced-margin-a4.print.txt 5
+fr-forced-margin-a4.words.txt 2

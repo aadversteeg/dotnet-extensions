@@ -1,0 +1,4 @@
+twd-table-narrow.boxes.txt 12
+twd-table-narrow.lines.txt 14
+twd-table-narrow.print.txt 65
+twd-table-narrow.words.txt 26

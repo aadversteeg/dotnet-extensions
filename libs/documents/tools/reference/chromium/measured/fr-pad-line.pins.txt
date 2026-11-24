@@ -1,0 +1,4 @@
+fr-pad-line.boxes.txt 1
+fr-pad-line.lines.txt 2
+fr-pad-line.print.txt 7
+fr-pad-line.words.txt 2

@@ -1,0 +1,4 @@
+fr-forced-table.boxes.txt 1
+fr-forced-table.lines.txt 6
+fr-forced-table.print.txt 12
+fr-forced-table.words.txt 3

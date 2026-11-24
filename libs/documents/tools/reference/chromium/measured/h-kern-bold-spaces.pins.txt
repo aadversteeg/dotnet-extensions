@@ -1,0 +1,4 @@
+h-kern-bold-spaces.boxes.txt 1
+h-kern-bold-spaces.lines.txt 0
+h-kern-bold-spaces.print.txt 5
+h-kern-bold-spaces.words.txt 4

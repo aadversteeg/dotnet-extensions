@@ -1,0 +1,4 @@
+fr-cut-row-uncut-bottom-cell.boxes.txt 2
+fr-cut-row-uncut-bottom-cell.lines.txt 10
+fr-cut-row-uncut-bottom-cell.print.txt 24
+fr-cut-row-uncut-bottom-cell.words.txt 12

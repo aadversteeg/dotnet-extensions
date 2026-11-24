@@ -1,0 +1,5 @@
+sk-misc.boxes.txt 1
+sk-misc.ink.txt 39
+sk-misc.lines.txt 8
+sk-misc.print.txt 22
+sk-misc.words.txt 12

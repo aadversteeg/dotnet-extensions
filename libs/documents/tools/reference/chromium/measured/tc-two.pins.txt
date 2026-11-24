@@ -1,0 +1,4 @@
+tc-two.boxes.txt 10
+tc-two.lines.txt 7
+tc-two.print.txt 35
+tc-two.words.txt 15

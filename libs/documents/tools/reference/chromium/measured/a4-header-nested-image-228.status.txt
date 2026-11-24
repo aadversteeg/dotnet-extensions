@@ -1,0 +1,1 @@
+a4-header-nested-image-228 listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 105 (laid out at 104.625), Chromium 88.5 (print.txt)

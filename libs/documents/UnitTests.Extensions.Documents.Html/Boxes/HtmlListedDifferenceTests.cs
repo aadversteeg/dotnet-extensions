@@ -6,7 +6,7 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 
 /// <summary>
 /// HTML cases that differ from Chromium by a limit of layout, each pinned with Chromium's print here and listed in the
-/// status file (<see cref="HtmlCases.Listed"/>) and in docs/architecture.md, "Known limits".
+/// case's status file (<c>measured/&lt;case&gt;.status.txt</c>, <c>listed</c> with the test's name) and in docs/architecture.md, "Known limits".
 /// </summary>
 public class HtmlListedDifferenceTests
 {

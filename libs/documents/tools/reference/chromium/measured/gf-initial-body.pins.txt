@@ -1,0 +1,4 @@
+gf-initial-body.boxes.txt 1
+gf-initial-body.lines.txt 0
+gf-initial-body.print.txt 29
+gf-initial-body.words.txt 28

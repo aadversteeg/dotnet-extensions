@@ -1,0 +1,4 @@
+h-page-size-fraction.boxes.txt 1
+h-page-size-fraction.lines.txt 0
+h-page-size-fraction.print.txt 3
+h-page-size-fraction.words.txt 2

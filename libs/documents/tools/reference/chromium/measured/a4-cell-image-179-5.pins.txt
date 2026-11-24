@@ -1,0 +1,4 @@
+a4-cell-image-179-5.boxes.txt 1
+a4-cell-image-179-5.lines.txt 6
+a4-cell-image-179-5.print.txt 11
+a4-cell-image-179-5.words.txt 1

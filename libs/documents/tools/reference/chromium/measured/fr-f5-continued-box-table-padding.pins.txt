@@ -1,0 +1,4 @@
+fr-f5-continued-box-table-padding.boxes.txt 3
+fr-f5-continued-box-table-padding.lines.txt 12
+fr-f5-continued-box-table-padding.print.txt 30
+fr-f5-continued-box-table-padding.words.txt 15
