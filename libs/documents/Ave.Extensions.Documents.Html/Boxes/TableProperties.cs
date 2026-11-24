@@ -95,12 +95,12 @@ internal static class TableProperties
     public static bool IsSeparated(ElementFacts facts) => facts.Style[PropertyRegistry.Find("border-collapse")!] is not CssKeyword { Name: "collapse" };
 
     /// <summary>A background: a cell's and a caption's are drawn (case <c>tc-box</c>); a row group's, a row's, a column's and a
-    /// column group's, which the cells take (<c>HtmlBoxGenerator</c>, Backgrounds; cases <c>tk-*</c>); and a table's with
-    /// separated borders, which paints it under its whole border box as a block box does (CSS 2.1 §17.6.1; case
-    /// <c>ts-paint</c>). A table's with collapsed borders is not drawn in this version.</summary>
+    /// column group's, which the cells take (<c>HtmlBoxGenerator</c>, Backgrounds; cases <c>tk-*</c>); and a table's, which
+    /// paints it under its whole border box as a block box does: with separated borders spacing included (CSS 2.1 §17.6.1;
+    /// case <c>ts-paint</c>), with collapsed borders out to the outer edge of its outer lines, under the cells' and rows'
+    /// backgrounds and the lines, never under a caption (cases <c>tk-table-collapsed</c>, <c>tk-table-caption</c>).</summary>
     public static string? Background(ElementFacts facts) => Part(facts) switch
     {
-        TablePart.Table when !IsSeparated(facts) => "a background on a table with collapsed borders is not drawn in this version: put it on the cells, or draw the table with border-collapse: separate",
         _ => null,
     };
 

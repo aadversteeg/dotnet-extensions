@@ -737,7 +737,7 @@ or `Value` for a computed value): a table part outside its parent part, which CS
 (§17.2.1); a table part on another element than its HTML element; a second caption, a block inside a caption, a width on
 a caption, a header group after a row group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
 a column in which no cell starts; the percentages and cell lengths named above, a width on a column group with column
-elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); a background on a table with collapsed borders; column borders. Under
+elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
 
@@ -774,7 +774,11 @@ with colours of alpha 1 a cell shows the highest (cases `tk-separated`, `tk-coll
 rows or columns takes the row and the column it starts in, over all of its area (`tk-span`); on every page, in a repeated
 header and in both parts of a cut row, as the cell's own (`tk-break-stripe`, `tk-break-cut`). Other alphas stay refused,
 as on any block; `empty-cells: hide` is refused by the registry (`tk-empty`: Chromium paints the row's and the column's
-background under a hidden empty cell).
+background under a hidden empty cell). A table's own background is painted under its border box as on any block, below
+the cells' and rows' backgrounds and the lines: with separated borders spacing included, with collapsed borders out to
+the outer edge of its outer lines (a 3 pt table border, the cells' 0.75 pt lines and cells without borders alike), never
+under its caption, and on a page where the table breaks down to the page end, as the table's fragment there runs to the
+page end in both models (cases `tk-table-collapsed`, `tk-table-caption`, `tk-table-break`).
 
 **Captions.** A table's `caption` element (CSS 2.1 §17.4) is the first child of the table's box in the model
 (`TableDisplay.Caption`, role `Caption`), wherever it stands among the row groups, and the table lays it out

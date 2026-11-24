@@ -18,9 +18,12 @@ internal static class TableFragments
     /// <param name="table">The table with its columns.</param>
     /// <param name="outcome">What the page holds.</param>
     /// <param name="incoming">The token the page started from, null on the table's first page (separated borders only).</param>
-    /// <param name="pageEnd">The page end, from the table's top edge (separated borders only).</param>
+    /// <param name="pageEnd">The page end, from the table's top edge.</param>
     /// <returns>The table's fragment, as wide as the table and as tall as its rows plus the outer halves of the top
-    /// and bottom lines.</returns>
+    /// and bottom lines. With collapsed borders and a background, on a page where the table breaks, down to the page end,
+    /// where Chromium paints the table's background to (case <c>tk-table-break</c>: the background runs 13.25 pt below the
+    /// last row on the page, to the page end at 188.004 pt); without a background the extra height paints nothing, and the
+    /// fragment keeps ending at its last line.</returns>
     public static BoxFragment Build(TableGeometry table, TablePage.Outcome outcome, TracksBreakToken? incoming = null, double pageEnd = 0)
     {
         var content = outcome.Content;
@@ -31,6 +34,7 @@ internal static class TableFragments
 
         var lines = outcome.BottomLine is { } bottomLine ? content.Lines.Add(bottomLine) : content.Lines;
         var bottom = content.Bottom + (outcome.BottomLine is { Part: TablePage.LinePart.Whole } line ? table.HorizontalWidth(line.Above, line.Below, line.Context) / 2 : 0);
+        bottom = outcome.Continuation is null || table.Box.Style.Background is null ? bottom : Math.Max(bottom, pageEnd);
         ValueList<PlacedFragment> children =
         [
             .. Groups(table, content),

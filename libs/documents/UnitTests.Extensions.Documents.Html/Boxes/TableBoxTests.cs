@@ -252,7 +252,6 @@ public class TableBoxTests
     [InlineData("<table><tr><td colspan=2 style=\"width:30%\">a</td></tr><tr><td>b</td><td>c</td></tr></table>", "table { table-layout: auto }", "width", "30%")]
     [InlineData("<table><col style=\"width:30%\"><col><tr><td style=\"width:40pt\">a</td><td>b</td></tr></table>", "table { table-layout: auto }", "width", "40pt")]
     [InlineData("<table style=\"width:100%\"><col style=\"width:50%\"><col><tr><td style=\"width:10pt\">a</td><td>b</td></tr></table>", "table { table-layout: fixed }", "width", "10pt")]
-    [InlineData("<table style=\"background:#ccc\"><tr><td>a</td></tr></table>", "", "background-color", "rgb(204, 204, 204)")]
     [InlineData("<table><tr style=\"background:rgba(204, 204, 204, 0.5)\"><td>a</td></tr></table>", "", "background-color", "rgba(204, 204, 204, 0.5)")]
     [InlineData("<table><col style=\"border-left:1pt solid #000\"><tr><td>a</td></tr></table>", "", "border-left-width", "0.75pt")]
     [InlineData("<table><colgroup style=\"width:10pt\"><col></colgroup><tr><td>a</td></tr></table>", "", "width", "10pt")]
@@ -475,6 +474,52 @@ public class TableBoxTests
 
         pages.IsFailure.Should().BeTrue();
         pages.Error.Code.Should().Be(LayoutErrorCodes.TableBreak);
+    }
+
+    /// <summary>A table with collapsed borders keeps its background, which it paints under its border box as a block box
+    /// does, and on a page where it breaks its fragment runs down to the page end, below its last row there (cases
+    /// <c>tk-table-collapsed</c>, <c>tk-table-caption</c>, <c>tk-table-break</c>: the background to the page end at
+    /// 188.004 pt, 13.25 pt below the last row).</summary>
+    [Fact]
+    public void A_collapsed_table_keeps_its_background_and_runs_to_the_page_end_where_it_breaks()
+    {
+        Table("<table><tr><td>a</td></tr></table>", Collapsed + "table { background: #ffff00 }").Style.Background.Should().Be(new Color(255, 255, 0));
+
+        var rows = string.Concat(Enumerable.Range(1, 16).Select(row => $"<tr><td>row{row}</td></tr>"));
+        var pages = Pages($"<table style=\"background:#ffff00\">{rows}</table>", Collapsed);
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+        pages.Value.Should().HaveCount(2);
+
+        var (top, table) = TableOf(pages.Value[0]);
+        var lastRow = table.Children.Where(child => child.Fragment is BoxFragment).Max(child => child.Offset.Y + child.Fragment.Size.Height);
+        (top + table.Size.Height).Should().BeApproximately(188.25, 1e-6, "the page area of 176 pt is 235 px, from 12 pt");
+        table.Size.Height.Should().BeGreaterThan(lastRow + 1);
+        var (_, last) = TableOf(pages.Value[1]);
+        last.Size.Height.Should().BeApproximately(last.Children.Where(child => child.Fragment is BoxFragment).Max(child => child.Offset.Y + child.Fragment.Size.Height), 1e-6);
+    }
+
+    /// <summary>The table's fragment of a page and its top on the page.</summary>
+    private static (double Top, BoxFragment Table) TableOf(PageFragment page)
+    {
+        var pending = new Stack<(double Top, Fragment Fragment)>([(page.Root.Offset.Y, page.Root.Fragment)]);
+        while (pending.Count > 0)
+        {
+            var (top, fragment) = pending.Pop();
+            if (fragment is BoxFragment box)
+            {
+                if (box.Box.Role == SemanticRole.Table)
+                {
+                    return (top, box);
+                }
+
+                foreach (var child in box.Children)
+                {
+                    pending.Push((top + child.Offset.Y, child.Fragment));
+                }
+            }
+        }
+
+        throw new InvalidOperationException("the page holds no table");
     }
 
     /// <summary>The number of lines of a page.</summary>

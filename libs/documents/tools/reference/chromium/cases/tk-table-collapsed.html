@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A background on a table with collapsed borders: a, a table border of 3pt, wider than the cells, a cell with a background of its own and a row with a background; b, a table without a border of its own; c, a table border of 3pt with cells without borders. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; } .k { background-color: #ffff00; } .g { background-color: #00ff00; } .c { background-color: #00ffff; } .w { border: 3pt solid #ff0000; }</style></head><body>
+<table id="a" class="k w"><tr><td id="one-a" class="g">one</td><td>two</td></tr><tr class="c"><td>three</td><td>four</td></tr><tr><td>five</td><td>six</td></tr></table>
+<p>next 1</p>
+<table id="b" class="k"><tr><td id="one-b">one</td><td>two</td></tr><tr><td>three</td><td>four</td></tr></table>
+<p>next 2</p>
+<table id="c" class="k w"><tr><td id="one-c" style="border: none">one</td><td style="border: none">two</td></tr></table>
+<p>after</p>
+</body></html>

@@ -108,7 +108,7 @@ public class ProfileDocumentTests
         Line("with content sliced in a cell, or with `box-decoration-break: clone`. A border on a row or a row group of such a table");
         Line("is refused; put borders on the cells. In both models the background of a row, a row group, a column or a column group");
         Line("is drawn on the cells of it that have none of their own (the row's first, then the group's, the column's, the column");
-        Line("group's), as Chromium prints it; a table's background is drawn with separated borders only.");
+        Line("group's), as Chromium prints it; a table's background is drawn in both models, under its border box.");
         Line();
         Line("### Supported at the initial value only");
         Line();

@@ -115,7 +115,7 @@ repeated header. It is refused at the table's line where it breaks with a cell o
 with content sliced in a cell, or with `box-decoration-break: clone`. A border on a row or a row group of such a table
 is refused; put borders on the cells. In both models the background of a row, a row group, a column or a column group
 is drawn on the cells of it that have none of their own (the row's first, then the group's, the column's, the column
-group's), as Chromium prints it; a table's background is drawn with separated borders only.
+group's), as Chromium prints it; a table's background is drawn in both models, under its border box.
 
 ### Supported at the initial value only
 
