@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Decorations whose exact end lies within 1/128 px of a half or a whole pixel, at 10.5 pt (14 px) and 12 pt (16 px): an underline, a link, a line-through and an overline ending just below a half pixel, and underlines ending just above a half pixel, just below a whole pixel and just above one. Each decorated element follows a word and a space, so it starts on Chromium's 1/64 px grid. -->
+<style>@page { size: 300pt 300pt; margin: 12pt; } body { font-size: 10.5pt; text-decoration-skip-ink: none; } .u { text-decoration: underline; } .s { text-decoration: line-through; } .o { text-decoration: overline; } .big { font-size: 12pt; }</style></head><body>
+<p>x0 <span class="u">n</span></p>
+<p>x0 <a href="https://example.com/">n</a></p>
+<p>nx <span class="s">0</span></p>
+<p>x0 <span class="o">n</span></p>
+<p>m <span class="u">e</span></p>
+<p>nnx <span class="u">n</span></p>
+<p>nnn <a href="https://example.com/">x</a></p>
+<p class="big">m0 <span class="u">a</span></p>
+<p class="big">xx <a href="https://example.com/">e</a></p>
+<p class="big">mm <span class="s">o</span></p>
+<p class="big">0m <span class="o">a</span></p>
+<p class="big">n <span class="u">x</span></p>
+</body></html>

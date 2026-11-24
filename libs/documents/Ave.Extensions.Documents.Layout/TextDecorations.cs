@@ -34,9 +34,18 @@ namespace Ave.Extensions.Documents.Layout;
 /// <c>SnapYAxis</c>), counted from the line box's top, where Chromium paints the baseline at a whole pixel of the page and the line from
 /// there; equal where line tops lie on whole pixels, else the line moves with the unrounded baseline (case <c>dl-fraction</c>,
 /// listed in docs/architecture.md). Under <see cref="FontMetricRounding.Exact"/> nothing is rounded.</para>
-/// <para>Extent: from the piece's start across its advances, a widened space of a justified line included and a hanging
-/// preserved space with its whole advance (<see cref="ShapedGlyph.Overhang"/>, case <c>dl-space</c>: underlined past the
-/// line's end); a collapsible space removed at a line's end is not part of the piece, so it is not decorated. (CSS Text Decoration 3 §2
+/// <para>Extent: from the piece's start for the piece's width on the line (<see cref="LineSegment.Width"/>: its advances,
+/// a widened space of a justified line included, rounded up to the step the profile's <see cref="LengthRounding"/> gives
+/// a text item, the same value the line advances by), and a hanging preserved space with its whole advance
+/// (<see cref="ShapedGlyph.Overhang"/>, case <c>dl-space</c>: underlined past the line's end); a collapsible space removed
+/// at a line's end is not part of the piece, so it is not decorated. Under <see cref="LengthRounding.SixtyFourthPixels"/>
+/// Chromium draws each text item's lines as wide as the item, rounded up to 1/64 px from the item's start, never its
+/// exact advances: cases <c>dw-half</c> (underlines, links, line-throughs and overlines at 14 and 16 px whose exact end lies
+/// within 1/128 px below a half pixel, e.g. 42.4995 px, end at 42.5 px and so paint one pixel more), <c>dw-runs</c> (a colour
+/// change inside the decorating element makes two text items, each its own line, each rounded; the piece of a broken element
+/// on each line rounded on its own, the space removed at the line's end left out; a space inside the element at its end
+/// under the line), <c>dw-spacing</c> (the letter spacing after the last letter under the line, inside the rounded width).
+/// Under <see cref="LengthRounding.Exact"/> the width is the exact advances. (CSS Text Decoration 3 §2
 /// leaves out "spacing … at the beginning and end of a line"; Chromium draws across a hanging space all the same, and so
 /// does the engine.) Neighbouring
 /// pieces of one decorating box touch (<c>dl-join</c>). An image among the runs gets no line (<c>dl-image</c>; §2: "Atomic
@@ -66,7 +75,7 @@ internal static class TextDecorations
     /// paint order.</summary>
     /// <param name="decorations">The piece's decorations, in order.</param>
     /// <param name="x">The piece's start.</param>
-    /// <param name="glyphs">The piece's glyphs.</param>
+    /// <param name="piece">The piece: its glyphs and its width on the line.</param>
     /// <param name="baseline">The piece's own baseline, from the line box's top: the line's, less the run's
     /// <see cref="TextStyle.BaselineShift"/> (<see cref="LineBoxes.Build"/>, THE RULE FOR A SHIFTED RUN ON THE LINE).</param>
     /// <param name="ascent">The ascent of the piece's own font, as the line box takes it.</param>
@@ -75,7 +84,7 @@ internal static class TextDecorations
     /// <returns>The rectangles before and after the glyphs (none when the piece has no width), or the error of a glyph
     /// outline that cannot be decoded.</returns>
     public static Result<(IReadOnlyList<PlacedFragment> Before, IReadOnlyList<PlacedFragment> After), Error> Of(
-        IReadOnlyList<Resolved> decorations, double x, IReadOnlyList<ShapedGlyph> glyphs, double baseline, double ascent, FontMetricRounding rounding, Ink ink)
+        IReadOnlyList<Resolved> decorations, double x, LineSegment piece, double baseline, double ascent, FontMetricRounding rounding, Ink ink)
     {
         if (decorations.Count == 0)
         {
@@ -84,7 +93,8 @@ internal static class TextDecorations
 
         // One pass over the piece's glyphs, made only for a decorated piece; then one rectangle per decoration, or for an
         // underline or overline that skips ink one pass over the outline of each glyph and the pieces left between the gaps.
-        var width = glyphs.Sum(glyph => glyph.Advance + glyph.Overhang);
+        var glyphs = piece.Glyphs;
+        var width = piece.Width + glyphs.Sum(glyph => glyph.Overhang);
         if (width <= 0)
         {
             return Result<(IReadOnlyList<PlacedFragment>, IReadOnlyList<PlacedFragment>), Error>.Success(([], []));

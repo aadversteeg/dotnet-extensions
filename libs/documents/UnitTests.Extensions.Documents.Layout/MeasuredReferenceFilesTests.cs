@@ -784,6 +784,18 @@ public class MeasuredReferenceFilesTests
         ["dl-whose.lines.txt"] = 48,
         ["dl-whose.print.txt"] = 97,
         ["dl-whose.words.txt"] = 48,
+        ["dw-half.boxes.txt"] = 1,
+        ["dw-half.lines.txt"] = 12,
+        ["dw-half.print.txt"] = 37,
+        ["dw-half.words.txt"] = 24,
+        ["dw-runs.boxes.txt"] = 1,
+        ["dw-runs.lines.txt"] = 7,
+        ["dw-runs.print.txt"] = 20,
+        ["dw-runs.words.txt"] = 10,
+        ["dw-spacing.boxes.txt"] = 1,
+        ["dw-spacing.lines.txt"] = 3,
+        ["dw-spacing.print.txt"] = 11,
+        ["dw-spacing.words.txt"] = 7,
         ["f-lato-10.boxes.txt"] = 1,
         ["f-lato-10.lines.txt"] = 0,
         ["f-lato-10.print.txt"] = 43,
@@ -2329,7 +2341,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(571);
+        cases.Should().HaveCount(574);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

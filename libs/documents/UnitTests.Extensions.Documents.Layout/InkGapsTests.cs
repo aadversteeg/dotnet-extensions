@@ -152,7 +152,7 @@ public class InkGapsTests
         var glyphs = Shaper.Shape("gjpqy fy", font, 24).Value;
         TextDecorations.Resolved Underline(double size) => new(new TextDecoration(TextDecorationLine.Underline, Color.Black, "Lato", size.Pt(), FontWeight.Regular), font);
         var outlines = new InkOutlines();
-        var drawn = TextDecorations.Of([Underline(24), Underline(22)], 0, glyphs, 30, 22, FontMetricRounding.WholePixels,
+        var drawn = TextDecorations.Of([Underline(24), Underline(22)], 0, new LineSegment(0, [.. glyphs]), 30, 22, FontMetricRounding.WholePixels,
             new TextDecorations.Ink(font, 24, TextDecorationSkipInk.Auto, outlines)).Value.Before;
         var width = glyphs.Sum(glyph => glyph.Advance);
         var (first, second) = (new List<(double Left, double Right)>(), new List<(double Left, double Right)>());

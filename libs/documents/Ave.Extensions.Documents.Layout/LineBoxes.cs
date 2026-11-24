@@ -185,7 +185,7 @@ internal static class LineBoxes
             {
                 // The piece's text was added last: its underlines and overlines go before it, its line-throughs after it.
                 var ink = new TextDecorations.Ink(decorated.Font, decorated.Run.Style.FontSize.Points, decorated.Run.Style.DecorationSkipInk, outlines);
-                var lines = TextDecorations.Of(decorated.Decorations, x, segment.Glyphs, above - extent.Shift, extent.Ascent, rounding, ink);
+                var lines = TextDecorations.Of(decorated.Decorations, x, segment, above - extent.Shift, extent.Ascent, rounding, ink);
                 if (lines.IsFailure)
                 {
                     return Result<LineFragment, Error>.Failure(lines.Error.WithSource(decorated.Run.Source));

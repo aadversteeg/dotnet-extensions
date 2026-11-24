@@ -189,6 +189,9 @@ dl-skip equal
 dl-space refused Documents.Html.Unsupported.Value width: 40pt at 6:1
 dl-theano equal
 dl-whose equal
+dw-half equal
+dw-runs equal
+dw-spacing equal
 f-lato-10 equal
 f-lato-11 equal
 f-lato-13 equal

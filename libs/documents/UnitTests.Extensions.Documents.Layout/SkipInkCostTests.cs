@@ -22,7 +22,7 @@ public class SkipInkCostTests(ITestOutputHelper output)
         var resolved = Enumerable.Range(0, decorations).Select(index => new TextDecorations.Resolved(
             line with { Line = index % 2 == 0 ? TextDecorationLine.Underline : TextDecorationLine.Overline }, font)).ToList();
         var outlines = new InkOutlines();
-        var drawn = TextDecorations.Of(resolved, 0, glyphs, 30, 22, FontMetricRounding.WholePixels, new TextDecorations.Ink(font, 24, TextDecorationSkipInk.Auto, outlines));
+        var drawn = TextDecorations.Of(resolved, 0, new LineSegment(0, [.. glyphs]), 30, 22, FontMetricRounding.WholePixels, new TextDecorations.Ink(font, 24, TextDecorationSkipInk.Auto, outlines));
         drawn.IsSuccess.Should().BeTrue();
         return (outlines.Visited, outlines.Decoded, drawn.Value.Before.Count);
     }
@@ -47,7 +47,7 @@ public class SkipInkCostTests(ITestOutputHelper output)
         var glyphs = Shaper.Shape(string.Concat(Enumerable.Repeat("gjpqy ", words)), font, 24).Value;
         TextDecorations.Resolved Underline(double size) => new(new TextDecoration(TextDecorationLine.Underline, Color.Black, "Lato", size.Pt(), FontWeight.Regular), font);
         var outlines = new InkOutlines();
-        var drawn = TextDecorations.Of([Underline(24), Underline(8)], 0, glyphs, 30, 22, FontMetricRounding.WholePixels, new TextDecorations.Ink(font, 24, TextDecorationSkipInk.Auto, outlines));
+        var drawn = TextDecorations.Of([Underline(24), Underline(8)], 0, new LineSegment(0, [.. glyphs]), 30, 22, FontMetricRounding.WholePixels, new TextDecorations.Ink(font, 24, TextDecorationSkipInk.Auto, outlines));
         drawn.IsSuccess.Should().BeTrue();
         return (outlines.Cuts, drawn.Value.Before.Count);
     }
