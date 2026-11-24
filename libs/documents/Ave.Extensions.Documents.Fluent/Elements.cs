@@ -357,6 +357,32 @@ public static class Elements
         [CallerLineNumber] int callerLine = 0) =>
         new(text, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine)) { Link = LinkTarget.Uri(uri) };
 
+    /// <summary>The longest anchor name (<see cref="ParagraphElement.Anchor"/>, <see cref="LinkTo"/>): 1 024
+    /// characters. A name is a label in code and is never written into the file; the bound keeps the work of comparing
+    /// names in step with the document.</summary>
+    public const int MaxAnchorLength = 1_024;
+
+    /// <summary>
+    /// A link inside the document, as a span of a paragraph: <c>LinkTo("results", "see the results")</c> leads to the
+    /// paragraph or heading made with <c>.Anchor("results")</c>, wherever it is in the body (before or after the link). In
+    /// the PDF the link's destination is the page where that paragraph starts and the top of its box; the reader's
+    /// horizontal position and zoom are left as they are. A name that no paragraph has is refused when the document is
+    /// translated (<c>Documents.Input.Invalid.Link</c>), and so is a link to an anchor inside a page header or footer, or
+    /// from one. The link's description is its text, or the name when the text is blank. Format the span as any text
+    /// span.
+    /// </summary>
+    /// <param name="anchor">The anchor's name.</param>
+    /// <param name="text">The text that is the link.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The span.</returns>
+    public static Span LinkTo(
+        string anchor,
+        string text,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(text, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine)) { LinkAnchor = anchor };
+
     /// <summary>
     /// An image in a line of text, as a span of a paragraph (an atomic inline, CSS Display 3, Appendix A, as HTML's <c>img</c> in
     /// a line): <c>Paragraph([Text("Signed "), InlineImage(Image(file).Alt("Signature").Height(12.Pt())), Text(" today")])</c>.

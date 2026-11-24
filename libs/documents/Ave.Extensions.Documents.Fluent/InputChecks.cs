@@ -493,7 +493,7 @@ internal static class InputChecks
     /// against the whole string (<c>\z</c>).</summary>
     private static readonly Regex MediaType = new(@"^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}\z", RegexOptions.CultureInvariant);
 
-    private static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
+    internal static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
         new Error(code, $"{message} ({source})")
             .With(ErrorMetadataKeys.Value, value)
             .With(ErrorMetadataKeys.Property, property)

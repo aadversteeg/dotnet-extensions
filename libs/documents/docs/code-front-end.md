@@ -113,6 +113,7 @@ default, `null` for transparent). A page number the document does not have is `D
 | `Heading(level, text)` | a heading, level 1–6: bold and sized like HTML's h1–h6 |
 | `Text(text)`, `Bold(text)` | a span inside a paragraph (`Bold(text)` is `Text(text).Bold()`) |
 | `Link(uri, text)` | a link to a URI around text, used as a span: `Paragraph([Text("See "), Link("https://example.com", "our site"), Text(".")])`; see [Links](#links) |
+| `LinkTo(anchor, text)` | a link inside the document to the paragraph or heading made with `.Anchor(anchor)`, used as a span: `Paragraph([Text("See "), LinkTo("results", "the results")])`; see [Links](#links) |
 | `LineBreak()` | a forced line break inside a paragraph (as HTML's `br`; U+2028), used as a span: `Paragraph([Text("a"), LineBreak(), Text("b")])` |
 | `PageBreak()` | starts the next element of the same list on a new page |
 | `Table(columns, rows)` | a table; `columns` made with `Columns(…)`, `rows` a list of the three below |
@@ -148,6 +149,12 @@ it as any text span (`Link(uri, "here").Bold().Underline()`); it takes no colour
 - **In the PDF** each line part of the link is one link annotation, so a link over two lines or over a page break
   has an area on each line; in a tagged file one `Link` element holds the text and a reference to each annotation.
 - **In a page header or footer** a link is drawn as text without being a link (everything there is an artifact).
+- **Inside the document:** `.Anchor(name)` on a paragraph or heading makes it a place, and `LinkTo(name, text)` anywhere
+  in the body, before or after it, leads there: in the PDF the destination is the page where the paragraph starts and the
+  top of its box, the reader's horizontal position and zoom unchanged. A name is 1 to 1 024 characters
+  (`Elements.MaxAnchorLength`), unique, and never written into the file. Refused with `Documents.Input.Invalid.Link`: a
+  name no paragraph has (at the link), a name given twice (at the second anchor), an anchor or a `LinkTo` in a page header
+  or footer. The description is the link's text, else the name.
 
 ## Modifiers
 

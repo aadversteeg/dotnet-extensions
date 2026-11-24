@@ -249,7 +249,7 @@ internal static class HtmlCases
             ?? RectangleDifference(engine, chromium, lines)
             ?? PopplerDifference(pages.Value, engine, Rows(folder, name, "words"), LineTops(boxes.Value))
             ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"))
-            ?? LinkDifference(pages.Value, Links(folder, name));
+            ?? LinkDifference(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points);
         return (difference, Listed.TryGetValue(name, out var listed)) switch
         {
             (null, false) => "equal",
@@ -315,7 +315,8 @@ internal static class HtmlCases
 
     /// <summary>A link annotation of a print, or a link area of the engine's pages: its page, its rectangle in points with
     /// the origin at the top left of the page, and its target as <c>links.txt</c> writes it (<c>uri &lt;URI&gt;</c>, or
-    /// <c>dest &lt;destination&gt;</c> for a link inside the document).</summary>
+    /// <c>dest &lt;page&gt; &lt;top&gt;</c> for a link inside the document: the destination's page and its top from the top of
+    /// that page; for the engine the place of the target's anchor, <see cref="Anchor"/>).</summary>
     internal sealed record PrintedLink(int Page, double X0, double Y0, double X1, double Y1, string Target);
 
     /// <summary>The link annotations of Chromium's print, from <c>&lt;case&gt;.links.txt</c> (README of
@@ -336,6 +337,8 @@ internal static class HtmlCases
     {
         var targets = new Dictionary<NodeId, string>();
         var links = new List<PrintedLink>();
+        var anchors = pages.Pages.SelectMany((page, index) => page.Items.OfType<Anchor>().Select(anchor => (anchor.Node, Place: $"dest {index + 1} {Of(anchor.At.Y)}")))
+            .ToDictionary(anchor => anchor.Node, anchor => anchor.Place);
         foreach (var (page, number) in pages.Pages.Select((page, index) => (page, index + 1)))
         {
             foreach (var item in page.Items)
@@ -344,6 +347,9 @@ internal static class HtmlCases
                 {
                     case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.UriTarget uri } } start:
                         targets[start.Node] = $"uri {uri.Value}";
+                        break;
+                    case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget node } } start:
+                        targets[start.Node] = anchors.TryGetValue(node.Value, out var place) ? place : $"dest none {node.Value}";
                         break;
                     case LinkArea area:
                         var rect = area.Area;
@@ -363,11 +369,26 @@ internal static class HtmlCases
     public const double LinkBound = 0.75;
 
     /// <summary>
+    /// One CSS pixel in points: how far the top of a link's destination may be from Chromium's, once Chromium's offset is
+    /// taken out. Chromium writes a destination at the target's place in the coordinates of the page area, one page margin
+    /// above and left of where the target stands on the page (measured: case <c>lk-later-heading</c>, a heading at the top
+    /// of page 2's page area, 18 pt from the page's top, gets the top 0), and at a whole CSS pixel (case <c>lk-cell</c>: the
+    /// target's content area starts 37.875 pt from the page's top, Chromium's top is 37.5 pt with the margin added back);
+    /// the engine writes the exact place. So the top Chromium gives, plus the page's top margin, may be up to one pixel above
+    /// the engine's.
+    /// </summary>
+    public const double DestinationBound = 0.75;
+
+    /// <summary>
     /// The first difference between the engine's link areas and the link annotations of Chromium's print
     /// (<c>links.txt</c>), or null: the same number of rectangles, in the same order, each on the same page, every edge within
-    /// <see cref="LinkBound"/>, and the same target, compared whole.
+    /// <see cref="LinkBound"/>, and the same target: a URI compared whole, a destination on the same page with its top
+    /// within <see cref="DestinationBound"/> of Chromium's plus <paramref name="marginTop"/>.
     /// </summary>
-    public static string? LinkDifference(PageDocument pages, IReadOnlyList<PrintedLink> chromium)
+    /// <param name="pages">The engine's pages.</param>
+    /// <param name="chromium">Chromium's links.</param>
+    /// <param name="marginTop">The page's top margin, in points: Chromium's offset of every destination's top.</param>
+    public static string? LinkDifference(PageDocument pages, IReadOnlyList<PrintedLink> chromium, double marginTop = 0)
     {
         var engine = Links(pages);
         for (var index = 0; index < Math.Max(engine.Count, chromium.Count); index++)
@@ -388,7 +409,7 @@ internal static class HtmlCases
             var at = $"link {index + 1} on page {ours.Page}";
             var found = (ours.Page != theirs.Page ? $"link {index + 1} is on page {ours.Page}, Chromium's on page {theirs.Page}" : null)
                 ?? Edge(at, "x0", ours.X0, theirs.X0) ?? Edge(at, "y0", ours.Y0, theirs.Y0) ?? Edge(at, "x1", ours.X1, theirs.X1) ?? Edge(at, "y1", ours.Y1, theirs.Y1)
-                ?? (ours.Target != theirs.Target ? $"{at} leads to {ours.Target}, Chromium's to {theirs.Target}" : null);
+                ?? TargetDifference(at, ours.Target, theirs.Target, marginTop);
             if (found is not null)
             {
                 return found + " (links.txt)";
@@ -399,6 +420,20 @@ internal static class HtmlCases
 
         static string? Edge(string at, string what, double ours, double theirs) =>
             Math.Abs(ours - theirs) > LinkBound + 1e-9 ? $"{at}: {what} {Of(ours)}, Chromium {Of(theirs)}" : null;
+    }
+
+    private static string? TargetDifference(string at, string ours, string theirs, double marginTop)
+    {
+        if (ours.Split(' ') is ["dest", var page, var top] && theirs.Split(' ') is ["dest", var theirPage, var theirTop])
+        {
+            var chromiumTop = Number(theirTop) + marginTop;
+            return page != theirPage ? $"{at} leads to page {page}, Chromium's to page {theirPage}"
+                : !double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var engineTop) || Math.Abs(engineTop - chromiumTop) > DestinationBound + 1e-9
+                    ? $"{at} leads to the top {top} of page {page}, Chromium's to {Of(chromiumTop)} (its {theirTop} plus the top margin {Of(marginTop)})"
+                    : null;
+        }
+
+        return ours != theirs ? $"{at} leads to {ours}, Chromium's to {theirs}" : null;
     }
 
     /// <summary>

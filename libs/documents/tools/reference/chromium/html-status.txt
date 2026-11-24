@@ -423,7 +423,7 @@ kb-t3-row-group-not-kept-control equal
 kb-v8-padded-box-kept-para equal
 kb-v9-padded-box-kept-table-row equal
 lk-empty equal
-lk-fragment refused Documents.Html.Unsupported.Link href: #target at 2:25
+lk-fragment equal
 lk-header-row listed A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page: link 2: Chromium's rectangle on page 1 at (45, 18.75) to uri https://example.com/head has none in the engine, which has 1 (links.txt)
 lk-image equal
 lk-javascript refused Documents.Html.Unsupported.Link href: javascript:alert(1) at 2:11

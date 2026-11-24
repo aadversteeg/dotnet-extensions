@@ -55,6 +55,7 @@ public static class PageModelText
         ClipStart clip => $"clip {clip.Area}",
         ClipEnd => "end clip",
         LinkArea link => $"link-area {link.Link} {link.Area}",
+        Anchor anchor => $"anchor {anchor.Node} {anchor.At}",
         _ => $"unknown {item.GetType().Name}",
     };
 

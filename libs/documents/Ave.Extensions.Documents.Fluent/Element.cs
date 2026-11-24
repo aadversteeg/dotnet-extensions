@@ -54,6 +54,16 @@ public sealed record ParagraphElement(ValueList<Span> Spans, SemanticRole Role, 
     /// <returns>A copy with the style.</returns>
     public ParagraphElement With(Style style) => this with { Style = style };
 
+    /// <summary>The name links lead here by (<see cref="Anchor"/>, <see cref="Elements.LinkTo"/>), or null.</summary>
+    public string? AnchorName { get; internal init; }
+
+    /// <summary>Makes this paragraph or heading a place a link inside the document leads to: <c>LinkTo(name, text)</c>
+    /// anywhere in the body leads to the top of its first line box's paragraph, on the page where it starts. A name is
+    /// unique in the document; it is never written into the file.</summary>
+    /// <param name="name">The name, 1 to <see cref="Elements.MaxAnchorLength"/> characters.</param>
+    /// <returns>A copy with the anchor.</returns>
+    public ParagraphElement Anchor(string name) => this with { AnchorName = name };
+
     /// <inheritdoc/>
     ParagraphElement IFormatted<ParagraphElement>.WithFormat(Style format) => this with { Format = format };
 }
@@ -83,6 +93,10 @@ public sealed record Span(string Text, Style Format, Style Style, SourceLocation
     /// <summary>Where the span leads when it is a link (<see cref="Elements.Link"/>), or null. Set only by
     /// <see cref="Elements.Link"/>: one span is one link.</summary>
     public LinkTarget? Link { get; internal init; }
+
+    /// <summary>The anchor the span leads to when it is a link inside the document (<see cref="Elements.LinkTo"/>), or
+    /// null. Set only by <see cref="Elements.LinkTo"/>.</summary>
+    public string? LinkAnchor { get; internal init; }
 
     /// <summary>Applies a shared style (its text part). The span's own modifier values still win over it.</summary>
     /// <param name="style">The style; replaces a style applied before.</param>

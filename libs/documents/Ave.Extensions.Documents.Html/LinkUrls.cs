@@ -16,9 +16,9 @@ namespace Ave.Extensions.Documents.Html;
 /// <item>White space: every leading and trailing C0 control and space is removed, and every tab, line feed and carriage
 /// return inside (URL Standard §4.4, the basic URL parser's first steps). So <c>"  java\tscript:x"</c> is
 /// <c>javascript:x</c>, which the model's rule refuses.</item>
-/// <item>A URL that starts with <c>#</c> leads to a place inside the document, also under a <c>base</c> element: Chromium 159
-/// makes it a link inside the document (measured, case <c>lk-fragment</c>: a <c>/Dest</c>). Such links are not built in
-/// this version: refused.</item>
+/// <item>A URL that starts with <c>#</c> leads to a place inside the document, also under a <c>base</c> element, as Chromium 159
+/// makes it (measured: a <c>/Dest</c>, under a <c>base</c> too): <see cref="Fragment"/> gives the part after the <c>#</c>, and
+/// the front-end finds its element (<c>HtmlBoxGenerator</c>, THE RULE FOR A LINK INSIDE AN HTML DOCUMENT).</item>
 /// <item>A URL with a scheme (URL Standard §4.4, scheme state: an ASCII letter, then letters, digits, <c>+</c>, <c>-</c> and
 /// <c>.</c>, then a colon) is absolute: its scheme is written in lower case, as the URL Standard serializes it, and the rest
 /// as written.</item>
@@ -55,7 +55,7 @@ internal static partial class LinkUrls
         var url = WithoutWhiteSpace(href);
         if (url.StartsWith('#'))
         {
-            return (null, "it leads to a place inside the document (#…), and links inside the document are not built in this version");
+            return (null, "it leads to a place inside the document (#…), which is not a URI");
         }
 
         if (Urls.HasScheme(url))
@@ -72,6 +72,47 @@ internal static partial class LinkUrls
 
         var resolved = Resolved(Parts(baseUrl), Parts(Slashed(url)));
         return HostProblem(resolved) is { } hostProblem ? (null, hostProblem) : (Encoded(resolved), null);
+    }
+
+    /// <summary>The fragment of an <c>href</c> that leads to a place inside the document: the text after its <c>#</c>, once
+    /// the white space is removed as for any URL (step 1); null for any other <c>href</c> and for one longer than
+    /// <see cref="LinkUris.MaxLength"/> characters (which <see cref="Resolve"/> refuses).</summary>
+    /// <param name="href">The attribute's value.</param>
+    /// <returns>The fragment, possibly empty, or null.</returns>
+    internal static string? Fragment(string href)
+    {
+        if (href.Length > LinkUris.MaxLength)
+        {
+            return null;
+        }
+
+        var url = WithoutWhiteSpace(href);
+        return url.StartsWith('#') ? url[1..] : null;
+    }
+
+    /// <summary>A fragment percent-decoded and read as UTF-8 without a byte order mark, an invalid sequence read as
+    /// U+FFFD (URL Standard §1.3, "percent-decode", and Encoding Standard "UTF-8 decode without BOM").</summary>
+    /// <param name="fragment">The fragment.</param>
+    /// <returns>The decoded text.</returns>
+    internal static string PercentDecoded(string fragment)
+    {
+        var bytes = new System.Collections.Generic.List<byte>(fragment.Length);
+        for (var i = 0; i < fragment.Length; i++)
+        {
+            if (fragment[i] == '%' && i + 2 < fragment.Length && Uri.IsHexDigit(fragment[i + 1]) && Uri.IsHexDigit(fragment[i + 2]))
+            {
+                bytes.Add((byte)((Uri.FromHex(fragment[i + 1]) << 4) | Uri.FromHex(fragment[i + 2])));
+                i += 2;
+            }
+            else
+            {
+                var length = char.IsHighSurrogate(fragment[i]) && i + 1 < fragment.Length && char.IsLowSurrogate(fragment[i + 1]) ? 2 : 1;
+                bytes.AddRange(Encoding.UTF8.GetBytes(fragment.Substring(i, length)));
+                i += length - 1;
+            }
+        }
+
+        return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false).GetString([.. bytes]);
     }
 
     /// <summary>URL Standard §4.4, basic URL parser: leading and trailing C0 controls and spaces removed, and every ASCII

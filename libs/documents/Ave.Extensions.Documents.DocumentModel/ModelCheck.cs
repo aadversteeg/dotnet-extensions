@@ -23,7 +23,7 @@ public static class ModelCheck
     /// <returns>The same document, or the first problem.</returns>
     public static Result<StyledDocument, Error> Check(StyledDocument document)
     {
-        var problem = Page(document.Page) ?? Nodes(document);
+        var problem = Page(document.Page) ?? Nodes(document) ?? Targets(document);
         return problem is null ? Result<StyledDocument, Error>.Success(document) : Result<StyledDocument, Error>.Failure(problem.Value);
     }
 
@@ -143,6 +143,78 @@ public static class ModelCheck
                     var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } or InlineGroup && !isRow;
                     pending.Push((child, isLevel ? depth + 1 : depth, childPlace, false));
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// THE RULE FOR A LINK INSIDE THE DOCUMENT: a link's node (<see cref="LinkTarget.Node"/>) is a box or an inline group
+    /// of the body, not inside a box with the <see cref="SemanticRole.Decorative"/> role (an artifact: a reader skips it,
+    /// so no link may lead into it), and not in a page area (a page header or footer is drawn on every page, a pagination
+    /// artifact; it has no one place). A run is no target: an inline element a link leads to is an inline group (a span),
+    /// so its place is that of its group's first line part. At most <see cref="ModelLimits.MaxLinkTargets"/> nodes are
+    /// targets. Refused at the link, under <c>Input.Invalid.Link</c>. One more pass over the body and the page areas, with an
+    /// explicit stack; the first pass has bounded their depth.
+    /// </summary>
+    private static Error? Targets(StyledDocument document)
+    {
+        var targets = new HashSet<NodeId>();
+        var links = new List<(InlineGroup Link, NodeId Target)>();
+        var pending = new Stack<(Node Node, bool IsBody)>();
+        foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
+        {
+            if (area is not null)
+            {
+                pending.Push((area.Content, false));
+            }
+        }
+
+        pending.Push((document.Root, true));
+        while (pending.Count > 0)
+        {
+            var (node, isBody) = pending.Pop();
+            if (node is Box box && box.Role == SemanticRole.Decorative)
+            {
+                isBody = false;
+            }
+
+            if (isBody && node is Box _ or InlineGroup _)
+            {
+                targets.Add(node.Id);
+            }
+
+            if (node is InlineGroup { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget target } } link)
+            {
+                links.Add((link, target.Value));
+            }
+
+            var children = node switch
+            {
+                Box parent => parent.Children,
+                InlineGroup group => group.Children,
+                _ => [],
+            };
+            foreach (var child in children)
+            {
+                pending.Push((child, isBody));
+            }
+        }
+
+        var distinct = new HashSet<NodeId>();
+        foreach (var (link, target) in links)
+        {
+            if (!targets.Contains(target))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Link, $"The link is refused: it leads to node {target}, which is no box or inline group of the body outside every artifact.",
+                    target.ToString(), "target", link);
+            }
+
+            if (distinct.Add(target) && distinct.Count > ModelLimits.MaxLinkTargets)
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Link, $"The links lead to more than {ModelLimits.MaxLinkTargets} nodes.",
+                    ModelLimits.MaxLinkTargets.ToString(CultureInfo.InvariantCulture), "target", link);
             }
         }
 
@@ -283,6 +355,7 @@ public static class ModelCheck
                 var problem = link.Target switch
                 {
                     LinkTarget.UriTarget uri => LinkUris.Problem(uri.Value),
+                    LinkTarget.NodeTarget => null,
                     _ => "a link needs a target",
                 };
                 if (problem is not null)

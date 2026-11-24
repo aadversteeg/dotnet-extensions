@@ -111,6 +111,10 @@ internal static class PageEvents
                     Flush();
                     events.Add(new LinkAreaRead(link));
                     break;
+                case Anchor:
+                    // An anchor draws nothing and marks nothing: the writer reads it from the page model for the
+                    // destinations (LinkAnnotations.Places).
+                    break;
                 default:
                     content.Add(item);
                     break;

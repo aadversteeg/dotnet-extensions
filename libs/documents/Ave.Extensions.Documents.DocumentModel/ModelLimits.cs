@@ -26,6 +26,13 @@ public static class ModelLimits
     public const int MaxDecorations = 16;
 
     /// <summary>
+    /// The most nodes of one document that links lead to (<see cref="LinkTarget.Node"/>): 65 536. Layout records the place
+    /// of each such node and the PDF back-end looks each one up for every link to it, so the bound keeps that work from
+    /// growing with the input without limit; it is far more targets than a document has headings and sections.
+    /// </summary>
+    public const int MaxLinkTargets = 65_536;
+
+    /// <summary>
     /// The longest length a document may hold: 14 400 pt (200 inches), the largest page side ISO 32000-1 names (Annex C,
     /// the limit on page size). It holds for a page side, a page margin, a margin, a padding, a border width, a font
     /// size, a fixed column width, a line height given as a length, an image's width and height and a header or footer

@@ -135,10 +135,19 @@ public static partial class HtmlBoxGenerator
 
         /// <summary>Whether the frame lies inside a link.</summary>
         public bool InLink { get; init; }
+
+        /// <summary>For the frame of an inline element a link leads to: the span group being built; null otherwise.</summary>
+        public SpanFrame? Span { get; init; }
     }
 
-    /// <summary>A link being built: the content of its parent it goes into, its id, its URI and its text style.</summary>
-    private sealed record LinkFrame(List<Node> Parent, NodeId Id, string Uri, TextStyle Style);
+    /// <summary>A link being built: the content of its parent it goes into, its id, its URI (for a link inside the document
+    /// the <c>href</c> without its white space, for the messages and the description), the fragment of a link inside the
+    /// document or null, and its text style.</summary>
+    private sealed record LinkFrame(List<Node> Parent, NodeId Id, string Uri, string? Fragment, TextStyle Style);
+
+    /// <summary>An inline element a link leads to, being built as a span group: the content of its parent it goes into, its
+    /// id and its text style.</summary>
+    private sealed record SpanFrame(List<Node> Parent, NodeId Id, TextStyle Style);
 
     private sealed partial class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
     {
@@ -165,7 +174,8 @@ public static partial class HtmlBoxGenerator
                 return new StyledDocument(metadata, new PageRules(_sourceName, Refusals).Apply([], styled.Page), empty) { Profile = ChromiumProfile };
             }
 
-            var root = Build(styled.Root);
+            FindTargets(styled.Root);
+            var root = ResolveLinks(Build(styled.Root));
             var page = Page();
             return new StyledDocument(metadata, page, root) { Profile = ChromiumProfile };
         }
@@ -317,6 +327,11 @@ public static partial class HtmlBoxGenerator
                             FinishLink(inline, link);
                         }
 
+                        if (inline.Span is { } span)
+                        {
+                            FinishSpan(inline, span);
+                        }
+
                         break;
                     case InlineFrame inline:
                         Inline(stack, inline, inline.Element.Children[inline.Next++]);
@@ -350,6 +365,7 @@ public static partial class HtmlBoxGenerator
 
         private BlockFrame Frame(StyledElement element, NodeId id, int depth)
         {
+            Placed(element, id);
             var children = element.Children;
             var kinds = new bool[children.Count];
             var rendered = new bool[children.Count];
@@ -499,7 +515,7 @@ public static partial class HtmlBoxGenerator
                 case StyledElement element when Display(element) == "inline":
                     if (Check(element, isBlock: false) && !Deeper(frame.Depth, element.Element.Position))
                     {
-                        if (StartLink(stack, frame, element))
+                        if (StartLink(stack, frame, element) || StartSpan(stack, frame, element))
                         {
                             break;
                         }

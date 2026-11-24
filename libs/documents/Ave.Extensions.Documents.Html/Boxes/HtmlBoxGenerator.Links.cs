@@ -29,8 +29,9 @@ public static partial class HtmlBoxGenerator
             }
 
             var position = element.Element.Position;
-            var (uri, problem) = LinkUrls.Resolve(href, DocumentBase());
-            problem ??= LinkUris.Problem(uri);
+            var fragment = LinkUrls.Fragment(href);
+            var (uri, problem) = fragment is not null ? ("#" + fragment, null) : LinkUrls.Resolve(href, DocumentBase());
+            problem ??= fragment is not null ? null : LinkUris.Problem(uri);
             if (frame.InLink)
             {
                 problem = "it lies inside another link, and a link leads to one target";
@@ -49,7 +50,7 @@ public static partial class HtmlBoxGenerator
 
             var id = NewId();
             List<Node> content = [new TextRun(NewId(), string.Empty, style, Source(position))];
-            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Link = new LinkFrame(frame.Target, id, uri!, style), InLink = true });
+            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Link = new LinkFrame(frame.Target, id, uri!, fragment, style), InLink = true });
             return true;
         }
 
@@ -83,7 +84,9 @@ public static partial class HtmlBoxGenerator
                 return;
             }
 
-            link.Parent.Add(new InlineGroup(link.Id, SemanticRole.Link(LinkTarget.Uri(link.Uri), description), link.Style, [.. content], Source(html.Position)));
+            var target = link.Fragment is { } fragment ? Inside(link.Id, fragment, link.Uri, html.Position) : LinkTarget.Uri(link.Uri);
+            link.Parent.Add(new InlineGroup(link.Id, SemanticRole.Link(target, description), link.Style, [.. content], Source(html.Position)));
+            Placed(frame.Element, link.Id);
         }
 
         /// <summary>An <c>a</c> with an <c>href</c> that is not inside a line (a block-level or table display) is drawn as its

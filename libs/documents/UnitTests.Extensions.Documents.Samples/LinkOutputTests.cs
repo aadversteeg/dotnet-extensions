@@ -48,10 +48,28 @@ public class LinkOutputTests
             title: "Links over a page break",
             language: "en").FontFamily("Lato");
 
-    private static ImmutableArray<(string Name, Document Document)> Cases { get; } = [("link-two-lines", OverTwoLines()), ("link-page-break", OverAPageBreak())];
+    /// <summary>A link inside the document, on page 1, to a heading at the top of page 2.</summary>
+    private static Document ToALaterPage() =>
+        Document(
+            [
+                Paragraph([Text("The "), LinkTo("results", "results"), Text(" are on the next page.")]),
+                PageBreak(),
+                Heading(1, "Results").Anchor("results"),
+                Paragraph("The results follow the heading."),
+            ],
+            Page(300.Pt(), 200.Pt()).Margin(20.Pt()),
+            title: "A link inside the document",
+            language: "en").FontFamily("Lato");
 
-    private static PageDocument Pages(Document document) =>
-        DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic)).Value;
+    private static ImmutableArray<(string Name, Document Document)> Cases { get; } =
+        [("link-two-lines", OverTwoLines()), ("link-page-break", OverAPageBreak()), ("link-inside", ToALaterPage())];
+
+    private static PageDocument Pages(Document document)
+    {
+        var pages = DocumentTranslator.ToModel(document).OnSuccessBind(model => DocumentLayout.Run(model, TestFonts.SetWithItalic));
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+        return pages.Value;
+    }
 
     private static ImmutableArray<byte> Pdf(Document document, PdfProfile? profile = null) =>
         SampleFiles.Pdf(document, profile is null ? null : SampleOutput.Options with { Profile = profile });
@@ -152,6 +170,27 @@ public class LinkOutputTests
     }
 
     [Fact]
+    public void A_link_inside_the_document_is_an_annotation_with_an_explicit_destination_at_its_target_s_page_and_top()
+    {
+        var pages = Pages(ToALaterPage());
+        var anchor = pages.Pages[1].Items.OfType<Anchor>().Should().ContainSingle("the heading starts page 2").Which;
+        using var read = new ReadBack(Pdf(ToALaterPage()));
+
+        var annotation = read.Dictionary(new IndirectReferenceToken(read.Annotations(1).Should().ContainSingle().Which));
+        annotation.ContainsKey(NameToken.Create("A")).Should().BeFalse("a link has a /Dest or an /A, not both (ISO 32000-1 Table 173)");
+        StringOf(read, annotation, "Contents").Should().Be("results");
+        var destination = ((ArrayToken)read.Resolve(annotation.Data["Dest"])).Data;
+        destination.Should().HaveCount(5);
+        ((IndirectReferenceToken)destination[0]).Data.Should().Be(read.PageReference(2));
+        destination[1].Should().Be(NameToken.Create("XYZ"));
+        destination[2].Should().BeOfType<NullToken>("the left edge is left as it is");
+        Number(read, destination[3]).Should().BeApproximately(pages.Pages[1].Size.Height - anchor.At.Y, 1e-4, "the top of the heading's box, in PDF space");
+        destination[4].Should().BeOfType<NullToken>("the zoom is left as it is");
+        read.Page(1).TryGet(NameToken.Create("Annots"), out _).Should().BeTrue();
+        read.Annotations(2).Should().BeEmpty("the target's page holds no annotation for it");
+    }
+
+    [Fact]
     public void The_link_element_holds_its_content_and_an_object_reference_to_each_annotation_and_the_parent_tree_names_it()
     {
         var pdf = Pdf(OverAPageBreak());
@@ -222,7 +261,7 @@ public class LinkOutputTests
     [Trait("Category", "Reference")]
     [InlineData("3a")]
     [InlineData("ua1")]
-    public void Links_over_two_lines_and_over_a_page_break_pass_veraPDF(string flavour)
+    public void Links_over_two_lines_over_a_page_break_and_inside_the_document_pass_veraPDF(string flavour)
     {
         var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-links-").FullName;
         try

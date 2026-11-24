@@ -44,6 +44,14 @@ public static class PageModelRules
     public const int MaxLinkAreasPerPage = 8_191;
 
     /// <summary>
+    /// The most anchors (<see cref="Anchor"/>) one document may hold: 65 536, the most nodes a document model's links may
+    /// lead to (the layout writes one anchor per such node). The PDF back-end keeps a map from each anchor's node to its
+    /// page and place, so the bound keeps that map from growing with its input without limit. More is
+    /// <c>InvalidPageModel</c> under the back-end's code.
+    /// </summary>
+    public const int MaxAnchors = 65_536;
+
+    /// <summary>
     /// Checks the page model and reports every breach together, under the code the back-end passes
     /// (<c>Documents.Pdf.Write.InvalidPageModel</c>, <c>Documents.Raster.InvalidPageModel</c>):
     /// <list type="bullet">
@@ -130,6 +138,11 @@ public static class PageModelRules
             }
         }
 
+        foreach (var problem in AnchorProblems(document.Pages, code))
+        {
+            yield return problem;
+        }
+
         foreach (var problem in StructureNesting.TableParts(document.Pages, code))
         {
             yield return problem;
@@ -196,6 +209,8 @@ public static class PageModelRules
         LinkArea link when !InRange(link.Area) => Invalid(code, $"A link area on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{link.Area}"),
         LinkArea link when !EdgesInRange(link.Area, pageHeight) => Invalid(code, $"A link area on page {number} has {EdgesText}.", $"{link.Area}"),
         LinkArea link when !(link.Area.Size.Width >= 0 && link.Area.Size.Height >= 0) => Invalid(code, $"A link area on page {number} has a negative width or height.", $"{link.Area}"),
+        Anchor anchor when !InRange(anchor.At) || !InRange(pageHeight - anchor.At.Y) =>
+            Invalid(code, $"The anchor of node {anchor.Node} on page {number} has a position that is not a number within ±{Number(MaxNumber)} (or its height above the foot of the page is not).", $"{anchor.At}"),
         StructureStart { Role: SemanticRole.LinkRole link } start when LinkProblem(link) is { } problem =>
             Invalid(code, $"Link {start.Node} on page {number} is refused: {problem}.", (link.Target as LinkTarget.UriTarget)?.Value ?? "null").WithSource(start.Source),
         GlyphRun run when run.Glyphs.Any(glyph => !EdgesInRange(run.Origin, glyph, pageHeight)) =>
@@ -215,6 +230,7 @@ public static class PageModelRules
         var target = link.Target switch
         {
             LinkTarget.UriTarget uri => LinkUris.Problem(uri.Value),
+            LinkTarget.NodeTarget => null,
             null => "a link needs a target",
             _ => $"a target of the kind {link.Target.GetType().Name} cannot be written",
         };
@@ -245,6 +261,44 @@ public static class PageModelRules
     /// (page height − that y, the y a PDF text position is written with), each in range.</summary>
     private static bool EdgesInRange(Point origin, PositionedGlyph glyph, double pageHeight) =>
         InRange(origin.X + glyph.X) && InRange(origin.Y + glyph.Y) && InRange(pageHeight - (origin.Y + glyph.Y));
+
+    /// <summary>
+    /// The anchors across the pages: at most one per node, at most <see cref="MaxAnchors"/> in the document, and one for
+    /// the node of every link inside the document (a link role whose target is <see cref="LinkTarget.Node"/>, on any
+    /// page): without it the back-end has no place to send the link to. Each breach once.
+    /// </summary>
+    private static IEnumerable<Error> AnchorProblems(IReadOnlyList<Page?> pages, ErrorCode code)
+    {
+        var anchors = new HashSet<NodeId>();
+        var links = new Dictionary<NodeId, StructureStart>();
+        for (var index = 0; index < pages.Count; index++)
+        {
+            foreach (var item in pages[index]?.Items ?? [])
+            {
+                if (item is Anchor anchor && !anchors.Add(anchor.Node))
+                {
+                    yield return Invalid(code, $"Node {anchor.Node} has a second anchor, on page {index + 1}; a node has one place a link leads to.", anchor.Node.ToString());
+                }
+                else if (item is Anchor && anchors.Count > MaxAnchors)
+                {
+                    yield return Invalid(code, $"The document has more than {MaxAnchors} anchors.", Number(MaxAnchors));
+                    yield break;
+                }
+                else if (item is StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget target } } start)
+                {
+                    links.TryAdd(target.Value, start);
+                }
+            }
+        }
+
+        foreach (var (node, start) in links)
+        {
+            if (!anchors.Contains(node))
+            {
+                yield return Invalid(code, $"Link {start.Node} leads to node {node}, which has no anchor in the document.", node.ToString()).WithSource(start.Source);
+            }
+        }
+    }
 
     /// <summary>A node is the same node on every page: the structure tree has one element for it, with one type.</summary>
     private static IEnumerable<Error> RoleProblems(Page page, int number, Dictionary<NodeId, SemanticRole> roles, ErrorCode code)
@@ -334,6 +388,7 @@ internal static class MarkerNesting
                     item is ArtifactStart ? "an artifact inside an artifact" : "a structure marker inside an artifact",
                 LinkArea when links > PageModelRules.MaxLinkAreasPerPage => $"more than {PageModelRules.MaxLinkAreasPerPage} link areas",
                 LinkArea link => LinkAreaProblem(link, inArtifact, open.OfType<StructureStart>().FirstOrDefault()),
+                Anchor anchor when inArtifact => $"the anchor of {anchor.Node} inside an artifact",
                 ClipStart when clips >= PageModelRules.MaxClipDepth => $"more than {PageModelRules.MaxClipDepth} clips open one inside the other",
                 StructureEnd or ArtifactEnd or ClipEnd => EndProblem(item, open.Count > 0 ? open.Peek() : null),
                 _ => null,

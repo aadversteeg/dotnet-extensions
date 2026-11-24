@@ -131,6 +131,18 @@ public sealed record ClipEnd : DrawItem
 /// <param name="Area">The area, in page coordinates.</param>
 public sealed record LinkArea(NodeId Link, Rect Area) : DrawItem;
 
+/// <summary>
+/// The place a link inside the document leads to (a link whose target is <see cref="LinkTarget.Node"/>): the top left
+/// of the first fragment of <see cref="Node"/>, on the page that fragment is on. It draws nothing. The layout writes one
+/// for every node a link leads to, once in the document, at the node's first fragment (a box's border box, an inline
+/// group's first line part), outside every artifact; every link to a node needs that node's anchor
+/// (<see cref="PageModelRules"/>). The PDF back-end writes it as the destination of each link to the node; the raster
+/// back-end draws nothing for it.
+/// </summary>
+/// <param name="Node">The node the place belongs to.</param>
+/// <param name="At">The top left of its first fragment, in page coordinates.</param>
+public sealed record Anchor(NodeId Node, Point At) : DrawItem;
+
 /// <summary>The kinds of artifact (ISO 32000-1 §14.8.2.2.2, Table 330, the <c>/Type</c> and <c>/Subtype</c> entries).</summary>
 public enum ArtifactKind
 {

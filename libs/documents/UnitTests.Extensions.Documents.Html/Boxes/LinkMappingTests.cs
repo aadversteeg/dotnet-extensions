@@ -190,17 +190,148 @@ public class LinkMappingTests
         error.Message.Should().Contain("is relative").And.Contain("add a base element");
     }
 
+    /// <summary>The node a link inside the document leads to.</summary>
+    private static NodeId Target(Result<HtmlBoxes, Error> result) =>
+        ((LinkTarget.NodeTarget)Groups(result).Select(group => group.Role).OfType<SemanticRole.LinkRole>().Single().Target).Value;
+
+    /// <summary>The node of the document with the id.</summary>
+    private static Node Node(Result<HtmlBoxes, Error> result, NodeId id)
+    {
+        var pending = new Stack<Node>([result.Value.Document.Root]);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            if (node.Id == id)
+            {
+                return node;
+            }
+
+            foreach (var child in node switch { Box box => box.Children, InlineGroup group => group.Children, _ => [] })
+            {
+                pending.Push(child);
+            }
+        }
+
+        throw new InvalidOperationException($"no node {id}");
+    }
+
+    private static string Text(Node node) => node switch
+    {
+        TextRun run => run.Text,
+        Box box => string.Concat(box.Children.Select(Text)),
+        InlineGroup group => string.Concat(group.Children.Select(Text)),
+        _ => string.Empty,
+    };
+
     [Theory]
     [InlineData("#target", "")]
-    [InlineData("  #target", "")]
-    [InlineData("#", "")]
+    [InlineData("  #target\t", "")]
     [InlineData("#target", HttpsBase)]
-    public void A_link_inside_the_document_is_refused_also_under_a_base(string href, string head)
+    public void A_link_inside_the_document_leads_to_the_box_of_the_element_with_that_id_also_under_a_base(string href, string head)
     {
-        var error = Refusal(Doc($"<p id=\"target\">See <a href=\"{href}\">this</a>.</p>", head), "file:///cases/t.html");
+        var result = Boxes(Doc($"<p>See <a href=\"{href}\">this</a>.</p><p id=\"target\">Target</p>", head), "file:///cases/t.html");
+
+        var target = Node(result, Target(result));
+
+        target.Should().BeOfType<Box>().Which.Role.Should().Be(SemanticRole.Paragraph);
+        Text(target).Should().Be("Target");
+    }
+
+    [Fact]
+    public void The_first_element_with_the_id_wins_over_a_later_one_and_over_an_a_with_that_name_before_it()
+    {
+        var result = Boxes(Doc("<p>See <a href=\"#x\">this</a>.</p><p><a name=\"x\">named</a></p><p id=\"x\">first</p><p id=\"x\">second</p>"));
+
+        Text(Node(result, Target(result))).Should().Be("first");
+    }
+
+    [Fact]
+    public void An_a_with_the_name_is_the_target_when_no_element_has_that_id_as_a_span_group_around_its_content()
+    {
+        var result = Boxes(Doc("<p>See <a href=\"#mark\">this</a>.</p><p>Some <a name=\"mark\">marked words</a> here.</p>"));
+
+        var target = Node(result, Target(result));
+
+        target.Should().BeOfType<InlineGroup>().Which.Role.Should().Be(SemanticRole.Span);
+        Text(target).Should().Be("marked words");
+    }
+
+    [Fact]
+    public void A_link_to_an_inline_element_with_an_id_makes_a_span_group_only_for_that_element()
+    {
+        var result = Boxes(Doc("<p>See <a href=\"#one\">this</a>.</p><p><span id=\"one\">one</span> <span id=\"two\">two</span></p>"));
+
+        Groups(result).Select(group => group.Role).Should().Equal(SemanticRole.Link(LinkTarget.Node(Target(result)), "this"), SemanticRole.Span);
+    }
+
+    [Theory]
+    [InlineData("#caf%C3%A9", "café")]
+    [InlineData("#a%20b", "a%20b")]
+    [InlineData("#a%20b", "a b")]
+    public void A_fragment_is_tried_as_written_and_then_percent_decoded(string href, string id)
+    {
+        var result = Boxes(Doc($"<p>See <a href=\"{href}\">this</a>.</p><p id=\"{id}\">Target</p>"));
+
+        Text(Node(result, Target(result))).Should().Be("Target");
+    }
+
+    [Theory]
+    [InlineData("#")]
+    [InlineData("#top")]
+    [InlineData("#TOP")]
+    public void Hash_alone_and_top_lead_to_the_top_of_the_document_the_root_box(string href)
+    {
+        var result = Boxes(Doc($"<p>First</p><p>Back to <a href=\"{href}\">the top</a>.</p>"));
+
+        Target(result).Should().Be(result.Value.Document.Root.Id);
+    }
+
+    [Fact]
+    public void An_element_with_the_id_top_is_the_target_of_top()
+    {
+        var result = Boxes(Doc("<p>First</p><p id=\"top\">Back to <a href=\"#top\">the top</a>.</p>"));
+
+        Text(Node(result, Target(result))).Should().Be("Back to the top.");
+    }
+
+    [Theory]
+    [InlineData("<p>See <a href=\"#nowhere\">this</a>.</p>", "no element has the id 'nowhere'")]
+    [InlineData("<p>See <a href=\"#Target\">this</a>.</p><p id=\"target\">t</p>", "no element has the id 'Target'")]
+    [InlineData("<p>See <a href=\"#hidden\">this</a>.</p><p id=\"hidden\" style=\"display: none\">t</p>", "the element <p> it leads to makes no box")]
+    [InlineData("<p>See <a href=\"#empty\">this</a>.</p><p><span id=\"empty\"></span>t</p>", "the element <span> it leads to makes no box")]
+    [InlineData("<p>See <a href=\"#pic\">this</a>.</p><p><img id=\"pic\" src=\"figure.png\" alt=\"A figure\"></p>", "the element <img> it leads to makes no box")]
+    public void A_link_whose_fragment_names_no_target_is_refused_at_its_start_tag(string body, string reason)
+    {
+        var error = Refusal(Doc(body));
 
         error.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Link);
-        error.Message.Should().Contain("inside the document");
+        error.Message.Should().Contain(reason);
+        error.Metadata![ErrorMetadataKeys.Property].Should().Be("href");
+    }
+
+    [Fact]
+    public void A_link_that_leads_to_a_link_that_is_not_made_is_refused_too_and_under_Warn_both_are_drawn_as_text()
+    {
+        var html = Doc("<p>See <a href=\"#b\">this</a> and <a id=\"b\" href=\"#nowhere\">that</a>.</p>");
+
+        Boxes(html).Error.Parts().Select(part => part.Message).Should().HaveCount(2).And.Contain(message => message.Contains("it leads to a link that is not made", StringComparison.Ordinal));
+        var warned = Boxes(html, policy: UnsupportedPolicy.Warn);
+        Groups(warned).Should().BeEmpty();
+        Text(warned.Value.Document.Root).Should().Be("See this and that.");
+    }
+
+    [Theory]
+    [InlineData("<p id=\"target\">Target</p>")]
+    [InlineData("<table style=\"border-collapse: collapse\"><tr id=\"target\"><td>t</td></tr></table>")]
+    [InlineData("<table id=\"target\" style=\"border-collapse: collapse\"><tr><td>t</td></tr></table>")]
+    public void A_link_inside_the_document_and_its_target_lay_out_and_paint_one_anchor_at_the_target(string target)
+    {
+        var result = Boxes(Doc($"<p>See <a href=\"#target\">this</a>.</p>{target}"));
+        var pages = DocumentLayout.Run(result.Value.Document, result.Value.Fonts);
+
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+        pages.Value.Pages.SelectMany(page => page.Items).OfType<Ave.Extensions.Documents.PageModel.Anchor>().Should().ContainSingle()
+            .Which.Node.Should().Be(Target(result));
     }
 
     [Theory]
@@ -272,7 +403,7 @@ public class LinkMappingTests
     [InlineData("ua1")]
     public void The_link_cases_as_tagged_PDF_pass_veraPDF(string flavour)
     {
-        string[] names = ["lk-one-line", "lk-two-lines", "lk-larger-run", "lk-image", "lk-page-break", "lk-mail-tel", "lk-header-row"];
+        string[] names = ["lk-one-line", "lk-two-lines", "lk-larger-run", "lk-image", "lk-page-break", "lk-mail-tel", "lk-header-row", "lk-fragment"];
         var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-html-links-").FullName;
         try
         {

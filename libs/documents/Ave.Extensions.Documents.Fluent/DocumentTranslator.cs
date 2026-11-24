@@ -61,8 +61,10 @@ public static class DocumentTranslator
             format.TextAlign ?? TextAlign.Left,
             format.Orphans ?? BoxStyle.Initial.Orphans,
             format.Widows ?? BoxStyle.Initial.Widows).Decorated(format);
-        var root = Children(document.Body, new NodeId(1), inherited).OnSuccessMap(children =>
-            new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
+        var links = new InternalLinks();
+        var root = Children(document.Body, new NodeId(1), inherited with { Links = links }).OnSuccessMap(children =>
+            new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source))
+            .OnSuccessBind(links.Resolve);
         var page = PageStyle(document.Page, new NodeId(1 + document.Body.Sum(NodeCount)), inherited);
 
         // The body and the page areas are translated independently, so the problems of both are reported together.
@@ -84,6 +86,9 @@ public static class DocumentTranslator
     /// <param name="Widows">The <c>widows</c> value (initial 2).</param>
     internal sealed record Inherited(TextStyle Text, TextAlign Align, int Orphans, int Widows)
     {
+        /// <summary>The anchors and the links to them of the body; null in a page area, where neither may stand.</summary>
+        public InternalLinks? Links { get; init; }
+
         /// <summary>CSS inheritance (CSS Cascade 4 §7.2): what an element does not specify is its parent's value. A line
         /// height the element specifies is computed with its own font size (CSS 2.1 §10.8.1).</summary>
         public Inherited With(TextFormat format)
@@ -105,7 +110,7 @@ public static class DocumentTranslator
                 },
                 format.TextAlign ?? Align,
                 format.Orphans ?? Orphans,
-                format.Widows ?? Widows).Decorated(format);
+                format.Widows ?? Widows) { Links = Links }.Decorated(format);
         }
 
         /// <summary>The decorations an element applies (CSS Text Decoration 3 §2: "When specified on or propagated to a
@@ -179,7 +184,7 @@ public static class DocumentTranslator
     };
 
     /// <summary>How many model nodes a span becomes: one run, an image's nodes, or a link's group and its run.</summary>
-    private static int SpanNodeCount(Span span) => span.Image is { } image ? NodeCount(image) : span.Link is null ? 1 : 2;
+    private static int SpanNodeCount(Span span) => span.Image is { } image ? NodeCount(image) : span.Link is null && span.LinkAnchor is null ? 1 : 2;
 
     /// <summary>The computed box style of an element from its specified box values and the inherited paragraph
     /// properties it computes (its own <see cref="Inherited"/>).</summary>
@@ -253,10 +258,16 @@ public static class DocumentTranslator
             .Concat(InputChecks.Text(text, paragraph.Source))
             .Concat(InputChecks.Role(paragraph.Role, paragraph.Source))
             .Concat(paragraph.Spans.SelectMany(SpanProblems))
+            .Concat(InternalLinks.Problems(paragraph, inherited.Links))
             .ToImmutableArray();
         if (!problems.IsEmpty)
         {
             return Result<Node, Error>.Failure(Errors.Aggregate(problems));
+        }
+
+        if (paragraph.AnchorName is { } anchor && inherited.Links?.Anchor(anchor, id, paragraph.Source) is { } duplicate)
+        {
+            return Result<Node, Error>.Failure(duplicate);
         }
 
         var own = (inherited with { Text = WithRoleDefaults(inherited.Text, paragraph.Role) }).With(text);
@@ -271,8 +282,8 @@ public static class DocumentTranslator
         }).ToImmutableArray();
         var runs = spans.TraverseAll(item => item.Span.Image is { } image
             ? Image(image, item.Id, pageBreakBefore: false)
-            : Result<Node, Error>.Success(item.Span.Link is { } link
-                ? LinkGroup(item.Span, link, item.Id, own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)
+            : Result<Node, Error>.Success(item.Span.Link is { } || item.Span.LinkAnchor is { }
+                ? LinkGroup(item.Span, item.Id, own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text, inherited.Links)
                 : Run(item.Span, item.Id, IsLineBreaks(item.Span) ? own.Text : own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)));
         // The paragraph's own font and line height make the strut of its lines (CSS 2.1 §10.8.1).
         return runs.OnSuccessMap(children => (Node)new Box(
@@ -286,14 +297,19 @@ public static class DocumentTranslator
 
     /// <summary>A link span: an inline group with the link's role (<see cref="InlineGroup"/>) around one run of its text, both
     /// in the span's text style; its description by THE RULE FOR A LINK'S DESCRIPTION (<see cref="LinkDescription"/>): the
-    /// text, else the URI.</summary>
-    private static Node LinkGroup(Span span, LinkTarget link, NodeId id, TextStyle style) =>
-        new InlineGroup(
+    /// text, else the URI or the anchor's name. A link to an anchor gets its node when the body is built
+    /// (<see cref="InternalLinks"/>).</summary>
+    private static Node LinkGroup(Span span, NodeId id, TextStyle style, InternalLinks? links)
+    {
+        var target = span.Link ?? links!.Link(id, span.LinkAnchor!, span.Source);
+        var fallback = span.Link is LinkTarget.UriTarget uri ? uri.Value : span.LinkAnchor!;
+        return new InlineGroup(
             id,
-            SemanticRole.Link(link, LinkDescription.Of(null, span.Text, null, ((LinkTarget.UriTarget)link).Value)),
+            SemanticRole.Link(target, LinkDescription.Of(null, span.Text, null, fallback)),
             style,
             [new TextRun(new NodeId(id.Value + 1), span.Text, style, span.Source)],
             span.Source);
+    }
 
     private static Node Run(Span span, NodeId id, TextStyle style) =>
         span.Counter is { } counter ? new CounterRun(id, counter, style, span.Source) : new TextRun(id, span.Text, style, span.Source);

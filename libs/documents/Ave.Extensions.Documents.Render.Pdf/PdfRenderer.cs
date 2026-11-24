@@ -73,6 +73,7 @@ public static class PdfRenderer
         var fonts = UsedFont.Collect(document);
         var images = UsedImage.Collect(document);
         var annotations = LinkAnnotations.Of(pages);
+        var places = LinkAnnotations.Places(document);
         var plan = new ObjectPlan(fonts.Length, [.. images.Select(image => image.HasMask)], document.Pages.Count)
         {
             HasMetadata = profile.HasXmpMetadata,
@@ -114,7 +115,10 @@ public static class PdfRenderer
                     .. attachments.SelectMany((attachment, index) => AttachmentEmbedding.Build(attachment, plan.Attachment(index))),
                     .. annotations.SelectMany((onPage, page) => onPage.Select(annotation => (IndirectObject)new IndirectValue(
                         plan.Annotation(annotation.Index),
-                        LinkAnnotations.Dictionary(annotation, document.Pages[page].Size.Height, plan.IsTagged ? plan.PageCount + annotation.Index : null)))),
+                        LinkAnnotations.Dictionary(annotation, document.Pages[page].Size.Height, plan.IsTagged ? plan.PageCount + annotation.Index : null,
+                            annotation.Link.Target is LinkTarget.NodeTarget target && places.TryGetValue(target.Value, out var place)
+                                ? (new PdfReference(plan.Page(place.Page).Page), document.Pages[place.Page].Size.Height - place.At.Y)
+                                : null)))),
                 ])
             .OnSuccessBind(objects => ProfileLimits.ObjectCount(objects.Length, profile).ToList() is [var tooMany]
                 ? Result<ImmutableArray<byte>, Error>.Failure(tooMany)

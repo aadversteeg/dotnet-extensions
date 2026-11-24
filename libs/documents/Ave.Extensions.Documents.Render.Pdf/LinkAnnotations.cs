@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.Pdf;
@@ -51,6 +52,24 @@ internal static class LinkAnnotations
         return result.ToImmutable();
     }
 
+    /// <summary>The place of every anchor (<see cref="Anchor"/>): its page's index and its point. The page-model rules
+    /// checked that a node has one anchor and that every link to a node has its node's.</summary>
+    /// <param name="document">The page document.</param>
+    /// <returns>Per node, the page and the point.</returns>
+    public static IReadOnlyDictionary<NodeId, (int Page, Point At)> Places(PageDocument document)
+    {
+        var places = new Dictionary<NodeId, (int Page, Point At)>();
+        for (var index = 0; index < document.Pages.Count; index++)
+        {
+            foreach (var anchor in document.Pages[index].Items.OfType<Anchor>())
+            {
+                places.TryAdd(anchor.Node, (index, anchor.At));
+            }
+        }
+
+        return places;
+    }
+
     /// <summary>
     /// The annotation dictionary (ISO 32000-1 §12.5.2, Table 164, and §12.5.6.5, Table 173): <c>/Subtype /Link</c>;
     /// <c>/Rect</c>, the area in default user space (left, bottom, right, top); <c>/F 4</c>, the Print flag alone
@@ -65,11 +84,12 @@ internal static class LinkAnnotations
     /// <param name="annotation">The annotation.</param>
     /// <param name="pageHeight">The height of its page, for the change to PDF space (y up).</param>
     /// <param name="structParent">Its parent-tree key, or null in an untagged file.</param>
+    /// <param name="destination">For a link inside the document: its target's page object and the anchor's top in PDF
+    /// space (y up); null for a link to a URI.</param>
     /// <returns>The dictionary.</returns>
-    public static PdfDictionary Dictionary(LinkAnnotation annotation, double pageHeight, int? structParent)
+    public static PdfDictionary Dictionary(LinkAnnotation annotation, double pageHeight, int? structParent, (PdfReference Page, double Top)? destination)
     {
         var area = annotation.Area.Area;
-        var uri = ((LinkTarget.UriTarget)annotation.Link.Target).Value;
         return PdfDictionary.Of(
             ("Type", new PdfName("Annot")),
             ("Subtype", new PdfName("Link")),
@@ -77,10 +97,15 @@ internal static class LinkAnnotations
             ("F", new PdfInteger(4)),
             ("Border", PdfArray.OfNumbers(0, 0, 0)),
             ("Contents", PdfString.FromText(annotation.Link.Description)),
-            ("A", PdfDictionary.Of(
-                ("Type", new PdfName("Action")),
-                ("S", new PdfName("URI")),
-                ("URI", PdfString.FromText(uri)))),
+            ("A", annotation.Link.Target is LinkTarget.UriTarget uri
+                ? PdfDictionary.Of(
+                    ("Type", new PdfName("Action")),
+                    ("S", new PdfName("URI")),
+                    ("URI", PdfString.FromText(uri.Value)))
+                : null),
+            ("Dest", destination is { } place
+                ? new PdfArray([place.Page, new PdfName("XYZ"), PdfNull.Instance, PdfNumber.From(place.Top), PdfNull.Instance])
+                : null),
             ("StructParent", structParent is { } key ? new PdfInteger(key) : null));
     }
 }

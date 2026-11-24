@@ -483,11 +483,17 @@ the box whatever its vertical alignment, unclipped, under the body; the box keep
   else the URI. Refused at the start tag (`Documents.Html.Unsupported.Link`, with the `href`): any other scheme
   (`javascript`, `vbscript`, `file`, `data`, `ftp`, …), also in mixed case or with white space, tabs or line breaks in it;
   a relative URL without an `http` or `https` base (a document read from a file has a `file:` base, and Chromium would
-  write a path of the printing machine); a link inside the document (`#…`, also under a `base`); a host with characters
-  beyond ASCII; an `a` with `href` that is not inside a line (`display: block`, a table display). An `a` without `href`,
-  and an `a` with `href` that draws nothing, is no link, as in Chromium. A link in a table header row that repeats on
-  every page leads from its first copy only (the copies are artifacts); Chromium writes it on every page (a listed
-  difference, case `lk-header-row`).
+  write a path of the printing machine); a host with characters beyond ASCII; an `a` with `href` that is not inside a
+  line (`display: block`, a table display). An `a` without `href`, and an `a` with `href` that draws nothing, is no link,
+  as in Chromium. A link in a table header row that repeats on every page leads from its first copy only (the copies
+  are artifacts); Chromium writes it on every page (a listed difference, case `lk-header-row`).
+- Links inside the document: an `href` that starts with `#` (also under a `base`) leads to the element the HTML
+  Standard's "indicated part of the document" names: `#` alone, and `#top` in any case when no element has that id, the
+  top of the first page; else the first element with that `id`, else the first `a` with that `name`, then both again
+  with the fragment percent-decoded. The PDF's destination is the page where the target starts and the top of its box
+  (or of its first line part, for an inline element), the left edge and the zoom unchanged; no names are written.
+  Refused at the start tag: a name no element has (Chromium writes no link), and an element that makes no box or text
+  a link can lead to (not rendered, an inline element that draws nothing, an image).
 
 Presentational attributes (HTML Standard §15.2–§15.4):
 
