@@ -62,7 +62,7 @@ public static class DocumentModelText
             TextRun text => [indent + $"text {text.Id} {QuotedText.Quote(text.Text)} {StyleText(text.Style)} @{text.Source}"],
             CounterRun counter => [indent + $"counter {counter.Id} {CounterName(counter.Counter)} {StyleText(counter.Style)} @{counter.Source}"],
             ImageNode image => [indent + ImageLine(image)],
-            InlineGroup group => [indent + $"group {group.Id} {group.Role}{Attribute("lang", group.Language)} {StyleText(group.Style)} @{group.Source}", .. group.Children.SelectMany(child => NodeLines(child, depth + 1))],
+            InlineGroup group => [indent + $"group {group.Id} {group.Role?.ToString() ?? "none"}{Attribute("lang", group.Language)}{(group.Box is { } box ? $" box({box})" : string.Empty)} {StyleText(group.Style)} @{group.Source}", .. group.Children.SelectMany(child => NodeLines(child, depth + 1))],
             _ => [indent + $"unknown {node.GetType().Name} {node.Id} @{node.Source}"],
         };
     }

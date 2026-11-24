@@ -69,6 +69,7 @@ public static partial class HtmlBoxGenerator
         CutRowAlignment = CutRowAlignment.TopOnEveryPage,
         RepeatedHeaderRows = RepeatedHeaderRows.WhereContentIsLaidOut,
         SliceRestEnd = SliceRestEnd.AtLineCentre,
+        InlineBoxSnapping = InlineBoxSnapping.WholePixels,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>
@@ -136,8 +137,12 @@ public static partial class HtmlBoxGenerator
         /// <summary>Whether the frame lies inside a link.</summary>
         public bool InLink { get; init; }
 
-        /// <summary>For the frame of an inline element a link leads to: the span group being built; null otherwise.</summary>
+        /// <summary>For the frame of an inline element a link leads to, with a language of its own or with a box of its own:
+        /// the span group being built; null otherwise.</summary>
         public SpanFrame? Span { get; init; }
+
+        /// <summary>Whether the frame lies inside an inline element with a box of its own (<see cref="InlineBoxStyle"/>).</summary>
+        public bool InBox { get; init; }
     }
 
     /// <summary>A link being built: the content of its parent it goes into, its id, its URI (for a link inside the document
@@ -151,7 +156,14 @@ public static partial class HtmlBoxGenerator
 
     /// <summary>An inline element a link leads to, being built as a span group: the content of its parent it goes into, its
     /// id and its text style.</summary>
-    private sealed record SpanFrame(List<Node> Parent, NodeId Id, TextStyle Style, string? Language);
+    private sealed record SpanFrame(List<Node> Parent, NodeId Id, TextStyle Style, string? Language)
+    {
+        /// <summary>The element's own box, or null.</summary>
+        public InlineBoxStyle? Box { get; init; }
+
+        /// <summary>Whether a link leads to the element.</summary>
+        public bool IsTarget { get; init; }
+    }
 
     private sealed partial class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
     {
@@ -536,7 +548,7 @@ public static partial class HtmlBoxGenerator
                             frame.Target.Add(new TextRun(NewId(), string.Empty, own, Source(element.Element.Position)));
                         }
 
-                        stack.Push(new InlineFrame(element, frame.Target, frame.Depth) { InLink = frame.InLink });
+                        stack.Push(new InlineFrame(element, frame.Target, frame.Depth) { InLink = frame.InLink, InBox = frame.InBox });
                     }
 
                     break;
@@ -610,6 +622,22 @@ public static partial class HtmlBoxGenerator
             Orphans = IntegerOf(element, "orphans", 2),
             Widows = IntegerOf(element, "widows", 2),
         };
+
+        /// <summary>
+        /// THE RULE FOR AN INLINE BOX IN HTML: an inline element with a background of alpha 1, a visible border, padding or a
+        /// left or right margin has a box of its own (<see cref="InlineBoxStyle"/>), its lengths on Chromium's layout unit as a
+        /// block box's; null for an element without any of these, which stays without a group, as before. Its values were
+        /// checked by <see cref="BoxProperties"/>; a value refused there is not drawn.
+        /// </summary>
+        private InlineBoxStyle? InlineBoxOf(StyledElement element)
+        {
+            var box = BoxStyleOf(element);
+            var inline = new InlineBoxStyle(box.Margin.Left, box.Margin.Right, box.Padding, box.Border, box.Background);
+            return inline.Background is not null || inline.Start > 0 || inline.End > 0
+                || box.Padding.Vertical.Points > 0 || box.Border.Top.IsVisible || box.Border.Bottom.IsVisible
+                ? inline
+                : null;
+        }
 
         private BoxStyle BoxStyleOf(StyledElement element)
         {

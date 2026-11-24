@@ -121,7 +121,7 @@ public class LinkTargetTests
 
         var line = (Box)resolved.Children.Single();
         line.Children.Select(child => child.Id.Value).Should().Equal(5, 2, 6, 8);
-        ((SemanticRole.LinkRole)((InlineGroup)line.Children[1]).Role).Target.Should().Be(LinkTarget.Node(new NodeId(1)));
+        ((SemanticRole.LinkRole)((InlineGroup)line.Children[1]).Role!).Target.Should().Be(LinkTarget.Node(new NodeId(1)));
         LinkTargets.Resolve(root, new Dictionary<NodeId, LinkTarget?>()).Should().BeSameAs(root);
     }
 

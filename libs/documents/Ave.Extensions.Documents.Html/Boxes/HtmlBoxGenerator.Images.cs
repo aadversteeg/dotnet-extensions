@@ -51,6 +51,13 @@ public static partial class HtmlBoxGenerator
             }
 
             var refused = false;
+            if (frame.InBox)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.InlineBox, "An <img> inside an element with a background, border, padding or margin of its own is not drawn in this version; put the image outside that element.",
+                    "img", element.Element.Position, "display");
+                refused = true;
+            }
+
             if (Value(element, "vertical-align") is { } align and not CssKeyword { Name: "baseline" })
             {
                 Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'vertical-align: {align}' on an <img> inside a line of text is not drawn in this version: it sits on the baseline.",

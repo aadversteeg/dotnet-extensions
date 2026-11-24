@@ -71,19 +71,19 @@ public static class ModelCheck
     /// and where each row of page-margin boxes is (<see cref="MarginBoxes"/>).</summary>
     private static Error? Nodes(StyledDocument document)
     {
-        var pending = new Stack<(Node Node, int Depth, Place Place, bool InLink)>();
-        pending.Push((document.Root, 0, Place.Other, false));
+        var pending = new Stack<(Node Node, int Depth, Place Place, bool InLink, bool InBox)>();
+        pending.Push((document.Root, 0, Place.Other, false, false));
         foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
         {
             if (area is not null)
             {
-                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea, false));
+                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea, false, false));
             }
         }
 
         while (pending.Count > 0)
         {
-            var (node, depth, place, inLink) = pending.Pop();
+            var (node, depth, place, inLink, inBox) = pending.Pop();
             if (depth > ModelLimits.MaxNestingDepth)
             {
                 return Problem(DocumentErrorCodes.Input.Invalid.TooDeep, $"Boxes may nest at most {ModelLimits.MaxNestingDepth} levels deep.",
@@ -92,11 +92,12 @@ public static class ModelCheck
 
             var problem = node switch
             {
+                Box box when inBox => Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An image inside an inline group with a box of its own (InlineGroup.Box) is not drawn in this version; put the image outside the group.", box.Layout.ToString(), "layout", box),
                 Box box => Box(box),
                 TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
                 ImageNode image => ImageSize(image),
-                InlineGroup group => Group(group, place, inLink),
+                InlineGroup group => Group(group, place, inLink, inBox),
                 _ => null,
             };
             if (problem is not null)
@@ -119,7 +120,7 @@ public static class ModelCheck
                 // A group is one level deeper than its parent, so groups nest no deeper than boxes do.
                 foreach (var child in grouping.Children)
                 {
-                    pending.Push((child, depth + 1, Place.InLine, inLink || grouping.Role is SemanticRole.LinkRole));
+                    pending.Push((child, depth + 1, Place.InLine, inLink || grouping.Role is SemanticRole.LinkRole, inBox || grouping.Box is not null));
                 }
             }
 
@@ -141,7 +142,7 @@ public static class ModelCheck
                 foreach (var child in parent.Children)
                 {
                     var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } or InlineGroup && !isRow;
-                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace, false));
+                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace, false, false));
                 }
             }
         }
@@ -344,17 +345,37 @@ public static class ModelCheck
     /// span, a link not inside a link (a link annotation leads to one target; HTML's content model forbids an <c>a</c>
     /// inside an <c>a</c> too), a link's target accepted by THE RULE FOR A LINK'S URI (<see cref="LinkUris"/>) and a
     /// description that is not blank and holds only characters text may hold (<see cref="TextCharacters"/>), a language,
-    /// when it has one, of the form of a language tag (<see cref="LanguageTags"/>), and its text values as a run's.
+    /// when it has one, of the form of a language tag (<see cref="LanguageTags"/>), and its text values as a run's. A group
+    /// with a box of its own (<see cref="InlineGroup.Box"/>, <see cref="InlineBox"/>) may have no role; a group without one
+    /// means something, so it has one. In this version a link and a group with a box are not inside each other, and an
+    /// image is not inside a group with a box: neither is drawn yet.
     /// </summary>
-    private static Error? Group(InlineGroup group, Place place, bool inLink)
+    private static Error? Group(InlineGroup group, Place place, bool inLink, bool inBox)
     {
         if (place != Place.InLine)
         {
             return Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group stands only among the content of an inline box (its runs and images).", group.Role?.ToString() ?? "null", "place", group);
         }
 
+        if (group.Box is { } box && (inLink || group.Role is SemanticRole.LinkRole))
+        {
+            return Problem(DocumentErrorCodes.Input.Unsupported.InlineBox, "An inline group with a box of its own inside a link, or a link with a box of its own, is not drawn in this version.", group.Role?.ToString() ?? "null", "box", group);
+        }
+
+        if (group.Role is SemanticRole.LinkRole && inBox)
+        {
+            return Problem(DocumentErrorCodes.Input.Unsupported.InlineBox, "A link inside an inline group with a box of its own is not drawn in this version; put the link outside the group.", group.Role.ToString()!, "role", group);
+        }
+
+        if (group.Box is { } own && InlineBox(own, group) is { } boxProblem)
+        {
+            return boxProblem;
+        }
+
         switch (group.Role)
         {
+            case null when group.Box is not null:
+                break;
             case SemanticRole.LinkRole link:
                 if (inLink)
                 {
@@ -393,6 +414,13 @@ public static class ModelCheck
             ? Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group needs its text properties.", "null", "style", group)
             : Text(group.Style, group);
     }
+
+    /// <summary>The box of an inline group (<see cref="InlineBoxStyle"/>): padding and border widths of zero or more, as a box's;
+    /// horizontal margins of zero or more (a negative one is not drawn in this version).</summary>
+    private static Error? InlineBox(InlineBoxStyle box, InlineGroup group) =>
+        Sides(new Edges(Length.Zero, box.MarginRight, Length.Zero, box.MarginLeft), "margin", group, DocumentErrorCodes.Input.Unsupported.NegativeMargin)
+        ?? Sides(box.Padding, "padding", group, DocumentErrorCodes.Input.Invalid.Length)
+        ?? Sides(box.Border.Widths, "border", group, DocumentErrorCodes.Input.Invalid.Length);
 
     /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and positive.</summary>
     private static Error? Columns(Box box)

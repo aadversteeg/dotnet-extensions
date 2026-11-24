@@ -384,6 +384,15 @@ hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve a
 hw-pre-line equal
 hw-pre-wrap equal
 hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
+ib-align equal
+ib-background equal
+ib-border equal
+ib-code-kbd equal
+ib-fraction equal
+ib-margin equal
+ib-nested equal
+ib-padding equal
+ib-space equal
 ii-align refused Documents.Html.Unsupported.Value width: 100pt at 3:1
 ii-baseline equal
 ii-breaks refused Documents.Html.Unsupported.Value width: 6pt at 3:1

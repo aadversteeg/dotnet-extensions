@@ -91,12 +91,11 @@ internal static class BoxProperties
             (value, facts) => value is CssKeyword { Name: "auto" } || !facts.IsBlock || (facts.IsReplaced && IsAutoAndRatio(value)) ? null : "a preferred aspect ratio sizes the box, and sizes are not drawn in this version");
 
         // CSS Backgrounds 3 §2.2 (background-color), §2.11.2 (the canvas background).
-        yield return new("background-color", "a colour of alpha 1 on a block box; transparent everywhere", (value, facts) =>
+        yield return new("background-color", "a colour of alpha 1 on a block box and an inline box; transparent everywhere", (value, facts) =>
             Alpha(value) switch
             {
                 0 => null,
                 _ when facts.IsCanvasElement => "a background on the root or body element is painted on the page canvas (CSS Backgrounds 3 §2.11.2), and the document model has no page background",
-                _ when !facts.IsBlock => "a background on an inline box is not drawn in this version",
                 _ when TableProperties.Background(facts) is { } table => table,
                 1 => null,
                 _ => "a colour with an alpha other than 0 or 1 is not drawn",
@@ -107,8 +106,8 @@ internal static class BoxProperties
             // CSS Backgrounds 3 §3.1–3.3: a style of none or hidden computes the width to 0 (no line, no room).
             yield return new($"border-{side}-style", "none, hidden, solid; inset and outset only where the width is 0", (value, facts) =>
                 value is CssKeyword { Name: "none" or "hidden" or "solid" } || IsZero(facts.Style, $"border-{side}-width") ? null : "only solid borders are drawn");
-            yield return new($"border-{side}-width", "a length on a block box; 0 on an inline box, a column or a column group",
-                (value, facts) => TableProperties.BorderWidth(value, facts) ?? (facts.IsBlock || IsZero(value) ? null : "borders on inline boxes are not drawn in this version"));
+            yield return new($"border-{side}-width", "a length on a block box and an inline box; 0 on a column or a column group",
+                (value, facts) => TableProperties.BorderWidth(value, facts));
             yield return new($"border-{side}-color", "a colour of alpha 1, or currentcolor; any colour where the width is 0", (value, facts) =>
                 IsZero(facts.Style, $"border-{side}-width") || Alpha(Resolved(value, facts.Style)) == 1 ? null : "a border colour with an alpha other than 1 is not drawn");
         }
@@ -117,23 +116,21 @@ internal static class BoxProperties
         foreach (var side in Sides)
         {
             var vertical = side is "top" or "bottom";
-            yield return new($"margin-{side}", vertical ? "a length of 0 or more, auto (0); no effect on an inline box (CSS 2.1 §10.6.1) or an internal table part (§17.5)" : "a length of 0 or more, auto (0) on a block box; 0 or auto on an inline box; 0 on a table, or auto at width 100%; no effect on an internal table part (CSS 2.1 §17.5)",
+            yield return new($"margin-{side}", vertical ? "a length of 0 or more, auto (0); no effect on an inline box (CSS 2.1 §10.6.1) or an internal table part (§17.5)" : "a length of 0 or more, auto (0) on a block box and an inline box; 0 on a table, or auto at width 100%; no effect on an internal table part (CSS 2.1 §17.5)",
                 (value, facts) => value switch
                 {
                     _ when TableProperties.IsPart(facts) => TableProperties.Margin(side, value, facts),
                     CssKeyword { Name: "auto" } => null,
                     _ when !facts.IsBlock && vertical => null,
                     _ when IsZero(value) => null,
-                    _ when !facts.IsBlock => "margins on inline boxes are not drawn in this version",
                     CssLength length when length.Value.Points > 0 => null,
                     CssLength => "negative margins are not drawn in this version",
                     _ => "percentage and calculated margins are not drawn in this version",
                 });
-            yield return new($"padding-{side}", "a length on a block box; 0 on an inline box", (value, facts) => value switch
+            yield return new($"padding-{side}", "a length on a block box and an inline box", (value, facts) => value switch
             {
                 _ when IsZero(value) => null,
-                CssLength when facts.IsBlock => null,
-                CssLength => "padding on inline boxes is not drawn in this version",
+                CssLength => null,
                 _ => "percentage and calculated padding is not drawn in this version",
             });
         }
@@ -194,8 +191,10 @@ internal static class BoxProperties
         yield return new("break-before", "every value (avoid-page as avoid); no effect on an inline box", (_, _) => null);
         yield return new("break-after", "every value (avoid-page as avoid, page as a forced break before the next box); no effect on an inline box", (_, _) => null);
         yield return new("break-inside", "every value (avoid-page as avoid); no effect on an inline box", (_, _) => null);
-        yield return new("box-decoration-break", "slice; clone on a box with no border, padding or background", (value, facts) =>
-            IsKeyword(value, "slice") || !facts.IsBlock || !HasDecoration(facts.Style) ? null : "a cloned box decoration is not drawn in this version: the document model slices every block");
+        yield return new("box-decoration-break", "slice; clone on a box with no border, padding or background, and on an inline box without horizontal margins too", (value, facts) =>
+            IsKeyword(value, "slice") || !(HasDecoration(facts.Style) || (!facts.IsBlock && HasHorizontalMargin(facts.Style))) ? null
+            : facts.IsBlock ? "a cloned box decoration is not drawn in this version: the document model slices every block"
+            : "a cloned inline box decoration is not drawn in this version: an inline box is drawn on one line, its edges sliced; remove box-decoration-break: clone");
 
         // CSS Overflow 3 §3.1: hidden and clip would clip content that passes a block box (a long word).
         foreach (var name in new[] { "overflow-x", "overflow-y" })
@@ -248,6 +247,9 @@ internal static class BoxProperties
     };
 
     private static bool IsZero(ComputedStyle style, string property) => IsZero(style[PropertyRegistry.Find(property)!]);
+
+    /// <summary>A left or right margin that is not 0.</summary>
+    private static bool HasHorizontalMargin(ComputedStyle style) => !IsZero(style, "margin-left") || !IsZero(style, "margin-right");
 
     /// <summary>A border, padding or background on the box.</summary>
     private static bool HasDecoration(ComputedStyle style) =>

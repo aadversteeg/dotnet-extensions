@@ -112,6 +112,15 @@ internal static class LayoutErrors
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";
 
+    /// <summary>An inline group with a box of its own (<see cref="InlineGroup.Box"/>) that this version does not draw where it
+    /// stands, at the group's source.</summary>
+    public static Error InlineBox(InlineGroup group, string message) =>
+        new Error(DocumentErrorCodes.Input.Unsupported.InlineBox, $"The inline box made at {group.Source} is not drawn in this version: {message}.")
+            .With(ErrorMetadataKeys.Node, group.Id.ToString())
+            .With(ErrorMetadataKeys.Value, group.Box?.ToString() ?? "none")
+            .With(ErrorMetadataKeys.Property, "box")
+            .WithSource(group.Source);
+
     public static Error InvalidContent(Box box, string message) =>
         new Error(LayoutErrorCodes.InvalidContent, $"{Describe(box)} cannot be laid out: {message}")
             .With(ErrorMetadataKeys.Node, box.Id.ToString())

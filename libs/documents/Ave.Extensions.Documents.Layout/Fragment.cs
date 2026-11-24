@@ -67,7 +67,7 @@ public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children)
 /// <summary>
 /// The part of an inline group (<see cref="InlineGroup"/>) on one line: the children of the line it holds and, for a link,
 /// the area a reader clicks. The painter opens the group's structure marker around these children
-/// (<see cref="PagePainter"/>); the group draws nothing of its own.
+/// (<see cref="PagePainter"/>); a group draws nothing of its own but its box (<see cref="Box"/>).
 /// </summary>
 /// <param name="Group">The group.</param>
 /// <param name="Area">Relative to the line's top-left corner: in the inline direction from the start of the group's first
@@ -75,8 +75,15 @@ public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children)
 /// the group's own font's ascent above the line's baseline to its descent below it (THE RULE FOR A LINK'S AREA,
 /// <see cref="LineBoxes"/>).</param>
 /// <param name="First">The index of its first child in <see cref="LineFragment.Children"/>.</param>
-/// <param name="Count">How many children it holds, one or more.</param>
-public sealed record LineGroupPart(InlineGroup Group, Rect Area, int First, int Count);
+/// <param name="Count">How many children it holds: one or more, or none for a group with a box (<see cref="InlineGroup.Box"/>)
+/// whose part holds only its edges (an empty inline box).</param>
+public sealed record LineGroupPart(InlineGroup Group, Rect Area, int First, int Count)
+{
+    /// <summary>For a group with a box (<see cref="InlineGroup.Box"/>): its border box on this line, relative to the line's
+    /// top-left corner, where its background and border are painted (THE INLINE BOX STYLE; on whole pixels under
+    /// <see cref="InlineBoxSnapping.WholePixels"/>); null for a group without a box.</summary>
+    public Rect? Box { get; init; }
+}
 
 /// <summary>
 /// The part of one <see cref="InlineRun"/> that lies on one line. Its top edge is <see cref="Ascent"/> above the

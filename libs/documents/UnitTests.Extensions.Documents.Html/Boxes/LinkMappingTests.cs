@@ -61,7 +61,7 @@ public class LinkMappingTests
         return groups;
     }
 
-    private static SemanticRole.LinkRole Link(string html, string? documentUrl = null) => (SemanticRole.LinkRole)Groups(Boxes(html, documentUrl)).Single().Role;
+    private static SemanticRole.LinkRole Link(string html, string? documentUrl = null) => (SemanticRole.LinkRole)Groups(Boxes(html, documentUrl)).Single().Role!;
 
     private static string Uri(string href, string? documentUrl = null, string head = "") =>
         ((LinkTarget.UriTarget)Link(Doc($"<p>See <a href=\"{href}\">this</a>.</p>", head), documentUrl).Target).Value;

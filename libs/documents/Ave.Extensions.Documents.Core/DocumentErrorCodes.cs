@@ -163,6 +163,10 @@ public static class DocumentErrorCodes
             /// <summary>A tab in a run whose white space is preserved (<c>white-space-collapse: preserve</c>): it would move
             /// the text to the next tab stop, and tab stops are not built. Metadata: Value, Property, Offset.</summary>
             public static readonly ErrorCode PreservedTab = _ / "PreservedTab";
+
+            /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: inside
+            /// or around a link, around an image, or broken over two lines. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode InlineBox = _ / "InlineBox";
         }
     }
 }

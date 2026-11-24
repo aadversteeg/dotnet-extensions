@@ -331,12 +331,12 @@ public static class GreedyLineBreaker
     }
 
     /// <summary>The step of the stretch of one run from <paramref name="from"/> to <paramref name="to"/>: none for an atomic
-    /// inline, else <paramref name="textItemStep"/>.</summary>
+    /// inline or the edge of an inline box (<see cref="ShapedGlyph.Edge"/>, an item of its own), else <paramref name="textItemStep"/>.</summary>
     private static double StepOf(List<BreakableSegments.RunGlyph> line, int from, int to, double textItemStep)
     {
         for (var index = from; index < to; index++)
         {
-            if (line[index].Glyph.IsAtomicInline)
+            if (line[index].Glyph.IsAtomicInline || line[index].Glyph.Edge != InlineBoxEdge.None)
             {
                 return 0;
             }
@@ -634,9 +634,22 @@ public static class GreedyLineBreaker
 
             var pieces = new List<BreakableSegments.RunGlyph>();
             var runStarts = paragraph.RunStarts;
-            for (var run = paragraph.RunOf(from); run < runStarts.Length - 1 && runStarts[run] < to; run++)
+            var first = paragraph.RunOf(from);
+            while (first > 0 && runStarts[first - 1] == runStarts[first])
+            {
+                first--;
+            }
+
+            for (var run = first; run < runStarts.Length - 1 && (runStarts[run] < to || runStarts[run + 1] == to); run++)
             {
                 var (pieceStart, pieceEnd) = (Math.Max(from, runStarts[run]), Math.Min(to, runStarts[run + 1]));
+                if (runStarts[run] == runStarts[run + 1])
+                {
+                    // A run without text shapes nothing; the edge of an inline box it holds stays where its cluster lies.
+                    pieces.AddRange(paragraph.EdgesOf(run, from, to));
+                    continue;
+                }
+
                 if (pieceStart >= pieceEnd)
                 {
                     continue;

@@ -21,7 +21,7 @@ public class InternalLinkInputTests
     private static (InlineGroup Link, Box Target) Linked(StyledDocument model, string text)
     {
         var link = All(model.Root).OfType<InlineGroup>().Single();
-        var target = ((LinkTarget.NodeTarget)((SemanticRole.LinkRole)link.Role).Target).Value;
+        var target = ((LinkTarget.NodeTarget)((SemanticRole.LinkRole)link.Role!).Target).Value;
         var box = All(model.Root).OfType<Box>().Single(box => box.Id == target);
         box.Children.OfType<TextRun>().First().Text.Should().Be(text);
         return (link, box);
@@ -34,7 +34,7 @@ public class InternalLinkInputTests
 
         var (link, target) = Linked(model, "Results");
         target.Role.Should().Be(SemanticRole.Heading(2));
-        ((SemanticRole.LinkRole)link.Role).Description.Should().Be("the results");
+        ((SemanticRole.LinkRole)link.Role!).Description.Should().Be("the results");
         DocumentModelText.Write(model).Should().Contain($"group {link.Id} link node={target.Id} description=\"the results\"");
     }
 
@@ -44,7 +44,7 @@ public class InternalLinkInputTests
         var model = DocumentTranslator.ToModel(With(Paragraph("Intro").Anchor("intro"), Paragraph([LinkTo("intro", " ")]))).Value;
 
         var (link, _) = Linked(model, "Intro");
-        ((SemanticRole.LinkRole)link.Role).Description.Should().Be("intro");
+        ((SemanticRole.LinkRole)link.Role!).Description.Should().Be("intro");
     }
 
     [Fact]

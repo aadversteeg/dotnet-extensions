@@ -62,7 +62,9 @@ internal static class BreakableSegments
         /// invisible characters between the last word and the end change nothing. A preserved space is not blank: it stays at
         /// a line's start, and it makes a line of its own (case <c>ws-lead</c>).
         /// </summary>
-        public bool IsBlank(int run, ShapedGlyph glyph) => IsCollapsibleSpace(run, glyph) || glyph.IsInvisible || glyph.IsLineBreak;
+        /// <para>The edge of an inline box (<see cref="ShapedGlyph.Edge"/>) is blank in the same way as an invisible character: it
+        /// keeps no space at a line's ends, and it stays on the line with its width.</para>
+        public bool IsBlank(int run, ShapedGlyph glyph) => IsCollapsibleSpace(run, glyph) || glyph.IsInvisible || glyph.IsLineBreak || glyph.Edge != InlineBoxEdge.None;
 
         /// <summary>True for a glyph that shows nothing at a line's end: a blank one, or a space that hangs there. A hanging space
         /// is not measured for fit (case <c>ws-hang-pre-wrap</c>: "aa bb" and ten spaces in a 40pt line, the spaces past the
@@ -205,6 +207,35 @@ internal static class BreakableSegments
             {
                 _hyphens[glyph.Run] ??= glyph.Glyph.BreakHyphen;
             }
+
+            // The first glyph of every run: the glyphs come run by run.
+            _firstGlyphOfRun = new int[runStarts.Length];
+            var at = 0;
+            for (var owner = 0; owner < runStarts.Length; owner++)
+            {
+                while (at < count && glyphs[at].Run < owner)
+                {
+                    at++;
+                }
+
+                _firstGlyphOfRun[owner] = at;
+            }
+        }
+
+        private readonly int[] _firstGlyphOfRun;
+
+        /// <summary>The edges of inline boxes (<see cref="ShapedGlyph.Edge"/>) that <paramref name="run"/> holds and whose cluster
+        /// starts from <paramref name="from"/> up to before <paramref name="to"/>: what a stretch of text shaped again keeps of a
+        /// run without text.</summary>
+        public IEnumerable<RunGlyph> EdgesOf(int run, int from, int to)
+        {
+            for (var index = _firstGlyphOfRun[run]; index < Glyphs.Length && Glyphs[index].Run == run; index++)
+            {
+                if (Glyphs[index].Glyph.Edge != InlineBoxEdge.None && Glyphs[index].Start >= from && Glyphs[index].Start < to)
+                {
+                    yield return new RunGlyph(run, Glyphs[index].Glyph);
+                }
+            }
         }
 
         /// <summary>The paragraph's text: the glyphs' texts joined, which is the white-space-collapsed text.</summary>
@@ -314,7 +345,7 @@ internal static class BreakableSegments
         }
 
         runStarts.Add(offset);
-        var placed = glyphs.ToImmutable();
+        var placed = GluedEdges(glyphs);
         var text = string.Concat(placed.Select(glyph => glyph.Glyph.Text));
         var clusterStarts = new bool[text.Length + 1];
         foreach (var glyph in placed)
@@ -369,6 +400,63 @@ internal static class BreakableSegments
         }
 
         return new Paragraph(text, placed, runStarts.ToImmutable(), segments.ToImmutable(), rules);
+    }
+
+    /// <summary>
+    /// The paragraph's glyphs with every edge of an inline box (<see cref="ShapedGlyph.Edge"/>) placed in the cluster it stays
+    /// with (THE RULE FOR AN INLINE BOX'S EDGES IN A LINE): a start edge in the next cluster with text, an end edge in the
+    /// cluster before it. A start edge with no text before the next end edge (an empty box) stays with the cluster before it
+    /// as well, so the places never go back; an edge with no cluster on its side takes the other side's. Two passes over the
+    /// glyphs.
+    /// </summary>
+    private static ImmutableArray<Placed> GluedEdges(ImmutableArray<Placed>.Builder glyphs)
+    {
+        if (!glyphs.Any(glyph => glyph.Glyph.Edge != InlineBoxEdge.None))
+        {
+            return glyphs.ToImmutable();
+        }
+
+        var forward = new bool[glyphs.Count];
+        (int Start, int End)? next = null;
+        for (var index = glyphs.Count - 1; index >= 0; index--)
+        {
+            var glyph = glyphs[index];
+            switch (glyph.Glyph.Edge)
+            {
+                case InlineBoxEdge.End:
+                    next = null;
+                    break;
+                case InlineBoxEdge.Start when next is { } cluster:
+                    glyphs[index] = glyph with { Start = cluster.Start, End = cluster.End };
+                    forward[index] = true;
+                    break;
+                case InlineBoxEdge.None:
+                    next = (glyph.Start, glyph.End);
+                    break;
+            }
+        }
+
+        (int Start, int End)? previous = null;
+        for (var index = 0; index < glyphs.Count; index++)
+        {
+            var glyph = glyphs[index];
+            if (glyph.Glyph.Edge == InlineBoxEdge.None)
+            {
+                previous = (glyph.Start, glyph.End);
+            }
+            else if (!forward[index] && previous is { } cluster)
+            {
+                glyphs[index] = glyph with { Start = cluster.Start, End = cluster.End };
+            }
+            else if (!forward[index])
+            {
+                // No cluster before: the edge stays with the first cluster after it, or at the start of an empty text.
+                var after = glyphs.Skip(index).FirstOrDefault(other => other.Glyph.Edge == InlineBoxEdge.None);
+                glyphs[index] = after is null ? glyph : glyph with { Start = after.Start, End = after.End };
+            }
+        }
+
+        return glyphs.ToImmutable();
     }
 
     /// <summary>

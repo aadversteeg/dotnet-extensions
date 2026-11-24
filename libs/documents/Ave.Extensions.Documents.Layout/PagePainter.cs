@@ -175,10 +175,16 @@ public static class PagePainter
     /// writes a rectangle for the link's line part and one for an image inside it). Inside an artifact a group is drawn
     /// without markers and a link gets no area: a link in a page header or footer, or in a repeated copy of a table's
     /// header rows, is only drawn (a known limit; the first, real occurrence of a header row keeps its links).
+    /// <para>THE RULE FOR PAINTING AN INLINE BOX: a group with a box (<see cref="InlineGroup.Box"/>) paints its background
+    /// and then its border where its part opens, after the line's children before it and before its own content, as a layout
+    /// artifact (inside the group's marker when it has a role; a group without a role opens no marker, its content stays
+    /// content of the element around it), and inside an artifact as it is. So, as Chromium prints it (cases
+    /// <c>ib-padding</c>, <c>ib-nested</c>), a box covers the text of the lines above it, the text of the lines below it is
+    /// drawn over it, and a box inside a box is painted over the outer one's background.</para>
     /// </summary>
     private static IEnumerable<DrawItem> Line(LineFragment line, Point origin, bool inArtifact, double pageWidth, Anchors anchors)
     {
-        if (inArtifact || line.Groups.Count == 0)
+        if (line.Groups.Count == 0 || (inArtifact && !line.Groups.Any(part => part.Box is not null)))
         {
             return Children(line.Children, origin, inArtifact, pageWidth, anchors);
         }
@@ -186,38 +192,72 @@ public static class PagePainter
         var items = new List<DrawItem>();
         var open = new Stack<LineGroupPart>();
         var next = 0;
-        for (var index = 0; index < line.Children.Count; index++)
+        void Close(LineGroupPart part)
+        {
+            if (!inArtifact && part.Group.Role is not null)
+            {
+                items.Add(new StructureEnd(part.Group.Id));
+            }
+        }
+
+        void OpenAt(int index)
         {
             while (next < line.Groups.Count && line.Groups[next].First == index)
             {
                 var part = line.Groups[next++];
-                items.Add(new StructureStart(part.Group.Id, part.Group.Role, part.Group.Source) { Language = part.Group.Language });
-                items.AddRange(anchors.At(part.Group.Id, origin + part.Area.Origin));
-                if (part.Group.Role is SemanticRole.LinkRole)
+                if (!inArtifact && part.Group.Role is { } role)
                 {
-                    items.Add(new LinkArea(part.Group.Id, new Rect(origin + part.Area.Origin, part.Area.Size)));
-                    for (var child = part.First; child < part.First + part.Count; child++)
+                    items.Add(new StructureStart(part.Group.Id, role, part.Group.Source) { Language = part.Group.Language });
+                    items.AddRange(anchors.At(part.Group.Id, origin + part.Area.Origin));
+                    if (role is SemanticRole.LinkRole)
                     {
-                        if (line.Children[child].Fragment is BoxFragment image)
+                        items.Add(new LinkArea(part.Group.Id, new Rect(origin + part.Area.Origin, part.Area.Size)));
+                        for (var child = part.First; child < part.First + part.Count; child++)
                         {
-                            items.Add(new LinkArea(part.Group.Id, new Rect(origin + line.Children[child].Offset, image.Size)));
+                            if (line.Children[child].Fragment is BoxFragment image)
+                            {
+                                items.Add(new LinkArea(part.Group.Id, new Rect(origin + line.Children[child].Offset, image.Size)));
+                            }
                         }
                     }
                 }
 
-                open.Push(part);
-            }
+                if (part is { Box: { } area, Group.Box: { } box })
+                {
+                    items.AddRange(Decoration([.. InlineBox(box, new Rect(origin + area.Origin, area.Size))], inArtifact));
+                }
 
-            var placed = line.Children[index];
-            items.AddRange(Items(placed.Fragment, origin + placed.Offset, inArtifact: false, pageWidth, anchors));
-            while (open.Count > 0 && open.Peek().First + open.Peek().Count == index + 1)
-            {
-                items.Add(new StructureEnd(open.Pop().Group.Id));
+                if (part.Count == 0)
+                {
+                    Close(part);
+                }
+                else
+                {
+                    open.Push(part);
+                }
             }
         }
 
+        for (var index = 0; index < line.Children.Count; index++)
+        {
+            OpenAt(index);
+            var placed = line.Children[index];
+            items.AddRange(Items(placed.Fragment, origin + placed.Offset, inArtifact, pageWidth, anchors));
+            while (open.Count > 0 && open.Peek().First + open.Peek().Count == index + 1)
+            {
+                Close(open.Pop());
+            }
+        }
+
+        // Parts that hold no child and open after the line's last child: an empty inline box at the line's end.
+        OpenAt(line.Children.Count);
         return items;
     }
+
+    /// <summary>The background and then the border sides of an inline box, in its border box <paramref name="area"/> (THE RULE
+    /// FOR PAINTING AN INLINE BOX): the sides as a box's (<see cref="Border(BoxFragment, Point)"/>).</summary>
+    private static IEnumerable<DrawItem> InlineBox(InlineBoxStyle box, Rect area) =>
+        [.. box.Background is { } color ? [new FillRectangle(area, color)] : Array.Empty<DrawItem>(), .. Sides(box.Border, area.Origin, area.Size)];
 
     private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, double pageWidth, Anchors anchors) =>
         children.SelectMany(child => Items(child.Fragment, origin + child.Offset, inArtifact, pageWidth, anchors));
@@ -242,9 +282,10 @@ public static class PagePainter
     /// height between them. LIMIT: where two sides of different colours meet, CSS joins them on the diagonal of the
     /// corner (CSS Backgrounds 3, colour transitions at corners); here the top and bottom sides cover the corners.
     /// </summary>
-    private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin)
+    private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin) => Sides(box.Border, origin, box.Size);
+
+    private static IEnumerable<DrawItem> Sides(Border border, Point origin, Size size)
     {
-        var (border, size) = (box.Border, box.Size);
         var (top, bottom) = (border.Top.Width.Points, border.Bottom.Width.Points);
         IEnumerable<(BorderSide Side, Rect Area)> sides =
         [

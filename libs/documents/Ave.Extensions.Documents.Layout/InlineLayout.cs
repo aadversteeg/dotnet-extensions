@@ -50,7 +50,7 @@ public static class InlineLayout
         return ShapeRuns(environment, box).OnSuccessBind(shaped => WithDecorationFonts(environment, shaped)).OnSuccessBind(items => StrutOf(environment, box).OnSuccessBind(strut =>
             SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
                 LaidOut(environment, items, width).OnSuccessBind(runs =>
-                    StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, environment.Profile.FontSizeRounding, environment.Profile.LengthRounding, width, height, breakAt switch
+                    StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, environment.Profile.FontSizeRounding, environment.Profile.LengthRounding, environment.Profile.InlineBoxSnapping, width, height, breakAt switch
                     {
                         null => null,
                         InlineEarlyBreak line => line,
@@ -250,6 +250,57 @@ public static class InlineLayout
         return leaves;
     }
 
+    /// <summary>One entry of a paragraph's content read through its inline groups (<see cref="Entries"/>): a leaf (a run or an
+    /// image box), or an edge of a group with a box of its own (<see cref="InlineGroup.Box"/>), each with the groups it lies in,
+    /// outermost first; an edge lies in its own group.</summary>
+    internal readonly record struct Entry(Node? Leaf, InlineGroup? EdgeOf, InlineBoxEdge Edge, ImmutableArray<InlineGroup> Groups);
+
+    /// <summary>
+    /// The content of an inline box as <see cref="Leaves"/> reads it, with the start and end edge of every group that has a
+    /// box of its own (<see cref="InlineGroup.Box"/>) before and after its content, also for a group without content. A group
+    /// without a box gives no entry of its own, so a paragraph without boxed groups has the entries of its leaves only. One
+    /// pass with an explicit stack.
+    /// </summary>
+    internal static IReadOnlyList<Entry> Entries(Box box)
+    {
+        var entries = new List<Entry>(box.Children.Count);
+        var pending = new Stack<(Node? Node, InlineGroup? EndOf, ImmutableArray<InlineGroup> Groups)>();
+        for (var index = box.Children.Count - 1; index >= 0; index--)
+        {
+            pending.Push((box.Children[index], null, []));
+        }
+
+        while (pending.Count > 0)
+        {
+            var (node, endOf, groups) = pending.Pop();
+            if (endOf is not null)
+            {
+                entries.Add(new Entry(null, endOf, InlineBoxEdge.End, groups));
+                continue;
+            }
+
+            if (node is not InlineGroup group)
+            {
+                entries.Add(new Entry(node, null, InlineBoxEdge.None, groups));
+                continue;
+            }
+
+            var inner = groups.Add(group);
+            if (group.Box is not null)
+            {
+                entries.Add(new Entry(null, group, InlineBoxEdge.Start, inner));
+                pending.Push((null, group, inner));
+            }
+
+            for (var index = group.Children.Count - 1; index >= 0; index--)
+            {
+                pending.Push((group.Children[index], null, inner));
+            }
+        }
+
+        return entries;
+    }
+
     /// <summary>
     /// Resolves every run to its text, collapses white space over the whole paragraph, finds each run's font, then shapes
     /// the runs in groups (<see cref="ShapingGroups"/>): the runs of one group as one text, so a kerning pair or a ligature
@@ -278,7 +329,13 @@ public static class InlineLayout
                     : "inline layout needs text runs and images as children."));
         }
 
-        var groupFonts = GroupFonts(environment, leaves);
+        var entries = Entries(box);
+        if (entries.FirstOrDefault(entry => entry.EdgeOf is not null).EdgeOf is { } boxed && !HasLineBoxes(box))
+        {
+            return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(LayoutErrors.InlineBox(boxed, "an inline box in a paragraph without text makes a line of its own, which this version does not draw; put text beside it"));
+        }
+
+        var groupFonts = GroupFonts(environment, entries);
         if (groupFonts.IsFailure)
         {
             return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(groupFonts.Error);
@@ -287,34 +344,54 @@ public static class InlineLayout
         ValueList<LineBoxes.Group> GroupsOf(ImmutableArray<InlineGroup> groups) =>
             [.. groups.Select(group => new LineBoxes.Group(group, groupFonts.Value[group.Id]))];
 
+        // White-space collapsing sees the leaves only: the edges of inline boxes are transparent to it.
         var collapsed = WhiteSpaceCollapsing.Collapse([.. leaves.Select(leaf => leaf.Node is InlineRun run
             ? (TextOf(run, environment.Page), run.Style.WhiteSpaceCollapse)
             : (ObjectReplacement, WhiteSpaceCollapse.Collapse))]);
 
         // The paragraph in stretches: the runs between two atomic inlines are shaped in groups, an atomic inline is an item
-        // of its own.
+        // of its own, and so is the edge of an inline box that takes room (THE RULE FOR SHAPING ACROSS RUNS). An edge that
+        // takes no room stays among the runs of its stretch, in its place.
         var stretches = new List<Result<IEnumerable<LineBoxes.Item>, Error>>();
-        var members = new List<GroupMember>();
+        var members = new List<(GroupMember? Member, LineBoxes.Item? Edge)>();
         void EndStretch()
         {
             if (members.Count > 0)
             {
-                stretches.Add(ShapingGroups([.. members])
+                ImmutableArray<(GroupMember? Member, LineBoxes.Item? Edge)> stretch = [.. members];
+                stretches.Add(ShapingGroups([.. stretch.Where(entry => entry.Member is not null).Select(entry => entry.Member!)])
                     .TraverseAll(group => group[0].Font.IsFailure ? Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Failure(group[0].Font.Error) : ShapeGroup(group, environment.Profile.FontSizeRounding))
-                    .OnSuccessMap(shaped => shaped.SelectMany(group => group).Cast<LineBoxes.Item>()));
+                    .OnSuccessMap(shaped => InPlace(stretch, [.. shaped.SelectMany(group => group)])));
                 members.Clear();
             }
         }
 
-        foreach (var ((child, groups), text) in leaves.Zip(collapsed))
+        var next = 0;
+        foreach (var entry in entries)
         {
+            if (entry.EdgeOf is { Box: { } inlineBox } edgeOf)
+            {
+                var width = entry.Edge == InlineBoxEdge.Start ? inlineBox.Start : inlineBox.End;
+                var edge = new LineBoxes.Edge(edgeOf, entry.Edge, width) { Groups = GroupsOf(entry.Groups) };
+                if (width == 0)
+                {
+                    members.Add((null, edge));
+                    continue;
+                }
+
+                EndStretch();
+                stretches.Add(Result<IEnumerable<LineBoxes.Item>, Error>.Success([edge]));
+                continue;
+            }
+
+            var (child, groups, text) = (entry.Leaf!, entry.Groups, collapsed[next++]);
             if (child is InlineRun run)
             {
-                members.Add(new GroupMember(run, text,
+                members.Add((new GroupMember(run, text,
                     environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle).MapError(error => error.WithSource(run.Source)))
                 {
                     Groups = GroupsOf(groups),
-                });
+                }, null));
                 continue;
             }
 
@@ -327,12 +404,26 @@ public static class InlineLayout
             .OnSuccessMap(items => (IReadOnlyList<LineBoxes.Item>)[.. items.SelectMany(stretch => stretch)]);
     }
 
+    /// <summary>The items of one stretch in their order: each run's shaped run where the run stands (<paramref name="shaped"/>
+    /// holds them in the runs' order), each edge that takes no room where it stands.</summary>
+    private static IEnumerable<LineBoxes.Item> InPlace(ImmutableArray<(GroupMember? Member, LineBoxes.Item? Edge)> stretch, ImmutableArray<LineBoxes.ShapedRun> shaped)
+    {
+        var items = new List<LineBoxes.Item>(stretch.Length);
+        var next = 0;
+        foreach (var (member, edge) in stretch)
+        {
+            items.Add(member is null ? edge! : shaped[next++]);
+        }
+
+        return items;
+    }
+
     /// <summary>The font of every inline group of the paragraph, found as a run's font is: a missing font is the error a run
     /// would get, at the group's source. Each group once.</summary>
-    private static Result<Dictionary<NodeId, TrueTypeFont>, Error> GroupFonts(LayoutEnvironment environment, IReadOnlyList<(Node Node, ImmutableArray<InlineGroup> Groups)> leaves)
+    private static Result<Dictionary<NodeId, TrueTypeFont>, Error> GroupFonts(LayoutEnvironment environment, IReadOnlyList<Entry> entries)
     {
         var fonts = new Dictionary<NodeId, TrueTypeFont>();
-        foreach (var group in leaves.SelectMany(leaf => leaf.Groups))
+        foreach (var group in entries.SelectMany(entry => entry.Groups))
         {
             if (fonts.ContainsKey(group.Id))
             {
@@ -372,8 +463,10 @@ public static class InlineLayout
     /// <c>ShouldBreakShapingBeforeText</c>, core/layout/inline/inline_node.cc: adjacent text items are shaped together while
     /// their fonts are equal, an item without text is passed over, and an item that starts with a zero width non-joiner
     /// U+200C starts a new text). Cases <c>sr-same-font</c> and <c>sr-font-changes</c>. Chromium also breaks the text at an
-    /// inline box with inline padding, border or margin or another vertical alignment (<c>ShouldBreakShapingBeforeBox</c>);
-    /// the model's runs have none of these. A run whose font is not found is a group of its own.
+    /// inline box with inline padding, border or margin (<c>ShouldBreakShapingBeforeBox</c>): so does the engine, at every
+    /// edge of an inline group's box that takes room (<see cref="ShapeRuns"/>; case <c>ib-kerning</c>: no kerning pair across
+    /// a padded edge, the pair kept across the edge of a box with a background only). A run whose font is not found is a
+    /// group of its own.
     /// </summary>
     /// <param name="members">The paragraph's runs, in order.</param>
     /// <returns>The groups, in order; together they hold every run once.</returns>
@@ -488,7 +581,7 @@ public static class InlineLayout
     /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
     /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, FontSizeRounding sizes, LengthRounding lengths, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
+        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, FontSizeRounding sizes, LengthRounding lengths, InlineBoxSnapping snapping, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
         var style = box.Style;
         var firstLine = start.LineIndex;
@@ -510,7 +603,7 @@ public static class InlineLayout
                 return SlicedBox.Placed(placed.ToImmutable(), bottom, new InlineBreakToken(index), target.Appeal);
             }
 
-            var built = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut, rounding, outlines, empty[index]);
+            var built = LineBoxes.Build(lines[index], runs, contentWidth, style.TextAlign, isLastLine: index == lines.Count - 1, strut, rounding, outlines, empty[index], snapping);
             if (built.IsFailure)
             {
                 return Result<Maybe<SlicedBox.Content>, Error>.Failure(built.Error);

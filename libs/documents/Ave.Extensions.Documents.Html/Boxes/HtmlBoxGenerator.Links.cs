@@ -36,6 +36,14 @@ public static partial class HtmlBoxGenerator
             {
                 problem = "it lies inside another link, and a link leads to one target";
             }
+            else if (frame.InBox)
+            {
+                problem = "it lies inside an element with a background, border, padding or margin of its own, which is not drawn around a link in this version; put the link outside that element";
+            }
+            else if (InlineBoxOf(element) is not null)
+            {
+                problem = "the link has a background, border, padding or margin of its own, which is not drawn on a link in this version; give the box to an element inside or around the link";
+            }
 
             if (problem is not null)
             {
@@ -50,7 +58,7 @@ public static partial class HtmlBoxGenerator
 
             var id = NewId();
             List<Node> content = [new TextRun(NewId(), string.Empty, style, Source(position))];
-            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Link = new LinkFrame(frame.Target, id, uri!, fragment, style) { Language = LanguageOf(element, frame.Element) }, InLink = true });
+            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Link = new LinkFrame(frame.Target, id, uri!, fragment, style) { Language = LanguageOf(element, frame.Element) }, InLink = true, InBox = frame.InBox });
             return true;
         }
 

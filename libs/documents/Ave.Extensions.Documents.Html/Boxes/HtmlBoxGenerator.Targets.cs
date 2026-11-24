@@ -120,20 +120,36 @@ public static partial class HtmlBoxGenerator
             return Provisional;
         }
 
-        /// <summary>An inline element a link leads to, other than an <c>a href</c>: its content goes into a span group, first
-        /// the empty run in its style that every inline element adds for its line height.</summary>
+        /// <summary>An inline element a link leads to, other than an <c>a href</c>, one with a language of its own, or one with
+        /// a box of its own (THE RULE FOR AN INLINE BOX IN HTML): its content goes into a span group, first the empty run in its
+        /// style that every inline element adds for its line height. A box inside a link is refused at the element and the
+        /// element is drawn without it.</summary>
         /// <returns>True when the span's frame is on the stack.</returns>
         private bool StartSpan(Stack<object> stack, InlineFrame frame, StyledElement element)
         {
             var language = LanguageOf(element, frame.Element);
-            if (!(_targets.ContainsKey(element) || language is not null) || TextStyleOf(element) is not { } style || Deeper(frame.Depth + 1, element.Element.Position))
+            var box = InlineBoxOf(element);
+            if (box is not null && frame.InLink)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.InlineBox, $"The background, border, padding or margin of <{element.Element.LocalName}> inside a link is not drawn in this version; give the box to an element around the link, or leave it out.",
+                    box.ToString(), element.Element.Position, "background-color");
+                box = null;
+            }
+
+            var isTarget = _targets.ContainsKey(element);
+            if (!(isTarget || language is not null || box is not null) || TextStyleOf(element) is not { } style || Deeper(frame.Depth + 1, element.Element.Position))
             {
                 return false;
             }
 
             List<Node> content = [new TextRun(NewId(), string.Empty, style, Source(element.Element.Position))];
             var id = NewId();
-            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Span = new SpanFrame(frame.Target, id, style, language), InLink = frame.InLink });
+            stack.Push(new InlineFrame(element, content, frame.Depth + 1)
+            {
+                Span = new SpanFrame(frame.Target, id, style, language) { Box = box, IsTarget = isTarget },
+                InLink = frame.InLink,
+                InBox = frame.InBox || box is not null,
+            });
             return true;
         }
 
@@ -166,19 +182,25 @@ public static partial class HtmlBoxGenerator
             return null;
         }
 
-        /// <summary>The span group, once its content is built; a span whose content draws nothing has no line part to lead
-        /// to, so its content goes on as written and the element is no target.</summary>
+        /// <summary>The span group, once its content is built; a span without a box whose content draws nothing has no line
+        /// part to lead to, so its content goes on as written and the element is no target. A span with a box is a group also
+        /// when it is empty: its box is drawn and takes its room (case <c>ib-space</c>). The group has the role of a span when a
+        /// link leads to it or it has a language of its own; else it has no role and opens no structure element.</summary>
         private void FinishSpan(InlineFrame frame, SpanFrame span)
         {
             var content = frame.Target;
-            if (!content.Any(node => node is Box or InlineGroup || (node is TextRun run && !run.Text.All(IsCollapsible))))
+            if (span.Box is null && !content.Any(node => node is Box or InlineGroup || (node is TextRun run && !run.Text.All(IsCollapsible))))
             {
                 span.Parent.AddRange(content);
                 return;
             }
 
-            span.Parent.Add(new InlineGroup(span.Id, SemanticRole.Span, span.Style, [.. content], Source(frame.Element.Element.Position)) { Language = span.Language });
-            Placed(frame.Element, span.Id);
+            var role = span.IsTarget || span.Language is not null ? SemanticRole.Span : null;
+            span.Parent.Add(new InlineGroup(span.Id, role, span.Style, [.. content], Source(frame.Element.Element.Position)) { Language = span.Language, Box = span.Box });
+            if (role is not null)
+            {
+                Placed(frame.Element, span.Id);
+            }
         }
 
         /// <summary>The tree with every link inside the document leading to its target's node; a link without one is

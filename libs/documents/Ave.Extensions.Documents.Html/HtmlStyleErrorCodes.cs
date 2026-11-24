@@ -102,6 +102,12 @@ public static class HtmlStyleErrorCodes
         /// SourceLine, SourceColumn (the start tag).</summary>
         public static readonly ErrorCode Link = _ / "Link";
 
+        /// <summary>An inline element with its own background, border, padding or horizontal margin (an inline box) where this
+        /// version does not draw one: inside a link, around a link or an image, or a link with a box of its own. The element is
+        /// drawn without its box (a link inside a box or a link with a box: as plain inline content, an image: not drawn).
+        /// Metadata: Property, Value, SourceFile, SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode InlineBox = _ / "InlineBox";
+
         /// <summary>A <c>meta</c> element whose <c>content</c> the document's metadata does not take, by THE RULE FOR A
         /// DOCUMENT'S METADATA IN HTML (<c>HtmlMetadata</c>): longer than its limit, or holding a control character or a
         /// character XML does not allow. The document is drawn without that author or description. Metadata: Property

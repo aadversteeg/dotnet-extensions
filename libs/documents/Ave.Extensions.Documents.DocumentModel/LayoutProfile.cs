@@ -13,7 +13,8 @@ public sealed record LayoutProfile
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
     /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
     /// <see cref="CellsBesideSlices.GoOn"/>, <see cref="RepeatedHeaderRows.AboveEverySlice"/>,
-    /// <see cref="SliceRestEnd.InsideCell"/> and <see cref="CutRowAlignment.RestAlignedInItsPart"/>.</summary>
+    /// <see cref="SliceRestEnd.InsideCell"/>, <see cref="CutRowAlignment.RestAlignedInItsPart"/> and
+    /// <see cref="InlineBoxSnapping.Exact"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -60,6 +61,32 @@ public sealed record LayoutProfile
     /// <summary>Where the part of a table cell ends that holds nothing but the rest of a piece sliced on an earlier page
     /// (<see cref="DocumentModel.SliceRestEnd"/>).</summary>
     public SliceRestEnd SliceRestEnd { get; init; } = SliceRestEnd.InsideCell;
+
+    /// <summary>Whether the painted edges of an inline box and the text inside it are put on whole pixels
+    /// (<see cref="DocumentModel.InlineBoxSnapping"/>).</summary>
+    public InlineBoxSnapping InlineBoxSnapping { get; init; } = InlineBoxSnapping.Exact;
+}
+
+/// <summary>
+/// Where the background and border of an inline box (<see cref="InlineGroup.Box"/>) are painted, and where the text inside
+/// it is drawn in the block direction. The box takes the same room on the line under both values.
+/// </summary>
+public enum InlineBoxSnapping
+{
+    /// <summary>The box is painted where it lies, and the text inside it on the line's baseline.</summary>
+    Exact,
+
+    /// <summary>
+    /// As Chromium prints it: each painted edge of the box's border box lies on the nearest whole pixel, and the text inside
+    /// it is drawn from the box's top rounded to the nearest whole pixel, so a vertical padding or border of a fraction of a
+    /// pixel moves the text off the line's baseline by up to half a pixel, while the text outside the box stays on it. Both
+    /// in the line's own coordinates. Measured against Chromium's print (<c>tools/reference/chromium</c>): a box from x
+    /// 65.5625 to 111.28 px is painted from 66 to 111 px; a top padding of 3.0625 px puts the box's top 3.0625 px above the
+    /// line's top, painted from 3 px above it, and the text 0.0625 px below the line's baseline; one of 0.53125 px puts the
+    /// top 0.53125 px above the line's top, painted from 1 px above it, and the text 0.46875 px above the baseline; the same
+    /// at 10.5 pt and at 12 pt (case <c>ib-fraction</c>; a bottom padding alone moves nothing).
+    /// </summary>
+    WholePixels,
 }
 
 /// <summary>
