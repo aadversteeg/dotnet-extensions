@@ -18,7 +18,7 @@ public class MeasuredReferenceFilesTests
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = ["lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines"];
+    private static readonly string[] LinkCases = ["dw-half", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "va-decorated"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -854,6 +854,7 @@ public class MeasuredReferenceFilesTests
         ["dl-whose.words.txt"] = 48,
         ["dw-half.boxes.txt"] = 1,
         ["dw-half.lines.txt"] = 12,
+        ["dw-half.links.txt"] = 3,
         ["dw-half.print.txt"] = 37,
         ["dw-half.words.txt"] = 24,
         ["dw-runs.boxes.txt"] = 1,
@@ -3004,6 +3005,7 @@ public class MeasuredReferenceFilesTests
         ["twd-table-wide.words.txt"] = 27,
         ["va-decorated.boxes.txt"] = 1,
         ["va-decorated.lines.txt"] = 3,
+        ["va-decorated.links.txt"] = 1,
         ["va-decorated.print.txt"] = 32,
         ["va-decorated.words.txt"] = 28,
         ["va-elements.boxes.txt"] = 1,
