@@ -33,6 +33,13 @@ public class HtmlSampleTests
         Encoding.UTF8.GetBytes(sample.Html).Should().Equal(File.ReadAllBytes(ReferenceDocument(reference)));
     }
 
+    [Fact]
+    public void The_filled_HTML_has_LF_line_ends_whatever_the_checkout_of_the_templates()
+    {
+        SampleFiles.HtmlDocuments.Should().AllSatisfy(sample => sample.Html.Should().NotContain("\r", sample.Name));
+        HtmlText.LineFeeds("<p>\r\n</p>\r<p>\n").Should().Be("<p>\n</p>\n<p>\n", "a template checked out with CR LF writes the same document");
+    }
+
     [Theory]
     [InlineData("html-timesheet-normal.nl", 2)]
     [InlineData("html-timesheet-long.nl", 5)]
