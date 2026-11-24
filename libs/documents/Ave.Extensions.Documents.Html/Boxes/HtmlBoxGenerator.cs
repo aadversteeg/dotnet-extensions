@@ -270,7 +270,7 @@ public static partial class HtmlBoxGenerator
         /// (UAX #14 class BK). One pass over the text and at most one refusal per text, as the parser keeps its own
         /// diagnostics bounded: it names the first such character, its offset and how many the text holds.
         /// </summary>
-        private string Characters(HtmlText text)
+        private string Characters(HtmlText text, string? sourceName = null)
         {
             var data = text.Data;
             var first = -1;
@@ -306,7 +306,7 @@ public static partial class HtmlBoxGenerator
             var others = count == 1 ? string.Empty : $" ({count.ToString(CultureInfo.InvariantCulture)} such characters in this text)";
             var error = new Error(HtmlStyleErrorCodes.Unsupported.Character, $"The character U+{codePoint:X4} is not drawn in this version{others}: only text, tab, line feed and carriage return are.")
                 .With(ErrorMetadataKeys.Value, $"U+{codePoint:X4}").With(ErrorMetadataKeys.Offset, first).With(ErrorMetadataKeys.Count, count);
-            Refusals.Add(error.WithSource(_sourceName, text.Position));
+            Refusals.Add(error.WithSource(sourceName ?? _sourceName, text.Position));
             return kept.ToString();
         }
 
@@ -422,6 +422,7 @@ public static partial class HtmlBoxGenerator
         /// </summary>
         private bool Check(StyledElement element, bool isBlock)
         {
+            ReportCounterRefusals(element);
             var html = element.Element;
             if (html.Namespace == ElementNamespace.Html && RefusedRenderings.TryGetValue(html.LocalName, out var rendering))
             {
@@ -460,6 +461,7 @@ public static partial class HtmlBoxGenerator
         private Box Build(StyledElement root)
         {
             Number(root);
+            Count(root);
             Check(root, isBlock: true);
             var stack = new Stack<object>();
             stack.Push(Frame(root, NewId(), 0));
@@ -827,6 +829,38 @@ public static partial class HtmlBoxGenerator
                 InputQuote.Of(text.Text.Data), declared.Position, "content");
         }
 
+        /// <summary>The texts of a pseudo-element's content, one per item, or null when the counting refused it.</summary>
+        private string[]? Pieces(StyledElement element, Css.Cascade.GeneratedContent generated) =>
+            ReadsCounters(generated)
+                ? _generatedTexts.GetValueOrDefault(element)
+                : [.. generated.Items.Select(item => item is CssContentString literal ? literal.Value : string.Empty)];
+
+        /// <summary>
+        /// A text's runs: one, or for generated content one per item of its <c>content</c> that has text, as an element's
+        /// text nodes are runs. Chromium 159 rounds the width of each item up to a 64th of a pixel on its own, as it does
+        /// each text node (measured: cases <c>gc-counter-styles</c> and <c>gc-items-kern</c>; its shaping across the items
+        /// is the engine's shaping across runs). A content without any text keeps one empty run, which counts for the
+        /// line's height; a text whose characters were refused stays one run.
+        /// </summary>
+        private static IEnumerable<string> Split(string data, string[]? pieces)
+        {
+            if (pieces is null || pieces.Sum(piece => piece.Length) != data.Length || pieces.Count(piece => piece.Length > 0) < 2)
+            {
+                yield return data;
+                yield break;
+            }
+
+            var offset = 0;
+            foreach (var piece in pieces)
+            {
+                if (piece.Length > 0)
+                {
+                    yield return data.Substring(offset, piece.Length);
+                    offset += piece.Length;
+                }
+            }
+        }
+
         private static TextPosition Position(StyledNode node) => node is StyledElement element ? element.Element.Position : ((StyledText)node).Text.Position;
 
         /// <summary>One child of inline content: a text becomes a run in its parent's text style; an inline element's
@@ -841,19 +875,38 @@ public static partial class HtmlBoxGenerator
                         return;
                     }
 
-                    var preservedTab = RefusePreservedTab(text);
-                    RefuseUnspacedCharacter(text);
-                    RefuseGeneratedTextInBox(text, frame);
+                    // The text of a ::before or ::after that reads counters is what the counting found; none when it
+                    // was refused there.
+                    var pieces = frame.Element.Generated is { } content ? Pieces(frame.Element, content) : null;
+                    if (frame.Element.Generated is not null && pieces is null)
+                    {
+                        break;
+                    }
+
+                    var counted = pieces is not null ? new StyledText(new HtmlText(string.Concat(pieces), text.Text.Position), text.Style) : text;
+                    var sourceName = frame.Element.Generated?.SourceName ?? _sourceName;
+                    var preservedTab = RefusePreservedTab(counted, sourceName);
+                    RefuseUnspacedCharacter(counted);
+                    RefuseGeneratedTextInBox(counted, frame);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        // The glyphs are checked in the text as it is drawn, after its transform, at the source's places.
-                        var transform = TransformOf(text);
+                        // The glyphs are checked in the text as it is drawn, after its transform, at the source's places: for
+                        // generated text each item of its content and the text of each counter, at the declaration.
+                        var transform = TransformOf(counted);
                         var previous = transform == "none" ? ' ' : PreviousCharacter(stack, frame);
-                        RefuseMissingGlyphs(Drawn(text.Text.Data, transform, frame, previous), text.Text.Data, transform, frame.Element,
-                            frame.Element.Generated is { } declared ? _ => declared.Position : text.Text.PositionOf);
-                        var data = Transformed(text, transform, frame, previous, Characters(text.Text));
+                        RefuseMissingGlyphs(Drawn(counted.Text.Data, transform, frame, previous), counted.Text.Data, transform, frame.Element,
+                            frame.Element.Generated is { } declared ? _ => declared.Position : counted.Text.PositionOf);
+                        var data = Characters(counted.Text, sourceName);
+                        data = preservedTab ? data.Replace('\t', ' ') : data;
                         var source = frame.Element.Generated is { } generated ? new SourceLocation(generated.SourceName, generated.Position.Line) : Source(text.Text.Position);
-                        frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, source) { Generated = frame.Element.Generated is not null });
+                        // Each item is transformed on its own, so a transform that changes the length (ß to SS) keeps the
+                        // items apart; capitalize looks back into the item before it.
+                        foreach (var piece in Split(data, pieces))
+                        {
+                            var drawn = Transformed(counted, transform, frame, previous, piece);
+                            previous = drawn.Length > 0 ? drawn[^1] : previous;
+                            frame.Target.Add(new TextRun(NewId(), drawn, style, source) { Generated = frame.Element.Generated is not null });
+                        }
                     }
 
                     break;
@@ -940,17 +993,25 @@ public static partial class HtmlBoxGenerator
             {
                 FrameKind.Item => Item(block, layout, children, style),
                 FrameKind.List => ListBox(block, children, style),
-                _ => TablePartBox(block, new Box(block.Id, RoleOf(element), layout, style, children, Source(element.Element.Position))),
+                _ => TablePartBox(block, new Box(block.Id, RoleOf(element, children), layout, style, children, Source(element.Element.Position))),
             };
             return (box, forcedAfter);
         }
 
-        private SemanticRole RoleOf(StyledElement element)
+        /// <summary>The role of an element's box. A block <c>::before</c> or <c>::after</c> is a generic box, as the
+        /// anonymous box around its element's own text is, and its text is the element's; one without text, drawn only
+        /// for its border or background (<c>content: ""</c>, a rule under a heading), is decoration: an artifact.</summary>
+        private SemanticRole RoleOf(StyledElement element, ValueList<Node> children)
         {
             var html = element.Element;
             if (ReferenceEquals(element, styled.Root))
             {
                 return SemanticRole.Document;
+            }
+
+            if (element.Generated is not null)
+            {
+                return children.IsEmpty ? SemanticRole.Decorative : SemanticRole.Generic;
             }
 
             return html.Namespace != ElementNamespace.Html ? SemanticRole.Generic : html.LocalName switch
@@ -1144,7 +1205,7 @@ public static partial class HtmlBoxGenerator
             }
 
             TextStyle? style = null;
-            var face = Fonts.Match(element.Style, element.Element.Position);
+            var face = Fonts.Match(element.Style, element.Element.Position, element.Generated?.SourceName);
             if (face.IsFailure)
             {
                 Failures.Add(face.Error);

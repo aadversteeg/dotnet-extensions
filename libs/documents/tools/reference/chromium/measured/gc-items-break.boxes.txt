@@ -1,0 +1,3 @@
+div 60.000 25.500 unbroken
+div 60.000 38.250 wrapping
+div 60.000 38.250 spaced

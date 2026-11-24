@@ -42,7 +42,7 @@ internal static class BoxProperties
         "background-position-x", "background-position-y", "background-repeat", "background-size",
         "border-bottom-left-radius", "border-bottom-right-radius", "border-top-left-radius", "border-top-right-radius",
         "bottom", "box-shadow", "clear", "clip-path", "column-count", "column-gap", "column-width", "contain", "content",
-        "content-visibility", "counter-increment", "counter-reset", "counter-set", "direction", "filter", "float",
+        "content-visibility", "direction", "filter", "float",
         "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
         "font-variant-alternates", "font-variant-caps", "font-variant-east-asian", "font-variant-emoji",
         "font-variant-ligatures", "font-variant-position", "font-variation-settings", "hyphens",
@@ -280,6 +280,11 @@ internal static class BoxProperties
 
         // CSS Lists 3 §3.1, §3.2: the marker of a list item, outside its box; the style sheet refuses inside, every image
         // and the counter styles beyond the predefined twelve. No effect on a box that is not a list item.
+        foreach (var counter in new[] { "counter-reset", "counter-increment", "counter-set" })
+        {
+            yield return new(counter, "none and counters by name, but list-item, within 32 bits (counted in document order, read by counter() and counters() in ::before and ::after)", (_, _) => null);
+        }
+
         yield return new("list-style-type", "disc, circle, square, decimal, decimal-leading-zero, lower-roman, upper-roman, lower-alpha, upper-alpha, lower-latin, upper-latin, none (the twelve the style sheet accepts)", (_, _) => null);
         yield return new("list-style-position", "outside, the only value the style sheet accepts", (_, _) => null);
     }

@@ -1,0 +1,19 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p, div { margin: 0 0 4pt; }
+.f { counter-reset: n; } .f p { counter-increment: n; } .f div { counter-reset: n 10; margin: 0; } .f p::before { content: counters(n, ".") " "; }
+.g { counter-reset: m; } .g p.five { counter-reset: m 5; } .g p.seven { counter-reset: m 7; } .g p.add { counter-increment: m; } .g p::before { content: counters(m, ".") " "; }
+.h p { counter-increment: o; } .h div { counter-increment: o; margin: 0; } .h p::before { content: counters(o, ".") " "; }
+.i { counter-reset: z 40; } .j::before { content: counter(z) " "; }
+</style></head><body>
+<div class="f"><p>outer</p><div><p>inner</p></div><p>after</p></div>
+<div class="g"><p class="five">five</p><p class="seven">seven</p><p class="add">add</p></div>
+<div class="h"><div><p>made</p></div><p>sibling</p></div>
+<div class="i">reset forty</div>
+<div class="j">sibling sees it</div>
+</body></html>

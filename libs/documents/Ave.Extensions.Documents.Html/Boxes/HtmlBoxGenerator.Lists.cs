@@ -225,11 +225,23 @@ public static partial class HtmlBoxGenerator
         /// <c>decimal-leading-zero</c> padded to two characters with the sign counted (−5 is "-5"); the alphabetic styles
         /// from 1 (0 and below in decimal); the roman styles from 1 to 3999 (others in decimal).
         /// </summary>
-        internal static string CounterText(string type, long number)
+        internal static string CounterText(string type, long number) => CounterValueText(type, number) + ". ";
+
+        /// <summary>
+        /// The text of a number in a counter style without a suffix, as <c>counter()</c> draws it (CSS Lists 3 §4.7; CSS
+        /// Counter Styles 3 §6.1): the numeric styles as <see cref="CounterText"/>, and the symbols whatever the number,
+        /// <c>disc</c> U+2022, <c>circle</c> U+25E6, <c>square</c> U+25A0, <c>none</c> nothing (Chromium 159, measured: case
+        /// <c>gc-counter-styles</c>, for −1, 0, 1 and 2).
+        /// </summary>
+        internal static string CounterValueText(string type, long number)
         {
             var decimalText = number.ToString(CultureInfo.InvariantCulture);
-            var text = type switch
+            return type switch
             {
+                "disc" => "\u2022",
+                "circle" => "\u25E6",
+                "square" => "\u25A0",
+                "none" => string.Empty,
                 "decimal-leading-zero" => decimalText.Length < 2 ? "0" + decimalText : decimalText,
                 "lower-roman" when number is >= 1 and <= 3999 => Roman(number).ToLowerInvariant(),
                 "upper-roman" when number is >= 1 and <= 3999 => Roman(number),
@@ -237,7 +249,6 @@ public static partial class HtmlBoxGenerator
                 "upper-alpha" or "upper-latin" when number >= 1 => Alphabetic(number, 'A'),
                 _ => decimalText,
             };
-            return text + ". ";
 
             // §6.1 upper-roman: additive, M CM D CD C XC L XL X IX V IV I.
             static string Roman(long number)
@@ -306,7 +317,14 @@ public static partial class HtmlBoxGenerator
         private Box? Label(StyledElement element, NodeId id, NodeId mark, SourceLocation source)
         {
             var type = ListStyleType(element);
-            if (type == "none" || FaceStyleOf(element) is not { } face)
+            if (type == "none" && element.Marker is { Text: not null })
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.List, $"The content of the ::marker of <{element.Element.LocalName}>, whose list-style-type is none, is not drawn in this version: remove list-style-type: none.", "content", element.Element.Position);
+            }
+
+            // CSS Lists 3 §3.1: a ::marker rule gives the marker its colour, weight and style, a shape as a number, and a
+            // content of strings its text (cases gc-marker-color, gc-marker-font, gc-marker-content).
+            if (type == "none" || FaceStyleOf(element.Marker is { } marker ? element with { Style = marker.Style } : element) is not { } face)
             {
                 return null;
             }
@@ -317,7 +335,7 @@ public static partial class HtmlBoxGenerator
             }
 
             var style = face with { WhiteSpaceCollapse = WhiteSpaceCollapse.Preserve, TextWrapMode = TextWrapMode.NoWrap };
-            var (replacement, content) = type switch
+            var (replacement, content) = element.Marker?.Text is { } text ? ((string?)null, (Node)new TextRun(mark, text, style, source)) : type switch
             {
                 "disc" => ("•", (Node)new MarkerSymbol(mark, MarkerShape.Disc, face, source)),
                 "circle" => ("◦", new MarkerSymbol(mark, MarkerShape.Circle, face, source)),

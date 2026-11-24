@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+div { margin: 0 216pt 6pt 0; }
+#unbroken::before { content: "Unbroken" "word"; }
+#wrapping::before { content: "Wrapping " "longerword"; }
+#spaced::after { content: " ending" " words"; }
+</style></head><body>
+<div id="unbroken"> next</div>
+<div id="wrapping"> next</div>
+<div id="spaced">Spaced text</div>
+</body></html>

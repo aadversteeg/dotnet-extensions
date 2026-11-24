@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0 0 6pt; }
+div { margin: 0 0 6pt; }
+.a::before { content: "Opening line"; display: block; color: #0000c0; }
+.a::after { content: "Closing line"; display: block; color: #c00000; }
+</style></head><body>
+<p class="a" id="opening">Inline <b>bold</b> and <i>italic</i> words</p>
+<div class="a"><p id="inner">Inner paragraph</p>Loose text</div>
+<p id="last">Last paragraph</p>
+</body></html>

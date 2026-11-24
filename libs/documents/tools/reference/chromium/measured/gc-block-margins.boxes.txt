@@ -1,0 +1,5 @@
+p 276.000 12.750 leading
+p 276.000 53.250 before
+p 276.000 12.750 following
+p 276.000 63.750 framed
+p 276.000 12.750 closing

@@ -76,11 +76,13 @@ public class GeneratedContentTests
     [InlineData("<p>text after</p>", "p::before { content: \"Note: \" }", "*Note: |text after")]
     [InlineData("<p>inline <span>span</span> tail</p>", "span::after { content: \" (end)\" }", "inline |span|* (end)| tail")]
     [InlineData("<p><b>bold</b> mid <i>it</i></p>", "p::before { content: \"[\" } p::after { content: \"]\" }", "*[|bold| mid |it|*]")]
-    // The one-colon forms (Selectors 4 §16) and several strings joined.
-    [InlineData("<p>x</p>", "p:before { content: \"a\" \"b\" } p:after { content: \"c\" }", "*ab|x|*c")]
+    // The one-colon forms (Selectors 4 §16); each item of the content a run of its own, an empty one none
+    // (gc-items-kern, gc-items-break).
+    [InlineData("<p>x</p>", "p:before { content: \"a\" \"b\" } p:after { content: \"c\" }", "*a|*b|x|*c")]
+    [InlineData("<p data-v=\"A\">x</p>", "p::before { content: \"a\" \"\" attr(data-none) attr(data-v) \"V\" }", "*a|*A|*V|x")]
     // gc-attr: an attribute's value, the empty string for a missing one; the name of an HTML element's attribute in any case.
-    [InlineData("<p data-x=\"seven\">days</p>", "p::before { content: attr(DATA-X) \" \" }", "*seven |days")]
-    [InlineData("<p>missing</p>", "p::before { content: \"[\" attr(data-missing) \"]\" }", "*[]|missing")]
+    [InlineData("<p data-x=\"seven\">days</p>", "p::before { content: attr(DATA-X) \" \" }", "*seven|* |days")]
+    [InlineData("<p>missing</p>", "p::before { content: \"[\" attr(data-missing) \"]\" }", "*[|*]|missing")]
     // gc-list-item, gc-cell: inside the item's body after the marker, inside the cell.
     [InlineData("<ol><li>item</li></ol>", "li::before { content: \"LI-\" }", "*LI-|item")]
     [InlineData("<table><tr><td>one</td></tr></table>", "table { border-collapse: collapse } td::before { content: \"Cell: \" }", "*Cell: |one")]
@@ -143,6 +145,10 @@ public class GeneratedContentTests
     [InlineData("<p>a</p>", "p::before { content: \"x\" } p::before { content: initial } p::after { content: \"y\"; all: unset }")]
     [InlineData("<p>a<br>b <img src=\"data:,x\" alt=\"\" style=\"display: none\"></p>", "br::after { content: \"BR\"; position: absolute } img::before { content: \"IMG\" }")]
     [InlineData("<p>a</p>", "p::before { padding: 6pt; float: left; position: absolute; display: block }")]
+    // A pseudo-element of display: none says nothing: not its refused content, values or host (Chromium generates no box).
+    [InlineData("<p>a</p>", "p::before { content: \"x\"; display: none; position: absolute; padding: 6pt; transform: rotate(1deg) }")]
+    [InlineData("<p>a</p>", "p::before { content: open-quote counter(x, thai); display: none }")]
+    [InlineData("<table><tr><td>a</td></tr></table>", "table { border-collapse: collapse } tr::before { content: \"TR\"; display: none }")]
     public void What_Chromium_does_not_draw_is_left_out_without_a_word(string body, string css)
     {
         var runs = FirstLines(Body(Doc(body, css))).Children.OfType<TextRun>();
@@ -151,8 +157,6 @@ public class GeneratedContentTests
     }
 
     [Theory]
-    [InlineData("p::before { content: counter(x) }", "counter() and counters() come in a later version")]
-    [InlineData("p::before { content: counters(x, \".\") }", "counter() and counters() come in a later version")]
     [InlineData("p::after { content: \" \" counter(page) }", "page numbers exist only in page-margin boxes; a browser prints 0 here")]
     [InlineData("p::after { content: counter(pages) }", "page numbers exist only in page-margin boxes; a browser prints 0 here")]
     [InlineData("p::before { content: open-quote }", "write the quotation marks as strings")]
@@ -165,7 +169,7 @@ public class GeneratedContentTests
     [InlineData("p::before { content: \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" }", "it has 17 items, and at most 16 are drawn")]
     [InlineData("p::before { content: var(--x) }", "write the value")]
     [InlineData("p::before { content: revert }", "write the value")]
-    [InlineData("p::before { content: \"x\";\n  display: block }", "a block pseudo-element comes in a later version")]
+    [InlineData("p::before { content: \"x\";\n  display: list-item }", "only inline and block generated content is")]
     [InlineData("p::before { content: \"x\";\n  padding-left: 6pt }", "it needs inline boxes")]
     [InlineData("p::before { content: \"x\";\n  background: #ccc }", "it needs inline boxes")]
     [InlineData("p::before { content: \"x\";\n  border: 1px solid }", "it needs inline boxes")]
@@ -208,7 +212,6 @@ public class GeneratedContentTests
     }
 
     [Theory]
-    [InlineData("li::marker { color: red }", "a list marker is drawn from list-style-type alone")]
     [InlineData("p::first-line { color: red }", "put the first line's text in a span")]
     [InlineData("p:first-letter { color: red }", "put the first letter in a span")]
     public void The_other_tree_abiding_pseudo_elements_stay_refused_with_what_to_write(string css, string message)
@@ -247,16 +250,32 @@ public class GeneratedContentTests
         Runs("<p>a<span style=\"display: none\">b</span></p>", "span::before { content: \"x\"; position: absolute }").Should().Be("a");
     }
 
+    private const string TaggedHtml = "<!doctype html><html lang=\"en\"><head><title>Generated</title><style>@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf) } @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700 } body { font-family: Lato }"
+        + " h1::before { content: \"Part \" } p::before { content: \"Note: \" } p::after { content: \" (\" attr(data-x) \")\" }</style></head>"
+        + "<body><h1>One</h1><p data-x=\"seven\">A paragraph with generated text.</p></body></html>";
+
+    private static HtmlRenderOptions TaggedOptions { get; } = new() { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
+
+    [Fact]
+    public void In_the_structure_tree_generated_text_is_text_of_its_element_in_reading_order()
+    {
+        var pdf = HtmlRendering.ToPdf(TaggedHtml, TaggedOptions, new PdfRenderOptions(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero)) { Profile = PdfProfile.PdfUa1 });
+        pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);
+
+        var elements = PdfStructureReadBack.Read(pdf.Value.Output).SelectMany(element => element.DepthFirst()).Where(element => element.Text.Length > 0).ToList();
+
+        elements.Select(element => (element.Type, element.Text)).Should().Equal(("H1", "Part One"), ("P", "Note: A paragraph with generated text. (seven)"));
+        PdfStructureReadBack.ParentTreeDifferences(pdf.Value.Output).Should().BeEmpty();
+    }
+
     [DockerTheory]
     [Trait("Category", "Reference")]
     [InlineData("3a")]
     [InlineData("ua1")]
     public void A_tagged_PDF_with_generated_text_in_a_heading_and_a_paragraph_passes_veraPDF(string flavour)
     {
-        var html = "<!doctype html><html lang=\"en\"><head><title>Generated</title><style>@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf) } @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700 } body { font-family: Lato }"
-            + " h1::before { content: \"Part \" } p::before { content: \"Note: \" } p::after { content: \" (\" attr(data-x) \")\" }</style></head>"
-            + "<body><h1>One</h1><p data-x=\"seven\">A paragraph with generated text.</p></body></html>";
-        var options = new HtmlRenderOptions { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
+        var html = TaggedHtml;
+        var options = TaggedOptions;
         var profile = flavour == "3a" ? PdfProfile.PdfA3a : PdfProfile.PdfUa1;
         var pdf = HtmlRendering.ToPdf(html, options, new PdfRenderOptions(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero)) { Profile = profile });
         pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);

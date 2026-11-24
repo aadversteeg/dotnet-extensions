@@ -86,9 +86,6 @@ public static partial class PropertyRegistry
         yield return InitialKeyword("text-underline-offset", true, "auto", [], true, "all elements", "CSS Text Decoration 4 §2.8");
         yield return InitialKeyword("quotes", true, "auto", ["none", "match-parent"], true, "all elements", "CSS Generated Content 3 §3");
         yield return InitialKeyword("content", false, "normal", ["none"], true, "all elements, ::before, ::after, ::marker, page-margin boxes", "CSS Generated Content 3 §1");
-        yield return InitialKeyword("counter-reset", false, "none", [], true, "all elements", "CSS Lists 3 §4.2");
-        yield return InitialKeyword("counter-increment", false, "none", [], true, "all elements", "CSS Lists 3 §4.3");
-        yield return InitialKeyword("counter-set", false, "none", [], true, "all elements", "CSS Lists 3 §4.4");
 
         // Fonts beyond family, size, weight and style (the font shorthand resets them).
         yield return InitialKeyword("font-variant-caps", true, "normal", ["small-caps", "all-small-caps", "petite-caps", "all-petite-caps", "unicase", "titling-caps"], false, "all elements and text", "CSS Fonts 4 §6.6");

@@ -1,0 +1,21 @@
+page 1 300.000 300.000
+word 1 12.000 47.490 28.500 10.500 Leading #000000 Lato-Regular
+word 1 50.178 96.399 28.500 10.500 paragraph #000000 Lato-Regular
+word 1 12.000 42.812 50.250 10.500 Before #000000 Lato-Regular
+word 1 45.500 70.159 50.250 10.500 block #000000 Lato-Regular
+word 1 12.000 43.972 66.000 10.500 Middle #000000 Lato-Regular
+word 1 46.660 64.873 66.000 10.500 text #000000 Lato-Regular
+word 1 12.000 35.404 90.750 10.500 After #000000 Lato-Regular
+word 1 37.872 62.531 90.750 10.500 block #000000 Lato-Regular
+word 1 12.000 56.352 109.500 10.500 Following #000000 Lato-Regular
+word 1 59.040 105.261 109.500 10.500 paragraph #000000 Lato-Regular
+word 1 12.000 46.503 136.500 10.500 Framed #000000 Lato-Regular
+word 1 49.191 79.173 136.500 10.500 before #000000 Lato-Regular
+word 1 12.000 46.503 153.750 10.500 Framed #000000 Lato-Regular
+word 1 49.191 67.403 153.750 10.500 text #000000 Lato-Regular
+word 1 12.000 46.503 171.000 10.500 Framed #000000 Lato-Regular
+word 1 49.191 70.858 171.000 10.500 after #000000 Lato-Regular
+word 1 12.000 45.831 198.000 10.500 Closing #000000 Lato-Regular
+word 1 48.519 94.740 198.000 10.500 paragraph #000000 Lato-Regular
+rect 1 12.000 117.750 288.000 118.500 #000000
+rect 1 12.000 180.750 288.000 181.500 #000000

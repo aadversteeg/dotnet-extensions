@@ -42,8 +42,10 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
     /// <summary>The face for an element's computed font, or the refusal.</summary>
     /// <param name="style">The computed style.</param>
     /// <param name="position">The element's start tag, for the refusal.</param>
+    /// <param name="source">The name of the source <paramref name="position"/> is in, when it is not the document: the
+    /// style sheet of the <c>content</c> declaration of a <c>::before</c> or <c>::after</c>.</param>
     /// <returns>The face, or the error.</returns>
-    public Result<TrueTypeFont, Error> Match(ComputedStyle style, TextPosition position)
+    public Result<TrueTypeFont, Error> Match(ComputedStyle style, TextPosition position, string? source = null)
     {
         var value = style[PropertyRegistry.FontFamily];
         var families = value is CssList list ? list.Items : [];
@@ -62,7 +64,7 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
         }
 
         return match.IsFailure && match.Error.Metadata?.ContainsKey(ErrorMetadataKeys.SourceLine) != true
-            ? Result<TrueTypeFont, Error>.Failure(match.Error.WithSource(sourceName, position))
+            ? Result<TrueTypeFont, Error>.Failure(match.Error.WithSource(source ?? sourceName, position))
             : match;
     }
 

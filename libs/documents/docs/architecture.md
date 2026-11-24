@@ -427,6 +427,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels below the top one (a style rule and 32 nested in it) | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the style resolution fails) |
 | work of one cascade | 2^26 units: a matching fact computed, a simple selector tested, 64 characters compared, a sibling counted, a rule or declaration collected, a candidate looked at, a comparison of a sort, a var() reference followed | `Css/CssInputLimits.cs` (`MaxCascadeWork`) | `Documents.Css.TooLarge` (the style resolution fails) |
 | generated text of one `::before` or `::after` | 16 items in its `content`; 4 096 characters of text, its strings and attribute values together | `Css/CssInputLimits.cs` (`MaxGeneratedContentItems`, `MaxGeneratedTextLength`) | `Documents.Css.Unsupported.GeneratedContent` (the declaration is refused, the text left out) |
+| counters | 32-bit values; 16 counters in one `counter-reset`, `counter-increment` or `counter-set`; 1 000 live at one place; 32 levels joined by one `counters()` | `Css/CssInputLimits.cs` (`MaxCounterNames`, `MaxLiveCounters`, `MaxCountersLevels`) | a value beyond 32 bits or more names: `Documents.Css.Unsupported.Value` (the declaration is refused); a count that leaves 32 bits or more levels: `Documents.Html.Unsupported.Counter` (refused at the declaration); more live counters: `Documents.Html.Unsupported.Counter` (box generation fails) |
 | entries one cascade remembers | 2^22: matching facts, parent-rule matches, sibling tables, var() substitutions, custom-property tables; past it they are computed again, inside the work limit | `Css/CssInputLimits.cs` (`MaxCascadeMemo`) | none |
 | entries of one cascade's index | 2^21: a selector of a style rule or a declaration, counted each time a sheet is taken in | `Css/CssInputLimits.cs` (`MaxCascadeEntries`) | `Documents.Css.TooLarge` (the style resolution fails) |
 | style sheets of one cascade | 1 024: the user-agent sheet, style elements, linked and imported sheets; a sheet taken in twice counts twice | `Css/CssInputLimits.cs` (`MaxStyleSheets`) | `Documents.Css.TooLarge` (the style resolution fails) |
@@ -581,7 +582,7 @@ Known limits of stage 3 (also in the profile document):
   row with an open formatting element in a template (HD-11). Each is a case of
   `tools/reference/chromium/html-tree/cases.tsv`, pinned as still different; the foreign contexts and the HD-10
   clones are pinned by the engine's own tree (`ChromiumTreeTests`).
-- No pseudo-elements but `::before` and `::after` with strings and `attr()` (see **Generated text**), no `:has()`,
+- No pseudo-elements but `::before` and `::after` with strings, `attr()` and counters (see **Generated text**), no `:has()`,
   `:lang()`, `:dir()`; selectors Chromium 159 rejects are invalid here too (the `s`
   attribute modifier, `:heading`).
 - A computed `calc()` that keeps a length and a percentage is refused (the document model's length holds one of
@@ -686,7 +687,7 @@ start tag, with the property and the value) only where it would change the print
 | `caption-side` | `top` and `bottom` on a caption; no effect on another box | other values (by the registry) |
 | `box-sizing` on a table part | both values, on a table or a cell with a height (see **Tables**, heights) | `content-box` on a table with a height; `border-box` on a cell with a height in a table with collapsed borders |
 | `empty-cells` | `show`; `hide` with separated borders: a cell without content, of white space that collapses or of comments paints no border or background of its own and keeps its size, the background of its row, row group, column or column group still painted under it; a row of only such cells keeps its height and spacings (cases `tm-empty`, `tm-row`, `tk-empty`: a no-break space and an empty inline element are content); no effect with collapsed borders (`tm-collapse`) | `hide` on a cell of only elements that are not displayed or of white space that is preserved |
-| `list-style-type`, `list-style-position` | the twelve counter styles the registry accepts (`disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha`, `lower-latin`, `upper-latin`, `none`), `outside`; no effect on a box that is not a list item | `inside`, `list-style-image` other than `none`, other counter styles and strings (by the registry); `::marker` rules (a selector the style sheet refuses) |
+| `list-style-type`, `list-style-position` | the twelve counter styles the registry accepts (`disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha`, `lower-latin`, `upper-latin`, `none`), `outside`; no effect on a box that is not a list item | `inside`, `list-style-image` other than `none`, other counter styles and strings (by the registry); a `::marker` declaration other than `color`, `font-weight`, `font-style` and a `content` of strings (refused at it) |
 | outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
@@ -721,7 +722,8 @@ leaves it; `value` in a reversed `ol`, or outside an `ol` where its list shows n
 that a list's counter would number (inside a list's item, or after a list among its siblings), or whose number would
 continue the counter of an item with another parent; the marker of an item with text decorations. Lists deeper than
 16 or longer than 10 000 items fail under both policies. The style sheet refuses `list-style-position: inside`
-(case `li-inside`), `list-style-image`, `::marker` and the `counter-*` properties other than their initial value; layout
+(case `li-inside`), `list-style-image`, the `::marker` declarations the marker does not draw (below) and writes to the
+`list-item` counter (**Counters**); layout
 refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types`).
 
 **Generated text** (`Css/Cascade/StyleComputer.PseudoElements.cs`, `HtmlStyleResolver.Generated`; CSS Pseudo 4 §4.1, CSS
@@ -729,21 +731,49 @@ Generated Content 3 §1). A rule whose selector ends in `::before` or `::after` 
 element the selector matches without it, never the element itself; its declarations are cascaded as an element's
 (origin, layer, specificity counting the pseudo-element, order), inheriting from the element's computed style. A
 `content` of strings and `attr(name)` (the attribute's value, empty when it has none; case `gc-attr`) makes an inline
-box of that style with one text, the first or the last child of the element: in the same inline formatting context, so
-white space collapses across the join (case `gc-string-space`), the join is no break opportunity (`gc-string-nobreak`),
-and text decorations apply as to an inline element. Its runs are `TextRun.Generated`, at the line of the `content`
+box of that style, the first or the last child of the element, with one text per item of the `content` (Chromium rounds
+the width of each item up to its layout unit on its own: cases `gc-counter-styles`, `gc-items-kern`): in the same inline
+formatting context, so white space collapses across the items and the join (cases `gc-string-space`, `gc-items-kern`),
+the items are shaped together (kerning and ligatures across them), the join is no break opportunity
+(`gc-string-nobreak`, `gc-items-break`), and text decorations apply as to an inline element. With `display: block` it
+is a block box instead, the first or the last child box of the element, whose own text then lies in anonymous boxes
+around it (cases `gc-block-anonymous`, `gc-block-break`): its margins collapse as any child's, and it has its padding,
+border, background and alignment (`gc-block-margins`, `gc-block-box`); it is tagged as a `Div` of the element, as the
+anonymous boxes are, and one without text (`content: ""` with a border, a rule under a heading) is an artifact. Its runs are `TextRun.Generated`, at the line of the `content`
 declaration; tagged as real text of the element, in reading order (Chromium's text layer has them so). Nothing is made,
 and nothing is said, for `content: normal`, `none`, no `content`, a CSS-wide keyword or `display: none`, nor on `img`
 and `br` (case `gc-nothing`: Chromium draws nothing there either), so `*, *::before, *::after { box-sizing: border-box }`
-costs nothing. Refused at the declaration (`Documents.Css.Unsupported.GeneratedContent`), and the text left out:
-`counter()` and `counters()` (a later version), `counter(page)` and `counter(pages)` (a browser prints 0 outside the
-page-margin boxes), the quote keywords, `url()` and the other images, `attr()` with a type or a fallback, the
-alternative text after `/`, `var()` and `revert`; `display` other than `inline` and `none`; a margin, padding, border or
-background (they need inline boxes), a position or a float that differs from what an inline child of the element has
-without it; the pseudo-elements of `table`, its row groups and rows (Chromium draws them in an anonymous cell), of a
-list element (its children are its items here) and of the other void elements. `::marker`, `::first-line` and
-`::first-letter` stay refused at their selector. Text past the limits below is refused, never cut. The `content` of
-page-margin boxes keeps its own grammar (`ContentValue.Parse`).
+costs nothing, and a pseudo-element of `display: none` reports nothing of what it declares. Refused at the declaration
+(`Documents.Css.Unsupported.GeneratedContent`), and the text left out: `counter(page)` and `counter(pages)` (a browser
+prints 0 outside the page-margin boxes), a counter style other than the 12 of `list-style-type` (`@counter-style`,
+`symbols()`, a string), the quote keywords, `url()` and the other images, `attr()` with a type or a fallback, the
+alternative text after `/`, `var()` and `revert`; `display` other than `inline`, `block` and `none`; a block one on an
+element that is not a block (Chromium breaks an inline element's lines around it: case `gc-block-span`); on an inline
+one a margin, padding, border or background (they need inline boxes); a position or a float that differs from what an
+inline child of the element has without it; the pseudo-elements of `table`, its row groups and rows (Chromium draws them in an anonymous cell), of a
+list element (its children are its items here) and of the other void elements. A `::marker` rule (cascaded the same
+way, on a list item) gives the marker its `color`, `font-weight` and `font-style`, a shape as a number (cases
+`gc-marker-color`, `gc-marker-weight`), and a `content` of strings replaces the marker's text, right-aligned as a
+number, also in place of a shape (`gc-marker-content`); its other declarations are refused at their place (a larger
+`font-size` makes the item's first line taller in Chromium: case `gc-marker-font`), and so are a counter or `none` in
+its `content`. `::first-line` and `::first-letter` stay refused at their selector. Text past the limits below is refused, never cut. The `content` of
+page-margin boxes keeps its own grammar (`ContentValue.Parse`): a document's counter is refused there (Chromium 159
+prints 0 for it on every page, measured). A refusal raised in box generation inside generated text (a character, a
+font) names the style sheet of the `content` declaration.
+
+**Counters** (`Html/Boxes/HtmlBoxGenerator.Counters.cs`; CSS Lists 3 §4). `counter-reset`, `counter-increment` and
+`counter-set` on elements and on `::before` and `::after`, read by `counter(name[, style])` and `counters(name, string[,
+style])` in their `content`, in the 12 styles of `list-style-type` (`disc` U+2022, `circle` U+25E6, `square` U+25A0,
+`none` nothing; roman and alphabetic fall back to decimal outside their range). One walk in document order after the
+lists' numbering, with an explicit stack: an element sees its parent's counters and those of its previous sibling whose
+name the parent has none of (cases `gc-counter-scope`, `gc-counter-implicit`); then reset (in place of a previous
+sibling's counter of the name, else nested), increment, set (case `gc-counter-order`), an increment or set of a counter
+it does not see making one at 0; then its `::before` (its own counter properties, then its content), its children, its
+`::after`. Reading a counter it does not see makes one at 0 on the pseudo-element. `display: none` counts nothing
+(`gc-counter-hidden`). `list-item` is read as the lists number their items (`gc-counter-list-item`), never written:
+`counter-*` of `list-item` is refused. A value beyond 32 bits is refused at its declaration (`Documents.Css.Unsupported.Value`),
+and so is a count that leaves them (`Documents.Html.Unsupported.Counter`, the counter kept at the bound as Chromium
+prints it; case `gc-counter-bound`).
 
 Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`):
 `wbr`, `q`. A `br` is the model's forced line break, the line separator U+2028, in its own text style (a block-level

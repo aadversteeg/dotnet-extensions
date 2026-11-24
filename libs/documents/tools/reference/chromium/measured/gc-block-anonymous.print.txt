@@ -1,0 +1,20 @@
+page 1 300.000 300.000
+word 1 12.000 51.427 22.500 10.500 Opening #0000c0 Lato-Regular
+word 1 54.115 70.516 22.500 10.500 line #0000c0 Lato-Regular
+word 1 12.000 37.121 35.250 10.500 Inline #000000 Lato-Regular
+word 1 39.820 60.385 35.250 10.500 bold #000000 Lato-Bold
+word 1 63.075 80.032 35.250 10.500 and #000000 Lato-Regular
+word 1 82.723 103.681 35.250 10.500 italic #000000 Lato-Italic
+word 1 106.149 134.320 35.250 10.500 words #000000 Lato-Regular
+word 1 12.000 45.831 48.000 10.500 Closing #c00000 Lato-Regular
+word 1 48.519 64.920 48.000 10.500 line #c00000 Lato-Regular
+word 1 12.000 51.427 66.750 10.500 Opening #0000c0 Lato-Regular
+word 1 54.115 70.516 66.750 10.500 line #0000c0 Lato-Regular
+word 1 12.000 35.945 79.500 10.500 Inner #000000 Lato-Regular
+word 1 38.413 84.633 79.500 10.500 paragraph #000000 Lato-Regular
+word 1 12.000 39.006 98.250 10.500 Loose #000000 Lato-Regular
+word 1 41.694 59.906 98.250 10.500 text #000000 Lato-Regular
+word 1 12.000 45.831 111.000 10.500 Closing #c00000 Lato-Regular
+word 1 48.519 64.920 111.000 10.500 line #c00000 Lato-Regular
+word 1 12.000 30.926 129.750 10.500 Last #000000 Lato-Regular
+word 1 33.609 79.830 129.750 10.500 paragraph #000000 Lato-Regular

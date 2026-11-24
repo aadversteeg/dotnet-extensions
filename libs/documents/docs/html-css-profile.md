@@ -44,6 +44,9 @@ names nothing.
 | `caption-side` | yes | `top` | `top \| bottom` | CSS 2.1 §17.4.1 |
 | `color` | yes | `rgb(0, 0, 0)` | `<color>` | CSS Color 4 §3.1; the initial value is black (HTML Standard §15.3.4) |
 | `color-scheme` | yes | `normal` | `normal \| light` | CSS Color Adjust 1 §2.1 |
+| `counter-increment` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.3 |
+| `counter-reset` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.2 |
+| `counter-set` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.4 |
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
 | `empty-cells` | yes | `show` | `show \| hide` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
@@ -196,9 +199,6 @@ a percentage is the same value and accepted too: `background-position-x: 0` and 
 | `contain` | `none` | `none` | CSS Containment 2 §2 |
 | `content` | `normal` | `normal` | CSS Generated Content 3 §1 |
 | `content-visibility` | `visible` | `visible` | CSS Containment 2 §4 |
-| `counter-increment` | `none` | `none` | CSS Lists 3 §4.3 |
-| `counter-reset` | `none` | `none` | CSS Lists 3 §4.2 |
-| `counter-set` | `none` | `none` | CSS Lists 3 §4.4 |
 | `direction` | `ltr` | `ltr` | CSS Writing Modes 4 §2.1 |
 | `filter` | `none` | `none` | Filter Effects 1 §5 |
 | `float` | `none` | `none` | CSS 2.1 §9.5.1 |
@@ -491,9 +491,9 @@ selector & (CSS Nesting 1). Pseudo-classes:
 | `:window-inactive` | never matches (ignored by rule) | window focus |
 | `:xr-overlay` | never matches (ignored by rule) | an immersive session |
 
-Pseudo-elements supported: `::before` (CSS Pseudo 4 §4.1: inline generated text (strings and attr()) before the element's content), `::after` (CSS Pseudo 4 §4.1: inline generated text (strings and attr()) after the element's content).
+Pseudo-elements supported: `::before` (CSS Pseudo 4 §4.1: inline generated text (strings and attr()) before the element's content), `::after` (CSS Pseudo 4 §4.1: inline generated text (strings and attr()) after the element's content), `::marker` (CSS Lists 3 §3.1: the color, font-weight, font-style and a content of strings of a list item's marker).
 
-Pseudo-elements never draw in an accepted document and are ignored by rule: `::placeholder`, `::selection`, `::-webkit-scrollbar`, `::-webkit-scrollbar-button`, `::-webkit-scrollbar-thumb`, `::-webkit-scrollbar-track`, `::-webkit-scrollbar-track-piece`, `::-webkit-scrollbar-corner`, `::-webkit-resizer`. The others are refused: `::first-line`, `::first-letter`, `::marker`, `::target-text`, `::spelling-error`, `::grammar-error`, `::search-text`, `::highlight()`, `::backdrop`, `::file-selector-button`, `::cue`, `::cue()`, `::part()`, `::slotted()`, `::details-content`, `::picker()`, `::picker-icon`, `::checkmark`, `::column`, `::scroll-marker`, `::scroll-marker-group`, `::scroll-button()`, `::view-transition`, `::view-transition-group()`, `::view-transition-image-pair()`, `::view-transition-old()`, `::view-transition-new()`, `::view-transition-group-children()`, and Chromium's other `::-webkit-*`.
+Pseudo-elements never draw in an accepted document and are ignored by rule: `::placeholder`, `::selection`, `::-webkit-scrollbar`, `::-webkit-scrollbar-button`, `::-webkit-scrollbar-thumb`, `::-webkit-scrollbar-track`, `::-webkit-scrollbar-track-piece`, `::-webkit-scrollbar-corner`, `::-webkit-resizer`. The others are refused: `::first-line`, `::first-letter`, `::target-text`, `::spelling-error`, `::grammar-error`, `::search-text`, `::highlight()`, `::backdrop`, `::file-selector-button`, `::cue`, `::cue()`, `::part()`, `::slotted()`, `::details-content`, `::picker()`, `::picker-icon`, `::checkmark`, `::column`, `::scroll-marker`, `::scroll-marker-group`, `::scroll-button()`, `::view-transition`, `::view-transition-group()`, `::view-transition-image-pair()`, `::view-transition-old()`, `::view-transition-new()`, `::view-transition-group-children()`, and Chromium's other `::-webkit-*`.
 
 ## At-rules
 

@@ -273,7 +273,7 @@ public static class HtmlStyleResolver
             }
 
             open.Push(top);
-            if (!Generated(top, computer, "before"))
+            if (!Generated(top, computer, "before") || !Marker(top, computer))
             {
                 return null;
             }
@@ -293,7 +293,7 @@ public static class HtmlStyleResolver
                             }
 
                             open.Push(child);
-                            if (!Generated(child, computer, "before"))
+                            if (!Generated(child, computer, "before") || !Marker(child, computer))
                             {
                                 return null;
                             }
@@ -313,7 +313,7 @@ public static class HtmlStyleResolver
                 }
 
                 open.Pop();
-                var styled = new StyledElement(html, current.Style, current.Language, [.. current.Children]);
+                var styled = new StyledElement(html, current.Style, current.Language, [.. current.Children]) { Marker = current.Marker };
                 if (open.Count == 0)
                 {
                     return styled;
@@ -435,6 +435,28 @@ public static class HtmlStyleResolver
             return true;
         }
 
+        /// <summary>The style of a list item's <c>::marker</c> (CSS Lists 3 §3.1), kept on the item; nothing for an element
+        /// that is not a list item, a hidden or refused one, or one outside the HTML namespace. False at a limit.</summary>
+        private bool Marker(Open element, StyleComputer computer)
+        {
+            if (element.Hidden || element.Refused || element.Element.Element.Namespace != ElementNamespace.Html
+                || element.Style[Css.Properties.PropertyRegistry.Display] is not Css.Values.CssKeyword { Name: "list-item" })
+            {
+                return true;
+            }
+
+            var marker = computer.ComputeMarker(element.Element);
+            if (marker.IsFailure)
+            {
+                Keep(marker.Error);
+                Limit ??= marker.Error;
+                return false;
+            }
+
+            element.Marker = marker.Value;
+            return true;
+        }
+
         /// <summary>An element whose children are being styled: its style, language, whether it is hidden, the styled
         /// children so far, and where the walk of its children is.</summary>
         private sealed class Open(StyleElement element, ComputedStyle style, string? language, bool hidden)
@@ -449,6 +471,9 @@ public static class HtmlStyleResolver
 
             /// <summary>Whether the element itself is refused: it generates no text.</summary>
             public bool Refused { get; init; }
+
+            /// <summary>The style of its <c>::marker</c>, or null.</summary>
+            public MarkerStyle? Marker { get; set; }
 
             public List<StyledNode> Children { get; } = [];
 

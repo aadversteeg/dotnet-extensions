@@ -350,8 +350,29 @@ fr-row-later-page-padding-overflows-two-cells-pad-6 listed Beside_a_cell_whose_b
 fs-none-regular-bold equal
 fs-none-regular-only equal
 gc-attr equal
+gc-block-anonymous equal
+gc-block-box equal
+gc-block-break equal
+gc-block-margins equal
+gc-block-span refused Documents.Css.Unsupported.GeneratedContent display: block at 9:37
 gc-cell equal
+gc-counter-bound refused Documents.Html.Unsupported.Counter counter-increment: n at 9:44
+gc-counter-headings equal
+gc-counter-hidden equal
+gc-counter-implicit equal
+gc-counter-list-item equal
+gc-counter-order equal
+gc-counter-scope equal
+gc-counter-set equal
+gc-counter-styles equal
+gc-counters-nested equal
+gc-items-break equal
+gc-items-kern equal
 gc-list-item equal
+gc-marker-color equal
+gc-marker-content equal
+gc-marker-font refused Documents.Css.Unsupported.GeneratedContent font-size: 16pt at 13:17
+gc-marker-weight equal
 gc-nothing equal
 gc-string-block equal
 gc-string-children equal

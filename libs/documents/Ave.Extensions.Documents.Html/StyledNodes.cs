@@ -23,6 +23,10 @@ public sealed record StyledElement(HtmlElement Element, ComputedStyle Style, str
     /// child of its originating element, first or last, named <c>::before</c> or <c>::after</c>, with no attributes and
     /// one text, which is <see cref="Css.Cascade.GeneratedContent.Text"/> at that place.</summary>
     public GeneratedContent? Generated { get; init; }
+
+    /// <summary>For a list item that a <c>::marker</c> rule matches (CSS Lists 3 §3.1): the marker's style and text;
+    /// null otherwise, and the marker is drawn in the item's style.</summary>
+    public MarkerStyle? Marker { get; init; }
 }
 
 /// <summary>A text, styled as its parent element (CSS 2.1 §9.2.2.1: text inherits from its parent box).</summary>

@@ -49,6 +49,11 @@ internal sealed class DiagnosticCollector
     }
 
     /// <summary>Adds diagnostics.</summary>
+    /// <summary>Takes back the diagnostics kept after the first <paramref name="count"/>; those past
+    /// <see cref="CssInputLimits.MaxDiagnostics"/> stay counted.</summary>
+    /// <param name="count">How many to keep, at most <see cref="Count"/>.</param>
+    public void TruncateTo(int count) => _kept.RemoveRange(count, _kept.Count - count);
+
     public void AddRange(IEnumerable<Error> errors)
     {
         foreach (var error in errors)

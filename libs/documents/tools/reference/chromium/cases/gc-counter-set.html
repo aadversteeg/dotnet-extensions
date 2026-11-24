@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p, div { margin: 0 0 4pt; }
+.k { counter-reset: k; } .k p { counter-increment: k; } .k p.jump { counter-set: k 20; } .k p::before { content: counter(k) ") "; }
+.w p.fresh { counter-set: w 4; } .w p::before { content: counter(w) ") "; }
+.n { counter-reset: m 3; } .n p { counter-set: m -2; } .n p::before { content: counter(m) ") "; }
+</style></head><body>
+<div class="k"><p>first</p><p class="jump">jump</p><p>next</p></div>
+<div class="w"><p class="fresh">fresh</p><p>sees</p></div>
+<div class="n"><p>minus</p></div>
+</body></html>

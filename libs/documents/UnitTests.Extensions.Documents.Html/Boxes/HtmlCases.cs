@@ -171,6 +171,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.Language.ToString(),
         HtmlStyleErrorCodes.Unsupported.Metadata.ToString(),
         HtmlStyleErrorCodes.Unsupported.InlineBox.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Counter.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         CssErrorCodes.Unsupported.GeneratedContent.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
