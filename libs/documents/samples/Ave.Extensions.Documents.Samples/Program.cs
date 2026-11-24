@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Ave.Extensions.Documents;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fluent;
 using Ave.Extensions.Documents.Fonts;
@@ -15,6 +16,8 @@ using Ave.Extensions.Functional;
 // serialisations of its intermediate models: <name>.model.txt, <name>.fragments.txt, <name>.page.txt, and every
 // embedded file as <name>.attachment.<file name>.
 // Samples: the letter (A), the long text (B), content taller than a page (C), and the timesheet for the PoC's three data sets in Dutch and English.
+// Then the HTML samples: the same timesheets in Dutch and an invoice, filled into HTML from their data (Html/) and
+// rendered by the HTML front-end, each as <name>.html (the filled document), <name>.pdf and <name>.page.txt.
 // With "time <data set> <culture> [warm runs]" it measures one timesheet instead (see Timing).
 
 var regular = LoadFont("Lato-Regular.ttf");
@@ -43,7 +46,10 @@ var failures = new (string Name, Document Document)[]
     .Concat(timesheets)
     .Select(sample => Write(sample.Item1, sample.Item2))
     .Count(written => !written);
-return failures == 0 ? 0 : 1;
+var resources = HtmlSamples.Resources(AppContext.BaseDirectory);
+var htmlFailures = HtmlSamples.Documents(AppContext.BaseDirectory, brand, FontCoverage.Displayable(regular))
+    .Count(sample => !WriteHtml(sample));
+return failures + htmlFailures == 0 ? 0 : 1;
 
 Document Timesheet(string dataSet, string culture) =>
     Timesheets.Timesheet(
@@ -80,6 +86,31 @@ bool Write(string name, Document document)
         error =>
         {
             Console.Error.WriteLine($"{name}: {error}");
+            return false;
+        });
+}
+
+bool WriteHtml(HtmlSample sample)
+{
+    // The engine takes the finished HTML: the template has filled it, and the resolver gives the files it names.
+    File.WriteAllText(Path.Combine(output, $"{sample.Name}.html"), sample.Html);
+    var result = HtmlRendering.ToPages(sample.Html, HtmlSamples.Options(resources, sample)).OnSuccessBind(rendered =>
+    {
+        File.WriteAllText(Path.Combine(output, $"{sample.Name}.page.txt"), PageModelText.Write(rendered.Output));
+        return rendered.Output.ToPdf(options).OnSuccessMap(pdf => (Pdf: pdf, PageCount: rendered.Output.Pages.Count));
+    });
+
+    return result.Match(
+        written =>
+        {
+            var path = Path.Combine(output, $"{sample.Name}.pdf");
+            File.WriteAllBytes(path, [.. written.Pdf]);
+            Console.WriteLine($"{path}: {written.PageCount} pages, {written.Pdf.Length} bytes");
+            return true;
+        },
+        error =>
+        {
+            Console.Error.WriteLine($"{sample.Name}: {error}");
             return false;
         });
 }

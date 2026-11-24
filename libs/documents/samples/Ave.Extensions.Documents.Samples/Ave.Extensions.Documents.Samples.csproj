@@ -26,6 +26,9 @@
     <!-- The synthetic timesheet data of the reporting proof of concept (an earlier Typst version of the report) and
          its logo as PNG (made by tools/generate-test-images.py). -->
     <None Include="data/*.json;assets/logo.png" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The invoice's style sheets, which the HTML samples' invoice links: one copy, beside the document Chromium
+         prints in tools/reference/chromium/documents. -->
+    <None Include="$(MSBuildThisFileDirectory)../../tools/reference/chromium/documents/invoice.css;$(MSBuildThisFileDirectory)../../tools/reference/chromium/documents/invoice-theme.css" Link="html/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
