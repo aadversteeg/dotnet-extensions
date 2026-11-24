@@ -773,7 +773,7 @@ public static partial class HtmlBoxGenerator
             }
 
             var (meta, content) = found;
-            if (HtmlMetadata.Problem(content) is { } problem)
+            if (MetadataTexts.Problem(content) is { } problem)
             {
                 Refuse(HtmlStyleErrorCodes.Unsupported.Metadata, $"The {name} in <meta name> is not taken into the document's metadata: {problem}.", name, meta.Position, "content");
                 return null;
@@ -783,8 +783,9 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>The text of the first title element (HTML Standard §4.2.2: its child text content with ASCII white
-        /// space stripped and collapsed), or null.</summary>
-        private static string? Title(StyledElement root)
+        /// space stripped and collapsed), or null; one that THE RULE FOR A DOCUMENT'S METADATA TEXT does not accept
+        /// (<see cref="MetadataTexts.TitleProblem"/>) is reported at its start tag and left out (<see cref="HtmlMetadata"/>).</summary>
+        private string? Title(StyledElement root)
         {
             var pending = new Stack<StyledElement>();
             pending.Push(root);
@@ -795,7 +796,19 @@ public static partial class HtmlBoxGenerator
                 {
                     var text = string.Concat(element.Children.OfType<StyledText>().Select(child => child.Text.Data));
                     var words = text.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries);
-                    return words.Length == 0 ? null : string.Join(' ', words);
+                    if (words.Length == 0)
+                    {
+                        return null;
+                    }
+
+                    var title = string.Join(' ', words);
+                    if (MetadataTexts.TitleProblem(title) is { } problem)
+                    {
+                        Refuse(HtmlStyleErrorCodes.Unsupported.Metadata, $"The <title> is not taken into the document's metadata: {problem}.", "title", element.Element.Position, "text");
+                        return null;
+                    }
+
+                    return title;
                 }
 
                 foreach (var child in element.Children.OfType<StyledElement>().Reverse())

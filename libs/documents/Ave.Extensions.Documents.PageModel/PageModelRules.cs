@@ -120,6 +120,12 @@ public static class PageModelRules
             yield return Invalid(code, "The page document has no metadata.", "metadata");
         }
 
+        // THE RULE FOR A DOCUMENT'S METADATA TEXT, again for a page model that no front-end made.
+        foreach (var field in MetadataTexts.Problems(document.Metadata?.Title, document.Metadata?.Author, document.Metadata?.Description))
+        {
+            yield return Invalid(code, $"The document's {field.Property} is refused: {field.Problem}.", field.Property);
+        }
+
         if (document.Pages.Count == 0)
         {
             yield return Invalid(code, "The document has no pages; a back-end needs at least one to draw.", "0 pages");

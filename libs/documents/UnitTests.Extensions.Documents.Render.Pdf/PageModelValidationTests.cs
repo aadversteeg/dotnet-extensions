@@ -183,9 +183,9 @@ public class PageModelValidationTests
         },
         // 6.1.13-11: a page side below 3 units.
         { "a page of 2 x 2 units", new PageDocument(Accessible, [new Page(new Size(2, 2), [Start(0, SemanticRole.Document), End(0)])]), "3b", PdfRenderErrorCodes.Conformance.PdfA3.PageSize },
-        // 6.1.13-3 for the author and the description, and for a glyph's own text, written as replacement text (/ActualText).
-        { "an author longer than a PDF/A string", Tagged(Accessible with { Author = "\u00E9" + new string('a', 16_999) }, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), "3b", PdfRenderErrorCodes.Conformance.PdfA3.TextTooLong },
-        { "a description longer than a PDF/A string", Tagged(Accessible with { Description = "\u00E9" + new string('a', 16_999) }, Start(1, SemanticRole.Paragraph), Run("x"), End(1)), "3b", PdfRenderErrorCodes.Conformance.PdfA3.TextTooLong },
+        // 6.1.13-3 for a glyph's own text, written as replacement text (/ActualText). An author or a description that long
+        // breaks THE RULE FOR A DOCUMENT'S METADATA TEXT (at most 4 096 characters) first, under every profile
+        // (MetadataTextRuleTests).
         { "a glyph text longer than a PDF/A string", Tagged(Accessible, Start(1, SemanticRole.Paragraph), GlyphWithText("\u00E9" + new string('a', 16_999)), End(1)), "3b", PdfRenderErrorCodes.Conformance.PdfA3.TextTooLong },
         // 7.21.7-2 under PDF/UA-1 alone, not only at PDF/A level A: no glyph text with U+FEFF.
         { "a glyph text of U+FEFF under PDF/UA-1", Tagged(Accessible, Start(1, SemanticRole.Paragraph), GlyphWithText("\uFEFF"), End(1)), "ua1", PdfRenderErrorCodes.Conformance.Tagged.UnmappableText },

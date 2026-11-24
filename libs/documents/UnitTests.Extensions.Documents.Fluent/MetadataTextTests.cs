@@ -50,6 +50,33 @@ public class MetadataTextTests
         error.Metadata![ErrorMetadataKeys.Property].Should().Be("author");
     }
 
+    /// <summary>The control characters U+007F to U+009F, which XML allows and THE RULE FOR A DOCUMENT'S METADATA TEXT does
+    /// not, in the title, the author and the description.</summary>
+    [Theory]
+    [InlineData(0x7F)]
+    [InlineData(0x85)]
+    [InlineData(0x9F)]
+    public void A_title_an_author_or_a_description_with_a_control_character_of_U_007F_to_U_009F_is_an_input_error(int control)
+    {
+        var line = CurrentLine() + 1;
+        var errors = DocumentTranslator.ToModel(Document([Paragraph("x")], title: With(control), author: With(control), description: With(control)).FontFamily("Lato")).Error.Parts();
+
+        errors.Select(error => error.Metadata![ErrorMetadataKeys.Property]).Should().Equal("title", "author", "description");
+        errors.Should().AllSatisfy(error => ShouldPointAt(error, line));
+        errors.Should().AllSatisfy(error => error.Metadata![ErrorMetadataKeys.Offset].Should().Be(7));
+    }
+
+    [Fact]
+    public void An_author_or_a_description_longer_than_4096_characters_is_an_input_error_and_a_long_title_is_not()
+    {
+        var longest = new string('a', MetadataTexts.MaxLength);
+
+        DocumentTranslator.ToModel(Document([Paragraph("x")], title: longest + longest, author: longest, description: longest).FontFamily("Lato")).IsSuccess.Should().BeTrue();
+        var errors = DocumentTranslator.ToModel(Document([Paragraph("x")], author: longest + "a", description: longest + "a").FontFamily("Lato")).Error.Parts();
+        errors.Select(error => error.Metadata![ErrorMetadataKeys.Property]).Should().Equal("author", "description");
+        errors.Should().AllSatisfy(error => error.Message.Should().Contain("4097 characters long; at most 4096"));
+    }
+
     [Fact]
     public void An_attachment_name_or_description_with_a_character_XML_forbids_is_an_input_error_at_the_attachment()
     {

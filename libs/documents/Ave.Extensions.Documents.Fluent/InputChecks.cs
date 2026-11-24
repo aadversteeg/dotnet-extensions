@@ -430,15 +430,19 @@ internal static class InputChecks
         char.IsSurrogatePair(text, offset) ? char.ConvertToUtf32(text, offset) : text[offset];
 
     /// <summary>
-    /// The document's title, author and description: text that goes into the XMP metadata, which is XML, so only characters XML 1.0
-    /// allows (§2.2, production [2] Char; <see cref="XmlCharacters"/>). Reported at the document's line.
+    /// The document's title, author and description by THE RULE FOR A DOCUMENT'S METADATA TEXT (<see cref="MetadataTexts"/>):
+    /// no control character other than tab, line feed and carriage return, no character XML 1.0 does not allow, and an
+    /// author or a description of at most <see cref="MetadataTexts.MaxLength"/> characters. Reported at the document's line.
     /// </summary>
     public static IEnumerable<Error> Metadata(string? title, string? author, string? description, SourceLocation source) =>
-        new[] { (Text: title, Property: "title"), (Text: author, Property: "author"), (Text: description, Property: "description") }
-            .SelectMany(field => MetadataText(field.Text, field.Property, source));
+        MetadataTexts.Problems(title, author, description).Select(field =>
+        {
+            var error = Problem(DocumentErrorCodes.Input.Invalid.MetadataText, $"The {field.Property} is refused: {field.Problem}.", field.Text, field.Property, source);
+            return field.Offset is { } offset ? error.With(ErrorMetadataKeys.Offset, offset) : error;
+        });
 
-    /// <summary>One metadata text: an error when it holds a character XML 1.0 does not allow.</summary>
-    private static IEnumerable<Error> MetadataText(string? text, string property, SourceLocation source) =>
+    /// <summary>An attachment's text: an error when it holds a character XML 1.0 does not allow.</summary>
+    private static IEnumerable<Error> XmlText(string? text, string property, SourceLocation source) =>
         text is not null && XmlCharacters.IndexOfForbidden(text) is { } offset
             ? [Problem(DocumentErrorCodes.Input.Invalid.MetadataText, $"The {property} holds a character XML does not allow, at position {offset}.", text, property, source)
                 .With(ErrorMetadataKeys.Offset, offset)]
@@ -446,7 +450,7 @@ internal static class InputChecks
 
     /// <summary>
     /// An attachment needs a file name, a media type of the form <c>type/subtype</c> (RFC 6838 §4.2, restricted names),
-    /// a file name and description of characters XML allows (as <see cref="Metadata"/>), and a name no other
+    /// a file name and description of characters XML allows (<see cref="XmlCharacters"/>), and a name no other
     /// attachment of the document has: the embedded-files name tree has one entry per name
     /// (ISO 32000-1 §7.9.6).
     /// </summary>
@@ -464,8 +468,8 @@ internal static class InputChecks
                 yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "The media type is not of the form type/subtype.", attachment.MediaType ?? "null", "media-type", attachment.Source);
             }
 
-            foreach (var problem in MetadataText(attachment.FileName, "file-name", attachment.Source)
-                         .Concat(MetadataText(attachment.Description, "description", attachment.Source)))
+            foreach (var problem in XmlText(attachment.FileName, "file-name", attachment.Source)
+                         .Concat(XmlText(attachment.Description, "description", attachment.Source)))
             {
                 yield return problem;
             }

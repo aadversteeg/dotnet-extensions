@@ -23,7 +23,7 @@ public static class ModelCheck
     /// <returns>The same document, or the first problem.</returns>
     public static Result<StyledDocument, Error> Check(StyledDocument document)
     {
-        var problem = Page(document.Page) ?? Nodes(document) ?? Targets(document);
+        var problem = Page(document.Page) ?? Metadata(document.Metadata) ?? Nodes(document) ?? Targets(document);
         return problem is null ? Result<StyledDocument, Error>.Success(document) : Result<StyledDocument, Error>.Failure(problem.Value);
     }
 
@@ -62,6 +62,19 @@ public static class ModelCheck
                 return Problem(DocumentErrorCodes.Input.Invalid.Length, "How far a header or footer starts in the page margin must be 0 or more and at most the left margin.",
                     area.StartInMargin.ToString(), "start-in-margin", area.Content);
             }
+        }
+
+        return null;
+    }
+
+    /// <summary>The title, the author and the description by THE RULE FOR A DOCUMENT'S METADATA TEXT
+    /// (<see cref="MetadataTexts"/>): the first one it does not accept.</summary>
+    private static Error? Metadata(DocumentMetadata? metadata)
+    {
+        foreach (var field in MetadataTexts.Problems(metadata?.Title, metadata?.Author, metadata?.Description))
+        {
+            var error = Problem(DocumentErrorCodes.Input.Invalid.MetadataText, $"The document's {field.Property} is refused: {field.Problem}.", field.Text, field.Property, null);
+            return field.Offset is { } offset ? error.With(ErrorMetadataKeys.Offset, offset) : error;
         }
 
         return null;
