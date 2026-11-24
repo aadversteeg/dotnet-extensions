@@ -90,6 +90,11 @@ public static class Shaper
 
     /// <summary>As <see cref="Shape(string, TrueTypeFont, ShapingSize)"/>, under <paramref name="shared"/> when it is given (the
     /// pieces of one paragraph, <see cref="LineShapingBudget"/>), else under a budget of the text's own.</summary>
+    internal static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, ShapingSize size, ShapingBudget? shared) =>
+        Shape(text, font, size, shared, ShapingFeatures.Default);
+
+    /// <summary>As <see cref="Shape(string, TrueTypeFont, ShapingSize, ShapingBudget?)"/>, with the switchable GSUB features of
+    /// <paramref name="features"/>.</summary>
     internal static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, ShapingSize size, ShapingBudget? shared, ShapingFeatures features) =>
         Characters(text).OnSuccessBind(characters =>
         {
