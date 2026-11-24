@@ -5,7 +5,7 @@ namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
 /// The Chromium reference data is complete: every case in <c>tools/reference/chromium/cases</c> has its four measured
-/// files (and a fifth, its ink gaps, where its print skips ink), and every measured file has exactly the number of lines it had when it was measured (pinned here), so a file
+/// files (and a fifth, its ink gaps, where its print skips ink, and its link annotations where its print has any), and every measured file has exactly the number of lines it had when it was measured (pinned here), so a file
 /// that is missing, emptied or cut short fails this test even where no other test reads it (the <c>words</c>,
 /// <c>boxes</c> and <c>lines</c> files are kept for comparing a new measurement, the <c>print</c> files are read by the
 /// reference tests). After a deliberate new measurement, update the numbers with the files.
@@ -15,6 +15,10 @@ public class MeasuredReferenceFilesTests
     /// <summary>The cases whose print has an underline or overline cut around a glyph's ink, so that the read-back writes their
     /// gaps (<c>ink.py</c>, <c>&lt;case&gt;.ink.txt</c>).</summary>
     private static readonly string[] InkCases = ["dl-skip", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
+
+    /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
+    /// <c>&lt;case&gt;.links.txt</c>).</summary>
+    private static readonly string[] LinkCases = [];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -2267,8 +2271,8 @@ public class MeasuredReferenceFilesTests
 
         cases.Should().HaveCount(555);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
-            .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
-            "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");
+            .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
+            "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");
         measured.Should().Equal(Lines.Keys.Order(StringComparer.Ordinal), "the pinned list names every measured file");
     }
 

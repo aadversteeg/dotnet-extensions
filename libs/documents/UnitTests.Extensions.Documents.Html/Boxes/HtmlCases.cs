@@ -24,8 +24,9 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// words with their colour and face, painted rectangles with their colour, images), its filled rectangles read back by a
 /// second script (<c>&lt;case&gt;.lines.txt</c>), the lines it clips around the glyphs' ink (<c>&lt;case&gt;.ink.txt</c>,
 /// <see cref="Clips"/>: both files hold such a line whole), its words read back by poppler (<c>&lt;case&gt;.words.txt</c>), and the
-/// sizes of the boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>). Each comparison below names its file and its
-/// bound.
+/// sizes of the boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>), and its link annotations
+/// (<c>&lt;case&gt;.links.txt</c>, <see cref="LinkDifference"/>; a case without the file has none). Each comparison below
+/// names its file and its bound.
 /// </summary>
 internal static class HtmlCases
 {
@@ -245,7 +246,8 @@ internal static class HtmlCases
         var difference = missed ?? Difference(engine, chromium, LineTops(boxes.Value))
             ?? RectangleDifference(engine, chromium, lines)
             ?? PopplerDifference(pages.Value, engine, Rows(folder, name, "words"), LineTops(boxes.Value))
-            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"));
+            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"))
+            ?? LinkDifference(pages.Value, Links(folder, name));
         return (difference, Listed.TryGetValue(name, out var listed)) switch
         {
             (null, false) => "equal",
@@ -307,6 +309,94 @@ internal static class HtmlCases
         }
 
         return cut;
+    }
+
+    /// <summary>A link annotation of a print, or a link area of the engine's pages: its page, its rectangle in points with
+    /// the origin at the top left of the page, and its target as <c>links.txt</c> writes it (<c>uri &lt;URI&gt;</c>, or
+    /// <c>dest &lt;destination&gt;</c> for a link inside the document).</summary>
+    internal sealed record PrintedLink(int Page, double X0, double Y0, double X1, double Y1, string Target);
+
+    /// <summary>The link annotations of Chromium's print, from <c>&lt;case&gt;.links.txt</c> (README of
+    /// <c>tools/reference/chromium</c>, read back by <c>links.py</c>: <c>page x0 y0 x1 y1 kind target</c>, page by page in
+    /// the order of each page's <c>/Annots</c>); none for a case without the file, whose print has no annotation.</summary>
+    internal static List<PrintedLink> Links(CaseFolder folder, string name)
+    {
+        var path = Measured(folder, name) + ".links.txt";
+        return File.Exists(path)
+            ? [.. File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ', 7))
+                .Select(parts => new PrintedLink(int.Parse(parts[0], CultureInfo.InvariantCulture), Number(parts[1]), Number(parts[2]), Number(parts[3]), Number(parts[4]), $"{parts[5]} {parts[6]}"))]
+            : [];
+    }
+
+    /// <summary>The engine's link areas (<see cref="LinkArea"/>), page by page in drawing order, each with the target of its
+    /// link (the <see cref="SemanticRole.LinkRole"/> of the structure bracket it lies in, <see cref="StructureStart"/>).</summary>
+    internal static List<PrintedLink> Links(PageDocument pages)
+    {
+        var targets = new Dictionary<NodeId, string>();
+        var links = new List<PrintedLink>();
+        foreach (var (page, number) in pages.Pages.Select((page, index) => (page, index + 1)))
+        {
+            foreach (var item in page.Items)
+            {
+                switch (item)
+                {
+                    case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.UriTarget uri } } start:
+                        targets[start.Node] = $"uri {uri.Value}";
+                        break;
+                    case LinkArea area:
+                        var rect = area.Area;
+                        links.Add(new PrintedLink(number, rect.Origin.X, rect.Origin.Y, rect.Origin.X + rect.Size.Width, rect.Origin.Y + rect.Size.Height, targets[area.Link]));
+                        break;
+                }
+            }
+        }
+
+        return links;
+    }
+
+    /// <summary>One CSS pixel in points: how far an edge of a link area may be from Chromium's. Chromium writes each edge of
+    /// a link's rectangle at a whole CSS pixel (measured, case <c>lk-one-line</c>: the word "link" from 45.703 to 61.894 pt
+    /// gets the rectangle 45.75 to 62.25 pt), the engine at its exact place (ISO 32000-1 §12.5.2: <c>/Rect</c> is any rectangle), so
+    /// an edge may differ by up to half a pixel each way of the rounding; the bound is one pixel.</summary>
+    public const double LinkBound = 0.75;
+
+    /// <summary>
+    /// The first difference between the engine's link areas and the link annotations of Chromium's print
+    /// (<c>links.txt</c>), or null: the same number of rectangles, in the same order, each on the same page, every edge within
+    /// <see cref="LinkBound"/>, and the same target, compared whole.
+    /// </summary>
+    public static string? LinkDifference(PageDocument pages, IReadOnlyList<PrintedLink> chromium)
+    {
+        var engine = Links(pages);
+        for (var index = 0; index < Math.Max(engine.Count, chromium.Count); index++)
+        {
+            if (index >= engine.Count)
+            {
+                var missing = chromium[index];
+                return $"link {index + 1}: Chromium's rectangle on page {missing.Page} at ({Of(missing.X0)}, {Of(missing.Y0)}) to {missing.Target} has none in the engine, which has {engine.Count} (links.txt)";
+            }
+
+            var ours = engine[index];
+            if (index >= chromium.Count)
+            {
+                return $"link {index + 1}: the engine's rectangle on page {ours.Page} at ({Of(ours.X0)}, {Of(ours.Y0)}) to {ours.Target} is not in Chromium's print, which has {chromium.Count} (links.txt)";
+            }
+
+            var theirs = chromium[index];
+            var at = $"link {index + 1} on page {ours.Page}";
+            var found = (ours.Page != theirs.Page ? $"link {index + 1} is on page {ours.Page}, Chromium's on page {theirs.Page}" : null)
+                ?? Edge(at, "x0", ours.X0, theirs.X0) ?? Edge(at, "y0", ours.Y0, theirs.Y0) ?? Edge(at, "x1", ours.X1, theirs.X1) ?? Edge(at, "y1", ours.Y1, theirs.Y1)
+                ?? (ours.Target != theirs.Target ? $"{at} leads to {ours.Target}, Chromium's to {theirs.Target}" : null);
+            if (found is not null)
+            {
+                return found + " (links.txt)";
+            }
+        }
+
+        return null;
+
+        static string? Edge(string at, string what, double ours, double theirs) =>
+            Math.Abs(ours - theirs) > LinkBound + 1e-9 ? $"{at}: {what} {Of(ours)}, Chromium {Of(theirs)}" : null;
     }
 
     /// <summary>

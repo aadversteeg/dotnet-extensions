@@ -58,6 +58,11 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
   visible rectangles, columns of equal rows joined; a clip that leaves out anything but one rectangle is written as `uneven`;
   a clip that is one rectangle (the page area's) cuts no gap: the line is written as the part inside it, as `print.txt`
   holds it;
+- `<case>.links.txt`, only for a print that has link annotations: each annotation as `page x0 y0 x1 y1 uri <URI>` or
+  `page x0 y0 x1 y1 dest <destination>`, in points, origin top left, page by page in the order of the page's `/Annots`
+  (`links.py`, PyMuPDF): the annotation's `/Rect` and its target as the file holds it, the URI of a URI action or the
+  `/Dest` of a link inside the document. Any other annotation or action stops the read-back. Chromium writes each edge of
+  a link's rectangle at a whole CSS pixel;
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
@@ -129,7 +134,8 @@ page exactly, in every test that reads a print file; the distance between baseli
 `BottomPaddingTests`; the page-relative baseline in the page-start tests. Other positions in the print files (most
 rectangles, image areas, x positions in tables) are measured and kept, and pinned only by their line counts
 (`MeasuredReferenceFilesTests`) and by the agreement of the two read-backs (`ChromiumReferenceTests`). Every case that the
-HTML front-end draws is compared on every fact of its `print`, `lines`, `words` and `boxes` files, each with its bound
+HTML front-end draws is compared on every fact of its `print`, `lines`, `words` and `boxes` files, and of its `links`
+file where it has one, each with its bound
 (`CaseStatusTests` and `HtmlCases` in `UnitTests.Extensions.Documents.Html`; docs/architecture.md, "The status file").
 The harness takes any
 HTML with an `@page` rule, so whole documents can be measured the same way as the small cases.

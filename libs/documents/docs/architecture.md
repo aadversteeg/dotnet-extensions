@@ -771,6 +771,11 @@ through the whole HTML path unchanged and its pages are compared with every file
   a box it cuts over pages is compared in the engine's layout of the same boxes on one page as tall as the model allows,
   which must stay one page; the parts of a cut box are what `print.txt`, `lines.txt` and `words.txt` compare. A box
   named by its id is found by its place among the boxes of the role its tag gives on its source line.
+- `<case>.links.txt`, only for a print that has link annotations, the links read back by `links.py` (each annotation's
+  page, `/Rect` and target, in the order of the page's `/Annots`): the engine's link areas (`LinkArea`, each with the
+  target of its link) the same number in the same order, each on the same page, every edge within one CSS pixel
+  (`HtmlCases.LinkBound`, 0.75 pt: Chromium writes each edge at a whole pixel, the engine at its exact place), and the
+  same target. A case without the file has no link, and the engine must have none either.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole
