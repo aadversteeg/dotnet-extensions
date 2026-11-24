@@ -363,7 +363,7 @@ public class PageContextTests
     [Fact]
     public void A_value_the_element_parser_refuses_is_refused_on_a_margin_box_too()
     {
-        var css = "@page { font-family: Lato; @top-left { content: \"a\"; border-top: 1pt dashed red } }";
+        var css = "@page { font-family: Lato; @top-left { content: \"a\"; border-top: 1pt dotted red } }";
 
         var refusal = Refusal(css);
         refusal.Code.Should().Be(CssErrorCodes.Unsupported.Value);

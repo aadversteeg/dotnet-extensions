@@ -60,6 +60,21 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Node, group.Id.ToString())
             .WithSource(group.Source);
 
+    /// <summary>A dashed border side too short or too long to dash (<see cref="LayoutErrorCodes.DashedBorder"/>).</summary>
+    /// <param name="box">The box.</param>
+    /// <param name="length">The side's length, in CSS pixels.</param>
+    /// <param name="width">The side's width, in CSS pixels.</param>
+    /// <param name="tooMany">True for a side with more dashes than one path holds, false for one too short.</param>
+    public static Error DashedBorder(Box box, double length, double width, bool tooMany) =>
+        new Error(
+                LayoutErrorCodes.DashedBorder,
+                !tooMany
+                    ? $"{Describe(box)} has a dashed border side {InvariantNumber.Format(length)} px long, shorter than two dashes and a gap of a {InvariantNumber.Format(width)} px border; Chromium draws such a side as a solid line, which is not drawn in this version. Make the box larger, or use a solid border."
+                    : $"{Describe(box)} has a dashed border side {InvariantNumber.Format(length)} px long, more than {Layout.DashedBorder.MaxDashes} dashes of a {InvariantNumber.Format(width)} px border; such a side is not drawn in this version. Use a solid border.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, $"{InvariantNumber.Format(length)} px, {InvariantNumber.Format(width)} px")
+            .WithSource(box.Source);
+
     /// <summary>A list item's label that would start left of the sheet (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>).</summary>
     /// <param name="label">The label; its source is the item's.</param>
     /// <param name="left">The label's left edge on the sheet, in points (negative).</param>

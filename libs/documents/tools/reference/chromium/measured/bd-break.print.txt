@@ -1,0 +1,49 @@
+page 1 300.000 300.000
+word 1 12.000 42.812 23.250 10.500 Before #000000 Lato-Regular
+word 1 45.500 60.667 23.250 10.500 the #000000 Lato-Regular
+word 1 63.355 82.659 23.250 10.500 box. #000000 Lato-Regular
+word 1 15.750 38.031 48.000 10.500 Long #000000 Lato-Regular
+word 1 40.719 57.545 48.000 10.500 box #000000 Lato-Regular
+word 1 60.233 80.676 48.000 10.500 over #000000 Lato-Regular
+word 1 83.144 98.311 48.000 10.500 the #000000 Lato-Regular
+word 1 100.999 128.966 48.000 10.500 break, #000000 Lato-Regular
+word 1 131.654 149.771 48.000 10.500 first #000000 Lato-Regular
+word 1 152.454 201.153 48.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 49.570 69.000 10.500 Second #000000 Lato-Regular
+word 1 52.258 100.957 69.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 39.737 90.000 10.500 Third #000000 Lato-Regular
+word 1 42.425 91.124 90.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 46.483 111.000 10.500 Fourth #000000 Lato-Regular
+word 1 49.171 97.870 111.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 37.233 132.000 10.500 Fifth #000000 Lato-Regular
+word 1 39.921 88.620 132.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 38.771 153.000 10.500 Sixth #000000 Lato-Regular
+word 1 41.459 90.158 153.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 53.067 174.000 10.500 Seventh #000000 Lato-Regular
+word 1 55.755 104.454 174.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 45.176 195.000 10.500 Eighth #000000 Lato-Regular
+word 1 47.864 96.563 195.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 41.617 216.000 10.500 Ninth #000000 Lato-Regular
+word 1 44.305 93.003 216.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 41.622 237.000 10.500 Tenth #000000 Lato-Regular
+word 1 44.310 93.009 237.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 55.897 258.000 10.500 Eleventh #000000 Lato-Regular
+word 1 58.585 107.283 258.000 10.500 paragraph. #000000 Lato-Regular
+word 1 15.750 50.274 279.000 10.500 Twelfth #000000 Lato-Regular
+word 1 52.962 101.661 279.000 10.500 paragraph. #000000 Lato-Regular
+path 1 12.000 33.000 288.000 33.750 #c03020 fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff
+path 1 287.250 33.000 288.000 288.000 #c03020 f/f/f/0/0/f/f/f/0/0/e/f/f/1/0/e/f/f/1/0/d/f/f/2/0/d/f/f/2/0/c/f/f/3/0/c/f/f/3/0/b/f/f/4/0/b/f/f/4/0/b/f/f/4/0/a/f/f/5/0/a/f/f/5/0/9/f/f/6/0/9/f/f/6/0/8/f/f/7/0/8/f/f/7/0/7/f/f/8/0/7/f/f/8/0/6/f/f/9/0/6/f/f/9/0/6/f/f/9/0/5/f/f/a/0/5/f/f/a/0/4/f/f/b/0/4/f/f/b/0/3/f/f/c/0/3/f/f/c/0/2/f/f/d/0/2/f/f/d/0/2/f/f/d/0/1/f/f/e/0/1/f/f/e/0/0/f/f/f/0/0/f/f/f/0/0/e/f/f/1/0/e/f/f/1/0/d/f/f/2/0/d/f/f/2/0/d/f/f/2/0/c/f/f/3/0/c/f/f/3/0/b/f/f/4/0/b/f/f/4/0/a/f/f/5/0/a/f/f/5/0/9/f/f/6/0/9/f/f/6/0/9/f/f/6/0/8/f/f/7/0/8/f/f/7/0/7/f/f/8/0/7/f/f/8/0/6/f/f/9/0/6/f/f/9/0/5/f/f/a/0/5/f/f/a/0/4/f/f/b/0/4/f/f/b/0/4/f/f/b/0/3/f/f/c/0/3/f/f/c/0/2/f/f/d/0/2/f/f/d/0/1/f/f/e/0/1/f/f/e/0/0/f/f/f/0/0/f/f/f
+path 1 12.000 33.000 12.750 288.000 #c03020 f/f/f/0/0/f/f/f/0/0/e/f/f/1/0/e/f/f/1/0/d/f/f/2/0/d/f/f/2/0/c/f/f/3/0/c/f/f/3/0/b/f/f/4/0/b/f/f/4/0/b/f/f/4/0/a/f/f/5/0/a/f/f/5/0/9/f/f/6/0/9/f/f/6/0/8/f/f/7/0/8/f/f/7/0/7/f/f/8/0/7/f/f/8/0/6/f/f/9/0/6/f/f/9/0/6/f/f/9/0/5/f/f/a/0/5/f/f/a/0/4/f/f/b/0/4/f/f/b/0/3/f/f/c/0/3/f/f/c/0/2/f/f/d/0/2/f/f/d/0/2/f/f/d/0/1/f/f/e/0/1/f/f/e/0/0/f/f/f/0/0/f/f/f/0/0/e/f/f/1/0/e/f/f/1/0/d/f/f/2/0/d/f/f/2/0/d/f/f/2/0/c/f/f/3/0/c/f/f/3/0/b/f/f/4/0/b/f/f/4/0/a/f/f/5/0/a/f/f/5/0/9/f/f/6/0/9/f/f/6/0/9/f/f/6/0/8/f/f/7/0/8/f/f/7/0/7/f/f/8/0/7/f/f/8/0/6/f/f/9/0/6/f/f/9/0/5/f/f/a/0/5/f/f/a/0/4/f/f/b/0/4/f/f/b/0/4/f/f/b/0/3/f/f/c/0/3/f/f/c/0/2/f/f/d/0/2/f/f/d/0/1/f/f/e/0/1/f/f/e/0/0/f/f/f/0/0/f/f/f
+page 2 300.000 300.000
+word 2 15.750 64.297 23.250 10.500 Thirteenth #000000 Lato-Regular
+word 2 66.985 115.683 23.250 10.500 paragraph. #000000 Lato-Regular
+word 2 15.750 67.095 44.250 10.500 Fourteenth #000000 Lato-Regular
+word 2 69.783 118.482 44.250 10.500 paragraph. #000000 Lato-Regular
+word 2 15.750 57.844 65.250 10.500 Fifteenth #000000 Lato-Regular
+word 2 60.532 109.231 65.250 10.500 paragraph. #000000 Lato-Regular
+word 2 12.000 35.404 90.000 10.500 After #000000 Lato-Regular
+word 2 37.872 53.039 90.000 10.500 the #000000 Lato-Regular
+word 2 55.727 75.031 90.000 10.500 box. #000000 Lato-Regular
+path 2 12.000 78.000 288.000 78.750 #c03020 fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff
+path 2 287.250 12.000 288.000 78.750 #c03020 f/f/f/0/0/e/f/f/1/0/d/f/f/2/0/c/f/f/3/0/b/f/f/4/0/b/f/f/4/0/a/f/f/5/0/9/f/f/6/0/8/f/f/7/0/7/f/f/8/0/6/f/f/9/0/5/f/f/a/0/4/f/f/b/0/4/f/f/b/0/3/f/f/c/0/2/f/f/d/0/1/f/f/e/0/0/f/f/f
+path 2 12.000 12.000 12.750 78.750 #c03020 f/f/f/0/0/e/f/f/1/0/d/f/f/2/0/c/f/f/3/0/b/f/f/4/0/b/f/f/4/0/a/f/f/5/0/9/f/f/6/0/8/f/f/7/0/7/f/f/8/0/6/f/f/9/0/5/f/f/a/0/4/f/f/b/0/4/f/f/b/0/3/f/f/c/0/2/f/f/d/0/1/f/f/e/0/0/f/f/f

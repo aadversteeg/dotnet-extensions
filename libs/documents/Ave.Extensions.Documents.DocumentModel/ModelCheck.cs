@@ -622,12 +622,16 @@ public static class ModelCheck
     }
 
     /// <summary>The box of an inline group (<see cref="InlineBoxStyle"/>): padding and border widths of zero or more, as a box's;
-    /// horizontal margins of zero or more (a negative one is not drawn in this version); rounded corners as a box's.</summary>
+    /// horizontal margins of zero or more (a negative one is not drawn in this version); rounded corners as a box's; no
+    /// dashed side.</summary>
     private static Error? InlineBox(InlineBoxStyle box, InlineGroup group) =>
         Sides(new Edges(Length.Zero, box.MarginRight, Length.Zero, box.MarginLeft), "margin", group, DocumentErrorCodes.Input.Unsupported.NegativeMargin)
         ?? Sides(box.Padding, "padding", group, DocumentErrorCodes.Input.Invalid.Length)
         ?? Sides(box.Border.Widths, "border", group, DocumentErrorCodes.Input.Invalid.Length)
-        ?? Rounded(box.BorderRadius, box.Border, "an inline box", group);
+        ?? Rounded(box.BorderRadius, box.Border, "an inline box", group)
+        ?? (new[] { box.Border.Top, box.Border.Right, box.Border.Bottom, box.Border.Left }.Any(side => side.IsVisible && side.Style == BorderStyle.Dashed)
+            ? Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "A dashed border on an inline box is not drawn in this version.", box.Border.ToString(), "border-style", group)
+            : null);
 
     /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and
     /// positive, percentages more than zero and at most <see cref="ModelLimits.MaxPercent"/>.</summary>
@@ -809,12 +813,28 @@ public static class ModelCheck
             return Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "Inset and outset sides on one box are not drawn in this version.", border.ToString(), "border-style", box);
         }
 
+        // Dashed sides (Layout's DashedBorder, cases bd-*): on a box of block flow that is no table part and no page-margin
+        // box, beside visible sides of the same width and colour, each solid or dashed.
+        if (sides.Any(side => Drawn(side, BorderStyle.Dashed)))
+        {
+            var visible = sides.Where(side => side.IsVisible).ToList();
+            var where = box.Layout != LayoutAlgorithmId.Flow && box.Layout != LayoutAlgorithmId.Inline ? $"a box laid out by {box.Layout}"
+                : box.Style.TableDisplay != TableDisplay.None ? "a part of a table"
+                : box.Style.MarginBoxPlace != MarginBoxPlace.None ? "a page-margin box"
+                : !visible.All(side => side.Width == visible[0].Width && side.Color == visible[0].Color && side.Style is BorderStyle.Solid or BorderStyle.Dashed) ? "a box whose visible sides are not all of one width and one colour, solid or dashed"
+                : null;
+            if (where is not null)
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, $"A dashed border on {where} is not drawn in this version.", border.ToString(), "border-style", box);
+            }
+        }
+
         static bool IsShaded(Box part) =>
             new[] { part.Style.Border.Top, part.Style.Border.Right, part.Style.Border.Bottom, part.Style.Border.Left }.Any(side => side.IsVisible && side.Style != BorderStyle.Solid);
         var parts = box.Layout == LayoutAlgorithmId.Tracks || box.Style.TableDisplay != TableDisplay.None ? new[] { box } : [];
         var cells = box.Style.TableDisplay == TableDisplay.Row ? box.Children.OfType<Box>() : [];
         return parts.Concat(cells).FirstOrDefault(IsShaded) is { } shaded
-            ? Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "An inset or outset border on a table or a part of a table is not drawn in this version: its lines are drawn solid.",
+            ? Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "An inset, outset or dashed border on a table or a part of a table is not drawn in this version: its lines are drawn solid.",
                 shaded.Style.Border.ToString(), "border-style", shaded)
             : null;
     }

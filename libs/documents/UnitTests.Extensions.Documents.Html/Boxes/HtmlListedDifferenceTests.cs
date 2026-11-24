@@ -991,4 +991,31 @@ public class HtmlListedDifferenceTests
         HtmlCases.Difference(engine, new PrintedPages([moved])).Should().BeNull("the order of the bullets is the whole difference");
         HtmlCases.Difference(engine, chromium).Should().StartWith("page 1 path at (18, 40.5) paints 2cfc2/cfffc/fffff/cfffc/2cfc2 #000000, Chromium at (30, 54) ");
     }
+
+    /// <summary>
+    /// A dash's edge on a sample of the comparison (case <c>bd-lengths-thick</c>): the sixteenth dash of a 4 px side of
+    /// 229 px starts 184.1667 px along the side, and its two edges lie on samples of the area comparison (2.5 of 15 into a
+    /// pixel). The engine places it as Chromium writes it, 184.16667 px in single precision; Chromium's print, read back
+    /// through its page transform of .23999999, puts the edge a few millionths of a pixel to the other side of the sample.
+    /// So one sample at each edge, in each of the four rows of the side, is counted the other way; every other dash of the
+    /// 47 measured sides is equal.
+    /// </summary>
+    [Fact]
+    public void A_dash_whose_edge_lies_on_a_sample_differs_by_that_sample()
+    {
+        var (engine, chromium) = (Engine("bd-lengths-thick"), Chromium("bd-lengths-thick"));
+        var (ours, theirs) = (engine.Pages.Single().Paths, chromium.Pages.Single().Paths);
+        ours.Should().HaveSameCount(theirs);
+
+        var differing = ours.Zip(theirs).Where(pair => !pair.First.Rows.SequenceEqual(pair.Second.Rows)).ToList();
+        differing.Should().ContainSingle();
+        var (side, measured) = differing[0];
+        side.Rows.Should().HaveCount(4, "a side 4 px wide");
+        foreach (var (row, other) in side.Rows.Zip(measured.Rows))
+        {
+            Enumerable.Range(0, row.Length).Where(column => row[column] != other[column]).Should().Equal([184, 192], "the dash's two edges, 184.17 px and 192.17 px along the side");
+            new[] { row[184], row[192] }.Should().Equal('c', '3');
+            new[] { other[184], other[192] }.Should().Equal('d', '2');
+        }
+    }
 }

@@ -1,0 +1,4 @@
+div 76.500 19.500 Half
+div 78.000 21.000 Wide
+div 76.723 19.840 Shifted
+div 62.695 22.500 Moved

@@ -118,15 +118,16 @@ internal static class BoxProperties
             // outset are painted in two colours taken from the border colour (Layout's BorderShades, cases bs-*) on a block
             // box; a table's lines are drawn solid by the table's layout, an inline box's border is drawn solid, and inset and
             // outset sides on one box are not measured.
-            yield return new($"border-{side}-style", "none, hidden, solid; inset and outset on a block box that is no table part, not both on one box; any value where the width is 0", (value, facts) => value switch
+            yield return new($"border-{side}-style", "none, hidden, solid; inset and outset on a block box that is no table part, not both on one box; dashed on a block box (display: block) beside sides of its width and colour, solid or dashed; any value where the width is 0", (value, facts) => value switch
             {
                 _ when IsZero(facts.Style, $"border-{side}-width") => null,
                 CssKeyword { Name: "none" or "hidden" or "solid" } => null,
+                CssKeyword { Name: "dashed" } => DashedRefusal(facts),
                 CssKeyword { Name: "inset" or "outset" } when !facts.IsBlock => "an inset or outset border on an inline box is not drawn in this version; use solid",
                 CssKeyword { Name: "inset" or "outset" } when TableProperties.IsPart(facts) => "an inset or outset border on a table or a part of a table is not drawn in this version: its lines are drawn solid",
                 CssKeyword { Name: "inset" or "outset" } keyword when HasStyle(facts.Style, keyword.Name == "inset" ? "outset" : "inset") => "inset and outset sides on one box are not drawn in this version",
                 CssKeyword { Name: "inset" or "outset" } => null,
-                _ => "only solid, inset and outset borders are drawn; use solid",
+                _ => "only solid, inset, outset and dashed borders are drawn; use solid",
             });
             yield return new($"border-{side}-width", "a length on a block box and an inline box; 0 on a column or a column group",
                 (value, facts) => TableProperties.BorderWidth(value, facts));
@@ -336,6 +337,35 @@ internal static class BoxProperties
         return lines is ["none"] || (lines is [var one] && IsKeyword(facts.Style[PropertyRegistry.Find("border-top-style")!], "solid") && one != "none")
             ? null
             : "rounded corners (border-radius) beside border sides of different widths, colours or styles, or not solid, are not drawn in this version; give all four sides one solid border, or none";
+    }
+
+    /// <summary>Why a dashed side is not drawn on this element, or null where it is: on a block box (display: block) that is
+    /// no image, whose visible border sides are all of one width and one colour, each solid or dashed (cases <c>bd-*</c>).
+    /// Dashed sides of an inline box, an inline-block, a list item and a table or a part of one were not measured.</summary>
+    private static string? DashedRefusal(ElementFacts facts)
+    {
+        var display = facts.Style[PropertyRegistry.Display] is CssKeyword keyword ? keyword.Name : string.Empty;
+        if (facts.IsReplaced || display != "block")
+        {
+            var where = facts.IsReplaced ? "an image" : TableProperties.IsPart(facts) ? "a table or a part of a table" : display switch
+            {
+                "inline" => "an inline box",
+                "inline-block" => "an inline-block",
+                "list-item" => "a list item",
+                _ => $"a box of display: {display}",
+            };
+            return $"a dashed border on {where} is not drawn in this version; use solid";
+        }
+
+        string? Line(string side) =>
+            IsZero(facts.Style, $"border-{side}-width") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "none") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "hidden")
+                ? null
+                : $"{facts.Style[PropertyRegistry.Find($"border-{side}-width")!]} {Resolved(facts.Style[PropertyRegistry.Find($"border-{side}-color")!], facts.Style)}";
+        var lines = Sides.Select(Line).OfType<string>().Distinct(StringComparer.Ordinal).Count();
+        var styles = Sides.Where(side => Line(side) is not null).All(side => IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "solid") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "dashed"));
+        return lines == 1 && styles
+            ? null
+            : "a dashed side beside sides of another width, colour or style than solid or dashed is not drawn in this version; give the sides one width and one colour";
     }
 
     /// <summary>The alpha of a colour value; NaN for anything else.</summary>

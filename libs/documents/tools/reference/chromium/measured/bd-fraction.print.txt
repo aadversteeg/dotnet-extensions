@@ -1,0 +1,23 @@
+page 1 300.000 400.080
+word 1 12.000 57.433 23.250 10.500 Fractional #000000 Lato-Regular
+word 1 60.121 94.194 23.250 10.500 dashes. #000000 Lato-Regular
+word 1 12.750 31.991 45.000 10.500 Half #000000 Lato-Regular
+word 1 13.500 38.280 71.250 10.500 Wide #000000 Lato-Regular
+word 1 13.148 45.719 97.500 10.500 Shifted #000000 Lato-Regular
+word 1 15.340 47.428 124.500 10.500 Moved #000000 Lato-Regular
+path 1 12.000 33.000 88.500 33.750 #c03020 fff01ffe02ffd02ffd03ffc04ffb04ffb05ffa06ff907ff808ff708ff709ff60aff50aff50bff40cff30dff20eff10eff10fff
+path 1 12.000 51.750 88.500 52.500 #c03020 fff01ffe02ffd02ffd03ffc04ffb04ffb05ffa06ff907ff808ff708ff709ff60aff50aff50bff40cff30dff20eff10eff10fff
+path 1 87.750 33.000 88.500 52.500 #c03020 f/f/f/0/6/f/f/9/0/c/f/f/3/3/f/f/c/0/9/f/f/6/0/f/f/f
+path 1 12.000 33.000 12.750 52.500 #c03020 f/f/f/0/6/f/f/9/0/c/f/f/3/3/f/f/c/0/9/f/f/6/0/f/f/f
+path 1 12.000 58.500 90.000 60.000 #2060a0 ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff/ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff
+path 1 12.000 78.000 90.000 79.500 #2060a0 ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff/ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff
+path 1 88.500 58.500 90.000 79.500 #2060a0 ff/ff/ff/ff/ff/ff/00/00/00/00/00/ff/ff/ff/ff/ff/ff/00/00/00/00/00/ff/ff/ff/ff/ff/ff
+path 1 12.000 58.500 13.500 79.500 #2060a0 ff/ff/ff/ff/ff/ff/00/00/00/00/00/ff/ff/ff/ff/ff/ff/00/00/00/00/00/ff/ff/ff/ff/ff/ff
+path 1 12.750 85.500 89.250 86.250 #208040 fff01ffe02ffd02ffd03ffc04ffb04ffb05ffa06ff907ff808ff708ff709ff60aff50aff50bff40cff30dff20eff10eff10fff
+path 1 12.750 104.250 89.250 105.000 #208040 fff01ffe02ffd02ffd03ffc04ffb04ffb05ffa06ff907ff808ff708ff709ff60aff50aff50bff40cff30dff20eff10eff10fff
+path 1 88.500 85.500 89.250 105.000 #208040 f/f/f/0/6/f/f/9/0/c/f/f/3/3/f/f/c/0/9/f/f/6/0/f/f/f
+path 1 12.750 85.500 13.500 105.000 #208040 f/f/f/0/6/f/f/9/0/c/f/f/3/3/f/f/c/0/9/f/f/6/0/f/f/f
+path 1 12.750 111.000 75.750 113.250 #806020 ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff/ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff/ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff
+path 1 12.750 131.250 75.750 133.500 #806020 ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff/ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff/ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff005fffffa00afffff500ffffff
+path 1 73.500 111.000 75.750 133.500 #806020 fff/fff/fff/fff/fff/fff/000/000/fff/fff/fff/fff/fff/fff/000/000/fff/fff/fff/fff/fff/fff/000/000/fff/fff/fff/fff/fff/fff
+path 1 12.750 111.000 15.000 133.500 #806020 fff/fff/fff/fff/fff/fff/000/000/fff/fff/fff/fff/fff/fff/000/000/fff/fff/fff/fff/fff/fff/000/000/fff/fff/fff/fff/fff/fff

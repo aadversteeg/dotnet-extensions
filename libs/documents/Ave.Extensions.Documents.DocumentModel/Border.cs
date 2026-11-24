@@ -18,11 +18,15 @@ public enum BorderStyle
     /// <summary>The box looks raised: the top and left sides lighter, the bottom and right sides darker, the other way
     /// round from <see cref="Inset"/>.</summary>
     Outset,
+
+    /// <summary>A line of dashes in the side's colour (CSS Backgrounds 3 §3.2), on a block box; their length and the gaps
+    /// between them are the layout's, measured with Chromium.</summary>
+    Dashed,
 }
 
 /// <summary>
 /// One side of a box's border: a line of a width, a colour and a style (CSS Backgrounds 3 §3: <c>border-width</c>,
-/// <c>border-color</c>, <c>border-style</c> of <c>solid</c>, <c>inset</c> or <c>outset</c>). A width of zero is the
+/// <c>border-color</c>, <c>border-style</c> of <c>solid</c>, <c>inset</c>, <c>outset</c> or <c>dashed</c>). A width of zero is the
 /// initial <c>border-style: none</c>: no border, and the side takes no space. The colour is the one the box asks for; for
 /// <see cref="BorderStyle.Inset"/> and <see cref="BorderStyle.Outset"/> the layout paints the darker and the lighter
 /// colour taken from it.

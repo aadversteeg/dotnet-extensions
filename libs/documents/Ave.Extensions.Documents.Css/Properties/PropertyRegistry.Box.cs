@@ -54,12 +54,17 @@ public static partial class PropertyRegistry
 
         // Styles before widths: a border width computes to zero when its style is none (CSS Backgrounds 3 §3.3).
         // inset and outset are in because the user-agent style sheet draws hr with them (HTML Standard §15.3.11): the
-        // layout paints them in two shades as Chromium does. hidden is none, except that it wins in collapsed borders.
+        // layout paints them in two shades as Chromium does. hidden is none, except that it wins in collapsed borders. dashed
+        // is drawn on block boxes as Chromium dashes a side (the layout's DashedBorder).
         foreach (var side in Sides)
         {
-            yield return Keywords(
-                $"border-{side}-style", inherited: false, "none", ["none", "hidden", "solid", "inset", "outset"], ["dotted", "dashed", "double", "groove", "ridge"],
-                "all elements", "CSS Backgrounds 3 §3.2");
+            string[] supported = ["none", "hidden", "solid", "inset", "outset", "dashed"];
+            var name = $"border-{side}-style";
+            yield return new PropertyDefinition(name, inherited: false, new CssKeyword("none"), "all elements", string.Join(" | ", supported), PropertySupport.Supported, "CSS Backgrounds 3 §3.2",
+                reader => reader.Count == 1 && reader.Keyword(["dotted", "double", "groove", "ridge"]) is { } later
+                    ? ParsedValue.Refused($"'{name}: {later}' is not drawn in this version (dotted, double, groove and ridge borders come later); use solid or dashed")
+                    : OneKeyword(reader, name, supported, []),
+                AsSpecified);
         }
 
         foreach (var side in Sides)

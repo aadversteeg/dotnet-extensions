@@ -1,0 +1,37 @@
+page 1 300.000 400.080
+word 1 12.000 40.607 23.250 10.500 Mixed #000000 Lato-Regular
+word 1 43.295 68.810 23.250 10.500 sides. #000000 Lato-Regular
+word 1 18.000 34.763 47.250 10.500 Top #000000 Lato-Regular
+word 1 37.446 72.757 47.250 10.500 dashed, #000000 Lato-Regular
+word 1 75.445 104.808 47.250 10.500 others #000000 Lato-Regular
+word 1 18.000 39.378 62.250 10.500 solid #000000 Lato-Regular
+word 1 18.750 36.442 75.750 10.500 Left #000000 Lato-Regular
+word 1 39.125 72.053 75.750 10.500 dashed #000000 Lato-Regular
+word 1 74.741 99.794 75.750 10.500 alone #000000 Lato-Regular
+word 1 18.000 49.909 104.250 10.500 Corner #000000 Lato-Regular
+word 1 52.377 61.900 104.250 10.500 of #000000 Lato-Regular
+word 1 64.389 82.281 104.250 10.500 two #000000 Lato-Regular
+word 1 18.000 42.817 132.750 10.500 Filled #000000 Lato-Regular
+word 1 45.505 72.463 132.750 10.500 under #000000 Lato-Regular
+word 1 74.931 106.525 132.750 10.500 dashes #000000 Lato-Regular
+word 1 17.250 37.599 162.000 10.500 Thin #000000 Lato-Regular
+word 1 40.287 60.730 162.000 10.500 over #000000 Lato-Regular
+word 1 63.198 68.416 162.000 10.500 a #000000 Lato-Regular
+word 1 71.104 82.071 162.000 10.500 fill #000000 Lato-Regular
+path 1 12.000 33.000 114.000 34.500 #2060a0 ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff/ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff
+rect 1 12.000 55.500 114.000 57.000 #2060a0
+rect 1 112.500 33.000 114.000 57.000 #2060a0
+rect 1 12.000 33.000 13.500 57.000 #2060a0
+path 1 12.000 63.000 14.250 84.000 #c03020 fff/fff/fff/fff/fff/fff/000/aaa/fff/fff/fff/fff/fff/555/555/fff/fff/fff/fff/fff/aaa/000/fff/fff/fff/fff/fff/fff
+path 1 12.000 90.000 112.500 91.500 #208040 ffffff0002fffffd0005fffffa0007fffff80009fffff6000cfffff3000efffff1001fffffe0003fffffc0006fffff90008fffff7000afffff5000dfffff2000ffffff/ffffff0002fffffd0005fffffa0007fffff80009fffff6000cfffff3000efffff1001fffffe0003fffffc0006fffff90008fffff7000afffff5000dfffff2000ffffff
+path 1 12.000 90.000 13.500 112.500 #208040 ff/ff/ff/ff/ff/ff/00/00/ff/ff/ff/ff/ff/ff/00/00/ff/ff/ff/ff/ff/ff/00/00/ff/ff/ff/ff/ff/ff
+rect 1 12.000 118.500 114.000 142.500 #f0e0a0
+path 1 12.000 118.500 114.000 120.000 #c03020 ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff/ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff
+path 1 12.000 141.000 114.000 142.500 #c03020 ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff/ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff0000ffffff
+path 1 112.500 118.500 114.000 142.500 #c03020 ff/ff/ff/ff/ff/ff/00/00/55/ff/ff/ff/ff/ff/aa/00/00/aa/ff/ff/ff/ff/ff/55/00/00/ff/ff/ff/ff/ff/ff
+path 1 12.000 118.500 13.500 142.500 #c03020 ff/ff/ff/ff/ff/ff/00/00/55/ff/ff/ff/ff/ff/aa/00/00/aa/ff/ff/ff/ff/ff/55/00/00/ff/ff/ff/ff/ff/ff
+rect 1 12.000 148.500 112.500 171.000 #e0f0d0
+path 1 12.000 148.500 112.500 149.250 #303030 fff00eff10eff10dff20dff20cff30cff30bff40aff50aff509ff609ff608ff708ff707ff806ff906ff905ffa05ffa04ffb03ffc03ffc02ffd02ffd01ffe01ffe00fff
+path 1 12.000 170.250 112.500 171.000 #303030 fff00eff10eff10dff20dff20cff30cff30bff40aff50aff509ff609ff608ff708ff707ff806ff906ff905ffa05ffa04ffb03ffc03ffc02ffd02ffd01ffe01ffe00fff
+path 1 111.750 148.500 112.500 171.000 #303030 f/f/f/0/0/9/f/f/6/0/3/f/f/c/0/0/c/f/f/3/0/6/f/f/9/0/0/f/f/f
+path 1 12.000 148.500 12.750 171.000 #303030 f/f/f/0/0/9/f/f/6/0/3/f/f/c/0/0/c/f/f/3/0/6/f/f/9/0/0/f/f/f

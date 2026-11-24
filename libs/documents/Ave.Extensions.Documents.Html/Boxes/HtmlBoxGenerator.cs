@@ -1077,11 +1077,12 @@ public static partial class HtmlBoxGenerator
             // whatever the colour is (Chromium 159: black and gray both print #9a9a9a and #eeeeee, an explicit black
             // #545454 and #a8a8a8; cases bs-widths, hr-default).
             BorderSide Border(string side) =>
-                Value(element, $"border-{side}-style") is CssKeyword { Name: "solid" or "inset" or "outset" } keyword && Value(element, $"border-{side}-width") is CssLength { Value.Points: > 0 } width
+                Value(element, $"border-{side}-style") is CssKeyword { Name: "solid" or "inset" or "outset" or "dashed" } keyword && Value(element, $"border-{side}-width") is CssLength { Value.Points: > 0 } width
                 && Value(element, $"border-{side}-color") is { } color && ColorOf(BoxProperties.Resolved(color, element.Style)) is { } drawn
                     ? keyword.Name switch
                     {
                         "solid" => new BorderSide(width.Value, drawn),
+                        "dashed" => new BorderSide(width.Value, drawn, BorderStyle.Dashed),
                         var shaded => new BorderSide(width.Value, color is CssKeyword { Name: "currentcolor" } ? new Color(0xee, 0xee, 0xee) : drawn, shaded == "inset" ? BorderStyle.Inset : BorderStyle.Outset),
                     }
                     : BorderSide.None;

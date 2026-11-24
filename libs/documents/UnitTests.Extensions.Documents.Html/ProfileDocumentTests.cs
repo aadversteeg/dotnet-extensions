@@ -108,6 +108,13 @@ public class ProfileDocumentTests
         Line("corners, a radius on an image, a row, a row group, a column or a caption, with `overflow` other than `visible`, and");
         Line("beside border sides of different widths, colours or styles.");
         Line();
+        Line("`border-style: dashed` on a block box: each dashed side a row of dashes three times the width long below 3 px and");
+        Line("twice the width from 3 px, flush with both ends of the side, the gaps evened out, as Chromium prints them (cases");
+        Line("`bd-*`); beside it solid sides of the same width and colour or none. Refused: dashed on an inline box, an");
+        Line("inline-block, a list item and a table or a part of one, beside sides of another width or colour, with a radius, and a");
+        Line("dashed side shorter than two dashes and a gap (Chromium draws it as a solid line). `dotted`, `double`, `groove` and");
+        Line("`ridge` are refused: they are not drawn yet.");
+        Line();
         Line("`width` on a table part: a table is drawn at `auto`, a length or a percentage of its container (its border box; never");
         Line("narrower than its content needs, and refused where wider than its container); a cell (`td`, `th`) takes a length, of");
         Line("its content box, which its column takes: the widest in the automatic layout, the first row's in the fixed layout,");

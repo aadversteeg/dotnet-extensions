@@ -25,5 +25,6 @@ public static class DocumentLayout
         Paginator.Paginate(environment, document)
             .OnSuccessBind(pages => ListMarkers.OutsideSheet(pages) is { } outside ? Result<ValueList<PageFragment>, Error>.Failure(outside) : Result<ValueList<PageFragment>, Error>.Success(pages))
             .OnSuccessBind(pages => RoundedBox.CutBorders(pages) is { } cut ? Result<ValueList<PageFragment>, Error>.Failure(cut) : Result<ValueList<PageFragment>, Error>.Success(pages))
+            .OnSuccessBind(pages => DashedBorder.Check(pages) is { } dashed ? Result<ValueList<PageFragment>, Error>.Failure(dashed) : Result<ValueList<PageFragment>, Error>.Success(pages))
             .OnSuccessMap(pages => PagePainter.Paint(document.Metadata, pages));
 }
