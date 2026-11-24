@@ -122,8 +122,8 @@ public static partial class PropertyRegistry
         yield return InitialKeyword("font-size-adjust", true, "none", [], true, "all elements and text", "CSS Fonts 5 §2.1");
         yield return InitialKeyword("font-optical-sizing", true, "auto", ["none"], false, "all elements and text", "CSS Fonts 4 §2.6");
         yield return InitialKeyword("font-language-override", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.4");
-        yield return Keywords("font-synthesis-weight", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");
-        yield return Keywords("font-synthesis-style", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");
+        yield return Keywords("font-synthesis-weight", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: under none the nearest face is taken plainly, under auto a missing face is an error)");
+        yield return Keywords("font-synthesis-style", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: under none the nearest face is taken plainly, under auto a missing face is an error)");
         yield return Keywords("font-synthesis-small-caps", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");
 
         // Sizes and layout features outside the supported set.

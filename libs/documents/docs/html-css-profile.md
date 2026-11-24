@@ -51,8 +51,8 @@ names nothing.
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |
 | `font-style` | yes | `normal` | `normal \| italic` | CSS Fonts 4 §2.4 |
 | `font-synthesis-small-caps` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
-| `font-synthesis-style` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
-| `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
+| `font-synthesis-style` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: under none the nearest face is taken plainly, under auto a missing face is an error) |
+| `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: under none the nearest face is taken plainly, under auto a missing face is an error) |
 | `font-weight` | yes | `400` | `normal \| bold \| bolder \| lighter \| <number [1,1000]>` | CSS Fonts 4 §2.2 |
 | `height` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
 | `line-height` | yes | `normal` | `normal \| <number [0,∞]> \| <length-percentage [0,∞]>` | CSS Inline 3 §5.1; CSS 2.1 §10.8.1 |
@@ -466,7 +466,13 @@ the box whatever its vertical alignment, unclipped, under the body; the box keep
 There are no system fonts. A family name the document writes is taken from its `@font-face` rules (the first TrueType
 source, through the caller's resolver), then from the caller's fonts (`HtmlRenderOptions.Fonts`). The first family of a
 `font-family` list that has any face is the family of the text, and it must have the computed weight and style
-exactly: no nearest face, no synthesis, no fallback per character.
+exactly: no synthesis, no fallback per character. Where a browser would synthesise bold or italic, the face is
+refused ("… Give the face, or write font-synthesis: none to print in the nearest face."). Under
+`font-synthesis-weight: none` a face of another weight is taken, under `font-synthesis-style: none` one of another
+style, plainly, the nearest by CSS Fonts 4 §5.2 (the style first, then the weight: from 400 to 500 the heavier ones up
+to 500, then the lighter, then those above 500; below 400 the lighter first; above 500 the heavier first), as Chromium
+159 prints it (cases `fs-none-regular-only`, `fs-none-regular-bold`: 600 and 800 take a 700 face, 500 and 300 a 400
+face, italic the upright face).
 
 A browser takes a font of the system for a generic family. Here the caller maps them in
 `HtmlRenderOptions.GenericFamilies`, and a mapped name is looked up as a written name is (`@font-face` rules first):

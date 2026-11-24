@@ -19,7 +19,9 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <c>font-family</c> list that has any face is the family (§5.1); a generic family is the family the caller's
 /// <see cref="GenericFamilies"/> map it to, looked up as a written name is, and one they do not map is refused, as a
 /// browser would take a font of the system there; within the family the face must have the computed weight and style
-/// exactly: there is no nearest-weight match and no synthesis (§5.2 step 4), so a missing face is refused, not replaced.
+/// exactly, or, where <c>font-synthesis-weight</c> or <c>font-synthesis-style</c> is <c>none</c>, be the nearest face of
+/// another weight or style (§5.2 step 4, <see cref="Nearest"/>); there is no synthesis, so a face a browser would
+/// synthesise is refused, not replaced.
 /// The initial value (the registry's one value, which inherit, unset and initial pass on as it is; a written
 /// "Times New Roman" is a value of its own) is the name "Times New Roman", as Chromium computes it, and then
 /// <see cref="GenericFamilies.Standard"/>. A <c>@font-face</c> rule takes part when its family is the name and its
@@ -30,7 +32,7 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
 {
     private readonly Dictionary<FontFaceRule, Result<TrueTypeFont, Error>> _loaded = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<string, Result<TrueTypeFont, Error>> _files = new(StringComparer.Ordinal);
-    private readonly Dictionary<(string Families, bool Initial, int Weight, bool Italic), Result<TrueTypeFont, Error>> _matched = [];
+    private readonly Dictionary<(string Families, bool Initial, Wanted Wanted), Result<TrueTypeFont, Error>> _matched = [];
     private readonly GenericFamilies _generics = options.GenericFamilies ?? GenericFamilies.None;
     private readonly List<TrueTypeFont> _used = [];
 
@@ -46,13 +48,12 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
         var value = style[PropertyRegistry.FontFamily];
         var families = value is CssList list ? list.Items : [];
         var initial = ReferenceEquals(value, PropertyRegistry.FontFamily.Initial);
-        var weight = style[PropertyRegistry.FontWeight] is CssNumber number ? (int)number.Value : 400;
-        var italic = style[PropertyRegistry.FontStyle] is CssKeyword { Name: "italic" };
+        var wanted = WantedOf(style);
         var text = string.Join(", ", families.Select(Name));
-        var key = (text, initial, weight, italic);
+        var key = (text, initial, wanted);
         if (!_matched.TryGetValue(key, out var match))
         {
-            match = initial ? Initial(text, weight, italic) : Find(families, text, weight, italic);
+            match = initial ? Initial(text, wanted) : Find(families, text, wanted);
             _matched[key] = match;
             if (match.IsSuccess && !_used.Contains(match.Value))
             {
@@ -84,8 +85,7 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
         }
 
         var families = value is CssList list ? list.Items : [];
-        var weight = style[PropertyRegistry.FontWeight] is CssNumber number ? (int)number.Value : 400;
-        var italic = style[PropertyRegistry.FontStyle] is CssKeyword { Name: "italic" };
+        var wanted = WantedOf(style);
         var text = $"'font-family: {string.Join(", ", families.Select(Name))}'";
         var reached = false;
         foreach (var family in families)
@@ -96,7 +96,7 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
                 CssKeyword keyword => _generics.For(keyword.Name).Name,
                 _ => null,
             };
-            if (name is null || Named(name, weight, italic) is not { IsSuccess: true } found)
+            if (name is null || Named(name, wanted) is not { IsSuccess: true } found)
             {
                 continue;
             }
@@ -114,9 +114,9 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
 
     /// <summary>The face of the initial value: the name "Times New Roman" as a written name, then the family
     /// <see cref="GenericFamilies.Standard"/> maps it to.</summary>
-    private Result<TrueTypeFont, Error> Initial(string text, int weight, bool italic)
+    private Result<TrueTypeFont, Error> Initial(string text, Wanted wanted)
     {
-        if (Named(text, weight, italic) is { } named)
+        if (Named(text, wanted) is { } named)
         {
             return named;
         }
@@ -124,19 +124,19 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
         var (name, property) = _generics.For("initial");
         return name is null
             ? Refused($"'font-family' is not set here, and its initial value needs a family: set {property} in the options, or give '{text}' in a @font-face rule or in the fonts of the options (a browser would take a font of the system; there are no system fonts).", text)
-            : Named(name, weight, italic) ?? Refused($"The family '{name}' that {property} maps the initial value of 'font-family' to has no face: give it in a @font-face rule or in the fonts of the options.", text);
+            : Named(name, wanted) ?? Refused($"The family '{name}' that {property} maps the initial value of 'font-family' to has no face: give it in a @font-face rule or in the fonts of the options.", text);
     }
 
     /// <summary>The face of the first family of a written list that has any (a generic family: the family it is mapped
     /// to), or the refusal.</summary>
-    private Result<TrueTypeFont, Error> Find(ValueList<CssValue> families, string text, int weight, bool italic)
+    private Result<TrueTypeFont, Error> Find(ValueList<CssValue> families, string text, Wanted wanted)
     {
         foreach (var family in families)
         {
             switch (family)
             {
                 case CssString { Value: var name }:
-                    if (Named(name, weight, italic) is { } named)
+                    if (Named(name, wanted) is { } named)
                     {
                         return named;
                     }
@@ -146,7 +146,7 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
                     var (mapped, property) = _generics.For(keyword);
                     return mapped is null
                         ? Refused($"'font-family: {text}' needs a family for the generic family '{keyword}': set {property} in the options (a browser would take a font of the system; there are no system fonts).", text)
-                        : Named(mapped, weight, italic) ?? Refused($"The family '{mapped}' that {property} maps '{keyword}' to has no face: give it in a @font-face rule or in the fonts of the options.", text);
+                        : Named(mapped, wanted) ?? Refused($"The family '{mapped}' that {property} maps '{keyword}' to has no face: give it in a @font-face rule or in the fonts of the options.", text);
             }
         }
 
@@ -156,24 +156,102 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
     /// <summary>The face of a family name, from the document's <c>@font-face</c> rules first, then the caller's fonts;
     /// null when neither has the family; an error when its faces do not have the weight and style, or its font file is
     /// missing or broken.</summary>
-    private Result<TrueTypeFont, Error>? Named(string name, int weight, bool italic)
+    private Result<TrueTypeFont, Error>? Named(string name, Wanted wanted)
     {
+        var (weight, italic) = (wanted.Weight, wanted.Italic);
         var rules = faces.Where(face => string.Equals(face.Family, name, StringComparison.OrdinalIgnoreCase)).ToList();
         if (rules.Count > 0)
         {
             // CSS Fonts 4 §4.2: later rules for the same descriptors win.
-            var face = rules.LastOrDefault(rule => rule.WeightRange.Low <= weight && weight <= rule.WeightRange.High && (rule.Style == "italic") == italic);
+            var face = rules.LastOrDefault(rule => rule.WeightRange.Low <= weight && weight <= rule.WeightRange.High && (rule.Style == "italic") == italic)
+                ?? Nearest([.. Enumerable.Reverse(rules).Select(rule => (rule.WeightRange.Low, rule.WeightRange.High, rule.Style == "italic", rule))], wanted);
             return face is null
                 ? Result<TrueTypeFont, Error>.Failure(new Error(HtmlStyleErrorCodes.Unsupported.Font,
-                        $"The @font-face rules of '{name}' have no face of weight {weight}{(italic ? " italic" : string.Empty)}; the nearest face is not taken and none is synthesised.")
+                        $"The @font-face rules of '{name}' have no face of weight {weight}{(italic ? " italic" : string.Empty)}; the nearest face is not taken and none is synthesised.{SynthesisHint}")
                     .With(ErrorMetadataKeys.Value, name).WithSource(sourceName, rules[0].Position))
                 : Load(face);
         }
 
         var supplied = options.Fonts.Fonts.IsDefault ? [] : options.Fonts.Fonts;
-        return supplied.Any(font => font is not null && string.Equals(font.Names.Family, name, StringComparison.OrdinalIgnoreCase))
-            ? options.Fonts.Find(name, new FontWeight(weight), italic ? FontStyle.Italic : FontStyle.Normal)
-            : null;
+        if (!supplied.Any(font => font is not null && string.Equals(font.Names.Family, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        var found = options.Fonts.Find(name, new FontWeight(weight), italic ? FontStyle.Italic : FontStyle.Normal);
+        if (found.IsSuccess || supplied.Any(font => font is null))
+        {
+            return found;
+        }
+
+        var family = supplied.Where(font => string.Equals(font.Names.Family, name, StringComparison.OrdinalIgnoreCase))
+            .Select(font => (font.Metrics.WeightClass, font.Metrics.WeightClass, font.Metrics.IsItalic, font)).ToList();
+        return Nearest(family, wanted) is { } nearest
+            ? Result<TrueTypeFont, Error>.Success(nearest)
+            : Result<TrueTypeFont, Error>.Failure(new Error(found.Error.Code, found.Error.Message + SynthesisHint, found.Error.Metadata));
+    }
+
+    /// <summary>What a refusal of a missing weight or style adds: the way out a browser's synthesis would take.</summary>
+    private const string SynthesisHint = " Give the face, or write font-synthesis: none to print in the nearest face.";
+
+    /// <summary>
+    /// The face an element asks for: its computed weight and style, and whether <c>font-synthesis-weight</c> and
+    /// <c>font-synthesis-style</c> are <c>none</c>.
+    /// </summary>
+    private readonly record struct Wanted(int Weight, bool Italic, bool AnyWeight, bool AnyStyle);
+
+    private static Wanted WantedOf(ComputedStyle style) => new(
+        style[PropertyRegistry.FontWeight] is CssNumber number ? (int)number.Value : 400,
+        style[PropertyRegistry.FontStyle] is CssKeyword { Name: "italic" },
+        style[SynthesisWeight] is CssKeyword { Name: "none" },
+        style[SynthesisStyle] is CssKeyword { Name: "none" });
+
+    private static readonly PropertyDefinition SynthesisWeight = PropertyRegistry.Find("font-synthesis-weight")!;
+    private static readonly PropertyDefinition SynthesisStyle = PropertyRegistry.Find("font-synthesis-style")!;
+
+    /// <summary>
+    /// The nearest face of a family when it has none of the weight and style asked for (CSS Fonts 4 §5.2, step 4), as
+    /// Chromium 159 prints it under <c>font-synthesis: none</c>, plainly (cases <c>fs-none-regular-only</c>,
+    /// <c>fs-none-regular-bold</c>): taken only where the browser would otherwise synthesise, so a face of another style
+    /// only under <c>font-synthesis-style: none</c>, and one of another weight only under <c>font-synthesis-weight:
+    /// none</c>; otherwise null, and the face is refused. The style first: the faces of the style asked for, else of the
+    /// other one. Then the weight, among those: one whose range holds it; else, for a weight from 400 to 500, the heavier
+    /// ones up to 500 lightest first, then the lighter ones heaviest first, then those above 500 lightest first; below 400,
+    /// the lighter ones heaviest first, then the heavier ones lightest first; above 500, the heavier ones lightest first,
+    /// then the lighter ones heaviest first. Of faces at the same place, the first given.
+    /// </summary>
+    private static T? Nearest<T>(List<(int Low, int High, bool Italic, T Face)> family, Wanted wanted)
+        where T : class
+    {
+        var styled = family.Where(face => face.Italic == wanted.Italic).ToList();
+        if (styled.Count == 0 && wanted.AnyStyle)
+        {
+            styled = [.. family.Where(face => face.Italic != wanted.Italic)];
+        }
+
+        var exact = styled.FirstOrDefault(face => face.Low <= wanted.Weight && wanted.Weight <= face.High);
+        if (exact.Face is not null)
+        {
+            return exact.Face;
+        }
+
+        if (styled.Count == 0 || !wanted.AnyWeight)
+        {
+            return null;
+        }
+
+        var w = wanted.Weight;
+        var points = styled.Select(face => (Weight: Math.Clamp(w, face.Low, face.High), face.Face)).ToList();
+        var order = w is >= 400 and <= 500
+            ? points.Where(point => point.Weight >= w && point.Weight <= 500).OrderBy(point => point.Weight)
+                .Concat(points.Where(point => point.Weight < w).OrderByDescending(point => point.Weight))
+                .Concat(points.Where(point => point.Weight > 500).OrderBy(point => point.Weight))
+            : w < 400
+                ? points.Where(point => point.Weight <= w).OrderByDescending(point => point.Weight)
+                    .Concat(points.Where(point => point.Weight > w).OrderBy(point => point.Weight))
+                : points.Where(point => point.Weight >= w).OrderBy(point => point.Weight)
+                    .Concat(points.Where(point => point.Weight < w).OrderByDescending(point => point.Weight));
+        return order.Select(point => point.Face).FirstOrDefault();
     }
 
     /// <summary>A refusal of the family list, placed by <see cref="Match"/>.</summary>

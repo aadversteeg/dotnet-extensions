@@ -188,7 +188,13 @@ public class ProfileDocumentTests
         Line("There are no system fonts. A family name the document writes is taken from its `@font-face` rules (the first TrueType");
         Line("source, through the caller's resolver), then from the caller's fonts (`HtmlRenderOptions.Fonts`). The first family of a");
         Line("`font-family` list that has any face is the family of the text, and it must have the computed weight and style");
-        Line("exactly: no nearest face, no synthesis, no fallback per character.");
+        Line("exactly: no synthesis, no fallback per character. Where a browser would synthesise bold or italic, the face is");
+        Line("refused (\"… Give the face, or write font-synthesis: none to print in the nearest face.\"). Under");
+        Line("`font-synthesis-weight: none` a face of another weight is taken, under `font-synthesis-style: none` one of another");
+        Line("style, plainly, the nearest by CSS Fonts 4 §5.2 (the style first, then the weight: from 400 to 500 the heavier ones up");
+        Line("to 500, then the lighter, then those above 500; below 400 the lighter first; above 500 the heavier first), as Chromium");
+        Line("159 prints it (cases `fs-none-regular-only`, `fs-none-regular-bold`: 600 and 800 take a 700 face, 500 and 300 a 400");
+        Line("face, italic the upright face).");
         Line();
         Line("A browser takes a font of the system for a generic family. Here the caller maps them in");
         Line("`HtmlRenderOptions.GenericFamilies`, and a mapped name is looked up as a written name is (`@font-face` rules first):");
