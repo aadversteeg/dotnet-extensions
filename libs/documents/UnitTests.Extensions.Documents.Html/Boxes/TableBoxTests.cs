@@ -256,7 +256,6 @@ public class TableBoxTests
     [InlineData("<table><col style=\"border-left:1pt solid #000\"><tr><td>a</td></tr></table>", "", "border-left-width", "0.75pt")]
     [InlineData("<table><colgroup style=\"width:10pt\"><col></colgroup><tr><td>a</td></tr></table>", "", "width", "10pt")]
     [InlineData("<table><tr><td style=\"width:50%\">a</td></tr></table>", "", "width", "50%")]
-    [InlineData("<table><tr><td style=\"vertical-align:baseline\">a</td></tr></table>", "", "vertical-align", "baseline")]
     [InlineData("<table><caption style=\"width:40pt\">c</caption><tr><td>a</td></tr></table>", "", "width", "40pt")]
     [InlineData("<table><tbody style=\"height:40pt\"><tr><td>a</td></tr></tbody></table>", "", "height", "40pt")]
     [InlineData("<table><caption style=\"height:40pt\">c</caption><tr><td>a</td></tr></table>", "", "height", "40pt")]
@@ -520,6 +519,20 @@ public class TableBoxTests
         }
 
         throw new InvalidOperationException("the page holds no table");
+    }
+
+    /// <summary>A cell's <c>vertical-align: baseline</c>, on the cell, from <c>valign</c> or from its row, is drawn as top, as
+    /// Chromium prints it (cases <c>tv-baseline-sizes</c>, <c>tv-baseline-height</c>).</summary>
+    [Theory]
+    [InlineData("<table><tr><td style=\"vertical-align:baseline\">a</td></tr></table>")]
+    [InlineData("<table><tr><td valign=baseline>a</td></tr></table>")]
+    [InlineData("<table><tr valign=baseline><td>a</td></tr></table>")]
+    [InlineData("<table><tbody style=\"vertical-align:baseline\"><tr><td>a</td></tr></tbody></table>")]
+    public void A_cell_aligned_on_the_baseline_is_drawn_at_the_top(string body)
+    {
+        var cell = Parts(Parts(Parts(Table(body)).First()).First()).First();
+
+        cell.Style.VerticalAlign.Should().Be(VerticalAlign.Top);
     }
 
     /// <summary>The number of lines of a page.</summary>

@@ -178,7 +178,7 @@ internal static class BoxProperties
         yield return new("white-space-collapse", "collapse, preserve, preserve-breaks, break-spaces (a tab where spaces are preserved is refused at its text)", (_, _) => null);
         yield return new("text-wrap-mode", "wrap, nowrap", (_, _) => null);
         yield return new("unicode-bidi", "both values: isolate has no effect in left-to-right text, the only direction", (_, _) => null);
-        yield return new("vertical-align", "baseline; top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
+        yield return new("vertical-align", "baseline (on a table cell drawn as top); top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
             (value, facts) => TableProperties.VerticalAlign(value, facts) ?? (IsKeyword(value, "baseline") || facts.IsBlock ? null : "vertical alignment of inline boxes is not drawn in this version"));
 
         // CSS Text Decoration 3 §2, CSS Text Decoration 4 §2.10.4: the lines go to the text of the element and of every

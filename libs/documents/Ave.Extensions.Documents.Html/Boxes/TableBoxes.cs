@@ -473,7 +473,11 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>The vertical alignment of a box's content in its height, for a table cell and a page-margin box (CSS 2.1
-        /// §17.5.3, CSS Paged Media 3 §5.3): middle, bottom, else top.</summary>
+        /// §17.5.3, CSS Paged Media 3 §5.3): middle, bottom, else top. A cell's <c>baseline</c>, the initial value, is top as
+        /// Chromium prints it: each cell's first line at its own content top, whatever the font sizes and top paddings of
+        /// the row, in both border models and in a row taller by a height (cases <c>tv-baseline-sizes</c>,
+        /// <c>tv-baseline-height</c>: first baselines 25.5, 31.5 and 36 pt in one row, where a baseline alignment puts
+        /// all at 36 pt). A browser window aligns the baselines.</summary>
         private VerticalAlign VerticalAlignOf(StyledElement element) => Value(element, "vertical-align") switch
         {
             CssKeyword { Name: "middle" } => VerticalAlign.Middle,

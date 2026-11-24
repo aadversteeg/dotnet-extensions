@@ -110,6 +110,10 @@ public class ProfileDocumentTests
         Line("is drawn on the cells of it that have none of their own (the row's first, then the group's, the column's, the column");
         Line("group's), as Chromium prints it; a table's background is drawn in both models, under its border box.");
         Line();
+        Line("`vertical-align: baseline` on a table cell, the initial value, is drawn as `top`, as Chromium prints it: each cell's");
+        Line("first line at its own content top, whatever the font sizes and paddings in the row (cases `tv-baseline-sizes`,");
+        Line("`tv-baseline-height`). A browser window aligns the cells' first baselines instead.");
+        Line();
         Line("### Supported at the initial value only");
         Line();
         Line("What the layout always does: a declaration that sets one of these to its initial value is accepted, so resets and");

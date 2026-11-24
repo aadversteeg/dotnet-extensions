@@ -117,9 +117,10 @@ internal static class TableProperties
         }
         : null;
 
-    /// <summary>The alignment of a cell's content (CSS 2.1 §17.5.3): top, middle and bottom; no effect on the other parts.</summary>
+    /// <summary>The alignment of a cell's content (CSS 2.1 §17.5.3): top, middle and bottom, and baseline, which is drawn as
+    /// top (<c>HtmlBoxGenerator</c>, VerticalAlignOf); no effect on the other parts.</summary>
     public static string? VerticalAlign(CssValue value, ElementFacts facts) =>
-        Part(facts) != TablePart.Cell || value is CssKeyword { Name: "top" or "middle" or "bottom" } ? null : "only the top, middle and bottom alignment of a cell's content is drawn";
+        Part(facts) != TablePart.Cell || value is CssKeyword { Name: "top" or "middle" or "bottom" or "baseline" } ? null : "only the top, middle, bottom and baseline alignment of a cell's content is drawn";
 
     /// <summary>
     /// The table properties. <c>border-collapse</c> on a table: <c>collapse</c> and <c>separate</c>, the initial value and
