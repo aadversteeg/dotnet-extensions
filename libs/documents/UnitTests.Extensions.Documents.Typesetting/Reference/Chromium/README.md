@@ -17,4 +17,4 @@ split back into paragraphs:
 To measure again: copy the four `.html` files into `tools/reference/chromium/cases/`, run
 `pwsh -NoProfile -File tools/reference/chromium/measure.ps1 t-line-ends-left t-line-ends-right t-line-ends-center t-line-ends-justify`,
 copy `out/t-line-ends-*.print.txt` here, and remove the cases from `cases/` again (they are not part of the layout
-reference set that `MeasuredReferenceFilesTests` counts).
+reference set that `MeasuredReferenceFilesTests` checks).

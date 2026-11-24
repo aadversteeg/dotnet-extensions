@@ -986,8 +986,9 @@ prints 594.96 × 841.92 pt; at the tie 75 pt prints 75.12, case `h-page-size-hun
 `li-page-break`). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
 area reaches past the sheet (cases `h-page-size-*`, `h-page-area-*`, `h-page-margin-*`).
 
-**The status file.** `tools/reference/chromium/html-status.txt` has one line per reference case, written by
-`UnitTests.Extensions.Documents.Html/Boxes/CaseStatusTests.cs` (with `DOCUMENTS_UPDATE_HTML_STATUS=1`): the case runs
+**The status file.** Each reference case has a status file, `tools/reference/chromium/measured/<case>.status.txt`, of
+one line, written by `UnitTests.Extensions.Documents.Html/Boxes/CaseStatusTests.cs` (with
+`DOCUMENTS_UPDATE_HTML_STATUS=1`): the case runs
 through the whole HTML path unchanged and its pages are compared with every file measured for the case
 (`HtmlCases`, where each comparison names its file and bound; `HtmlCases.Bound` is 0.1 pt):
 
@@ -1044,13 +1045,16 @@ column of the element that made it); `<case> listed <test>: <difference>` for a
 difference of layout already listed and pinned by that test of the code front-end, which must stay the same
 difference; or `<case> open <difference>` for a known difference, engine against Chromium, that is not fixed yet (no
 pull request while one is open). The status is the line's second field. A case that lays out and differs otherwise
-fails the test, and so does a status that changes without the file; writing the file anew makes no case `open` that
-the committed file does not already name. To read it: `cut -d' ' -f2 html-status.txt | sort | uniq -c` gives the
-picture; grep a code or a property for the cases it holds back.
+fails the test, and so does a status that changes without its file, a case without a status file and a status file
+without a case; writing the files anew makes no case `open` or `listed` that its committed file does not already name.
+The test prints how many cases have each status. To read them: `cat measured/*.status.txt | cut -d' ' -f2 | sort | uniq -c`
+gives the picture; grep a code or a property in `measured/*.status.txt` for the cases it holds back. A case's status is a
+file of its own, as its pins are (`measured/<case>.pins.txt`, `MeasuredReferenceFilesTests`), so two changes that add
+different cases touch no file in common.
 
 The whole documents (`tools/reference/chromium/documents`: the timesheet on one page, a normal month and a long
-month, and the invoice) are compared by the same code, against their own files: `documents/measured/` and the status
-file `documents/html-status.txt`, one line per document, pinned by the same test and written by the same variable.
+month, and the invoice) are compared by the same code, against their own files in `documents/measured/`, with a status
+file `documents/measured/<document>.status.txt` each, pinned by the same test and written by the same variable.
 
 ## Known limits (all stages)
 

@@ -68,7 +68,27 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
-`out/*.txt` over it after a deliberate re-measurement.
+`out/*.txt` over it after a deliberate re-measurement, and update the line counts of the case's pin file with them.
+
+A case's facts live in its own files: its source `cases/<case>.html`, its measured files `measured/<case>.*.txt`, its
+pins `measured/<case>.pins.txt` and its status `measured/<case>.status.txt`. No file lists the cases, so two changes
+that add different cases touch no file in common.
+
+- `<case>.pins.txt`: one line `file lines` per measured file of the case, in ordinal order, with the number of lines
+  it was measured with (`MeasuredReferenceFilesTests`, `UnitTests.Extensions.Documents.Layout`: a missing or changed
+  file, a file without a pin, a pin without a file and a case without a pin file fail it);
+- `<case>.status.txt`: the case's one status line, `<case> <status> …` (`CaseStatusTests`,
+  `UnitTests.Extensions.Documents.Html`; docs/architecture.md, "The status file"). A `listed` case names in that line
+  the test that pins its difference.
+
+To add a case:
+
+1. write `cases/<case>.html` and measure it: `pwsh -NoProfile -File measure.ps1 <case>`;
+2. copy its `out/<case>.*.txt` to `measured/`;
+3. write its pin file: run `MeasuredReferenceFilesTests` with `DOCUMENTS_WRITE_NEW_PINS=1` (it writes the pin file of
+   each case that has none, and changes none that is there);
+4. write its status file: run `CaseStatusTests` with `DOCUMENTS_UPDATE_HTML_STATUS=1`, and read the line it wrote;
+5. run both test projects without the variables, and commit the case's files with the change.
 
 The cases load their fonts from the family's `assets/fonts` by relative URL. Where a font file does not load, Chromium
 prints the case with a fallback font without a word (a copy of this folder without `assets/fonts` beside it printed
@@ -205,7 +225,7 @@ Chromium snaps more than layout units when it prints, which a case must allow fo
 The cases are small on purpose: each shows one rule. `documents/` holds whole documents, written the way an author
 writes HTML and CSS for print, that the HTML/CSS front-end is measured against as a whole: which parts of them it lays
 out as Chromium prints them, and which it refuses. They are measured with the same tool and kept the same way, in a
-folder of their own so that the case tests, which walk `cases/` and `measured/` and pin every case's files, stay apart
+folder of their own so that the case tests, which walk `cases/` and `measured/` and check every case's pins, stay apart
 from them:
 
 ```
@@ -218,8 +238,8 @@ from its start rounded to a whole pixel, where layout rounds the width up. `prin
 cut there (see "Print positions").
 
 The HTML front-end reads the documents as it reads the cases, with the same comparison (`CaseStatusTests`,
-`UnitTests.Extensions.Documents.Html`): one status line per document in `documents/html-status.txt`, in the form of
-`html-status.txt`. A document stays `open` with its first difference, or `refused` with its first refusal, until the
+`UnitTests.Extensions.Documents.Html`): one status file per document, `documents/measured/<document>.status.txt`, in the
+form of a case's. A document stays `open` with its first difference, or `refused` with its first refusal, until the
 front-end lays it out as Chromium prints it.
 
 | Document | What it is | Chromium's print |
