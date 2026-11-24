@@ -1812,6 +1812,10 @@ public class MeasuredReferenceFilesTests
         ["ib-fraction.lines.txt"] = 5,
         ["ib-fraction.print.txt"] = 21,
         ["ib-fraction.words.txt"] = 15,
+        ["ib-kerning.boxes.txt"] = 1,
+        ["ib-kerning.lines.txt"] = 4,
+        ["ib-kerning.print.txt"] = 18,
+        ["ib-kerning.words.txt"] = 14,
         ["ib-margin.boxes.txt"] = 1,
         ["ib-margin.lines.txt"] = 2,
         ["ib-margin.print.txt"] = 16,
@@ -3146,7 +3150,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(770);
+        cases.Should().HaveCount(771);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

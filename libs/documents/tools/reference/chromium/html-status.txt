@@ -445,6 +445,7 @@ ib-break-space equal
 ib-code-kbd equal
 ib-empty-alone equal
 ib-fraction equal
+ib-kerning equal
 ib-margin equal
 ib-nested equal
 ib-only-boxes equal
