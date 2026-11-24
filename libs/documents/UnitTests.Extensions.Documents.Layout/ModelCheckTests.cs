@@ -153,6 +153,17 @@ public class ModelCheckTests
     }
 
     [Fact]
+    public void A_header_cell_with_a_scope_outside_the_three_is_refused()
+    {
+        var cell = Paragraph(1, "x") with { Role = new SemanticRole.TableHeaderCellRole((TableHeaderScope)3) };
+
+        var error = Refused(Document(cell));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Table);
+        error.Message.Should().Contain("heads its column, its row or both");
+    }
+
+    [Fact]
     public void Boxes_nested_to_the_limit_are_laid_out_and_one_level_more_is_refused()
     {
         static Box Nested(int levels)

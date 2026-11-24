@@ -10,7 +10,7 @@
     1. Playwright container: npm ci, then node measure.mjs --step print (Chromium's print of every case), with font
        hinting off (--font-render-hinting=none, set in measure.mjs: see README.md, "The reference").
     2. Reference tools image (../tools.Dockerfile): extract.sh (pdftotext -bbox, rectangles.py, positions.py, ink.py,
-       area.py: the width of each page's page area, tool versions).
+       links.py, area.py: the width of each page's page area, tool versions).
     3. Playwright container: node measure.mjs --step boxes (box sizes per case, in a window as wide as the page area
        step 2 read), then --step words (words.txt per case, versions.txt).
 

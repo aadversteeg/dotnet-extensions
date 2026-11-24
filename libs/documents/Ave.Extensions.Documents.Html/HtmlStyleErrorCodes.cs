@@ -95,6 +95,34 @@ public static class HtmlStyleErrorCodes
         /// per text that holds any: Value (the first such code point), Offset (its place in the text), Count (how many
         /// the text holds), SourceFile, SourceLine, SourceColumn (where the text starts).</summary>
         public static readonly ErrorCode Character = _ / "Character";
+
+        /// <summary>An element's language (<c>lang</c>, or <c>xml:lang</c> in the XML namespace) that differs from its
+        /// parent's and is not written: not a well-formed language tag (THE RULE FOR A LANGUAGE TAG, <c>LanguageTags</c>), or
+        /// empty (the language is unknown, which a PDF/UA-1 <c>/Lang</c> cannot say: veraPDF rule 7.2-29 asks a tag). The
+        /// element is drawn, with its parent's language. Metadata: Property (<c>lang</c>), Value (the tag), SourceFile,
+        /// SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode Language = _ / "Language";
+
+        /// <summary>An <c>a</c> element with an <c>href</c> whose link is not made: its URL by THE RULE FOR A LINK'S URL IN
+        /// HTML (<c>LinkUrls</c>) names no element of the document (<c>#…</c>), is relative without an <c>http</c> or <c>https</c>
+        /// base, or is refused by THE RULE FOR A LINK'S URI (<c>LinkUris</c>: a scheme other than http, https, mailto and tel,
+        /// such as javascript, file or data); or the link lies inside another link, or outside a line of text. Metadata:
+        /// Property (<c>href</c>, or <c>title</c> for a description text may not hold), Value (the href), SourceFile,
+        /// SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode Link = _ / "Link";
+
+        /// <summary>An inline element with its own background, border, padding or horizontal margin (an inline box) where this
+        /// version does not draw one: inside a link, around a link or an image, or a link with a box of its own. The element is
+        /// drawn without its box (a link inside a box or a link with a box: as plain inline content, an image: not drawn).
+        /// Metadata: Property, Value, SourceFile, SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode InlineBox = _ / "InlineBox";
+
+        /// <summary>A <c>meta</c> element whose <c>content</c> the document's metadata does not take, by THE RULE FOR A
+        /// DOCUMENT'S METADATA IN HTML (<c>HtmlMetadata</c>): longer than its limit, or holding a control character or a
+        /// character XML does not allow. The document is drawn without that author or description. Metadata: Property
+        /// (<c>content</c>), Value (the <c>name</c>, <c>author</c> or <c>description</c>), SourceFile, SourceLine,
+        /// SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode Metadata = _ / "Metadata";
     }
 
     /// <summary>Options that cannot be used, a caller's error: a family name of <c>GenericFamilies</c> that is empty, holds a

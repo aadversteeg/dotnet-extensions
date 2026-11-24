@@ -1,0 +1,5 @@
+page 1 300.000 300.000
+word 1 18.000 54.692 28.500 10.500 Relative #000000 Lato-Regular
+word 1 57.387 73.578 28.500 10.500 link #0000ee Lato-Regular
+word 1 76.270 99.302 28.500 10.500 here. #000000 Lato-Regular
+rect 1 57.387 29.250 73.582 30.000 #0000ee

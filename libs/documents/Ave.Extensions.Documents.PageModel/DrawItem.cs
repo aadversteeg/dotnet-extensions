@@ -145,6 +145,9 @@ public sealed record StructureStart(NodeId Node, SemanticRole Role, SourceLocati
 {
     /// <summary>For a table cell, the columns and rows it covers; <see cref="CellSpan.Single"/> otherwise.</summary>
     public CellSpan Span { get; init; } = CellSpan.Single;
+
+    /// <summary>The natural language of the node's content (<see cref="LanguageTags"/>), or null when it is its parent's.</summary>
+    public string? Language { get; init; }
 }
 
 /// <summary>Ends the content started by the <see cref="StructureStart"/> with the same node id.</summary>
@@ -182,6 +185,30 @@ public sealed record ClipEnd : DrawItem
     /// <summary>The one end marker.</summary>
     public static ClipEnd Instance { get; } = new();
 }
+
+/// <summary>
+/// The area a reader clicks to follow a link: one part of a link on one line, or an image inside the link (ISO 32000-1
+/// §12.5.6.5, the <c>/Rect</c> of a link annotation). It draws nothing. It stands inside the structure marker of its link
+/// (a <see cref="StructureStart"/> whose role is <see cref="SemanticRole.LinkRole"/>, which carries the target and the
+/// description), with that marker as the innermost open structure marker and no artifact open (<see cref="PageModelRules"/>):
+/// a link in an artifact, such as a page header or a repeated header row, has no area, and its text is only drawn. The PDF
+/// back-end writes one link annotation per area; the raster back-end draws nothing for it.
+/// </summary>
+/// <param name="Link">The link's node.</param>
+/// <param name="Area">The area, in page coordinates.</param>
+public sealed record LinkArea(NodeId Link, Rect Area) : DrawItem;
+
+/// <summary>
+/// The place a link inside the document leads to (a link whose target is <see cref="LinkTarget.Node"/>): the top left
+/// of the first fragment of <see cref="Node"/>, on the page that fragment is on. It draws nothing. The layout writes one
+/// for every node a link leads to, once in the document, at the node's first fragment (a box's border box, an inline
+/// group's first line part), outside every artifact; every link to a node needs that node's anchor
+/// (<see cref="PageModelRules"/>). The PDF back-end writes it as the destination of each link to the node; the raster
+/// back-end draws nothing for it.
+/// </summary>
+/// <param name="Node">The node the place belongs to.</param>
+/// <param name="At">The top left of its first fragment, in page coordinates.</param>
+public sealed record Anchor(NodeId Node, Point At) : DrawItem;
 
 /// <summary>The kinds of artifact (ISO 32000-1 §14.8.2.2.2, Table 330, the <c>/Type</c> and <c>/Subtype</c> entries).</summary>
 public enum ArtifactKind

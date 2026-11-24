@@ -1,0 +1,39 @@
+page 1 300.000 199.920
+word 1 18.000 40.879 28.500 10.500 Read #000000 Lato-Regular
+word 1 43.570 58.738 28.500 10.500 the #0000ee Lato-Regular
+word 1 61.425 94.128 28.500 10.500 second #0000ee Lato-Regular
+word 1 96.816 143.036 28.500 10.500 paragraph #0000ee Lato-Regular
+word 1 145.727 155.503 28.500 10.500 or #000000 Lato-Regular
+word 1 157.970 173.137 28.500 10.500 the #000000 Lato-Regular
+word 1 175.828 209.964 28.500 10.500 marked #0000ee Lato-Regular
+word 1 212.436 240.608 28.500 10.500 words #0000ee Lato-Regular
+word 1 243.297 273.574 28.500 10.500 below. #000000 Lato-Regular
+word 1 18.000 40.759 47.250 10.500 Filler #000000 Lato-Regular
+word 1 43.226 61.438 47.250 10.500 text #000000 Lato-Regular
+word 1 64.121 82.664 47.250 10.500 that #000000 Lato-Regular
+word 1 85.347 115.161 47.250 10.500 stands #000000 Lato-Regular
+word 1 117.849 158.122 47.250 10.500 between #000000 Lato-Regular
+word 1 160.810 175.977 47.250 10.500 the #000000 Lato-Regular
+word 1 178.665 194.856 47.250 10.500 link #000000 Lato-Regular
+word 1 197.544 214.501 47.250 10.500 and #000000 Lato-Regular
+word 1 217.189 228.020 47.250 10.500 its #000000 Lato-Regular
+word 1 230.708 260.517 47.250 10.500 target. #000000 Lato-Regular
+word 1 18.000 51.820 66.000 10.500 Second #000000 Lato-Regular
+word 1 54.508 103.113 66.000 10.500 paragraph, #000000 Lato-Regular
+word 1 105.801 120.968 66.000 10.500 the #000000 Lato-Regular
+word 1 123.656 150.992 66.000 10.500 target #000000 Lato-Regular
+word 1 153.675 163.199 66.000 10.500 of #000000 Lato-Regular
+word 1 165.687 180.854 66.000 10.500 the #000000 Lato-Regular
+word 1 183.542 201.660 66.000 10.500 first #000000 Lato-Regular
+word 1 204.343 223.012 66.000 10.500 link. #000000 Lato-Regular
+word 1 18.000 42.691 84.750 10.500 More #000000 Lato-Regular
+word 1 45.379 63.591 84.750 10.500 text #000000 Lato-Regular
+word 1 66.058 86.449 84.750 10.500 with #000000 Lato-Regular
+word 1 89.145 123.280 84.750 10.500 marked #000000 Lato-Regular
+word 1 125.753 153.924 84.750 10.500 words #000000 Lato-Regular
+word 1 156.614 166.379 84.750 10.500 as #000000 Lato-Regular
+word 1 169.067 184.234 84.750 10.500 the #000000 Lato-Regular
+word 1 186.922 219.624 84.750 10.500 second #000000 Lato-Regular
+word 1 222.312 252.121 84.750 10.500 target. #000000 Lato-Regular
+rect 1 43.570 29.250 143.039 30.000 #0000ee
+rect 1 175.828 29.250 240.609 30.000 #0000ee

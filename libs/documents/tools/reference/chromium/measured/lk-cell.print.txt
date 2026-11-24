@@ -1,0 +1,18 @@
+page 1 300.000 199.920
+word 1 18.000 34.753 28.500 10.500 See #000000 Lato-Regular
+word 1 37.441 52.608 28.500 10.500 the #000000 Lato-Regular
+word 1 55.301 70.720 28.500 10.500 cell #0000ee Lato-Regular
+word 1 73.411 81.790 28.500 10.500 in #000000 Lato-Regular
+word 1 84.478 99.645 28.500 10.500 the #000000 Lato-Regular
+word 1 102.333 125.217 28.500 10.500 table #000000 Lato-Regular
+word 1 127.905 158.182 28.500 10.500 below. #000000 Lato-Regular
+word 1 56.648 90.469 48.000 10.500 Second #000000 Lato-Regular
+word 1 93.157 108.576 48.000 10.500 cell #000000 Lato-Regular
+word 1 18.000 38.543 55.500 10.500 First #000000 Lato-Regular
+word 1 41.226 56.645 55.500 10.500 cell #000000 Lato-Regular
+word 1 56.648 85.224 63.000 10.500 Target #000000 Lato-Regular
+word 1 87.692 115.863 63.000 10.500 words #000000 Lato-Regular
+word 1 118.551 126.930 63.000 10.500 in #000000 Lato-Regular
+word 1 129.618 144.785 63.000 10.500 the #000000 Lato-Regular
+word 1 147.473 162.892 63.000 10.500 cell #000000 Lato-Regular
+rect 1 55.301 29.250 70.723 30.000 #0000ee

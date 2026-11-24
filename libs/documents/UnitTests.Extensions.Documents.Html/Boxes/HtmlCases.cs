@@ -25,8 +25,9 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// words with their colour and face, painted rectangles with their colour, images), its filled rectangles read back by a
 /// second script (<c>&lt;case&gt;.lines.txt</c>), the lines it clips around the glyphs' ink (<c>&lt;case&gt;.ink.txt</c>,
 /// <see cref="Clips"/>: both files hold such a line whole), its words read back by poppler (<c>&lt;case&gt;.words.txt</c>), and the
-/// sizes of the boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>). Each comparison below names its file and its
-/// bound.
+/// sizes of the boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>), and its link annotations
+/// (<c>&lt;case&gt;.links.txt</c>, <see cref="LinkDifference"/>; a case without the file has none). Each comparison below
+/// names its file and its bound.
 /// </summary>
 internal static class HtmlCases
 {
@@ -112,6 +113,7 @@ internal static class HtmlCases
         ["fr-row-later-page-padding-overflows-two-cells-pad-6"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
         ["fr-row-later-page-padding-overflows-three-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
         ["fr-continued-pad-past-taller-than-page"] = "What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding",
+        ["lk-header-row"] = "A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -160,6 +162,9 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
         HtmlStyleErrorCodes.Unsupported.List.ToString(),
         FontErrorCodes.GlyphMissing.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Link.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Language.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Metadata.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
@@ -280,7 +285,8 @@ internal static class HtmlCases
         var difference = missed ?? Difference(engine, chromium, LineTops(boxes.Value))
             ?? RectangleDifference(engine, chromium, lines)
             ?? PopplerDifference(pages.Value, engine, Rows(folder, name, "words"), LineTops(boxes.Value))
-            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"));
+            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"))
+            ?? LinkDifference(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points);
         return (difference, Listed.TryGetValue(name, out var listed)) switch
         {
             (null, false) => "equal",
@@ -353,6 +359,129 @@ internal static class HtmlCases
         }
 
         return cut;
+    }
+
+    /// <summary>A link annotation of a print, or a link area of the engine's pages: its page, its rectangle in points with
+    /// the origin at the top left of the page, and its target as <c>links.txt</c> writes it (<c>uri &lt;URI&gt;</c>, or
+    /// <c>dest &lt;page&gt; &lt;top&gt;</c> for a link inside the document: the destination's page and its top from the top of
+    /// that page; for the engine the place of the target's anchor, <see cref="Anchor"/>).</summary>
+    internal sealed record PrintedLink(int Page, double X0, double Y0, double X1, double Y1, string Target);
+
+    /// <summary>The link annotations of Chromium's print, from <c>&lt;case&gt;.links.txt</c> (README of
+    /// <c>tools/reference/chromium</c>, read back by <c>links.py</c>: <c>page x0 y0 x1 y1 kind target</c>, page by page in
+    /// the order of each page's <c>/Annots</c>); none for a case without the file, whose print has no annotation.</summary>
+    internal static List<PrintedLink> Links(CaseFolder folder, string name)
+    {
+        var path = Measured(folder, name) + ".links.txt";
+        return File.Exists(path)
+            ? [.. File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ', 7))
+                .Select(parts => new PrintedLink(int.Parse(parts[0], CultureInfo.InvariantCulture), Number(parts[1]), Number(parts[2]), Number(parts[3]), Number(parts[4]), $"{parts[5]} {parts[6]}"))]
+            : [];
+    }
+
+    /// <summary>The engine's link areas (<see cref="LinkArea"/>), page by page in drawing order, each with the target of its
+    /// link (the <see cref="SemanticRole.LinkRole"/> of the structure bracket it lies in, <see cref="StructureStart"/>).</summary>
+    internal static List<PrintedLink> Links(PageDocument pages)
+    {
+        var targets = new Dictionary<NodeId, string>();
+        var links = new List<PrintedLink>();
+        var anchors = pages.Pages.SelectMany((page, index) => page.Items.OfType<Anchor>().Select(anchor => (anchor.Node, Place: $"dest {index + 1} {Of(anchor.At.Y)}")))
+            .ToDictionary(anchor => anchor.Node, anchor => anchor.Place);
+        foreach (var (page, number) in pages.Pages.Select((page, index) => (page, index + 1)))
+        {
+            foreach (var item in page.Items)
+            {
+                switch (item)
+                {
+                    case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.UriTarget uri } } start:
+                        targets[start.Node] = $"uri {uri.Value}";
+                        break;
+                    case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget node } } start:
+                        targets[start.Node] = anchors.TryGetValue(node.Value, out var place) ? place : $"dest none {node.Value}";
+                        break;
+                    case LinkArea area:
+                        var rect = area.Area;
+                        links.Add(new PrintedLink(number, rect.Origin.X, rect.Origin.Y, rect.Origin.X + rect.Size.Width, rect.Origin.Y + rect.Size.Height, targets[area.Link]));
+                        break;
+                }
+            }
+        }
+
+        return links;
+    }
+
+    /// <summary>One CSS pixel in points: how far an edge of a link area may be from Chromium's. Chromium writes each edge of
+    /// a link's rectangle at a whole CSS pixel (measured, case <c>lk-one-line</c>: the word "link" from 45.703 to 61.894 pt
+    /// gets the rectangle 45.75 to 62.25 pt), the engine at its exact place (ISO 32000-1 §12.5.2: <c>/Rect</c> is any rectangle), so
+    /// an edge may differ by up to half a pixel each way of the rounding; the bound is one pixel.</summary>
+    public const double LinkBound = 0.75;
+
+    /// <summary>
+    /// One CSS pixel in points: how far the top of a link's destination may be from Chromium's, once Chromium's offset is
+    /// taken out. Chromium writes a destination at the target's place in the coordinates of the page area, one page margin
+    /// above and left of where the target stands on the page (measured: case <c>lk-later-heading</c>, a heading at the top
+    /// of page 2's page area, 18 pt from the page's top, gets the top 0), and at a whole CSS pixel (case <c>lk-cell</c>: the
+    /// target's content area starts 37.875 pt from the page's top, Chromium's top is 37.5 pt with the margin added back);
+    /// the engine writes the exact place. So the top Chromium gives, plus the page's top margin, may be up to one pixel above
+    /// the engine's.
+    /// </summary>
+    public const double DestinationBound = 0.75;
+
+    /// <summary>
+    /// The first difference between the engine's link areas and the link annotations of Chromium's print
+    /// (<c>links.txt</c>), or null: the same number of rectangles, in the same order, each on the same page, every edge within
+    /// <see cref="LinkBound"/>, and the same target: a URI compared whole, a destination on the same page with its top
+    /// within <see cref="DestinationBound"/> of Chromium's plus <paramref name="marginTop"/>.
+    /// </summary>
+    /// <param name="pages">The engine's pages.</param>
+    /// <param name="chromium">Chromium's links.</param>
+    /// <param name="marginTop">The page's top margin, in points: Chromium's offset of every destination's top.</param>
+    public static string? LinkDifference(PageDocument pages, IReadOnlyList<PrintedLink> chromium, double marginTop = 0)
+    {
+        var engine = Links(pages);
+        for (var index = 0; index < Math.Max(engine.Count, chromium.Count); index++)
+        {
+            if (index >= engine.Count)
+            {
+                var missing = chromium[index];
+                return $"link {index + 1}: Chromium's rectangle on page {missing.Page} at ({Of(missing.X0)}, {Of(missing.Y0)}) to {missing.Target} has none in the engine, which has {engine.Count} (links.txt)";
+            }
+
+            var ours = engine[index];
+            if (index >= chromium.Count)
+            {
+                return $"link {index + 1}: the engine's rectangle on page {ours.Page} at ({Of(ours.X0)}, {Of(ours.Y0)}) to {ours.Target} is not in Chromium's print, which has {chromium.Count} (links.txt)";
+            }
+
+            var theirs = chromium[index];
+            var at = $"link {index + 1} on page {ours.Page}";
+            var found = (ours.Page != theirs.Page ? $"link {index + 1} is on page {ours.Page}, Chromium's on page {theirs.Page}" : null)
+                ?? Edge(at, "x0", ours.X0, theirs.X0) ?? Edge(at, "y0", ours.Y0, theirs.Y0) ?? Edge(at, "x1", ours.X1, theirs.X1) ?? Edge(at, "y1", ours.Y1, theirs.Y1)
+                ?? TargetDifference(at, ours.Target, theirs.Target, marginTop);
+            if (found is not null)
+            {
+                return found + " (links.txt)";
+            }
+        }
+
+        return null;
+
+        static string? Edge(string at, string what, double ours, double theirs) =>
+            Math.Abs(ours - theirs) > LinkBound + 1e-9 ? $"{at}: {what} {Of(ours)}, Chromium {Of(theirs)}" : null;
+    }
+
+    private static string? TargetDifference(string at, string ours, string theirs, double marginTop)
+    {
+        if (ours.Split(' ') is ["dest", var page, var top] && theirs.Split(' ') is ["dest", var theirPage, var theirTop])
+        {
+            var chromiumTop = Number(theirTop) + marginTop;
+            return page != theirPage ? $"{at} leads to page {page}, Chromium's to page {theirPage}"
+                : !double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var engineTop) || Math.Abs(engineTop - chromiumTop) > DestinationBound + 1e-9
+                    ? $"{at} leads to the top {top} of page {page}, Chromium's to {Of(chromiumTop)} (its {theirTop} plus the top margin {Of(marginTop)})"
+                    : null;
+        }
+
+        return ours != theirs ? $"{at} leads to {ours}, Chromium's to {theirs}" : null;
     }
 
     /// <summary>
@@ -761,7 +890,7 @@ internal static class HtmlCases
 
         var line = cell.Position.Line;
         var place = cells.Where(other => other.Position.Line == line).ToList().IndexOf(cell);
-        var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role == SemanticRole.TableHeaderCell)).ElementAtOrDefault(place);
+        var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role is SemanticRole.TableHeaderCellRole)).ElementAtOrDefault(place);
         return box is null ? (null, $"{at} has no cell box on any page") : (box, null);
     }
 
@@ -789,7 +918,7 @@ internal static class HtmlCases
         var (element, role) = (named[0], RoleOf(named[0]));
         var line = element.Position.Line;
         var peers = elements.Where(other => other.Position.Line == line && RoleOf(other) == role && !MakesNoBox(other)).ToList();
-        var candidates = Boxes(root).Where(box => box.Source.Line == line && box.Role == role).ToList();
+        var candidates = Boxes(root).Where(box => box.Source.Line == line && (box.Role == role || (box.Role is SemanticRole.TableHeaderCellRole && role is SemanticRole.TableHeaderCellRole))).ToList();
         return candidates.Count == peers.Count
             ? (candidates[peers.IndexOf(element)], null)
             : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role");

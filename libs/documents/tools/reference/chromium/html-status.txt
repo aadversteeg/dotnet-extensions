@@ -205,7 +205,7 @@ dl-skip equal
 dl-space equal
 dl-theano equal
 dl-whose equal
-dw-half equal
+dw-half open link 1: the engine's rectangle on page 1 at (26.016, 24.75) to uri https://example.com/ is not in Chromium's print, which has 0 (links.txt)
 dw-runs equal
 dw-spacing equal
 f-lato-10 equal
@@ -421,6 +421,26 @@ hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve a
 hw-pre-line equal
 hw-pre-wrap equal
 hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
+ib-align equal
+ib-alone equal
+ib-background equal
+ib-border equal
+ib-break-align equal
+ib-break-fraction equal
+ib-break-nested equal
+ib-break-page equal
+ib-break-space equal
+ib-code-kbd equal
+ib-empty-alone equal
+ib-fraction equal
+ib-margin equal
+ib-nested equal
+ib-only-boxes equal
+ib-origin-cell equal
+ib-origin-margin equal
+ib-origin-page equal
+ib-padding equal
+ib-space equal
 ii-align equal
 ii-baseline equal
 ii-breaks equal
@@ -475,6 +495,22 @@ li-page-break equal
 li-symbol-sizes equal
 li-types refused Documents.Layout.MarkerOutsideSheet -32.461 at 13
 li-ul-levels equal
+lk-cell equal
+lk-empty equal
+lk-fragment equal
+lk-header-row listed A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page: link 2: Chromium's rectangle on page 1 at (45, 18.75) to uri https://example.com/head has none in the engine, which has 1 (links.txt)
+lk-image equal
+lk-javascript refused Documents.Html.Unsupported.Link href: javascript:alert(1) at 2:11
+lk-larger-run equal
+lk-later-heading equal
+lk-mail-tel equal
+lk-missing refused Documents.Html.Unsupported.Link href: #nowhere at 2:14
+lk-one-line equal
+lk-page-break equal
+lk-relative refused Documents.Html.Unsupported.Link href: other.html at 2:13
+lk-same-page equal
+lk-top equal
+lk-two-lines equal
 ls-align equal
 ls-letters equal
 ls-values equal
@@ -686,7 +722,7 @@ twd-fraction equal
 twd-sum equal
 twd-table-narrow listed A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 reads 'one text with more words next 1 one text with more words next 2 one text with more words next 3 one text with more words after', Chromium 'one text with more words next 1 one text with more words next 2 one text with more words next 3 onetext with more words after' (print.txt)
 twd-table-wide equal
-va-decorated equal
+va-decorated open link 1: the engine's rectangle on page 1 at (66.551, 45.082) to uri https://example.com/ is not in Chromium's print, which has 0 (links.txt)
 va-elements equal
 va-length equal
 va-nested refused Documents.Html.Unsupported.Value vertical-align: super at 4:31

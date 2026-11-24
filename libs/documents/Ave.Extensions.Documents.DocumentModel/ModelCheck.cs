@@ -24,7 +24,7 @@ public static class ModelCheck
     /// <returns>The same document, or the first problem.</returns>
     public static Result<StyledDocument, Error> Check(StyledDocument document)
     {
-        var problem = Page(document.Page) ?? Nodes(document);
+        var problem = Page(document.Page) ?? Nodes(document) ?? Targets(document);
         return problem is null ? Result<StyledDocument, Error>.Success(document) : Result<StyledDocument, Error>.Failure(problem.Value);
     }
 
@@ -72,19 +72,19 @@ public static class ModelCheck
     /// and where each row of page-margin boxes is (<see cref="MarginBoxes"/>).</summary>
     private static Error? Nodes(StyledDocument document)
     {
-        var pending = new Stack<(Node Node, int Depth, Place Place, bool Measured, int Lists)>();
-        pending.Push((document.Root, 0, Place.Other, false, 0));
+        var pending = new Stack<(Node Node, int Depth, Place Place, bool Measured, int Lists, bool InLink, bool InBox)>();
+        pending.Push((document.Root, 0, Place.Other, false, 0, false, false));
         foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
         {
             if (area is not null)
             {
-                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea, false, 0));
+                pending.Push((area.Content, 0, area.Height is null ? Place.Other : Place.FixedArea, false, 0, false, false));
             }
         }
 
         while (pending.Count > 0)
         {
-            var (node, depth, place, measured, lists) = pending.Pop();
+            var (node, depth, place, measured, lists, inLink, inBox) = pending.Pop();
             if (depth > ModelLimits.MaxNestingDepth)
             {
                 return Problem(DocumentErrorCodes.Input.Invalid.TooDeep, $"Boxes may nest at most {ModelLimits.MaxNestingDepth} levels deep.",
@@ -93,6 +93,7 @@ public static class ModelCheck
 
             var problem = node switch
             {
+                Box box when inBox => Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An image inside an inline group with a box of its own (InlineGroup.Box) is not drawn in this version; put the image outside the group.", box.Layout.ToString(), "layout", box),
                 Box box => Box(box) ?? Sizes(box, measured),
                 TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
@@ -100,6 +101,7 @@ public static class ModelCheck
                 MarkerSymbol symbol => Text(symbol.Style, symbol) ?? (System.Enum.IsDefined(symbol.Shape)
                     ? null
                     : Problem(DocumentErrorCodes.Input.Invalid.List, "A marker symbol is a disc, a circle or a square.", symbol.Shape.ToString(), "shape", symbol)),
+                InlineGroup group => Group(group, place, inLink, inBox),
                 _ => null,
             };
             if (problem is not null)
@@ -107,9 +109,23 @@ public static class ModelCheck
                 return problem;
             }
 
-            if (node is Box paragraph && paragraph.Layout == LayoutAlgorithmId.Inline && AtomicInlines(paragraph) is { } atomic)
+            if (node is Box paragraph && paragraph.Layout == LayoutAlgorithmId.Inline && AtomicInlines(paragraph.Children) is { } atomic)
             {
                 return atomic;
+            }
+
+            if (node is InlineGroup inGroup && AtomicInlines(inGroup.Children) is { } atomicInGroup)
+            {
+                return atomicInGroup;
+            }
+
+            if (node is InlineGroup grouping)
+            {
+                // A group is one level deeper than its parent, so groups nest no deeper than boxes do.
+                foreach (var child in grouping.Children)
+                {
+                    pending.Push((child, depth + 1, Place.InLine, measured, lists, inLink || grouping.Role is SemanticRole.LinkRole, inBox || grouping.Box is not null));
+                }
             }
 
             if (node is Box placed && MarginBoxes(placed, place) is { } marginBoxes)
@@ -129,13 +145,87 @@ public static class ModelCheck
                 // cell is the next level. Runs and images are content of their box, no level of their own; a box among the runs of
                 // an inline box (an image in a line) is one level deeper, as any child box.
                 var isRow = parent.Style.TableDisplay == TableDisplay.Row;
-                var childPlace = parent.Layout == LayoutAlgorithmId.MarginBoxes ? Place.InMarginBoxes : Place.Other;
+                var childPlace = parent.Layout == LayoutAlgorithmId.MarginBoxes ? Place.InMarginBoxes
+                    : parent.Layout == LayoutAlgorithmId.Inline ? Place.InLine
+                    : Place.Other;
                 var childMeasured = measured || parent.Layout == LayoutAlgorithmId.Tracks || parent.Layout == LayoutAlgorithmId.MarginBoxes;
                 foreach (var child in parent.Children)
                 {
-                    var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } && !isRow;
-                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace, childMeasured, parent.Role is SemanticRole.ListRole ? lists + 1 : lists));
+                    var isLevel = child is Box { Style.TableDisplay: TableDisplay.None } or InlineGroup && !isRow;
+                    pending.Push((child, isLevel ? depth + 1 : depth, childPlace, childMeasured, parent.Role is SemanticRole.ListRole ? lists + 1 : lists, false, false));
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// THE RULE FOR A LINK INSIDE THE DOCUMENT: a link's node (<see cref="LinkTarget.Node"/>) is a box or an inline group
+    /// of the body, not inside a box with the <see cref="SemanticRole.Decorative"/> role (an artifact: a reader skips it,
+    /// so no link may lead into it), and not in a page area (a page header or footer is drawn on every page, a pagination
+    /// artifact; it has no one place). A run is no target: an inline element a link leads to is an inline group (a span),
+    /// so its place is that of its group's first line part. At most <see cref="ModelLimits.MaxLinkTargets"/> nodes are
+    /// targets. Refused at the link, under <c>Input.Invalid.Link</c>. One more pass over the body and the page areas, with an
+    /// explicit stack; the first pass has bounded their depth.
+    /// </summary>
+    private static Error? Targets(StyledDocument document)
+    {
+        var targets = new HashSet<NodeId>();
+        var links = new List<(InlineGroup Link, NodeId Target)>();
+        var pending = new Stack<(Node Node, bool IsBody)>();
+        foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
+        {
+            if (area is not null)
+            {
+                pending.Push((area.Content, false));
+            }
+        }
+
+        pending.Push((document.Root, true));
+        while (pending.Count > 0)
+        {
+            var (node, isBody) = pending.Pop();
+            if (node is Box box && box.Role == SemanticRole.Decorative)
+            {
+                isBody = false;
+            }
+
+            if (isBody && node is Box _ or InlineGroup _)
+            {
+                targets.Add(node.Id);
+            }
+
+            if (node is InlineGroup { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget target } } link)
+            {
+                links.Add((link, target.Value));
+            }
+
+            var children = node switch
+            {
+                Box parent => parent.Children,
+                InlineGroup group => group.Children,
+                _ => [],
+            };
+            foreach (var child in children)
+            {
+                pending.Push((child, isBody));
+            }
+        }
+
+        var distinct = new HashSet<NodeId>();
+        foreach (var (link, target) in links)
+        {
+            if (!targets.Contains(target))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Link, $"The link is refused: it leads to node {target}, which is no box or inline group of the body outside every artifact.",
+                    target.ToString(), "target", link);
+            }
+
+            if (distinct.Add(target) && distinct.Count > ModelLimits.MaxLinkTargets)
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Link, $"The links lead to more than {ModelLimits.MaxLinkTargets} nodes.",
+                    ModelLimits.MaxLinkTargets.ToString(CultureInfo.InvariantCulture), "target", link);
             }
         }
 
@@ -161,8 +251,20 @@ public static class ModelCheck
             ?? (box.Role is SemanticRole.HeadingRole { Level: < 1 or > 6 } heading
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.HeadingLevel, "A heading level must be 1–6.", Number(heading.Level), "level", box)
                 : null)
+            ?? (box.Role is SemanticRole.TableHeaderCellRole header && !System.Enum.IsDefined(header.Scope)
+                ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Table, "A header cell heads its column, its row or both.", Number((int)header.Scope), "scope", box)
+                : null)
+            ?? (box.Role is SemanticRole.LinkRole or SemanticRole.SpanRole
+                ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, $"The role {box.Role} belongs to an inline group, not to a box.", box.Role.ToString()!, "role", box)
+                : null)
+            ?? (box.Language is { } language && !LanguageTags.IsWellFormed(language)
+                ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Language, LanguageMessage("a box"), language, "language", box)
+                : null)
             ?? (style.Text is { } strut ? Text(strut, box) : null);
     }
+
+    private static string LanguageMessage(string what) =>
+        $"The language of {what} is not a well-formed language tag (BCP 47 syntax, at most {LanguageTags.MaxLength} characters).";
 
     /// <summary>
     /// A box's width, minimum and maximum width (CSS Sizing 3 §3.1–3.2): a length of 0 or more and at most
@@ -242,10 +344,10 @@ public static class ModelCheck
     /// Fragmentation 3 §3.1, §3.2), and an atomic inline never breaks, so a value there could only be lost. The child box
     /// is one nesting level deeper, as any child box.
     /// </summary>
-    private static Error? AtomicInlines(Box paragraph)
+    private static Error? AtomicInlines(ValueList<Node> children)
     {
         var initial = BoxStyle.Initial;
-        foreach (var child in paragraph.Children)
+        foreach (var child in children)
         {
             if (child is Box other && other.Layout != LayoutAlgorithmId.Image)
             {
@@ -274,6 +376,9 @@ public static class ModelCheck
 
         /// <summary>A child of a box laid out by <see cref="LayoutAlgorithmId.MarginBoxes"/>.</summary>
         InMarginBoxes,
+
+        /// <summary>A child of a box laid out by <see cref="LayoutAlgorithmId.Inline"/>, or of an inline group in one.</summary>
+        InLine,
     }
 
     /// <summary>
@@ -428,6 +533,88 @@ public static class ModelCheck
             : length > ModelLimits.MaxLabelLength ? $"A list label's text is at most {ModelLimits.MaxLabelLength} characters long; this one has {Number(length)}."
             : null;
     }
+
+    /// <summary>
+    /// An inline group (<see cref="InlineGroup"/>): only among the content of an inline box, with the role of a link or a
+    /// span, a link not inside a link (a link annotation leads to one target; HTML's content model forbids an <c>a</c>
+    /// inside an <c>a</c> too), a link's target accepted by THE RULE FOR A LINK'S URI (<see cref="LinkUris"/>) and a
+    /// description that is not blank and holds only characters text may hold (<see cref="TextCharacters"/>), a language,
+    /// when it has one, of the form of a language tag (<see cref="LanguageTags"/>), and its text values as a run's. A group
+    /// with a box of its own (<see cref="InlineGroup.Box"/>, <see cref="InlineBox"/>) may have no role; a group without one
+    /// means something, so it has one. In this version a link and a group with a box are not inside each other, and an
+    /// image is not inside a group with a box: neither is drawn yet.
+    /// </summary>
+    private static Error? Group(InlineGroup group, Place place, bool inLink, bool inBox)
+    {
+        if (place != Place.InLine)
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group stands only among the content of an inline box (its runs and images).", group.Role?.ToString() ?? "null", "place", group);
+        }
+
+        if (group.Box is { } box && (inLink || group.Role is SemanticRole.LinkRole))
+        {
+            return Problem(DocumentErrorCodes.Input.Unsupported.InlineBox, "An inline group with a box of its own inside a link, or a link with a box of its own, is not drawn in this version.", group.Role?.ToString() ?? "null", "box", group);
+        }
+
+        if (group.Role is SemanticRole.LinkRole && inBox)
+        {
+            return Problem(DocumentErrorCodes.Input.Unsupported.InlineBox, "A link inside an inline group with a box of its own is not drawn in this version; put the link outside the group.", group.Role.ToString()!, "role", group);
+        }
+
+        if (group.Box is { } own && InlineBox(own, group) is { } boxProblem)
+        {
+            return boxProblem;
+        }
+
+        switch (group.Role)
+        {
+            case null when group.Box is not null:
+                break;
+            case SemanticRole.LinkRole link:
+                if (inLink)
+                {
+                    return Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "A link stands inside a link; a link leads to one target.", link.ToString(), "role", group);
+                }
+
+                var problem = link.Target switch
+                {
+                    LinkTarget.UriTarget uri => LinkUris.Problem(uri.Value),
+                    LinkTarget.NodeTarget => null,
+                    _ => "a link needs a target",
+                };
+                if (problem is not null)
+                {
+                    return Problem(DocumentErrorCodes.Input.Invalid.Link, $"The link is refused: {problem}.", (link.Target as LinkTarget.UriTarget)?.Value ?? "null", "target", group);
+                }
+
+                if (string.IsNullOrWhiteSpace(link.Description) || TextCharacters.IndexOfForbidden(link.Description) is not null)
+                {
+                    return Problem(DocumentErrorCodes.Input.Invalid.Link, "A link needs a description that is not blank and holds only characters text may hold (ISO 14289-1 §7.18.5).", link.Description ?? "null", "description", group);
+                }
+
+                break;
+            case SemanticRole.SpanRole:
+                break;
+            default:
+                return Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group is a link or a span.", group.Role?.ToString() ?? "null", "role", group);
+        }
+
+        if (group.Language is { } language && !LanguageTags.IsWellFormed(language))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.Language, LanguageMessage("an inline group"), language, "language", group);
+        }
+
+        return group.Style is null
+            ? Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group needs its text properties.", "null", "style", group)
+            : Text(group.Style, group);
+    }
+
+    /// <summary>The box of an inline group (<see cref="InlineBoxStyle"/>): padding and border widths of zero or more, as a box's;
+    /// horizontal margins of zero or more (a negative one is not drawn in this version).</summary>
+    private static Error? InlineBox(InlineBoxStyle box, InlineGroup group) =>
+        Sides(new Edges(Length.Zero, box.MarginRight, Length.Zero, box.MarginLeft), "margin", group, DocumentErrorCodes.Input.Unsupported.NegativeMargin)
+        ?? Sides(box.Padding, "padding", group, DocumentErrorCodes.Input.Invalid.Length)
+        ?? Sides(box.Border.Widths, "border", group, DocumentErrorCodes.Input.Invalid.Length);
 
     /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and
     /// positive, percentages more than zero and at most <see cref="ModelLimits.MaxPercent"/>.</summary>

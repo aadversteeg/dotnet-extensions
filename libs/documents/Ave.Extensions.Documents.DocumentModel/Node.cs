@@ -4,7 +4,8 @@ using Ave.Extensions.Documents.Images;
 namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
-/// A node of the document tree: a <see cref="Box"/>, an <see cref="InlineRun"/> or an <see cref="ImageNode"/>.
+/// A node of the document tree: a <see cref="Box"/>, an <see cref="InlineRun"/>, an <see cref="InlineGroup"/> or an
+/// <see cref="ImageNode"/>.
 /// Every node has an id (its pre-order position) and the source location of the code or markup that produced it.
 /// </summary>
 /// <param name="Id">The node id, unique in the document.</param>
@@ -18,7 +19,7 @@ public abstract record Node(NodeId Id, SourceLocation Source);
 /// <remarks>
 /// Which children a box may have depends on its algorithm: <see cref="LayoutAlgorithmId.Flow"/> stacks child
 /// boxes, <see cref="LayoutAlgorithmId.Inline"/> sets inline runs in lines (a block container whose content is an
-/// inline formatting context, CSS 2.1 §9.2.1), and among them boxes laid out by <see cref="LayoutAlgorithmId.Image"/>, each
+/// inline formatting context, CSS 2.1 §9.2.1), grouped or not in <see cref="InlineGroup"/>s, and among them boxes laid out by <see cref="LayoutAlgorithmId.Image"/>, each
 /// an atomic inline (an image in a line of text, CSS Display 3, Appendix A), <see cref="LayoutAlgorithmId.Tracks"/> lays out row groups of rows of
 /// cells, <see cref="LayoutAlgorithmId.Image"/> holds one image. The algorithm reports an error for children it
 /// cannot lay out.
@@ -35,7 +36,13 @@ public sealed record Box(
     LayoutAlgorithmId Layout,
     BoxStyle Style,
     ValueList<Node> Children,
-    SourceLocation Source) : Node(Id, Source);
+    SourceLocation Source) : Node(Id, Source)
+{
+    /// <summary>The natural language of the box's content as a language tag (ISO 32000-1 §14.9.2; THE RULE FOR A LANGUAGE
+    /// TAG, <see cref="LanguageTags"/>), or null when it is that of its parent. A tagged PDF writes it on the box's
+    /// structure element where it differs from its parent's.</summary>
+    public string? Language { get; init; }
+}
 
 /// <summary>
 /// A piece of text in one style, laid out by its parent's inline algorithm: literal text
@@ -64,6 +71,67 @@ public sealed record TextRun(NodeId Id, string Text, TextStyle Style, SourceLoca
 /// <param name="Style">The computed text properties.</param>
 /// <param name="Source">Where the reference was written; reported when the page count does not settle.</param>
 public sealed record CounterRun(NodeId Id, PageCounter Counter, TextStyle Style, SourceLocation Source) : InlineRun(Id, Style, Source);
+
+/// <summary>
+/// THE INLINE GROUPING of the model: a part of the content of an inline box (its runs, its images in the line and other
+/// groups) that means something as a whole: a link (<see cref="SemanticRole.Link"/>) or a span
+/// (<see cref="SemanticRole.Span"/>), or that draws a box of its own (<see cref="Box"/>). Without a box it is transparent for
+/// layout: the lines are broken and painted as if its children stood in its place, it adds no margin, padding, border or
+/// line height (CSS 2.1 §10.8 counts an inline box's line height; a front-end that needs it adds an empty run in the
+/// element's style, as for any inline element). With a box it is an inline box with its own horizontal margins, padding,
+/// border and background (<see cref="InlineBoxStyle"/>, CSS 2.1 §10.8 and §8). Groups nest, a link inside a link excepted,
+/// and only in the children of an inline box. Each part of a group on one line is one line part (the layout's
+/// <c>LineGroupPart</c>); its structure element is opened around each line part, which tagged PDF joins into one
+/// element. A group with a box and no role opens no structure element: its content stays content of the element around
+/// it.
+/// </summary>
+/// <param name="Id">The node id.</param>
+/// <param name="Role">What the group means: <see cref="SemanticRole.Link"/> or <see cref="SemanticRole.Span"/>; null for a
+/// group that only draws its box (<see cref="Box"/> set), which opens no structure element.</param>
+/// <param name="Style">The computed text properties of the element: its font gives the height of a link's area on each
+/// line (its ascent above and descent below the baseline), as Chromium draws a link's rectangle from the font of the
+/// <c>a</c> element itself, and the height of the box's content area.</param>
+/// <param name="Children">Its runs, images (boxes laid out by <see cref="LayoutAlgorithmId.Image"/>) and groups, in
+/// document order.</param>
+/// <param name="Source">Where the group was written.</param>
+public sealed record InlineGroup(NodeId Id, SemanticRole? Role, TextStyle Style, ValueList<Node> Children, SourceLocation Source) : Node(Id, Source)
+{
+    /// <summary>The natural language of the group's content as a language tag (ISO 32000-1 §14.9.2; THE RULE FOR A
+    /// LANGUAGE TAG, <see cref="LanguageTags"/>), or null when it is that of its parent. A tagged PDF writes it on the
+    /// group's structure element where it differs from its parent's.</summary>
+    public string? Language { get; init; }
+
+    /// <summary>The group's own box: its horizontal margins, padding, border and background; null for a group that draws
+    /// nothing of its own.</summary>
+    public InlineBoxStyle? Box { get; init; }
+}
+
+/// <summary>
+/// THE INLINE BOX STYLE: what an inline group draws of its own (CSS 2.1 §8, the box model, and §10.8 for an inline box).
+/// In the inline direction its margins, border and padding take room on the line before its first character and after its
+/// last; in the block direction its padding and border lie outside its content area (the ascent and descent of the group's
+/// own font about the baseline) and do not make the line taller, so they can reach over the lines above and below. The
+/// background fills the border box. Vertical margins have no effect on an inline box, so the model has none. Solid
+/// borders only, as on a box.
+/// </summary>
+/// <param name="MarginLeft">The margin before the box, zero or more.</param>
+/// <param name="MarginRight">The margin after the box, zero or more.</param>
+/// <param name="Padding">The padding on the four sides, zero or more.</param>
+/// <param name="Border">The border on the four sides.</param>
+/// <param name="Background">The background colour of the border box, or null for none.</param>
+public sealed record InlineBoxStyle(Length MarginLeft, Length MarginRight, Edges Padding, Border Border, Color? Background)
+{
+    /// <summary>The room the box takes before its first character: left margin, border and padding, in points.</summary>
+    public double Start => MarginLeft.Points + Border.Left.Width.Points + Padding.Left.Points;
+
+    /// <summary>The room the box takes after its last character: right padding, border and margin, in points.</summary>
+    public double End => Padding.Right.Points + Border.Right.Width.Points + MarginRight.Points;
+
+    /// <summary>Formats as <c>margin left,right padding … border … background …</c>.</summary>
+    /// <returns>The text form.</returns>
+    public override string ToString() =>
+        $"margin {InvariantNumber.Format(MarginLeft.Points)},{InvariantNumber.Format(MarginRight.Points)} padding {Padding} border {Border} background {Background?.ToString() ?? "none"}";
+}
 
 /// <summary>The page-based counters (CSS Paged Media 3 §6.1).</summary>
 public enum PageCounter

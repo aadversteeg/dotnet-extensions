@@ -45,6 +45,22 @@ public static class PageModelRules
     public const int MaxPathSegments = 4_096;
 
     /// <summary>
+    /// The most link areas (<see cref="LinkArea"/>) one page may hold: 8 191. Each becomes one link annotation, one object
+    /// and one entry of the page's <c>/Annots</c> array in PDF, so the bound keeps what one page writes from growing
+    /// with its input without limit; it is far more than any page of text can show (a link area per word of a page of
+    /// 6 pt text is some thousands). More is <c>InvalidPageModel</c> under the back-end's code.
+    /// </summary>
+    public const int MaxLinkAreasPerPage = 8_191;
+
+    /// <summary>
+    /// The most anchors (<see cref="Anchor"/>) one document may hold: 65 536, the most nodes a document model's links may
+    /// lead to (the layout writes one anchor per such node). The PDF back-end keeps a map from each anchor's node to its
+    /// page and place, so the bound keeps that map from growing with its input without limit. More is
+    /// <c>InvalidPageModel</c> under the back-end's code.
+    /// </summary>
+    public const int MaxAnchors = 65_536;
+
+    /// <summary>
     /// Checks the page model and reports every breach together, under the code the back-end passes
     /// (<c>Documents.Pdf.Write.InvalidPageModel</c>, <c>Documents.Raster.InvalidPageModel</c>):
     /// <list type="bullet">
@@ -133,6 +149,11 @@ public static class PageModelRules
             }
         }
 
+        foreach (var problem in AnchorProblems(document.Pages, code))
+        {
+            yield return problem;
+        }
+
         foreach (var problem in StructureNesting.TableParts(document.Pages, code))
         {
             yield return problem;
@@ -200,6 +221,8 @@ public static class PageModelRules
         FillPath path when OutOfRange(path, pageHeight) is { } point =>
             Invalid(code, $"A filled path on page {number} has a point that is not a number within ±{Number(MaxNumber)}, or whose height above the foot of the page is not.", $"{point}"),
         StructureStart { Role: null } start => Invalid(code, $"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
+        StructureStart { Language: { } language } start when !LanguageTags.IsWellFormed(language) =>
+            Invalid(code, $"Node {start.Node} on page {number} has the language '{language}', which is not a well-formed language tag (BCP 47 syntax, at most {LanguageTags.MaxLength} characters).", language).WithSource(start.Source),
         StructureStart start when !TableSlots.IsValidSpan(start.Span) =>
             Invalid(code, $"Node {start.Node} on page {number} spans {start.Span}; a cell spans 1 to {TableSlots.MaxColumnSpan} columns and 1 to {TableSlots.MaxRowSpan} rows.", start.Span.ToString()).WithSource(start.Source),
         GlyphRun run when !InRange(run.Origin) || run.Glyphs.Any(glyph => !InRange(glyph.X) || !InRange(glyph.Y)) =>
@@ -207,6 +230,13 @@ public static class PageModelRules
         FillRectangle fill when !InRange(fill.Area) => Invalid(code, $"A filled rectangle on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{fill.Area}"),
         DrawImage image when !InRange(image.Area) => Invalid(code, $"An image on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{image.Area}"),
         ClipStart clip when !InRange(clip.Area) => Invalid(code, $"A clip on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{clip.Area}"),
+        LinkArea link when !InRange(link.Area) => Invalid(code, $"A link area on page {number} has a position or size that is not a number within ±{Number(MaxNumber)}.", $"{link.Area}"),
+        LinkArea link when !EdgesInRange(link.Area, pageHeight) => Invalid(code, $"A link area on page {number} has {EdgesText}.", $"{link.Area}"),
+        LinkArea link when !(link.Area.Size.Width >= 0 && link.Area.Size.Height >= 0) => Invalid(code, $"A link area on page {number} has a negative width or height.", $"{link.Area}"),
+        Anchor anchor when !InRange(anchor.At) || !InRange(pageHeight - anchor.At.Y) =>
+            Invalid(code, $"The anchor of node {anchor.Node} on page {number} has a position that is not a number within ±{Number(MaxNumber)} (or its height above the foot of the page is not).", $"{anchor.At}"),
+        StructureStart { Role: SemanticRole.LinkRole link } start when LinkProblem(link) is { } problem =>
+            Invalid(code, $"Link {start.Node} on page {number} is refused: {problem}.", (link.Target as LinkTarget.UriTarget)?.Value ?? "null").WithSource(start.Source),
         GlyphRun run when run.Glyphs.Any(glyph => !EdgesInRange(run.Origin, glyph, pageHeight)) =>
             Invalid(code, $"A glyph run on page {number} places a glyph at {EdgesText}.", $"{run.Origin}"),
         FillRectangle fill when !EdgesInRange(fill.Area, pageHeight) => Invalid(code, $"A filled rectangle on page {number} has {EdgesText}.", $"{fill.Area}"),
@@ -214,6 +244,8 @@ public static class PageModelRules
         ClipStart clip when !EdgesInRange(clip.Area, pageHeight) => Invalid(code, $"A clip on page {number} has {EdgesText}.", $"{clip.Area}"),
         ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
             Invalid(code, $"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
+        StructureStart { Role: SemanticRole.TableHeaderCellRole header } start when !Enum.IsDefined(header.Scope) =>
+            Invalid(code, $"Header cell {start.Node} on page {number} has the scope {(int)header.Scope}; a header cell heads its column, its row or both.", ((int)header.Scope).ToString(CultureInfo.InvariantCulture)).WithSource(start.Source),
         _ => null,
     };
 
@@ -232,6 +264,22 @@ public static class PageModelRules
     /// PDF content stream writes for it) is; null when every point is in range.</summary>
     private static Point? OutOfRange(FillPath path, double pageHeight) =>
         Points(path).Where(point => !InRange(point) || !InRange(pageHeight - point.Y)).Select(point => (Point?)point).FirstOrDefault();
+
+    /// <summary>Why a link role cannot be written, or null: its target by THE RULE FOR A LINK'S URI (<see cref="LinkUris"/>),
+    /// and a description that is not blank and holds only characters text may hold.</summary>
+    private static string? LinkProblem(SemanticRole.LinkRole link)
+    {
+        var target = link.Target switch
+        {
+            LinkTarget.UriTarget uri => LinkUris.Problem(uri.Value),
+            LinkTarget.NodeTarget => null,
+            null => "a link needs a target",
+            _ => $"a target of the kind {link.Target.GetType().Name} cannot be written",
+        };
+        return target ?? (string.IsNullOrWhiteSpace(link.Description) || TextCharacters.IndexOfForbidden(link.Description) is not null
+            ? "a link needs a description that is not blank and holds only characters text may hold"
+            : null);
+    }
 
     /// <summary>Finite and within ±<see cref="MaxNumber"/> (NaN fails both comparisons).</summary>
     private static bool InRange(double value) => value is >= -MaxNumber and <= MaxNumber;
@@ -255,6 +303,44 @@ public static class PageModelRules
     /// (page height − that y, the y a PDF text position is written with), each in range.</summary>
     private static bool EdgesInRange(Point origin, PositionedGlyph glyph, double pageHeight) =>
         InRange(origin.X + glyph.X) && InRange(origin.Y + glyph.Y) && InRange(pageHeight - (origin.Y + glyph.Y));
+
+    /// <summary>
+    /// The anchors across the pages: at most one per node, at most <see cref="MaxAnchors"/> in the document, and one for
+    /// the node of every link inside the document (a link role whose target is <see cref="LinkTarget.Node"/>, on any
+    /// page): without it the back-end has no place to send the link to. Each breach once.
+    /// </summary>
+    private static IEnumerable<Error> AnchorProblems(IReadOnlyList<Page?> pages, ErrorCode code)
+    {
+        var anchors = new HashSet<NodeId>();
+        var links = new Dictionary<NodeId, StructureStart>();
+        for (var index = 0; index < pages.Count; index++)
+        {
+            foreach (var item in pages[index]?.Items ?? [])
+            {
+                if (item is Anchor anchor && !anchors.Add(anchor.Node))
+                {
+                    yield return Invalid(code, $"Node {anchor.Node} has a second anchor, on page {index + 1}; a node has one place a link leads to.", anchor.Node.ToString());
+                }
+                else if (item is Anchor && anchors.Count > MaxAnchors)
+                {
+                    yield return Invalid(code, $"The document has more than {MaxAnchors} anchors.", Number(MaxAnchors));
+                    yield break;
+                }
+                else if (item is StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget target } } start)
+                {
+                    links.TryAdd(target.Value, start);
+                }
+            }
+        }
+
+        foreach (var (node, start) in links)
+        {
+            if (!anchors.Contains(node))
+            {
+                yield return Invalid(code, $"Link {start.Node} leads to node {node}, which has no anchor in the document.", node.ToString()).WithSource(start.Source);
+            }
+        }
+    }
 
     /// <summary>A node is the same node on every page: the structure tree has one element for it, with one type.</summary>
     private static IEnumerable<Error> RoleProblems(Page page, int number, Dictionary<NodeId, SemanticRole> roles, ErrorCode code)
@@ -334,12 +420,17 @@ internal static class MarkerNesting
         var open = new Stack<DrawItem>();
         var inArtifact = false;
         var clips = 0;
+        var links = 0;
         foreach (var item in page.Items)
         {
+            links += item is LinkArea ? 1 : 0;
             string? problem = item switch
             {
                 StructureStart or StructureEnd or ArtifactStart when inArtifact =>
                     item is ArtifactStart ? "an artifact inside an artifact" : "a structure marker inside an artifact",
+                LinkArea when links > PageModelRules.MaxLinkAreasPerPage => $"more than {PageModelRules.MaxLinkAreasPerPage} link areas",
+                LinkArea link => LinkAreaProblem(link, inArtifact, open.OfType<StructureStart>().FirstOrDefault()),
+                Anchor anchor when inArtifact => $"the anchor of {anchor.Node} inside an artifact",
                 ClipStart when clips >= PageModelRules.MaxClipDepth => $"more than {PageModelRules.MaxClipDepth} clips open one inside the other",
                 StructureEnd or ArtifactEnd or ClipEnd => EndProblem(item, open.Count > 0 ? open.Peek() : null),
                 _ => null,
@@ -375,6 +466,13 @@ internal static class MarkerNesting
             };
         }
     }
+
+    /// <summary>Why a link area does not stand where it belongs, or null: inside the structure marker of its own link, as
+    /// the innermost open structure marker, outside every artifact (<see cref="LinkArea"/>).</summary>
+    private static string? LinkAreaProblem(LinkArea link, bool inArtifact, StructureStart? innermost) =>
+        inArtifact ? $"a link area of {link.Link} inside an artifact"
+        : innermost is { Role: SemanticRole.LinkRole } start && start.Node == link.Link ? null
+        : $"a link area of {link.Link} outside the structure marker of its link" + Inside(innermost);
 
     /// <summary>Why an end marker does not close the innermost open marker, or null when it does.</summary>
     private static string? EndProblem(DrawItem end, DrawItem? innermost) => (end, innermost) switch

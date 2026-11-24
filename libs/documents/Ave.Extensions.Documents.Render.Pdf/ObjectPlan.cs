@@ -10,7 +10,7 @@ namespace Ave.Extensions.Documents.Render.Pdf;
 /// catalog, page tree and document information first; then five objects per font; then one or two per image (the
 /// image, and its soft mask when it has transparency); then two per page. After those, only when present: the XMP
 /// metadata stream, the output intent's ICC profile, the structure tree root, the parent tree and one object per
-/// structure element, and two objects per attachment. A plain file therefore numbers its objects exactly as before
+/// structure element, two objects per attachment, and one per link annotation. A plain file therefore numbers its objects exactly as before
 /// conformance profiles existed.
 /// </summary>
 /// <param name="FontCount">How many fonts the document uses.</param>
@@ -40,6 +40,9 @@ internal sealed record ObjectPlan(int FontCount, ImmutableArray<bool> ImageHasMa
 
     /// <summary>How many files are attached.</summary>
     public int AttachmentCount { get; init; }
+
+    /// <summary>How many link annotations the document has, on all pages together.</summary>
+    public int AnnotationCount { get; init; }
 
     private int FirstImageObject => FirstFontObject + FontCount * ObjectsPerFont;
 
@@ -95,6 +98,11 @@ internal sealed record ObjectPlan(int FontCount, ImmutableArray<bool> ImageHasMa
         var first = AfterStructure + index * ObjectsPerAttachment;
         return new AttachmentObjectNumbers(FileSpecification: first, EmbeddedFile: first + 1);
     }
+
+    /// <summary>The link annotation at <paramref name="index"/> (0-based, in document order), after the attachments.</summary>
+    public int Annotation(int index) => index >= 0 && index < AnnotationCount
+        ? AfterStructure + AttachmentCount * ObjectsPerAttachment + index
+        : throw Absent($"link annotation {index}");
 
     /// <summary>Asking for the number of an object the plan does not have is a bug in the renderer.</summary>
     private static InvalidOperationException Absent(string what) => new($"The object plan has no {what}.");

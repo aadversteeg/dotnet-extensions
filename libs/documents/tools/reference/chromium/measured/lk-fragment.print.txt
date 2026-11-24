@@ -1,0 +1,5 @@
+page 1 300.000 300.000
+word 1 18.000 61.638 28.500 10.500 Fragment #000000 Lato-Regular
+word 1 64.324 80.515 28.500 10.500 link #0000ee Lato-Regular
+word 1 83.208 106.239 28.500 10.500 here. #000000 Lato-Regular
+rect 1 64.324 29.250 80.520 30.000 #0000ee

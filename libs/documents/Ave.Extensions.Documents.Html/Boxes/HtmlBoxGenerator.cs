@@ -75,6 +75,7 @@ public static partial class HtmlBoxGenerator
         CutRowAlignment = CutRowAlignment.TopOnEveryPage,
         RepeatedHeaderRows = RepeatedHeaderRows.WhereContentIsLaidOut,
         SliceRestEnd = SliceRestEnd.AtLineCentre,
+        InlineBoxSnapping = InlineBoxSnapping.WholePixels,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>
@@ -159,6 +160,40 @@ public static partial class HtmlBoxGenerator
         public List<Node> Target { get; } = target;
         public int Depth { get; } = depth;
         public int Next { get; set; }
+
+        /// <summary>For the frame of an <c>a</c> element that is a link: the group being built, whose content is
+        /// <see cref="Target"/>; null otherwise.</summary>
+        public LinkFrame? Link { get; init; }
+
+        /// <summary>Whether the frame lies inside a link.</summary>
+        public bool InLink { get; init; }
+
+        /// <summary>For the frame of an inline element a link leads to, with a language of its own or with a box of its own:
+        /// the span group being built; null otherwise.</summary>
+        public SpanFrame? Span { get; init; }
+
+        /// <summary>Whether the frame lies inside an inline element with a box of its own (<see cref="InlineBoxStyle"/>).</summary>
+        public bool InBox { get; init; }
+    }
+
+    /// <summary>A link being built: the content of its parent it goes into, its id, its URI (for a link inside the document
+    /// the <c>href</c> without its white space, for the messages and the description), the fragment of a link inside the
+    /// document or null, and its text style.</summary>
+    private sealed record LinkFrame(List<Node> Parent, NodeId Id, string Uri, string? Fragment, TextStyle Style)
+    {
+        /// <summary>The link's language where it differs from its parent's, or null.</summary>
+        public string? Language { get; init; }
+    }
+
+    /// <summary>An inline element a link leads to, being built as a span group: the content of its parent it goes into, its
+    /// id and its text style.</summary>
+    private sealed record SpanFrame(List<Node> Parent, NodeId Id, TextStyle Style, string? Language)
+    {
+        /// <summary>The element's own box, or null.</summary>
+        public InlineBoxStyle? Box { get; init; }
+
+        /// <summary>Whether a link leads to the element.</summary>
+        public bool IsTarget { get; init; }
     }
 
     private sealed partial class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
@@ -178,7 +213,11 @@ public static partial class HtmlBoxGenerator
 
         public StyledDocument Generate()
         {
-            var metadata = new DocumentMetadata(Title(styled.Root), null) { Language = string.IsNullOrEmpty(styled.Root.Language) ? null : styled.Root.Language };
+            var metadata = new DocumentMetadata(Title(styled.Root), Meta(styled.Root, "author"))
+            {
+                Language = string.IsNullOrEmpty(styled.Root.Language) ? null : styled.Root.Language,
+                Description = Meta(styled.Root, "description"),
+            };
             if (Display(styled.Root) == "none")
             {
                 // CSS Display 3 §2.5: the root with display: none generates no box at all. Chromium prints one empty page
@@ -188,7 +227,8 @@ public static partial class HtmlBoxGenerator
                 return new StyledDocument(metadata, new PageRules(_sourceName, Refusals).Apply([], styled.Page), empty) { Profile = ChromiumProfile };
             }
 
-            var root = Build(styled.Root);
+            FindTargets(styled.Root);
+            var root = ResolveLinks(Build(styled.Root));
             var page = Page();
             return new StyledDocument(metadata, page, root) { Profile = ChromiumProfile };
         }
@@ -388,6 +428,7 @@ public static partial class HtmlBoxGenerator
             }
 
             _refused[element] = refused;
+            RefuseBlockLink(element, isBlock);
             return true;
         }
 
@@ -410,6 +451,16 @@ public static partial class HtmlBoxGenerator
                 {
                     case InlineFrame inline when inline.Next >= inline.Element.Children.Count:
                         stack.Pop();
+                        if (inline.Link is { } link)
+                        {
+                            FinishLink(inline, link);
+                        }
+
+                        if (inline.Span is { } span)
+                        {
+                            FinishSpan(inline, span);
+                        }
+
                         break;
                     case InlineFrame inline:
                         Inline(stack, inline, inline.Element.Children[inline.Next++]);
@@ -426,7 +477,7 @@ public static partial class HtmlBoxGenerator
                         else
                         {
                             var parent = (BlockFrame)stack.Peek();
-                            (block.Kind == FrameKind.Item && parent.Implied is { } implied ? implied.Items : parent.Nodes).Add(box);
+                            (block.Kind == FrameKind.Item && parent.Implied is { } implied ? implied.Items : parent.Nodes).Add(LanguageOf(block.Element, parent.Element) is { } language ? box with { Language = language } : box);
                             parent.ForcedBreakPending = forcedAfter;
                         }
 
@@ -443,6 +494,7 @@ public static partial class HtmlBoxGenerator
 
         private BlockFrame Frame(StyledElement element, NodeId id, int depth, FrameKind kind = FrameKind.Block, int lists = 0, (NodeId, NodeId, NodeId, NodeId)? itemIds = null)
         {
+            Placed(element, id);
             var children = element.Children;
             var kinds = new bool[children.Count];
             var rendered = new bool[children.Count];
@@ -719,6 +771,11 @@ public static partial class HtmlBoxGenerator
                 case StyledElement element when Display(element) == "inline":
                     if (Check(element, isBlock: false) && !Deeper(frame.Depth, element.Element.Position))
                     {
+                        if (StartLink(stack, frame, element) || StartSpan(stack, frame, element))
+                        {
+                            break;
+                        }
+
                         // CSS 2.1 §10.8.1: every inline box, also one without a glyph, has a line height that counts
                         // for the line box ("empty inline elements ... still have margins, padding, borders and a line
                         // height"); the model has no inline box, so an empty run in the element's style carries it.
@@ -728,7 +785,7 @@ public static partial class HtmlBoxGenerator
                             frame.Target.Add(new TextRun(NewId(), string.Empty, own, Source(element.Element.Position)));
                         }
 
-                        stack.Push(new InlineFrame(element, frame.Target, frame.Depth));
+                        stack.Push(new InlineFrame(element, frame.Target, frame.Depth) { InLink = frame.InLink, InBox = frame.InBox });
                     }
 
                     break;
@@ -814,6 +871,22 @@ public static partial class HtmlBoxGenerator
             Orphans = IntegerOf(element, "orphans", 2),
             Widows = IntegerOf(element, "widows", 2),
         };
+
+        /// <summary>
+        /// THE RULE FOR AN INLINE BOX IN HTML: an inline element with a background of alpha 1, a visible border, padding or a
+        /// left or right margin has a box of its own (<see cref="InlineBoxStyle"/>), its lengths on Chromium's layout unit as a
+        /// block box's; null for an element without any of these, which stays without a group, as before. Its values were
+        /// checked by <see cref="BoxProperties"/>; a value refused there is not drawn.
+        /// </summary>
+        private InlineBoxStyle? InlineBoxOf(StyledElement element)
+        {
+            var box = BoxStyleOf(element);
+            var inline = new InlineBoxStyle(box.Margin.Left, box.Margin.Right, box.Padding, box.Border, box.Background);
+            return inline.Background is not null || inline.Start > 0 || inline.End > 0
+                || box.Padding.Vertical.Points > 0 || box.Border.Top.IsVisible || box.Border.Bottom.IsVisible
+                ? inline
+                : null;
+        }
 
         private BoxStyle BoxStyleOf(StyledElement element)
         {
@@ -1085,6 +1158,25 @@ public static partial class HtmlBoxGenerator
                 CssLength length => new LineHeight.Fixed(Length.FromPoints(Math.Round(length.Value.Points / unit, MidpointRounding.AwayFromZero) * unit)),
                 _ => LineHeight.Normal.Instance,
             };
+        }
+
+        /// <summary>The author or the description by THE RULE FOR A DOCUMENT'S METADATA IN HTML (<see cref="HtmlMetadata"/>),
+        /// or null; a refused one is reported at its <c>meta</c> element and left out.</summary>
+        private string? Meta(StyledElement root, string name)
+        {
+            if (HtmlMetadata.First(root, name) is not { } found)
+            {
+                return null;
+            }
+
+            var (meta, content) = found;
+            if (HtmlMetadata.Problem(content) is { } problem)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Metadata, $"The {name} in <meta name> is not taken into the document's metadata: {problem}.", name, meta.Position, "content");
+                return null;
+            }
+
+            return content;
         }
 
         /// <summary>The text of the first title element (HTML Standard §4.2.2: its child text content with ASCII white

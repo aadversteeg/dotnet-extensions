@@ -138,7 +138,10 @@ public static class PdfStructureReadBack
 
             // What the parent tree says.
             var nums = ((ArrayToken)Resolve(Dictionary(Dictionary(root).Data["ParentTree"]).Data["Nums"])).Data;
-            var arrays = Enumerable.Range(0, nums.Count / 2).ToDictionary(index => ((NumericToken)nums[2 * index]).Int, index => (ArrayToken)Resolve(nums[2 * index + 1]));
+            // The pages' keys hold arrays; a link annotation's key holds its element itself (ISO 32000-1 §14.7.4.4).
+            var arrays = Enumerable.Range(0, nums.Count / 2)
+                .Where(index => Resolve(nums[2 * index + 1]) is ArrayToken)
+                .ToDictionary(index => ((NumericToken)nums[2 * index]).Int, index => (ArrayToken)Resolve(nums[2 * index + 1]));
             var differences = new List<string>();
             for (var page = 0; page < _pages.Length; page++)
             {

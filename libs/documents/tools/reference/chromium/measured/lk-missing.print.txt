@@ -1,0 +1,10 @@
+page 1 300.000 120.000
+word 1 18.000 25.109 28.500 10.500 A #000000 Lato-Regular
+word 1 27.445 43.636 28.500 10.500 link #000000 Lato-Regular
+word 1 46.324 56.015 28.500 10.500 to #000000 Lato-Regular
+word 1 58.711 93.891 28.500 10.500 nothing #0000ee Lato-Regular
+word 1 96.590 115.133 28.500 10.500 that #000000 Lato-Regular
+word 1 117.816 133.440 28.500 10.500 has #000000 Lato-Regular
+word 1 136.128 147.940 28.500 10.500 no #000000 Lato-Regular
+word 1 150.628 180.438 28.500 10.500 target. #000000 Lato-Regular
+rect 1 58.711 29.250 93.902 30.000 #0000ee

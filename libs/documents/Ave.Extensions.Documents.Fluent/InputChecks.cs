@@ -440,6 +440,21 @@ internal static class InputChecks
             ? []
             : [Problem(DocumentErrorCodes.Input.Invalid.Language, "The language is not a language tag such as nl-NL.", language, "language", source)];
 
+    /// <summary>A language set on an image span: an image has no text whose language could be set.</summary>
+    /// <param name="source">The span's source location.</param>
+    public static Error LanguageOnImageSpan(SourceLocation source) =>
+        Problem(DocumentErrorCodes.Input.Invalid.Language, "An image span has no text, so it takes no language; set the language on the paragraph.", "image", "language", source);
+
+    /// <summary>A link's target by THE RULE FOR A LINK'S URI (<see cref="LinkUris"/>): an absolute URI of the schemes http,
+    /// https, mailto or tel, printable ASCII, at most <see cref="LinkUris.MaxLength"/> characters. The message names the
+    /// scheme and the reason.</summary>
+    /// <param name="link">The span's target, or null for a span that is no link.</param>
+    /// <param name="source">The span's source location.</param>
+    public static IEnumerable<Error> Link(LinkTarget? link, SourceLocation source) =>
+        link is LinkTarget.UriTarget uri && LinkUris.Problem(uri.Value) is { } problem
+            ? [Problem(DocumentErrorCodes.Input.Invalid.Link, $"The link is refused: {problem}.", uri.Value, "uri", source)]
+            : [];
+
     /// <summary>
     /// Text of the document (a span, an image's alternative text): only characters text may hold
     /// (<see cref="TextCharacters"/>: no control character but tab and the forced line breaks, no noncharacter, no
@@ -459,11 +474,11 @@ internal static class InputChecks
         char.IsSurrogatePair(text, offset) ? char.ConvertToUtf32(text, offset) : text[offset];
 
     /// <summary>
-    /// The document's title and author: text that goes into the XMP metadata, which is XML, so only characters XML 1.0
+    /// The document's title, author and description: text that goes into the XMP metadata, which is XML, so only characters XML 1.0
     /// allows (§2.2, production [2] Char; <see cref="XmlCharacters"/>). Reported at the document's line.
     /// </summary>
-    public static IEnumerable<Error> Metadata(string? title, string? author, SourceLocation source) =>
-        new[] { (Text: title, Property: "title"), (Text: author, Property: "author") }
+    public static IEnumerable<Error> Metadata(string? title, string? author, string? description, SourceLocation source) =>
+        new[] { (Text: title, Property: "title"), (Text: author, Property: "author"), (Text: description, Property: "description") }
             .SelectMany(field => MetadataText(field.Text, field.Property, source));
 
     /// <summary>One metadata text: an error when it holds a character XML 1.0 does not allow.</summary>
@@ -527,7 +542,7 @@ internal static class InputChecks
     /// against the whole string (<c>\z</c>).</summary>
     private static readonly Regex MediaType = new(@"^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}\z", RegexOptions.CultureInvariant);
 
-    private static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
+    internal static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
         new Error(code, $"{message} ({source})")
             .With(ErrorMetadataKeys.Value, value)
             .With(ErrorMetadataKeys.Property, property)

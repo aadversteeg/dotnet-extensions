@@ -13,7 +13,7 @@ public class SemanticRoleTests
         var singletons = typeof(SemanticRole).GetProperties(BindingFlags.Public | BindingFlags.Static)
             .Select(property => (SemanticRole)property.GetValue(null)!).ToList();
         var all = singletons.Concat([SemanticRole.Figure("A chart"), SemanticRole.Heading(1), SemanticRole.Heading(6),
-            SemanticRole.List(ListNumbering.Disc), SemanticRole.ListLabel("\u2022"), SemanticRole.ListLabel(null)]).ToList();
+            SemanticRole.List(ListNumbering.Disc), SemanticRole.ListLabel("\u2022"), SemanticRole.ListLabel(null), SemanticRole.Link(LinkTarget.Uri("https://example.com"), "Example")]).ToList();
         cases.Should().OnlyContain(type => all.Any(role => role.GetType() == type), "every case has an instance in this list");
         return [.. all];
     }
@@ -22,7 +22,7 @@ public class SemanticRoleTests
     [MemberData(nameof(EveryRole))]
     public void Every_role_but_decoration_names_a_standard_structure_type(SemanticRole role)
     {
-        string[] standard = ["Document", "Div", "P", "H1", "H2", "H3", "H4", "H5", "H6", "Table", "Caption", "THead", "TBody", "TR", "TH", "TD", "Figure", "L", "LI", "Lbl", "LBody"];
+        string[] standard = ["Document", "Div", "P", "H1", "H2", "H3", "H4", "H5", "H6", "Table", "Caption", "THead", "TBody", "TR", "TH", "TD", "Figure", "L", "LI", "Lbl", "LBody", "Link", "Span"];
 
         if (role == SemanticRole.Decorative)
         {

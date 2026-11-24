@@ -158,6 +158,16 @@ public static class DocumentErrorCodes
 
             /// <summary>An image that is both given alternative text and marked decorative. Metadata: Value.</summary>
             public static readonly ErrorCode ImageDescription = _ / "ImageDescription";
+
+            /// <summary>A link whose target is not accepted (<see cref="LinkUris"/>): not an absolute URI of printable ASCII,
+            /// of a scheme other than <c>http</c>, <c>https</c>, <c>mailto</c> and <c>tel</c>, or longer than
+            /// <see cref="LinkUris.MaxLength"/>; or a link without a description. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Link = _ / "Link";
+
+            /// <summary>An inline group (a link or a span) that is not valid: one outside the lines of an inline box, one
+            /// with a role other than a link or a span, a link inside a link, or a link or span role on a box.
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode InlineGroup = _ / "InlineGroup";
         }
 
         /// <summary>A value the input language allows but this version of the engine does not implement yet.</summary>
@@ -188,6 +198,10 @@ public static class DocumentErrorCodes
             /// table, whose lines are drawn solid by the table's layout, or on a box with inset and outset sides together
             /// (not measured). Metadata: Value, Property.</summary>
             public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
+            /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: inside
+            /// or around a link, around an image, broken over two lines of a justified paragraph or at a soft hyphen, alone with
+            /// a vertical edge only, or reaching above the page area of a later page. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode InlineBox = _ / "InlineBox";
         }
     }
 }

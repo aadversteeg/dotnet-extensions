@@ -1,0 +1,5 @@
+page 1 300.000 300.000
+word 1 18.000 44.607 28.500 10.500 Script #000000 Lato-Regular
+word 1 47.297 63.488 28.500 10.500 link #0000ee Lato-Regular
+word 1 66.180 89.212 28.500 10.500 here. #000000 Lato-Regular
+rect 1 47.297 29.250 63.492 30.000 #0000ee

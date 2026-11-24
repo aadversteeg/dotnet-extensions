@@ -20,7 +20,8 @@
 // the width of each page's page area, from the print), <case>.lines.txt (one line per filled rectangle, such as a piece of a
 // grid line: "page x0 y0 x1 y1 height", points, origin top left), <case>.print.txt (the print's pages, words with their
 // baselines, filled rectangles and images, read from the PDF by positions.py: README.md, "Print positions"), for a print
-// with a decoration line cut around ink <case>.ink.txt (ink.py: the line, its gaps and its visible pieces) and versions.txt.
+// with a decoration line cut around ink <case>.ink.txt (ink.py: the line, its gaps and its visible pieces), for a print
+// with link annotations <case>.links.txt (links.py: each annotation's page, rectangle and target) and versions.txt.
 // The engine's tests pin numbers measured this way; see README.md for which test uses which case.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';

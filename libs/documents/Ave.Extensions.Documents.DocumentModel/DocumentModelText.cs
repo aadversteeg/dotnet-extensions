@@ -29,7 +29,7 @@ public static class DocumentModelText
     {
         IEnumerable<string> lines =
         [
-            "document" + Attribute("title", document.Metadata.Title) + Attribute("author", document.Metadata.Author),
+            "document" + Attribute("title", document.Metadata.Title) + Attribute("author", document.Metadata.Author) + Attribute("description", document.Metadata.Description),
             $"page size={InvariantNumber.Format(document.Page.Width.Points)}x{InvariantNumber.Format(document.Page.Height.Points)}"
                 + $" margin={document.Page.Margins}",
             .. document.Profile is { } profile && profile != LayoutProfile.Default
@@ -63,6 +63,7 @@ public static class DocumentModelText
             CounterRun counter => [indent + $"counter {counter.Id} {CounterName(counter.Counter)} {StyleText(counter.Style)} @{counter.Source}"],
             ImageNode image => [indent + ImageLine(image)],
             MarkerSymbol symbol => [indent + $"marker {symbol.Id} {symbol.Shape.ToString().ToLowerInvariant()} {StyleText(symbol.Style)} @{symbol.Source}"],
+            InlineGroup group => [indent + $"group {group.Id} {group.Role?.ToString() ?? "none"}{Attribute("lang", group.Language)}{(group.Box is { } box ? $" box({box})" : string.Empty)} {StyleText(group.Style)} @{group.Source}", .. group.Children.SelectMany(child => NodeLines(child, depth + 1))],
             _ => [indent + $"unknown {node.GetType().Name} {node.Id} @{node.Source}"],
         };
     }

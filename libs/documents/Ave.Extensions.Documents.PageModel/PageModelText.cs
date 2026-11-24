@@ -28,6 +28,7 @@ public static class PageModelText
         var header = "document"
             + (metadata.Title is { } title ? $" title={QuotedText.Quote(title)}" : string.Empty)
             + (metadata.Author is { } author ? $" author={QuotedText.Quote(author)}" : string.Empty)
+            + (metadata.Description is { } description ? $" description={QuotedText.Quote(description)}" : string.Empty)
             + (metadata.Language is { } language ? $" language={language}" : string.Empty);
         IEnumerable<string> lines =
         [
@@ -49,12 +50,14 @@ public static class PageModelText
         FillPath path => FilledPathLine(path),
         DrawImage image => $"image {image.Area} {image.Image.Describe()} id={image.Image.Id}",
         GlyphRun run => GlyphRunLine(run),
-        StructureStart start => $"start {start.Node} {start.Role}" + (start.Span == CellSpan.Single ? string.Empty : $" span={start.Span}"),
+        StructureStart start => $"start {start.Node} {start.Role}" + (start.Span == CellSpan.Single ? string.Empty : $" span={start.Span}") + (start.Language is { } language ? $" lang={language}" : string.Empty),
         StructureEnd end => $"end {end.Node}",
         ArtifactStart artifact => $"artifact {artifact.Kind}",
         ArtifactEnd => "end artifact",
         ClipStart clip => $"clip {clip.Area}",
         ClipEnd => "end clip",
+        LinkArea link => $"link-area {link.Link} {link.Area}",
+        Anchor anchor => $"anchor {anchor.Node} {anchor.At}",
         _ => $"unknown {item.GetType().Name}",
     };
 

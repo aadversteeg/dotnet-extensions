@@ -17,8 +17,68 @@ public static class PagePainter
     /// <param name="metadata">The document's metadata, passed on unchanged.</param>
     /// <param name="pages">The fragment tree, one entry per page.</param>
     /// <returns>The page document.</returns>
-    public static PageDocument Paint(DocumentMetadata metadata, ValueList<PageFragment> pages) =>
-        new(metadata, [.. pages.Select(PaintPage)]);
+    public static PageDocument Paint(DocumentMetadata metadata, ValueList<PageFragment> pages)
+    {
+        var anchors = new Anchors(Targets(pages));
+        return new(metadata, [.. pages.Select(page => PaintPage(page, anchors))]);
+    }
+
+    /// <summary>The nodes the links inside the document lead to (<see cref="LinkTarget.Node"/>): the targets of the link
+    /// groups on every line of every page, read with an explicit stack.</summary>
+    private static HashSet<NodeId> Targets(ValueList<PageFragment> pages)
+    {
+        var targets = new HashSet<NodeId>();
+        var pending = new Stack<Fragment>();
+        foreach (var page in pages)
+        {
+            pending.Push(page.Root.Fragment);
+        }
+
+        while (pending.Count > 0)
+        {
+            switch (pending.Pop())
+            {
+                case BoxFragment box:
+                    foreach (var child in box.Children)
+                    {
+                        pending.Push(child.Fragment);
+                    }
+
+                    break;
+                case LineFragment line:
+                    foreach (var part in line.Groups)
+                    {
+                        if (part.Group.Role is SemanticRole.LinkRole { Target: LinkTarget.NodeTarget target })
+                        {
+                            targets.Add(target.Value);
+                        }
+                    }
+
+                    foreach (var child in line.Children)
+                    {
+                        pending.Push(child.Fragment);
+                    }
+
+                    break;
+                case SliceFragment slice:
+                    pending.Push(slice.Content.Fragment);
+                    break;
+            }
+        }
+
+        return targets;
+    }
+
+    /// <summary>
+    /// THE RULE FOR A LINK TARGET'S PLACE: the anchor (<see cref="Anchor"/>) of a node a link leads to is the top left of
+    /// the node's first fragment outside every artifact, in document order: for a box its border box on the first page it
+    /// is on, for an inline group its first line part (the top of that part's area: the ascent of the group's own font
+    /// above the baseline). Each target gets one anchor, the first time the painter meets it.
+    /// </summary>
+    private sealed class Anchors(HashSet<NodeId> pending)
+    {
+        public IEnumerable<DrawItem> At(NodeId node, Point at) => pending.Remove(node) ? [new Anchor(node, at)] : [];
+    }
 
     /// <summary>
     /// A page: header area, body, footer area. The areas repeat on every page; in tagged PDF they are pagination
@@ -26,14 +86,14 @@ public static class PagePainter
     /// structure markers. The body is drawn under a clip to its area where the page has one
     /// (<see cref="PageFragment.BodyClip"/>, <see cref="BodyClip.BodyArea"/>); the header and footer areas never are.
     /// </summary>
-    private static Page PaintPage(PageFragment page) =>
+    private static Page PaintPage(PageFragment page, Anchors anchors) =>
         new(page.PageSize,
         [
-            .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null))) : [],
+            .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null), anchors)) : [],
             .. page.BodyClip is { } body
-                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, body)))
-                : Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, null)),
-            .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null))) : [],
+                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, body), anchors))
+                : Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, null), anchors),
+            .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null), anchors)) : [],
         ]);
 
     /// <summary>
@@ -61,18 +121,18 @@ public static class PagePainter
     /// (<see cref="ArtifactKind.SliceContinuation"/>, a stated choice): the first slice delivers the line's text, and the
     /// later ones draw the same glyphs again.
     /// </remarks>
-    private static IEnumerable<DrawItem> Items(Fragment fragment, Point origin, bool inArtifact, Sheet sheet) => fragment switch
+    private static IEnumerable<DrawItem> Items(Fragment fragment, Point origin, bool inArtifact, Sheet sheet, Anchors anchors) => fragment switch
     {
-        BoxFragment box => Box(box, origin, inArtifact, sheet),
-        LineFragment line => Children(line.Children, origin, inArtifact, sheet),
+        BoxFragment box => Box(box, origin, inArtifact, sheet, anchors),
+        LineFragment line => Line(line, origin, inArtifact, sheet, anchors),
         TextFragment text => Glyphs(text, origin) is { Glyphs.Count: > 0 } run ? [run] : [],
         ImageFragment image => [new DrawImage(new Rect(origin, image.Size), image.Image.Image)],
         MarkerFragment marker => Bullet(marker, origin),
         RuleFragment rule => Decoration([new FillRectangle(new Rect(origin, rule.Size), rule.Color)], inArtifact),
         SliceFragment slice => Clipped(new Rect(new Point(0, origin.Y), new Size(sheet.Width, slice.Size.Height)),
             slice.IsContinuation && !inArtifact && slice.Content.Fragment is LineFragment
-                ? Artifact(ArtifactKind.SliceContinuation, Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact: true, sheet))
-                : Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact, sheet)),
+                ? Artifact(ArtifactKind.SliceContinuation, Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact: true, sheet, anchors))
+                : Items(slice.Content.Fragment, origin + slice.Content.Offset, inArtifact, sheet, anchors)),
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };
 
@@ -131,7 +191,7 @@ public static class PagePainter
         return content.IsEmpty ? [] : [new ClipStart(area), .. content, ClipEnd.Instance];
     }
 
-    private static IEnumerable<DrawItem> Box(BoxFragment box, Point origin, bool inArtifact, Sheet sheet)
+    private static IEnumerable<DrawItem> Box(BoxFragment box, Point origin, bool inArtifact, Sheet sheet, Anchors anchors)
     {
         if (box.Box.Role is SemanticRole.ListLabelRole && sheet.BodyClip is { } clip && !Overlaps(new Rect(origin, box.Size), clip))
         {
@@ -141,12 +201,12 @@ public static class PagePainter
 
         if (inArtifact)
         {
-            return [.. Background(box, origin), .. Border(box, origin), .. Children(box.Children, origin, inArtifact: true, sheet)];
+            return [.. Background(box, origin), .. Border(box, origin), .. Children(box.Children, origin, inArtifact: true, sheet, anchors)];
         }
 
         if (box.IsRepeated || box.Box.Role == SemanticRole.Decorative)
         {
-            return Artifact(box.IsRepeated ? ArtifactKind.Repeated : ArtifactKind.Layout, Box(box, origin, inArtifact: true, sheet));
+            return Artifact(box.IsRepeated ? ArtifactKind.Repeated : ArtifactKind.Layout, Box(box, origin, inArtifact: true, sheet, anchors));
         }
 
         // The box's own background and border go inside its markers, before its children: they are a layout
@@ -154,15 +214,111 @@ public static class PagePainter
         // table's /BBox (ElementBounds) encloses them. The painting order is the same either way.
         return
         [
-            new StructureStart(box.Box.Id, box.Box.Role, box.Box.Source) { Span = box.Box.Style.Span },
+            new StructureStart(box.Box.Id, box.Box.Role, box.Box.Source) { Span = box.Box.Style.Span, Language = box.Box.Language },
+            .. anchors.At(box.Box.Id, origin),
             .. Decoration([.. Background(box, origin), .. Border(box, origin)], inArtifact: false),
-            .. Children(box.Children, origin, inArtifact: false, sheet),
+            .. Children(box.Children, origin, inArtifact: false, sheet, anchors),
             new StructureEnd(box.Box.Id),
         ];
     }
 
-    private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, Sheet sheet) =>
-        children.SelectMany(child => Items(child.Fragment, origin + child.Offset, inArtifact, sheet));
+    /// <summary>
+    /// A line: its children, and around the children of each inline group's part on it (<see cref="LineGroupPart"/>) the
+    /// group's structure marker, so a group over several lines or pages is one element in tagged PDF (the markers of one
+    /// node are joined, as for a paragraph over two pages). Inside a link's marker, before its content, come its link
+    /// areas (<see cref="LinkArea"/>): the part's area, and the border box of every image in the part (Chromium's print
+    /// writes a rectangle for the link's line part and one for an image inside it). Inside an artifact a group is drawn
+    /// without markers and a link gets no area: a link in a page header or footer, or in a repeated copy of a table's
+    /// header rows, is only drawn (a known limit; the first, real occurrence of a header row keeps its links).
+    /// <para>THE RULE FOR PAINTING AN INLINE BOX: a group with a box (<see cref="InlineGroup.Box"/>) paints its background
+    /// and then its border where its part opens, after the line's children before it and before its own content, as a layout
+    /// artifact (inside the group's marker when it has a role; a group without a role opens no marker, its content stays
+    /// content of the element around it), and inside an artifact as it is. So, as Chromium prints it (cases
+    /// <c>ib-padding</c>, <c>ib-nested</c>), a box covers the text of the lines above it, the text of the lines below it is
+    /// drawn over it, and a box inside a box is painted over the outer one's background.</para>
+    /// </summary>
+    private static IEnumerable<DrawItem> Line(LineFragment line, Point origin, bool inArtifact, Sheet sheet, Anchors anchors)
+    {
+        if (line.Groups.Count == 0 || (inArtifact && !line.Groups.Any(part => part.Box is not null)))
+        {
+            return Children(line.Children, origin, inArtifact, sheet, anchors);
+        }
+
+        var items = new List<DrawItem>();
+        var open = new Stack<LineGroupPart>();
+        var next = 0;
+        void Close(LineGroupPart part)
+        {
+            if (!inArtifact && part.Group.Role is not null)
+            {
+                items.Add(new StructureEnd(part.Group.Id));
+            }
+        }
+
+        void OpenAt(int index)
+        {
+            while (next < line.Groups.Count && line.Groups[next].First == index)
+            {
+                var part = line.Groups[next++];
+                if (!inArtifact && part.Group.Role is { } role)
+                {
+                    items.Add(new StructureStart(part.Group.Id, role, part.Group.Source) { Language = part.Group.Language });
+                    items.AddRange(anchors.At(part.Group.Id, origin + part.Area.Origin));
+                    if (role is SemanticRole.LinkRole)
+                    {
+                        items.Add(new LinkArea(part.Group.Id, new Rect(origin + part.Area.Origin, part.Area.Size)));
+                        for (var child = part.First; child < part.First + part.Count; child++)
+                        {
+                            if (line.Children[child].Fragment is BoxFragment image)
+                            {
+                                items.Add(new LinkArea(part.Group.Id, new Rect(origin + line.Children[child].Offset, image.Size)));
+                            }
+                        }
+                    }
+                }
+
+                if (part is { Box: { } area, Group.Box: { } box })
+                {
+                    items.AddRange(Decoration([.. InlineBox(box, part, new Rect(origin + area.Origin, area.Size))], inArtifact));
+                }
+
+                if (part.Count == 0)
+                {
+                    Close(part);
+                }
+                else
+                {
+                    open.Push(part);
+                }
+            }
+        }
+
+        for (var index = 0; index < line.Children.Count; index++)
+        {
+            OpenAt(index);
+            var placed = line.Children[index];
+            items.AddRange(Items(placed.Fragment, origin + placed.Offset, inArtifact, sheet, anchors));
+            while (open.Count > 0 && open.Peek().First + open.Peek().Count == index + 1)
+            {
+                Close(open.Pop());
+            }
+        }
+
+        // Parts that hold no child and open after the line's last child: an empty inline box at the line's end.
+        OpenAt(line.Children.Count);
+        return items;
+    }
+
+    /// <summary>The background and then the border sides of an inline box's part, in its border box <paramref name="area"/>
+    /// (THE RULE FOR PAINTING AN INLINE BOX): the sides as a box's (<see cref="Border(BoxFragment, Point)"/>), the left one
+    /// only on the part that holds the start edge and the right one only on the part that holds the end edge (THE RULE FOR AN
+    /// INLINE BOX OVER LINES).</summary>
+    private static IEnumerable<DrawItem> InlineBox(InlineBoxStyle box, LineGroupPart part, Rect area) =>
+        [.. box.Background is { } color ? [new FillRectangle(area, color)] : Array.Empty<DrawItem>(),
+            .. Sides(box.Border with { Left = part.HoldsStart ? box.Border.Left : BorderSide.None, Right = part.HoldsEnd ? box.Border.Right : BorderSide.None }, area.Origin, area.Size)];
+
+    private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, Sheet sheet, Anchors anchors) =>
+        children.SelectMany(child => Items(child.Fragment, origin + child.Offset, inArtifact, sheet, anchors));
 
     /// <summary>Decoration outside an artifact becomes a layout artifact of its own; inside one it is drawn as is.</summary>
     private static IEnumerable<DrawItem> Decoration(ImmutableArray<DrawItem> items, bool inArtifact) =>
@@ -186,9 +342,10 @@ public static class PagePainter
     /// meet (CSS Backgrounds 3 §4.4, colour transitions at corners; <see cref="CutBorder"/>); a border of one colour stays
     /// four rectangles (<c>bs-solid-one-colour</c>: Chromium fills the same pixels as one shape).
     /// </summary>
-    private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin)
+    private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin) => Sides(box.Border, origin, box.Size);
+
+    private static IEnumerable<DrawItem> Sides(Border border, Point origin, Size size)
     {
-        var (border, size) = (box.Border, box.Size);
         if (border.Top.Style != BorderStyle.Solid || border.Right.Style != BorderStyle.Solid || border.Bottom.Style != BorderStyle.Solid || border.Left.Style != BorderStyle.Solid
             || MeetsAnotherColour(border))
         {
