@@ -41,8 +41,8 @@ namespace Ave.Extensions.Documents.Typesetting.Unicode;
 /// is its cluster's characters in the source, the later characters of a cluster have none, so the texts joined are the
 /// source text. BOUNDED WORK: every round looks at each character a fixed number of times, so a cluster of n marks costs
 /// work in proportion to n (<see cref="Steps"/> counts it). Not done, as in this engine's shaper generally: enclosing marks (general category Me) count as no marks
-/// here; the space and U+2011 fallbacks of HarfBuzz's normalizer (a missing space or non-breaking hyphen drawn with
-/// another glyph) are not made.
+/// here; the space fallback of HarfBuzz's normalizer (a missing space drawn as another space) is not made, and the
+/// no-break hyphen drawn with the hyphen's glyph is the shaper's (<c>Shaper.StandIn</c>), after this.
 /// </remarks>
 internal static partial class Normalization
 {

@@ -506,6 +506,30 @@ the body, in a page-margin box, through `inherit`, `unset` and `revert`) and lis
 a supplied one. That a mapping prints exactly as the written-out family is shown by `GenericFamilyTests`: each generic
 document, printed with its mapping, gives the same page model item for item as the equal case it was made from.
 
+### A character the face has no glyph for
+
+A browser takes such a character from a later family of the list, or from any font of the system. The engine takes
+no glyph from another font and draws no box for a missing one, so the character is refused in both modes
+(`Documents.Font.GlyphMissing`), at its own line and column in the document (a character reference: its ampersand;
+the text of a page-margin box: its `content` declaration). Every missing character of the document is reported, each
+pair of face and character once, in source order, up to 64 (`HtmlBoxGenerator.MaxMissingGlyphs`). The message names
+the character, its code point, the face, the list and what to do, and a later family of the list that has it:
+
+"The character '※' (U+203B) has no glyph in the face 'Lato-Regular' that 'font-family: Lato, Theano Didot' gives
+here, and the engine takes no glyph from another font: put the character in an element whose font has it, or use an
+image. The family 'Theano Didot' of the list has it: set 'Theano Didot' on an element around the character."
+
+The check is the shaper's own rule, which `HtmlRendering` passes in (`HtmlBoxOptions.MissingCharacters`); a caller of
+`HtmlBoxGenerator` alone who leaves it out gets layout's refusal of the first paragraph with a missing character, at
+the line of its text. Never missing: the characters that need no glyph (Default_Ignorable_Code_Point, among them the
+soft hyphen where no line breaks at it, U+200B, U+200C, U+200D, U+2060, U+FEFF and the variation selectors; the
+mandatory breaks), white space that collapses (a tab, a line feed), and a tab where white space is preserved (refused
+on its own). One character is drawn with another's glyph, as Chromium prints it: U+2011 NON-BREAKING HYPHEN, in a face
+without it, with the face's U+2010 (case `gm-nbhyphen-lato`, Lato at 12 and 20 pt: the same advance, no break at it,
+read back as U+2011). Refused, because Chromium takes them from a font of the system: U+2010 and U+2011 in a face that
+has only U+002D (case `gm-nbhyphen-theano`), and the spaces U+00A0, U+202F, U+2009, U+2002, U+2003, U+2007, U+2008 and
+U+200A in a face without them (case `gm-spaces-roboto`).
+
 ## HTML
 
 - The user-agent style sheet: `Ave.Extensions.Documents.Html/UserAgent/html.css` (HTML Standard §15, as Chromium 159

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Immutable;
+using System.Text;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fonts;
@@ -29,6 +32,13 @@ public sealed record HtmlBoxOptions
     /// <summary>Refuse (the default) or only warn; what <see cref="UnsupportedPolicy.Warn"/> does with a value that is not
     /// drawn is said at <see cref="HtmlBoxGenerator"/>.</summary>
     public UnsupportedPolicy Unsupported { get; init; } = UnsupportedPolicy.Refuse;
+
+    /// <summary>The characters of a text a face has no glyph for, each with the offset of its cluster: the shaper's own
+    /// rule (<c>Shaper.MissingCharacters</c> of the typesetting package, which <c>HtmlRendering</c> gives; a front-end does
+    /// not reference the shaper). With it, box generation refuses every such character of the document at its own place
+    /// (<see cref="HtmlBoxGenerator"/>); without it (null, the default), layout refuses those of the first paragraph that
+    /// has one, at the line of its text.</summary>
+    public Func<string, TrueTypeFont, ImmutableArray<(int Offset, Rune Character)>>? MissingCharacters { get; init; }
 }
 
 /// <summary>The document model of an HTML document, with the fonts its text uses.</summary>

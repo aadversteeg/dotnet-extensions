@@ -138,6 +138,7 @@ public static partial class HtmlBoxGenerator
                 switch (item)
                 {
                     case CssContentString value when text is not null:
+                        RefuseMissingGlyphs(value.Value, stand, _ => box.Position);
                         runs.Add(new TextRun(NewId(), Characters(new HtmlText(value.Value, box.Position)), text, source));
                         break;
                     case CssContentCounter counter when text is not null:

@@ -11,16 +11,20 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// <c>assets/fonts</c> beside it printed seven cases in Liberation Serif), and a print made that way holds other widths and
 /// baselines than the case asks for. So every face a print names must be the PostScript name of a font file in the
 /// repository that the case loads: a <c>url(…)</c> in the case or in a style sheet it links, resolved from the file it is
-/// written in. The one exception is a fallback face that is itself the measured fact: Chromium prints the text of a
-/// face that only a page-margin box uses in its fallback face (<see cref="Fallback"/>).
+/// written in. The exceptions are fallback faces that are themselves the measured fact (<see cref="Fallback"/>):
+/// Chromium prints the text of a face that only a page-margin box uses in its fallback face, and a character the face
+/// has no glyph for in a font of the system.
 /// </summary>
 public partial class MeasuredFaceTests
 {
     /// <summary>The cases whose print holds a fallback face on purpose, with that face: a face that only a page-margin
     /// box uses, which Chromium has not loaded when it prints the margin boxes (listed,
-    /// <see cref="HtmlListedDifferenceTests.A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face"/>).</summary>
+    /// <see cref="HtmlListedDifferenceTests.A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face"/>);
+    /// the hyphens U+2010 and U+2011 that Theano Didot has no glyph for, which Chromium takes from a font of the system
+    /// (refused, <see cref="MissingGlyphTests.A_hyphen_a_face_cannot_draw_is_refused"/>).</summary>
     private static readonly IReadOnlyDictionary<string, string> Fallback = new Dictionary<string, string>(StringComparer.Ordinal)
     {
+        ["gm-nbhyphen-theano"] = "LiberationSerif",
         ["pm-family-unused"] = "LiberationSerif-Bold",
     };
 

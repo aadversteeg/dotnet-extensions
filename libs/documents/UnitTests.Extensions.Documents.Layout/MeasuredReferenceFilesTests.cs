@@ -1336,6 +1336,18 @@ public class MeasuredReferenceFilesTests
         ["gf-list-generic.lines.txt"] = 0,
         ["gf-list-generic.print.txt"] = 18,
         ["gf-list-generic.words.txt"] = 17,
+        ["gm-nbhyphen-lato.boxes.txt"] = 1,
+        ["gm-nbhyphen-lato.lines.txt"] = 0,
+        ["gm-nbhyphen-lato.print.txt"] = 13,
+        ["gm-nbhyphen-lato.words.txt"] = 12,
+        ["gm-nbhyphen-theano.boxes.txt"] = 1,
+        ["gm-nbhyphen-theano.lines.txt"] = 0,
+        ["gm-nbhyphen-theano.print.txt"] = 15,
+        ["gm-nbhyphen-theano.words.txt"] = 6,
+        ["gm-spaces-roboto.boxes.txt"] = 1,
+        ["gm-spaces-roboto.lines.txt"] = 0,
+        ["gm-spaces-roboto.print.txt"] = 21,
+        ["gm-spaces-roboto.words.txt"] = 20,
         ["h-break-after-last.boxes.txt"] = 1,
         ["h-break-after-last.lines.txt"] = 0,
         ["h-break-after-last.print.txt"] = 3,
@@ -2281,7 +2293,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(559);
+        cases.Should().HaveCount(562);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

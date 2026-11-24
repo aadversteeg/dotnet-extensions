@@ -10,6 +10,7 @@ using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.Render.Pdf;
 using Ave.Extensions.Documents.Render.Raster;
+using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -75,6 +76,7 @@ public static class HtmlRendering
                 Resources = style.Resources,
                 BaseUrl = style.BaseUrl,
                 Unsupported = style.Unsupported,
+                MissingCharacters = Shaper.MissingCharacters,
             }))
             .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, boxes.Fonts).OnSuccessMap(pages => new HtmlRendered<PageDocument>(pages, boxes.Diagnostics)));
     }

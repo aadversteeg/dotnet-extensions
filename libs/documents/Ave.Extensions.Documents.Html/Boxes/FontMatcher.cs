@@ -65,6 +65,53 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
             : match;
     }
 
+    /// <summary>
+    /// For the refusal of a character a face has no glyph for: the family list in effect as an author wrote it, and the
+    /// first family after the one that gave the face, in the same weight and style, whose face has the character (null
+    /// when none has). CSS Fonts 4 §5 matches fonts per character, so a browser takes the character from that family; the
+    /// engine does not, and names it.
+    /// </summary>
+    /// <param name="style">The computed style of the element.</param>
+    /// <param name="face">The face <see cref="Match"/> gave it.</param>
+    /// <param name="has">Whether a face has the character (the shaper's rule).</param>
+    /// <returns>The list and the later family.</returns>
+    public (string Families, string? Later) Describe(ComputedStyle style, TrueTypeFont face, Func<TrueTypeFont, bool> has)
+    {
+        var value = style[PropertyRegistry.FontFamily];
+        if (ReferenceEquals(value, PropertyRegistry.FontFamily.Initial))
+        {
+            return ("the initial value of 'font-family'", null);
+        }
+
+        var families = value is CssList list ? list.Items : [];
+        var weight = style[PropertyRegistry.FontWeight] is CssNumber number ? (int)number.Value : 400;
+        var italic = style[PropertyRegistry.FontStyle] is CssKeyword { Name: "italic" };
+        var text = $"'font-family: {string.Join(", ", families.Select(Name))}'";
+        var reached = false;
+        foreach (var family in families)
+        {
+            var name = family switch
+            {
+                CssString written => written.Value,
+                CssKeyword keyword => _generics.For(keyword.Name).Name,
+                _ => null,
+            };
+            if (name is null || Named(name, weight, italic) is not { IsSuccess: true } found)
+            {
+                continue;
+            }
+
+            if (reached && has(found.Value))
+            {
+                return (text, name);
+            }
+
+            reached |= ReferenceEquals(found.Value, face);
+        }
+
+        return (text, null);
+    }
+
     /// <summary>The face of the initial value: the name "Times New Roman" as a written name, then the family
     /// <see cref="GenericFamilies.Standard"/> maps it to.</summary>
     private Result<TrueTypeFont, Error> Initial(string text, int weight, bool italic)
