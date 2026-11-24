@@ -166,6 +166,23 @@ internal static class LineBoxes
         ImmutableArray<InlineExtent> extents = [.. pieces.Where(piece => piece.Extent is not null).Select(piece => piece.Extent!),
             .. (empty ?? []).Select(run => InlineExtent.Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight, rounding)),
             .. strut is { } own ? [InlineExtent.Of(own.Font, own.Style.FontSize.Points, own.Style.LineHeight, rounding)] : Array.Empty<InlineExtent>()];
+        if (pieces.Length > 0 && pieces.All(piece => piece.Run is Edge))
+        {
+            // A line of empty inline boxes alone (InlineLayout.OnlyEdges): "Empty inline elements generate empty inline boxes,
+            // but these boxes still have margins, padding, borders and a line height, and thus influence the line box height
+            // calculation" (CSS 2.1 §10.8). Measured only with the paragraph's own font (case ib-empty-alone), where the strut
+            // gives the line its height; a paragraph without text properties has no strut and takes the boxes' own.
+            var boxes = pieces.Select(piece => piece.Run.Groups[^1]).Select(group => (group.Node, Extent: InlineExtent.Of(group.Font, group.Node.Style.FontSize.Points, group.Node.Style.LineHeight, rounding))).ToList();
+            if (extents.Length == 0)
+            {
+                extents = [.. boxes.Select(box => box.Extent)];
+            }
+            else if (boxes.FirstOrDefault(box => box.Extent.Above > extents.Max(extent => extent.Above) + 1e-9 || box.Extent.Below > extents.Max(extent => extent.Below) + 1e-9) is { Node: { } taller })
+            {
+                return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(taller, "an empty inline box alone on a line, with a font or line height that reaches above or below the paragraph's, is not drawn in this version; give it the paragraph's font size, or put text beside it"));
+            }
+        }
+
 
         var above = extents.Max(extent => extent.Above);
         var below = extents.Max(extent => extent.Below);

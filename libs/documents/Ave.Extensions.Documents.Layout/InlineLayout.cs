@@ -159,13 +159,36 @@ public static class InlineLayout
     /// shaped: both its edges are safe places to break, so the breaker never asks for it again; if it did, it gets the same
     /// glyph.</remarks>
     private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, BoxStyle paragraph, FontSizeRounding sizes, LengthRounding lengths) =>
-        GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs, paragraph), width, (run, text, showsHyphen, budget) => runs[run] switch
+        OnlyEdges(runs) is { } edges ? Result<ValueList<TextLine>, Error>.Success(edges) : GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs, paragraph), width, (run, text, showsHyphen, budget) => runs[run] switch
             {
                 LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, ShapingSizeOf(sizes, shaped.Run.Style.FontSize.Points), showsHyphen, budget).MapError(error => error.WithSource(shaped.Run.Source)),
                 var atomic => Result<ValueList<ShapedGlyph>, Error>.Success(LineBoxes.GlyphsOf(atomic)),
             },
             LineEndAtSpace(runs, paragraph.TextAlign),
             lengths == LengthRounding.SixtyFourthPixels ? SixtyFourthPixel : 0);
+
+    /// <summary>
+    /// The lines of a paragraph whose only content is the edges of inline boxes and white space that collapses away (an
+    /// empty box alone, <see cref="HasLineBoxes"/>): when one edge takes room, one line with every edge in order, the spaces
+    /// gone as at the start of a line (CSS Text 3 §4.1.2), so <c>&lt;p&gt; &lt;span&gt; &lt;/span&gt; &lt;/p&gt;</c> with a
+    /// padding on the span is its padding wide (case <c>ib-empty-alone</c>); when none does, no line (a box with a
+    /// background alone). The line breaker breaks text, and such a paragraph has none; the line is never broken (a line
+    /// too narrow for its edges overflows, not measured). Null for any other paragraph.
+    /// </summary>
+    private static ValueList<TextLine>? OnlyEdges(IReadOnlyList<LineBoxes.Item> runs)
+    {
+        static bool CollapsesAway(LineBoxes.ShapedRun run) =>
+            WhiteSpaceCollapsing.IsAllCollapsible(string.Concat(run.Glyphs.Select(glyph => glyph.Text)), run.Run.Style.WhiteSpaceCollapse);
+
+        if (!runs.Any(item => item is LineBoxes.Edge) || !runs.All(item => item is LineBoxes.Edge || (item is LineBoxes.ShapedRun run && CollapsesAway(run))))
+        {
+            return null;
+        }
+
+        return runs.Any(item => item is LineBoxes.Edge { Width: > 0 })
+            ? [new TextLine([.. runs.Select((item, index) => (Item: item, Index: index)).Where(entry => entry.Item is LineBoxes.Edge).Select(entry => new LineSegment(entry.Index, LineBoxes.GlyphsOf(entry.Item)))])]
+            : [];
+    }
 
     /// <summary>Chromium's layout unit, 1/64 CSS pixel, in points (<see cref="LengthRounding.SixtyFourthPixels"/>).</summary>
     private const double SixtyFourthPixel = 0.75 / 64;
@@ -207,12 +230,17 @@ public static class InlineLayout
     /// A paragraph of only collapsible spaces has no line boxes (CSS 2.1 §9.4.2), which makes it an empty box for margin
     /// collapsing (<see cref="MarginCollapsing.IsEmpty"/>). A page counter always shows digits, and an atomic inline always
     /// makes a line (CSS 2.1 §9.4.2: line boxes that contain no "replaced elements" among other content are the ones that
-    /// do not exist).
+    /// do not exist). So does an inline box whose start or end edge takes room (<see cref="InlineBoxStyle.Start"/>,
+    /// <see cref="InlineBoxStyle.End"/>), also an empty one: §9.4.2 names "inline elements with non-zero margins, padding,
+    /// or borders" among what makes a line exist, and Chromium's print has such a line, the paragraph's line height high,
+    /// for an empty box with padding, with a left border alone and with a left margin alone; for one with a background
+    /// alone it has none, and the paragraph's margins collapse through it (case <c>ib-empty-alone</c>).
     /// </summary>
     /// <param name="box">An inline box.</param>
     /// <returns>Whether it has line boxes.</returns>
     public static bool HasLineBoxes(Box box) =>
-        Leaves(box).Any(leaf => leaf.Node is CounterRun or Box || (leaf.Node is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text, text.Style.WhiteSpaceCollapse)));
+        Leaves(box).Any(leaf => leaf.Node is CounterRun or Box || (leaf.Node is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text, text.Style.WhiteSpaceCollapse)))
+        || Entries(box).Any(entry => entry.EdgeOf?.Box is { } edges && (entry.Edge == InlineBoxEdge.Start ? edges.Start : edges.End) > 0);
 
     /// <summary>
     /// The content of an inline box read through its inline groups (<see cref="InlineGroup"/>), which are transparent for
@@ -330,9 +358,11 @@ public static class InlineLayout
         }
 
         var entries = Entries(box);
-        if (entries.FirstOrDefault(entry => entry.EdgeOf is not null).EdgeOf is { } boxed && !HasLineBoxes(box))
+        // An empty box with a background alone makes no line (HasLineBoxes) and is not painted, as in Chromium's print; one with
+        // a vertical padding or border and no room on the line is not measured.
+        if (!HasLineBoxes(box) && entries.FirstOrDefault(entry => entry.EdgeOf?.Box is { } edges && (edges.Padding.Top.Points > 0 || edges.Padding.Bottom.Points > 0 || edges.Border.Top.IsVisible || edges.Border.Bottom.IsVisible)).EdgeOf is { } boxed)
         {
-            return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(LayoutErrors.InlineBox(boxed, "an inline box in a paragraph without text makes a line of its own, which this version does not draw; put text beside it"));
+            return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(LayoutErrors.InlineBox(boxed, "an empty inline box with a vertical padding or border and no left or right margin, border or padding, alone in a paragraph without text, is not drawn in this version; give it a left or right padding, or put text beside it"));
         }
 
         var groupFonts = GroupFonts(environment, entries);

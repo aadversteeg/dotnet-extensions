@@ -385,12 +385,15 @@ hw-pre-line equal
 hw-pre-wrap equal
 hw-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 ib-align equal
+ib-alone equal
 ib-background equal
 ib-border equal
 ib-code-kbd equal
+ib-empty-alone equal
 ib-fraction equal
 ib-margin equal
 ib-nested equal
+ib-only-boxes equal
 ib-origin-cell equal
 ib-origin-margin equal
 ib-origin-page equal

@@ -1,0 +1,26 @@
+page 1 300.000 300.000
+word 1 18.000 47.589 28.500 10.500 Above #000000 Lato-Regular
+word 1 50.277 65.444 28.500 10.500 the #000000 Lato-Regular
+word 1 68.132 97.311 28.500 10.500 empty #000000 Lato-Regular
+word 1 99.737 128.895 28.500 10.500 boxes. #000000 Lato-Regular
+word 1 18.000 59.102 66.000 10.500 Between #000000 Lato-Regular
+word 1 61.790 76.957 66.000 10.500 the #000000 Lato-Regular
+word 1 79.645 108.825 66.000 10.500 empty #000000 Lato-Regular
+word 1 111.250 140.408 66.000 10.500 boxes. #000000 Lato-Regular
+word 1 18.000 41.404 103.500 10.500 After #000000 Lato-Regular
+word 1 43.872 59.039 103.500 10.500 the #000000 Lato-Regular
+word 1 61.727 96.015 103.500 10.500 padded #000000 Lato-Regular
+word 1 98.703 118.537 103.500 10.500 one. #000000 Lato-Regular
+word 1 18.000 41.404 122.250 10.500 After #000000 Lato-Regular
+word 1 43.872 59.039 122.250 10.500 the #000000 Lato-Regular
+word 1 61.727 83.688 122.250 10.500 plain #000000 Lato-Regular
+word 1 86.376 106.210 122.250 10.500 one. #000000 Lato-Regular
+word 1 18.000 41.404 159.750 10.500 After #000000 Lato-Regular
+word 1 43.872 59.039 159.750 10.500 the #000000 Lato-Regular
+word 1 61.727 94.487 159.750 10.500 border. #000000 Lato-Regular
+word 1 18.000 41.404 197.250 10.500 After #000000 Lato-Regular
+word 1 43.872 59.039 197.250 10.500 the #000000 Lato-Regular
+word 1 61.727 95.600 197.250 10.500 margin. #000000 Lato-Regular
+rect 1 18.000 36.000 30.000 50.250 #ff0000
+rect 1 18.000 74.250 30.000 87.000 #00a000
+rect 1 18.000 130.500 20.250 143.250 #ff00ff

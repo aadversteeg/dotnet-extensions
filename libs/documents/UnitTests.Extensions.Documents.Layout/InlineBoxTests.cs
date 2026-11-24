@@ -129,9 +129,38 @@ public class InlineBoxTests
     }
 
     [Fact]
-    public void A_box_alone_in_a_paragraph_without_text_is_refused()
+    public void An_empty_box_alone_in_a_paragraph_makes_a_line_when_it_takes_room_and_none_with_a_background_alone()
     {
-        Refused(Document(Line(1, [Boxed(3, Padded(5))]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
+        var padded = Laid(Document(Line(1, [Boxed(3, Padded(5))]), Line(4, [Run(5, "aa")]))).Pages[0];
+        var spaced = Laid(Document(Line(1, [Run(2, " "), Boxed(3, Padded(5), Run(6, " ")), Run(7, " ")]), Line(4, [Run(5, "aa")]))).Pages[0];
+        var plain = Laid(Document(Line(1, [Boxed(3, Padded(0))]), Line(4, [Run(5, "aa")]))).Pages[0];
+
+        padded.Items.OfType<FillRectangle>().Single().Area.Size.Width.Should().BeApproximately(10, 1e-9, "the box is its padding wide");
+        RunWith(padded, "aa").Origin.Y.Should().BeApproximately(10 + LineBoxHeight + Ascent, 1e-9, "the box's line is the paragraph's line height high");
+        spaced.Items.OfType<FillRectangle>().Single().Area.Size.Width.Should().BeApproximately(10, 1e-9, "the spaces go as at the start of a line");
+        RunWith(spaced, "aa").Origin.Y.Should().BeApproximately(10 + LineBoxHeight + Ascent, 1e-9);
+        plain.Items.OfType<FillRectangle>().Should().BeEmpty("a box with a background alone makes no line");
+        RunWith(plain, "aa").Origin.Y.Should().BeApproximately(10 + Ascent, 1e-9);
+    }
+
+    [Fact]
+    public void An_empty_box_alone_with_a_vertical_padding_and_no_room_on_the_line_is_refused()
+    {
+        var error = Refused(Document(Line(1, [Boxed(3, Padded(0, top: 2))])));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
+        error.Message.Should().Contain("vertical padding or border");
+    }
+
+    [Fact]
+    public void An_empty_box_alone_with_a_font_taller_than_the_paragraph_s_is_refused()
+    {
+        var big = new InlineGroup(new NodeId(3), null, Text(20), [], At(3)) { Box = Padded(5) };
+        var error = Refused(Document(Line(1, [big], BoxStyle.Initial with { Text = Text() })));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
+        error.Message.Should().Contain("reaches above or below the paragraph's");
+        Laid(Document(Line(1, [big with { Style = Text() }], BoxStyle.Initial with { Text = Text() })));
     }
 
     [Theory]

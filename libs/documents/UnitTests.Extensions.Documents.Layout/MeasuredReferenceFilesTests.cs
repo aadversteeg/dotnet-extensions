@@ -1572,6 +1572,10 @@ public class MeasuredReferenceFilesTests
         ["ib-align.lines.txt"] = 3,
         ["ib-align.print.txt"] = 22,
         ["ib-align.words.txt"] = 18,
+        ["ib-alone.boxes.txt"] = 6,
+        ["ib-alone.lines.txt"] = 23,
+        ["ib-alone.print.txt"] = 43,
+        ["ib-alone.words.txt"] = 15,
         ["ib-background.boxes.txt"] = 1,
         ["ib-background.lines.txt"] = 4,
         ["ib-background.print.txt"] = 17,
@@ -1584,6 +1588,10 @@ public class MeasuredReferenceFilesTests
         ["ib-code-kbd.lines.txt"] = 2,
         ["ib-code-kbd.print.txt"] = 13,
         ["ib-code-kbd.words.txt"] = 6,
+        ["ib-empty-alone.boxes.txt"] = 1,
+        ["ib-empty-alone.lines.txt"] = 3,
+        ["ib-empty-alone.print.txt"] = 26,
+        ["ib-empty-alone.words.txt"] = 22,
         ["ib-fraction.boxes.txt"] = 1,
         ["ib-fraction.lines.txt"] = 5,
         ["ib-fraction.print.txt"] = 21,
@@ -1596,6 +1604,10 @@ public class MeasuredReferenceFilesTests
         ["ib-nested.lines.txt"] = 5,
         ["ib-nested.print.txt"] = 21,
         ["ib-nested.words.txt"] = 15,
+        ["ib-only-boxes.boxes.txt"] = 1,
+        ["ib-only-boxes.lines.txt"] = 5,
+        ["ib-only-boxes.print.txt"] = 11,
+        ["ib-only-boxes.words.txt"] = 5,
         ["ib-origin-cell.boxes.txt"] = 4,
         ["ib-origin-cell.lines.txt"] = 5,
         ["ib-origin-cell.print.txt"] = 21,
@@ -2398,7 +2410,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(583);
+        cases.Should().HaveCount(586);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");
