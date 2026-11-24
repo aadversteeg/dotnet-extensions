@@ -520,7 +520,11 @@ internal static class SelectorParser
                 var lower = InfraAscii.ToLower(ident.Text);
                 if (lower is "before" or "after" or "first-line" or "first-letter")
                 {
-                    context.Findings.Add(new SelectorFinding(SelectorSupport.Unsupported, ":" + lower, position));
+                    if (PseudoClasses.FindElement(lower, functional: false)!.Support != SelectorSupport.Supported)
+                    {
+                        context.Findings.Add(new SelectorFinding(SelectorSupport.Unsupported, ":" + lower, position));
+                    }
+
                     return new PseudoElementSelector(lower, []);
                 }
 
@@ -653,7 +657,11 @@ internal static class SelectorParser
                     return context.Fail<PseudoElementSelector>($"the unknown pseudo-element '::{CssSerializer.Shortened(ident.Text)}'", position);
                 }
 
-                context.Findings.Add(new SelectorFinding(entry.Support, "::" + entry.Name, position));
+                if (entry.Support != SelectorSupport.Supported)
+                {
+                    context.Findings.Add(new SelectorFinding(entry.Support, "::" + entry.Name, position));
+                }
+
                 return new PseudoElementSelector(entry.Name, []);
             case FunctionValue function:
                 cursor.Next();

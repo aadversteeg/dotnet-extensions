@@ -1,0 +1,6 @@
+page 1 300.000 300.000
+word 1 12.000 42.812 22.500 10.500 Before #000000 Lato-Regular
+word 1 45.504 88.701 22.500 10.500 Decision: #1b5e20 Lato-Bold
+word 1 91.254 116.564 22.500 10.500 board #1b5e20 Lato-Italic
+word 1 119.021 152.185 22.500 10.500 accepts #1b5e20 Lato-Italic
+word 1 154.879 176.546 22.500 10.500 after #000000 Lato-Regular

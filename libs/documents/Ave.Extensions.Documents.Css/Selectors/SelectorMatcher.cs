@@ -2,6 +2,7 @@ using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Cascade;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Ave.Extensions.Documents.Css.Selectors;
@@ -84,6 +85,50 @@ internal sealed class SelectorMatcher
     /// <summary>Whether a complex selector matches an element.</summary>
     public bool Matches(ComplexSelector selector, IStyleElement element) =>
         Evaluate(selector, Kind.Match, selector.Steps.Count - 1, element);
+
+    /// <summary>
+    /// Whether a complex selector matches the pseudo-element <paramref name="name"/> of an element (CSS Pseudo 4 §4.1;
+    /// Selectors 4 §3.6): its last compound names that pseudo-element and nothing after it, and the selector without the
+    /// pseudo-element matches the element, its originating element. A selector without a pseudo-element never matches
+    /// one, and one with a pseudo-element never matches an element (<see cref="Matches(ComplexSelector, IStyleElement)"/>).
+    /// </summary>
+    /// <param name="selector">The selector.</param>
+    /// <param name="element">The originating element.</param>
+    /// <param name="name">The pseudo-element, lowercase: <c>before</c> or <c>after</c>.</param>
+    /// <returns>Whether the selector selects that pseudo-element of the element.</returns>
+    public bool MatchesPseudoElement(ComplexSelector selector, IStyleElement element, string name) =>
+        Originating(selector, name) is { } originating && Matches(originating, element);
+
+    /// <summary>The selector of the originating element: the selector without its pseudo-element, made once per
+    /// selector; null when the selector does not end in that one pseudo-element.</summary>
+    private ComplexSelector? Originating(ComplexSelector selector, string name)
+    {
+        if (_originating.TryGetValue(selector, out var known))
+        {
+            return known.Name == name ? known.Selector : null;
+        }
+
+        var last = selector.Steps[^1].Compound.Selectors;
+        var at = -1;
+        for (var i = 0; i < last.Count; i++)
+        {
+            if (last[i] is PseudoElementSelector)
+            {
+                at = at < 0 && i == last.Count - 1 ? i : -2;
+            }
+        }
+
+        (string? Name, ComplexSelector? Selector) made = at >= 0
+            ? (((PseudoElementSelector)last[at]).Name, selector with
+            {
+                Steps = [.. selector.Steps.Take(selector.Steps.Count - 1), selector.Steps[^1] with { Compound = new CompoundSelector([.. last.Take(at)]) }],
+            })
+            : (null, null);
+        _originating[selector] = made;
+        return made.Name == name ? made.Selector : null;
+    }
+
+    private readonly Dictionary<ComplexSelector, (string? Name, ComplexSelector? Selector)> _originating = new(ReferenceEqualityComparer.Instance);
 
     private enum Kind
     {

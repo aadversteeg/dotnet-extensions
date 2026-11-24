@@ -48,7 +48,7 @@ public sealed record ElementDeclarations(ValueList<Declaration> StyleAttribute, 
 /// together at <see cref="CssInputLimits.MaxSubstitutionWork"/>. A limit that is reached ends the cascade: that
 /// <see cref="Compute"/> and every later one return the limit's error, never a partly computed style.</para>
 /// </remarks>
-public sealed class StyleComputer
+public sealed partial class StyleComputer
 {
     private readonly CascadeIndex _index;
     private readonly ValueContext _values;

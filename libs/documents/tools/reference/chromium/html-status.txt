@@ -349,6 +349,18 @@ fr-row-later-page-padding-overflows-two-cells listed Beside_a_cell_whose_bottom_
 fr-row-later-page-padding-overflows-two-cells-pad-6 listed Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again: page 3 'z' baseline 26.25 (laid out at 25.875), Chromium 32.25 (print.txt)
 fs-none-regular-bold equal
 fs-none-regular-only equal
+gc-attr equal
+gc-cell equal
+gc-list-item equal
+gc-nothing equal
+gc-string-block equal
+gc-string-children equal
+gc-string-heading equal
+gc-string-inline equal
+gc-string-kern equal
+gc-string-nobreak equal
+gc-string-space equal
+gc-string-style equal
 gf-initial-body equal
 gf-initial-keywords equal
 gf-initial-margin-box equal
@@ -563,7 +575,7 @@ sk-space equal
 sk-theano equal
 sk-touch equal
 sk-whose equal
-sr-counter refused Documents.Css.Unsupported.Selector The selector '::after' is not supported. at 2:98
+sr-counter refused Documents.Css.Unsupported.GeneratedContent content: counter(page) at 2:108
 sr-font-changes equal
 sr-line-justify equal
 sr-line-left equal

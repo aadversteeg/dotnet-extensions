@@ -1420,6 +1420,54 @@ public class MeasuredReferenceFilesTests
         ["fr-row-later-page-padding-overflows.lines.txt"] = 10,
         ["fr-row-later-page-padding-overflows.print.txt"] = 29,
         ["fr-row-later-page-padding-overflows.words.txt"] = 16,
+        ["gc-attr.boxes.txt"] = 3,
+        ["gc-attr.lines.txt"] = 0,
+        ["gc-attr.print.txt"] = 7,
+        ["gc-attr.words.txt"] = 6,
+        ["gc-cell.boxes.txt"] = 4,
+        ["gc-cell.lines.txt"] = 0,
+        ["gc-cell.print.txt"] = 8,
+        ["gc-cell.words.txt"] = 7,
+        ["gc-list-item.boxes.txt"] = 1,
+        ["gc-list-item.lines.txt"] = 0,
+        ["gc-list-item.print.txt"] = 9,
+        ["gc-list-item.words.txt"] = 8,
+        ["gc-nothing.boxes.txt"] = 2,
+        ["gc-nothing.lines.txt"] = 0,
+        ["gc-nothing.print.txt"] = 9,
+        ["gc-nothing.words.txt"] = 7,
+        ["gc-string-block.boxes.txt"] = 2,
+        ["gc-string-block.lines.txt"] = 0,
+        ["gc-string-block.print.txt"] = 9,
+        ["gc-string-block.words.txt"] = 8,
+        ["gc-string-children.boxes.txt"] = 1,
+        ["gc-string-children.lines.txt"] = 0,
+        ["gc-string-children.print.txt"] = 6,
+        ["gc-string-children.words.txt"] = 3,
+        ["gc-string-heading.boxes.txt"] = 2,
+        ["gc-string-heading.lines.txt"] = 0,
+        ["gc-string-heading.print.txt"] = 5,
+        ["gc-string-heading.words.txt"] = 4,
+        ["gc-string-inline.boxes.txt"] = 1,
+        ["gc-string-inline.lines.txt"] = 0,
+        ["gc-string-inline.print.txt"] = 5,
+        ["gc-string-inline.words.txt"] = 4,
+        ["gc-string-kern.boxes.txt"] = 1,
+        ["gc-string-kern.lines.txt"] = 0,
+        ["gc-string-kern.print.txt"] = 2,
+        ["gc-string-kern.words.txt"] = 1,
+        ["gc-string-nobreak.boxes.txt"] = 1,
+        ["gc-string-nobreak.lines.txt"] = 0,
+        ["gc-string-nobreak.print.txt"] = 4,
+        ["gc-string-nobreak.words.txt"] = 3,
+        ["gc-string-space.boxes.txt"] = 3,
+        ["gc-string-space.lines.txt"] = 0,
+        ["gc-string-space.print.txt"] = 8,
+        ["gc-string-space.words.txt"] = 7,
+        ["gc-string-style.boxes.txt"] = 1,
+        ["gc-string-style.lines.txt"] = 0,
+        ["gc-string-style.print.txt"] = 6,
+        ["gc-string-style.words.txt"] = 5,
         ["h-break-after-last-nested.boxes.txt"] = 1,
         ["h-break-after-last-nested.lines.txt"] = 0,
         ["h-break-after-last-nested.print.txt"] = 3,
@@ -3098,11 +3146,12 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(758);
-        cases.Should().HaveCount(758);
-        cases.Should().HaveCount(758);
-        cases.Should().HaveCount(758);
-        cases.Should().HaveCount(758);
+        cases.Should().HaveCount(770);
+        cases.Should().HaveCount(770);
+        cases.Should().HaveCount(770);
+        cases.Should().HaveCount(770);
+        cases.Should().HaveCount(770);
+        cases.Should().HaveCount(770);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

@@ -212,8 +212,10 @@ public class ProfileDocumentTests
         }
 
         Line();
+        Line("Pseudo-elements supported: " + string.Join(", ", PseudoClasses.AllElements.Where(entry => entry.Support == SelectorSupport.Supported).Select(entry => $"`::{entry.Name}` ({entry.Note})")) + ".");
+        Line();
         Line("Pseudo-elements never draw in an accepted document and are ignored by rule: " + string.Join(", ", PseudoClasses.AllElements.Where(entry => entry.Support == SelectorSupport.NeverMatches).Select(entry => $"`::{entry.Name}{(entry.Functional ? "()" : string.Empty)}`").Distinct()) + ". The others are refused: "
-            + string.Join(", ", PseudoClasses.AllElements.Where(entry => entry.Support != SelectorSupport.NeverMatches).Select(entry => $"`::{entry.Name}{(entry.Functional ? "()" : string.Empty)}`").Distinct()) + ", and Chromium's other `::-webkit-*`.");
+            + string.Join(", ", PseudoClasses.AllElements.Where(entry => entry.Support == SelectorSupport.Unsupported).Select(entry => $"`::{entry.Name}{(entry.Functional ? "()" : string.Empty)}`").Distinct()) + ", and Chromium's other `::-webkit-*`.");
         Line();
         Line("## At-rules");
         Line();

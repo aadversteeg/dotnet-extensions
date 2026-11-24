@@ -754,9 +754,10 @@ public static partial class HtmlBoxGenerator
                     RefuseUnspacedCharacter(text);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        RefuseMissingGlyphs(text.Text.Data, frame.Element, text.Text.PositionOf);
+                        RefuseMissingGlyphs(text.Text.Data, frame.Element, frame.Element.Generated is { } declared ? _ => declared.Position : text.Text.PositionOf);
                         var data = Transformed(text, frame, Characters(text.Text));
-                        frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, Source(text.Text.Position)));
+                        var source = frame.Element.Generated is { } generated ? new SourceLocation(generated.SourceName, generated.Position.Line) : Source(text.Text.Position);
+                        frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, source) { Generated = frame.Element.Generated is not null });
                     }
 
                     break;

@@ -119,8 +119,8 @@ internal static class PseudoClasses
 
     private static readonly Entry[] ElementEntries =
     [
-        new("before", false, SelectorSupport.Unsupported, "generated content"),
-        new("after", false, SelectorSupport.Unsupported, "generated content"),
+        new("before", false, SelectorSupport.Supported, "CSS Pseudo 4 §4.1: inline generated text (strings and attr()) before the element's content"),
+        new("after", false, SelectorSupport.Supported, "CSS Pseudo 4 §4.1: inline generated text (strings and attr()) after the element's content"),
         new("first-line", false, SelectorSupport.Unsupported, "CSS Pseudo 4 §2.1"),
         new("first-letter", false, SelectorSupport.Unsupported, "CSS Pseudo 4 §2.2"),
         new("marker", false, SelectorSupport.Unsupported, "list markers are styled by list-style-type only"),

@@ -40,6 +40,16 @@ public sealed record CssContentString(string Value) : CssContentItem
     public override string ToString() => new CssString(Value).ToString();
 }
 
+/// <summary><c>attr(name)</c> in the <c>content</c> of <c>::before</c> or <c>::after</c> (CSS Values 5, its
+/// string form): the value of the originating element's attribute of that name, the empty string when it has none
+/// (Chromium 159, measured: case <c>gc-attr</c>).</summary>
+/// <param name="Name">The attribute's name as written.</param>
+public sealed record CssContentAttribute(string Name) : CssContentItem
+{
+    /// <summary>Formats as CSS.</summary>
+    public override string ToString() => $"attr({Name})";
+}
+
 /// <summary>The page-based counters (CSS Paged Media 3 §6.1).</summary>
 public enum PageCounterName
 {
@@ -124,12 +134,82 @@ internal static class ContentValue
 
                     items.Add(image);
                     break;
+                case FunctionValue function when function.IsNamed("string") || function.IsNamed("element"):
+                    return (null, $"'{CssSerializer.Shortened([function])}' is not drawn{Cascade.DeclarationPreparer.RunningHeaders}");
                 default:
                     return (null, $"'{CssSerializer.Shortened([value])}' is not drawn: only strings, counter(page), counter(pages), url() and image-set() are");
             }
         }
 
         return (new CssContentList(null, [.. items]), null);
+    }
+
+    /// <summary>
+    /// The value of <c>content</c> on <c>::before</c> or <c>::after</c> (CSS Generated Content 3 §1): <c>none</c>,
+    /// <c>normal</c>, or at most <see cref="CssInputLimits.MaxGeneratedContentItems"/> strings and <c>attr(name)</c>
+    /// items. The rest of the grammar is refused with what to write instead: counters (a later version), the page
+    /// counters (Chromium 159 prints 0 for them outside the page-margin boxes, measured), quotes, images, <c>attr()</c>
+    /// with a type or a fallback, and the alternative text after <c>/</c>.
+    /// </summary>
+    /// <param name="values">The declaration's value.</param>
+    /// <returns>The value, or null and the reason.</returns>
+    public static (CssContentList? Value, string? Refused) ParseGenerated(IReadOnlyList<ComponentValue> values)
+    {
+        var significant = Significant(values);
+        if (significant is [CssToken { Kind: CssTokenKind.Ident } keyword] && (keyword.IsIdent("none") || keyword.IsIdent("normal")))
+        {
+            return (keyword.IsIdent("none") ? CssContentList.None : CssContentList.Normal, null);
+        }
+
+        if (significant.Count == 0)
+        {
+            return (null, "the value is empty");
+        }
+
+        if (significant.Count > CssInputLimits.MaxGeneratedContentItems)
+        {
+            return (null, $"it has {significant.Count} items, and at most {CssInputLimits.MaxGeneratedContentItems} are drawn; join the strings");
+        }
+
+        var items = new List<CssContentItem>(significant.Count);
+        foreach (var value in significant)
+        {
+            switch (value)
+            {
+                case CssToken { Kind: CssTokenKind.String } text:
+                    items.Add(new CssContentString(text.Text));
+                    break;
+                case FunctionValue function when function.IsNamed("attr"):
+                    if (Significant(function.Values) is not [CssToken { Kind: CssTokenKind.Ident } name])
+                    {
+                        return (null, $"'{CssSerializer.Shortened([function])}' is not drawn: attr() with a type or a fallback is not; write attr(name) alone");
+                    }
+
+                    items.Add(new CssContentAttribute(name.Text));
+                    break;
+                case FunctionValue function when (function.IsNamed("counter") || function.IsNamed("counters")) && IsPageCounter(function):
+                    return (null, $"'{CssSerializer.Shortened([function])}' is not drawn: page numbers exist only in page-margin boxes; a browser prints 0 here");
+                case FunctionValue function when function.IsNamed("counter") || function.IsNamed("counters"):
+                    return (null, $"'{CssSerializer.Shortened([function])}' is not drawn yet: counter() and counters() come in a later version; write the number as a string");
+                case CssToken { Kind: CssTokenKind.Ident } quote when quote.IsIdent("open-quote") || quote.IsIdent("close-quote") || quote.IsIdent("no-open-quote") || quote.IsIdent("no-close-quote"):
+                    return (null, $"'{quote.Text}' is not drawn yet: write the quotation marks as strings");
+                case CssToken { Kind: CssTokenKind.Url }:
+                case FunctionValue { Name: var image } when IsImage(image):
+                    return (null, $"'{CssSerializer.Shortened([value])}' is not drawn yet: images in generated content are not; put an img in the HTML");
+                case CssToken delim when delim.IsDelim('/'):
+                    return (null, "the alternative text after '/' is not drawn yet: remove it; the generated text is read as it is");
+                default:
+                    return (null, $"'{CssSerializer.Shortened([value])}' is not drawn: only strings and attr(name) are");
+            }
+        }
+
+        return (new CssContentList(null, [.. items]), null);
+
+        static bool IsPageCounter(FunctionValue function) =>
+            Significant(function.Values) is [CssToken { Kind: CssTokenKind.Ident } name, ..] && name.Text is "page" or "pages";
+
+        static bool IsImage(string name) => InfraAscii.ToLower(name) is "url" or "image-set" or "-webkit-image-set" or "image" or "cross-fade" or "element"
+            or "linear-gradient" or "radial-gradient" or "conic-gradient" or "repeating-linear-gradient" or "repeating-radial-gradient" or "repeating-conic-gradient";
     }
 
     /// <summary>The URL of <c>url("…")</c> (a function with one string), or null.</summary>

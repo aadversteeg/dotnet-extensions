@@ -1,0 +1,5 @@
+page 1 300.000 300.000
+word 1 12.000 41.232 27.750 15.750 Part #000000 Lato-Bold
+word 1 45.070 74.956 27.750 15.750 One #000000 Lato-Bold
+word 1 12.000 30.212 47.250 10.500 text #000000 Lato-Regular
+word 1 32.895 60.925 47.250 10.500 below #000000 Lato-Regular
