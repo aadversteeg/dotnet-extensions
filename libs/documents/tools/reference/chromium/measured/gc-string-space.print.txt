@@ -1,0 +1,8 @@
+page 1 300.000 300.000
+word 1 12.000 33.651 22.500 10.500 Lead #000000 Lato-Regular
+word 1 36.344 68.338 22.500 10.500 spaced #000000 Lato-Regular
+word 1 71.026 92.146 22.500 10.500 start #000000 Lato-Regular
+word 1 12.000 29.892 41.250 10.500 two #000000 Lato-Regular
+word 1 32.580 63.240 41.250 10.500 spaces #000000 Lato-Regular
+word 1 12.000 17.229 60.000 10.500 x #000000 Lato-Regular
+word 1 12.000 22.160 72.750 10.500 yz #000000 Lato-Regular

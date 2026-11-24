@@ -110,11 +110,11 @@ public class SelectorMatchingTests
     [Fact]
     public void Unsupported_and_never_matching_selectors_are_reported_by_the_parser()
     {
-        var values = SyntaxParser.ParseComponentValues(CssSource.Of("p:hover, div:has(p), a::before"), (_, _) => { }).Values;
+        var values = SyntaxParser.ParseComponentValues(CssSource.Of("p:hover, div:has(p), a::first-line, a::before"), (_, _) => { }).Values;
         var parsed = SelectorParser.Parse(values, relative: false, TextPosition.Start);
 
         parsed.Findings.Select(finding => (finding.Support, finding.Name)).Should().Equal(
-            (SelectorSupport.NeverMatches, ":hover"), (SelectorSupport.Unsupported, ":has()"), (SelectorSupport.Unsupported, "::before"));
+            (SelectorSupport.NeverMatches, ":hover"), (SelectorSupport.Unsupported, ":has()"), (SelectorSupport.Unsupported, "::first-line"));
     }
 
     [Theory]

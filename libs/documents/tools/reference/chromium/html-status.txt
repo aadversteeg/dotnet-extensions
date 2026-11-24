@@ -322,6 +322,18 @@ fr-row-later-padding-fits-line-not equal
 fr-row-later-padding-under-header equal
 fr-row-later-page-padding-overflows equal
 fr-row-later-page-padding-overflows-two-cells open page 2 reads 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6', Chromium 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7' (print.txt)
+gc-attr equal
+gc-cell equal
+gc-list-item equal
+gc-nothing equal
+gc-string-block equal
+gc-string-children equal
+gc-string-heading equal
+gc-string-inline equal
+gc-string-kern equal
+gc-string-nobreak equal
+gc-string-space equal
+gc-string-style equal
 h-break-after-last equal
 h-break-after-last-nested equal
 h-char-cr equal
@@ -486,7 +498,7 @@ sk-space refused Documents.Html.Unsupported.Value width: 120pt at 5:1
 sk-theano equal
 sk-touch equal
 sk-whose equal
-sr-counter refused Documents.Css.Unsupported.Selector The selector '::after' is not supported. at 2:98
+sr-counter refused Documents.Css.Unsupported.GeneratedContent content: counter(page) at 2:108
 sr-font-changes equal
 sr-line-justify refused Documents.Html.Unsupported.Value width: 117pt at 3:1
 sr-line-left refused Documents.Html.Unsupported.Value width: 117pt at 3:1

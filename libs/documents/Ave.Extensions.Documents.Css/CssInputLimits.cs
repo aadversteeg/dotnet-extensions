@@ -73,6 +73,14 @@ public static class CssInputLimits
     /// instead of copying a clamp it cannot see exactly, and nothing on paper comes near it.</summary>
     public const double MaxLengthPixels = 1 << 24;
 
+    /// <summary>The most items one <c>content</c> of <c>::before</c> or <c>::after</c> holds: 16. A longer list is
+    /// refused at its declaration.</summary>
+    public const int MaxGeneratedContentItems = 16;
+
+    /// <summary>The most characters of text one <c>::before</c> or <c>::after</c> generates, its strings and attribute
+    /// values together: 4 096. More is refused at the <c>content</c> declaration, not cut.</summary>
+    public const int MaxGeneratedTextLength = 4096;
+
     /// <summary>The most diagnostics one reading of a style sheet, one cascade or one HTML resolution keeps: 10 000.
     /// Past it one <see cref="Core.DocumentErrorCodes.TooManyDiagnostics"/> says how many were left out, how many of them
     /// are refusals and the first of those, and the document is refused: every diagnostic costs memory, and hostile

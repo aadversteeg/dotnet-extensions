@@ -1,0 +1,4 @@
+page 1 300.000 300.000
+word 1 12.000 80.906 22.500 10.500 Unbrokenword #000000 Lato-Regular
+word 1 12.000 32.333 35.250 10.500 next #000000 Lato-Regular
+word 1 35.016 51.417 35.250 10.500 line #000000 Lato-Regular

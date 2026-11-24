@@ -542,7 +542,8 @@ public static partial class HtmlBoxGenerator
                     if (TextStyleOf(frame.Element) is { } style)
                     {
                         var data = Characters(text.Text);
-                        frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, Source(text.Text.Position)));
+                        var source = frame.Element.Generated is { } generated ? new SourceLocation(generated.SourceName, generated.Position.Line) : Source(text.Text.Position);
+                        frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, source) { Generated = frame.Element.Generated is not null });
                     }
 
                     break;

@@ -1,0 +1,9 @@
+page 1 300.000 300.000
+word 1 12.000 47.180 22.500 10.500 nothing #000000 Lato-Regular
+word 1 49.875 78.787 22.500 10.500 drawn #000000 Lato-Regular
+word 1 81.485 102.039 22.500 10.500 here #000000 Lato-Regular
+word 1 12.000 32.333 35.250 10.500 next #000000 Lato-Regular
+word 1 35.016 51.417 35.250 10.500 line #000000 Lato-Regular
+word 1 12.000 39.295 73.500 10.500 image #000000 Lato-Regular
+word 1 65.676 87.343 73.500 10.500 after #000000 Lato-Regular
+image 1 42.000 43.500 63.000 73.500

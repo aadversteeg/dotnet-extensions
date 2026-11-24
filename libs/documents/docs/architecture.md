@@ -404,6 +404,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | a style sheet | 2^24 UTF-16 code units; as bytes, 3 × 2^24 before decoding (UTF-8 takes at most 3 bytes per code unit), then 2^24 code units; nesting of blocks, functions and rules 64 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (the reading fails; a style resolution fails with it) |
 | nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels below the top one (a style rule and 32 nested in it) | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the style resolution fails) |
 | work of one cascade | 2^26 units: a matching fact computed, a simple selector tested, 64 characters compared, a sibling counted, a rule or declaration collected, a candidate looked at, a comparison of a sort, a var() reference followed | `Css/CssInputLimits.cs` (`MaxCascadeWork`) | `Documents.Css.TooLarge` (the style resolution fails) |
+| generated text of one `::before` or `::after` | 16 items in its `content`; 4 096 characters of text, its strings and attribute values together | `Css/CssInputLimits.cs` (`MaxGeneratedContentItems`, `MaxGeneratedTextLength`) | `Documents.Css.Unsupported.GeneratedContent` (the declaration is refused, the text left out) |
 | entries one cascade remembers | 2^22: matching facts, parent-rule matches, sibling tables, var() substitutions, custom-property tables; past it they are computed again, inside the work limit | `Css/CssInputLimits.cs` (`MaxCascadeMemo`) | none |
 | entries of one cascade's index | 2^21: a selector of a style rule or a declaration, counted each time a sheet is taken in | `Css/CssInputLimits.cs` (`MaxCascadeEntries`) | `Documents.Css.TooLarge` (the style resolution fails) |
 | style sheets of one cascade | 1 024: the user-agent sheet, style elements, linked and imported sheets; a sheet taken in twice counts twice | `Css/CssInputLimits.cs` (`MaxStyleSheets`) | `Documents.Css.TooLarge` (the style resolution fails) |
@@ -557,7 +558,8 @@ Known limits of stage 3 (also in the profile document):
   row with an open formatting element in a template (HD-11). Each is a case of
   `tools/reference/chromium/html-tree/cases.tsv`, pinned as still different; the foreign contexts and the HD-10
   clones are pinned by the engine's own tree (`ChromiumTreeTests`).
-- No pseudo-elements, no `:has()`, `:lang()`, `:dir()`; selectors Chromium 159 rejects are invalid here too (the `s`
+- No pseudo-elements but `::before` and `::after` with strings and `attr()` (see **Generated text**), no `:has()`,
+  `:lang()`, `:dir()`; selectors Chromium 159 rejects are invalid here too (the `s`
   attribute modifier, `:heading`).
 - A computed `calc()` that keeps a length and a percentage is refused (the document model's length holds one of
   them); typed arithmetic and the math functions other than calc, min, max and clamp are refused; ex and ch need the
@@ -678,6 +680,27 @@ continue the counter of an item with another parent; the marker of an item with 
 16 or longer than 10 000 items fail under both policies. The style sheet refuses `list-style-position: inside`
 (case `li-inside`), `list-style-image`, `::marker` and the `counter-*` properties other than their initial value; layout
 refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types`).
+
+**Generated text** (`Css/Cascade/StyleComputer.PseudoElements.cs`, `HtmlStyleResolver.Generated`; CSS Pseudo 4 §4.1, CSS
+Generated Content 3 §1). A rule whose selector ends in `::before` or `::after` (or `:before`, `:after`) matches the
+element the selector matches without it, never the element itself; its declarations are cascaded as an element's
+(origin, layer, specificity counting the pseudo-element, order), inheriting from the element's computed style. A
+`content` of strings and `attr(name)` (the attribute's value, empty when it has none; case `gc-attr`) makes an inline
+box of that style with one text, the first or the last child of the element: in the same inline formatting context, so
+white space collapses across the join (case `gc-string-space`), the join is no break opportunity (`gc-string-nobreak`),
+and text decorations apply as to an inline element. Its runs are `TextRun.Generated`, at the line of the `content`
+declaration; tagged as real text of the element, in reading order (Chromium's text layer has them so). Nothing is made,
+and nothing is said, for `content: normal`, `none`, no `content`, a CSS-wide keyword or `display: none`, nor on `img`
+and `br` (case `gc-nothing`: Chromium draws nothing there either), so `*, *::before, *::after { box-sizing: border-box }`
+costs nothing. Refused at the declaration (`Documents.Css.Unsupported.GeneratedContent`), and the text left out:
+`counter()` and `counters()` (a later version), `counter(page)` and `counter(pages)` (a browser prints 0 outside the
+page-margin boxes), the quote keywords, `url()` and the other images, `attr()` with a type or a fallback, the
+alternative text after `/`, `var()` and `revert`; `display` other than `inline` and `none`; a margin, padding, border or
+background (they need inline boxes), a position or a float that differs from what an inline child of the element has
+without it; the pseudo-elements of `table`, its row groups and rows (Chromium draws them in an anonymous cell), of a
+list element (its children are its items here) and of the other void elements. `::marker`, `::first-line` and
+`::first-letter` stay refused at their selector. Text past the limits below is refused, never cut. The `content` of
+page-margin boxes keeps its own grammar (`ContentValue.Parse`).
 
 Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`):
 `wbr`, `q`. A `br` is the model's forced line break, the line separator U+2028, in its own text style (a block-level

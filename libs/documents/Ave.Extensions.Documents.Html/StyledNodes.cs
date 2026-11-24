@@ -16,7 +16,14 @@ public abstract record StyledNode;
 /// <param name="Language">Its language (HTML Standard §3.2.6.2): the nearest lang or xml:lang attribute, else the
 /// document's default language; the empty string when the attribute says it is unknown; null when nothing says.</param>
 /// <param name="Children">Its element and text children, in order (comments and processing instructions left out).</param>
-public sealed record StyledElement(HtmlElement Element, ComputedStyle Style, string? Language, ValueList<StyledNode> Children) : StyledNode;
+public sealed record StyledElement(HtmlElement Element, ComputedStyle Style, string? Language, ValueList<StyledNode> Children) : StyledNode
+{
+    /// <summary>For the box of a <c>::before</c> or <c>::after</c> (CSS Pseudo 4 §4.1): the text it generates, its style
+    /// and the place of its <c>content</c> declaration; null for an element of the document. Such a box is an inline
+    /// child of its originating element, first or last, named <c>::before</c> or <c>::after</c>, with no attributes and
+    /// one text, which is <see cref="Css.Cascade.GeneratedContent.Text"/> at that place.</summary>
+    public GeneratedContent? Generated { get; init; }
+}
 
 /// <summary>A text, styled as its parent element (CSS 2.1 §9.2.2.1: text inherits from its parent box).</summary>
 /// <param name="Text">The text as parsed.</param>
