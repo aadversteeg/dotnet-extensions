@@ -391,7 +391,7 @@ ib-border equal
 ib-break-align equal
 ib-break-fraction equal
 ib-break-hyphen refused Documents.Input.Unsupported.InlineBox box: margin 0,0 padding 0,3,0,3 border none/none/none/none background #00a000 at 3:9
-ib-break-justify refused Documents.Input.Unsupported.InlineBox box: margin 0,0 padding 0,3.996,0,3.996 border none/none/none/none background #ff0000 at 2:17
+ib-break-justify listed Where_an_inline_box_ends_on_a_justified_line_Chromium_may_shrink_the_page_and_justify_it_a_pixel_wider: page 1 'aa' x0 59.683, Chromium 59.927 (print.txt)
 ib-break-nested equal
 ib-break-page equal
 ib-break-space equal
@@ -400,9 +400,9 @@ ib-empty-alone equal
 ib-fraction equal
 ib-image-edges equal
 ib-image-span equal
-ib-justify-padding refused Documents.Input.Unsupported.InlineBox box: margin 0,0 padding 0,0,0,3.996 border none/none/none/none background #ff0000 at 2:17
-ib-justify-place refused Documents.Input.Unsupported.InlineBox box: margin 0,0 padding 0,3,0,3 border none/none/none/none background #ff0000 at 2:19
-ib-justify-two refused Documents.Input.Unsupported.InlineBox box: margin 0,0 padding 0,1.992,0,1.992 border none/none/none/none background #0000ff at 3:80
+ib-justify-padding equal
+ib-justify-place equal
+ib-justify-two equal
 ib-link-button equal
 ib-link-button-break equal
 ib-link-cell equal

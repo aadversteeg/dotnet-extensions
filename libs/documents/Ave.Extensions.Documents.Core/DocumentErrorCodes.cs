@@ -165,7 +165,7 @@ public static class DocumentErrorCodes
             public static readonly ErrorCode PreservedTab = _ / "PreservedTab";
 
             /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: around an
-            /// image that lies inside a link too, broken over two lines of a justified paragraph or at a soft hyphen, alone with
+            /// image that lies inside a link too, broken over two lines at a soft hyphen, alone with
             /// a vertical edge only, or reaching above the page area of a later page. Metadata: Value, Property.</summary>
             public static readonly ErrorCode InlineBox = _ / "InlineBox";
         }

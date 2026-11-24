@@ -140,14 +140,16 @@ public class InlineBoxTests
     }
 
     [Fact]
-    public void A_box_over_two_lines_of_a_justified_paragraph_is_refused_at_the_group()
+    public void A_box_over_lines_of_a_justified_paragraph_is_justified_with_each_line_to_its_end()
     {
         var text = string.Join(" ", Enumerable.Repeat("word", 30));
-        var error = Refused(Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(2), Run(5, text))], BoxStyle.Initial with { TextAlign = TextAlign.Justify })));
+        List<Rect> Backgrounds(TextAlign align) => [.. Laid(Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(2), Run(5, text))], BoxStyle.Initial with { TextAlign = align })))
+            .Pages[0].Items.OfType<FillRectangle>().Where(fill => fill.Color == Red).Select(fill => fill.Area)];
 
-        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
-        error.Message.Should().Contain("justified");
-        error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(3);
+        var (justified, start) = (Backgrounds(TextAlign.Justify), Backgrounds(TextAlign.Left));
+        justified.Count.Should().BeGreaterThanOrEqualTo(3, "one part per line");
+        (justified[0].Origin.X + justified[0].Size.Width).Should().BeApproximately(justified[1].Origin.X + justified[1].Size.Width, 1e-6, "the first line is widened to the line's end, as the second");
+        (start[0].Origin.X + start[0].Size.Width).Should().BeLessThan(justified[0].Origin.X + justified[0].Size.Width - 0.1, "aligned to the left it ends before");
     }
 
     [Fact]

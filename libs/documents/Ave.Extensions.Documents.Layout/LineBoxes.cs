@@ -235,17 +235,8 @@ internal static class LineBoxes
 
         var parts = groups.End();
 
-        // THE RULE FOR AN INLINE BOX OVER LINES, its limits, measured against Chromium's print: a justified line that a box goes
-        // on from is widened by more than its room (each space 0.244 pt wider, the line 0.73 pt past its end, where the engine
-        // widens nothing), and a line that ends at a shown soft hyphen inside a box is shaped again here without its hyphen.
-        // Seven other justified lines a box goes on from (start padding only, end padding only, none, two boxes, a part at
-        // a line's start, middle and end: cases ib-justify-*) Chromium widens by their room, as this rule would; what makes
-        // the two lines of ib-break-justify wider is not known, so the refusal stays for all of them.
-        if (align == TextAlign.Justify && !isLastLine && parts.FirstOrDefault(part => part is { Group.Box: not null, HoldsEnd: false }) is { } justified)
-        {
-            return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(justified.Group, "it breaks over two lines of a justified paragraph, which this version does not draw; keep its content on one line (white-space: nowrap) or align the paragraph to the start"));
-        }
-
+        // THE RULE FOR AN INLINE BOX OVER LINES, its limit, measured against Chromium's print: a line that ends at a shown soft
+        // hyphen inside a box is shaped again here without its hyphen.
         if (pieces.FirstOrDefault(piece => piece.Run is ShapedRun && piece.Segment.Glyphs.Count > 0 && piece.Segment.Glyphs[^1].Text.EndsWith('\u00AD') && piece.Run.Groups.Any(group => group.Node.Box is not null)) is { Run: { } hyphenated })
         {
             return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(hyphenated.Groups.Last(group => group.Node.Box is not null).Node, "it breaks over two lines at a soft hyphen, which this version does not draw; leave out the soft hyphen or keep the word on one line"));
@@ -278,7 +269,9 @@ internal static class LineBoxes
     /// paints its start padding alone on that line, 82.5..87 pt after the word, and its text from the next line's start;
     /// one whose last character is a space there ends its background 3 pt (its padding) after the last glyph, the space
     /// carrying none (<c>ib-break-space</c>); centred and right-aligned lines place each part with the line
-    /// (<c>ib-break-align</c>); a fractional top padding moves the text of every part by its own rounding
+    /// (<c>ib-break-align</c>) and a justified line a box goes on from is widened by its room as any justified line, its
+    /// edges no expansion opportunity (<c>ib-justify-padding</c>, <c>ib-justify-two</c>, <c>ib-justify-place</c>; where a box
+    /// ends 1/64 px past the page area Chromium shrinks the page: <c>ib-break-justify</c>, listed); a fractional top padding moves the text of every part by its own rounding
     /// (<c>ib-break-fraction</c>); between two lines over a page break, a part on each page (<c>ib-break-page</c>).</para>
     /// </summary>
     private sealed class LineGroups(double baseline, FontMetricRounding rounding)

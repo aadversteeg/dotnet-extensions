@@ -183,15 +183,13 @@ public class InlineBoxMappingTests
     }
 
     [Fact]
-    public void A_box_over_two_lines_of_a_justified_paragraph_is_refused_by_layout_at_the_element()
+    public void A_box_over_lines_of_a_justified_paragraph_is_laid_out()
     {
         var boxes = Boxes($"<p style=\"text-align: justify\">Start <span style=\"background-color: #ff0000\">{string.Join(" ", Enumerable.Repeat("word", 200))}</span>.</p>");
 
         var laid = boxes.OnSuccessBind(value => DocumentLayout.Run(value.Document, value.Fonts));
 
-        laid.IsFailure.Should().BeTrue();
-        laid.Error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
-        laid.Error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(1);
+        laid.IsSuccess.Should().BeTrue();
     }
 
     /// <summary>The inline box cases through the HTML path into a tagged PDF (PDF/A-3a and PDF/UA-1 together, each case with
