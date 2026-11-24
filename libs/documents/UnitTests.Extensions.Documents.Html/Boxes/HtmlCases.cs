@@ -969,7 +969,8 @@ internal static class HtmlCases
     /// <summary>
     /// The engine's words as PyMuPDF finds them in Chromium's PDF (<c>positions.py</c>, <c>print.txt</c>): two runs of
     /// glyphs on one baseline at the same font size, in the same face and colour, with no white space between
-    /// (<see cref="PrintedPage.WordGap"/>: text on both sides of an inline element's edge, kerned or not), are one word;
+    /// (<see cref="PrintedPage.PyMuPdfWordGap"/>: text on both sides of an inline element's edge, kerned or not, or the
+    /// words of two cells side by side close enough), are one word;
     /// PyMuPDF starts a new span, and <c>positions.py</c> a new word, where the font, the size or the colour changes.
     /// Poppler's words (<c>words.txt</c>) join across a change of face or colour too: <see cref="PrintedPage.JoinedWords"/>.
     /// </summary>
@@ -978,10 +979,10 @@ internal static class HtmlCases
         var joined = new List<PrintedWord>();
         foreach (var word in words)
         {
-            if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.WordGap
-                && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour)
+            if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.PyMuPdfWordGap * word.FontSize
+                && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour && word.IsDrawnRightAfter(last))
             {
-                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text };
+                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn };
                 continue;
             }
 

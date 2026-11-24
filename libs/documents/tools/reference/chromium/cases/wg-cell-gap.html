@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Two words in two cells side by side with no white space between them, the second cell's left padding growing from table to table (0, 0.375, 0.75, 1.125, 1.5, 2.25 and 3pt), so the gap between the words grows from the grid line's 0.75pt: where the readers of the print join the two words into one and where they keep them apart. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } td { padding: 0; }</style></head><body>
+<table><tr><td>left</td><td style="padding-left: 0">right</td></tr></table>
+<p>next 1</p>
+<table><tr><td>left</td><td style="padding-left: 0.375pt">right</td></tr></table>
+<p>next 2</p>
+<table><tr><td>left</td><td style="padding-left: 0.75pt">right</td></tr></table>
+<p>next 3</p>
+<table><tr><td>left</td><td style="padding-left: 1.125pt">right</td></tr></table>
+<p>next 4</p>
+<table><tr><td>left</td><td style="padding-left: 1.5pt">right</td></tr></table>
+<p>next 5</p>
+<table><tr><td>left</td><td style="padding-left: 2.25pt">right</td></tr></table>
+<p>next 6</p>
+<table><tr><td>left</td><td style="padding-left: 3pt">right</td></tr></table>
+<p>next 7</p>
+</body></html>

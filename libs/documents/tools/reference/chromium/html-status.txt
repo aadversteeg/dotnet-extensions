@@ -399,7 +399,7 @@ ii-height equal
 ii-hyphen refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ii-joiners refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ii-page equal
-ii-table open page 1 reads 'ab cd x ab x cd ab x cd x', Chromium 'ab cdx ab x cd ab x cd x' (print.txt)
+ii-table equal
 ii-wrap refused Documents.Html.Unsupported.Value width: 100pt at 3:1
 kb-m1-kept-box-margin-in-padded-box equal
 kb-m2-kept-para-margin-in-padded-box equal
@@ -561,6 +561,8 @@ twd-fraction equal
 twd-sum equal
 twd-table-narrow listed A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 reads 'one text with more words next 1 one text with more words next 2 one text with more words next 3 one text with more words after', Chromium 'one text with more words next 1 one text with more words next 2 one text with more words next 3 onetext with more words after' (print.txt)
 twd-table-wide equal
+wg-cell-gap equal
+wg-spacing-gap equal
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
 ws-border refused Documents.Html.Unsupported.Value width: 6pt at 6:1
@@ -572,7 +574,7 @@ ws-hang-pre refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-hang-pre-wrap refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-image refused Documents.Html.Unsupported.Value width: 6pt at 4:1
 ws-image-border refused Documents.Html.Unsupported.Value width: 6pt at 3:1
-ws-intrinsic open page 1 reads 'aa x bb y x aa y aa x y aa bb x y aa bb x y cc aa x y bb aa x y x', Chromium 'aa x bb y x aa y aax y aa bbx y aa bb x y cc aa x y bb aa x y x' (print.txt)
+ws-intrinsic equal
 ws-justify refused Documents.Html.Unsupported.Value width: 60pt at 3:1
 ws-justify-nbsp refused Documents.Html.Unsupported.Value width: 40pt at 3:1
 ws-kern equal
@@ -586,4 +588,4 @@ ws-pre-line equal
 ws-pre-wrap equal
 ws-soft refused Documents.Html.Unsupported.Value width: 6pt at 3:1
 ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
-ws-table open page 1 reads 'aa bb cc x y aa bb cc x y aa bb x y cc aa bb x cc y aa x y aa x y aa x y aa x y aa x y aa x bb cc y dd x', Chromium 'aa bb ccx y aa bb ccx y aa bb x y cc aa bb x cc y aa x y aa x y aa x y aa x y aa x y aa x bb cc y dd x' (print.txt)
+ws-table equal
