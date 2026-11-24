@@ -461,6 +461,51 @@ margins of `@page :first`, and content wider than its box (`Documents.Layout.Mar
 Chromium draws over its neighbours. Content taller than its box is drawn as Chromium draws it: from the top of
 the box whatever its vertical alignment, unclipped, under the body; the box keeps its height.
 
+## Fonts
+
+There are no system fonts. A family name the document writes is taken from its `@font-face` rules (the first TrueType
+source, through the caller's resolver), then from the caller's fonts (`HtmlRenderOptions.Fonts`). The first family of a
+`font-family` list that has any face is the family of the text, and it must have the computed weight and style
+exactly: no nearest face, no synthesis, no fallback per character.
+
+A browser takes a font of the system for a generic family. Here the caller maps them in
+`HtmlRenderOptions.GenericFamilies`, and a mapped name is looked up as a written name is (`@font-face` rules first):
+
+- `Standard`: the initial value of `font-family`, and `cursive`, `fantasy`, `math`, `emoji`, `fangsong` and the `ui-*`
+  keywords, which Chromium 159 prints in its standard font (measured);
+- `Serif`: `serif`; when it is not set, `serif` takes `Standard`;
+- `SansSerif`: `sans-serif` and `system-ui`;
+- `Monospace`: `monospace` (the keyword still gives text in `monospace` alone its own sizes, 13px at `medium`).
+
+The initial value is the name "Times New Roman", as Chromium computes it: an `@font-face` rule or a caller's font of
+that family is taken first, then `Standard`. `initial`, `inherit`, `unset` and `revert` keep the initial value; a
+"Times New Roman" written in the document is a family name like any other. A generic family never takes an
+`@font-face` rule of its own name, as in Chromium.
+
+Refused in both modes, also with warnings only (`Documents.Html.Unsupported.Font`, at the element's start tag; for a
+page-margin box at its `content` declaration):
+
+- a generic family the options do not map, where the list reaches it, also when a later family is supplied:
+  "'font-family: sans-serif' needs a family for the generic family 'sans-serif': set GenericFamilies.SansSerif in the
+  options (a browser would take a font of the system; there are no system fonts)."
+- a mapped name no face answers: "The family 'Inter' that GenericFamilies.SansSerif maps 'sans-serif' to has no face:
+  give it in a @font-face rule or in the fonts of the options."
+- the initial value with neither a "Times New Roman" face nor `Standard`: "'font-family' is not set here, and its
+  initial value needs a family: set GenericFamilies.Standard in the options, or give 'Times New Roman' in a @font-face
+  rule or in the fonts of the options (…)."
+- a list that runs out: "No family of 'font-family: Inter, Roboto' is supplied: give one in a @font-face rule or in
+  the fonts of the options, or end the list with a generic family the options map (there are no system fonts)."
+
+The mapped names are checked once, as input (`Documents.Html.InvalidOptions`): not empty, no control character, at
+most 32,767 characters (the longest family name of a TrueType font), and not a generic family keyword.
+
+What is shown, and how. Chromium prints a generic family in a font of the system it runs on, not in the family the
+caller maps, so a document with a generic family is not a measured case. Equal to Chromium is shown for the
+written-out family: the cases `gf-*` measure the initial value through an `@font-face` rule of "Times New Roman" (in
+the body, in a page-margin box, through `inherit`, `unset` and `revert`) and lists that end in a generic family after
+a supplied one. That a mapping prints exactly as the written-out family is shown by `GenericFamilyTests`: each generic
+document, printed with its mapping, gives the same page model item for item as the equal case it was made from.
+
 ## HTML
 
 - The user-agent style sheet: `Ave.Extensions.Documents.Html/UserAgent/html.css` (HTML Standard §15, as Chromium 159
