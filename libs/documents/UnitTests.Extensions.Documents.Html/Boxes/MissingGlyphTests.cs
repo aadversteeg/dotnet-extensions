@@ -127,6 +127,41 @@ public class MissingGlyphTests
         refusals.Select(Place).Should().AllBeEquivalentTo(((object?)PlaceOf(html, "content").Line, (object?)PlaceOf(html, "content").Column));
     }
 
+    [Theory]
+    [InlineData(UnsupportedPolicy.Refuse)]
+    [InlineData(UnsupportedPolicy.Warn)]
+    public void A_character_of_a_marker_s_content_is_refused_at_its_content_declaration(UnsupportedPolicy policy)
+    {
+        // Lato has no ✔ (U+2714) and no ☐ (U+2610): the marker's text is checked as it is drawn, in the marker's face, at the
+        // declaration that gives it, once for all items, with the message of any missing character; the item's own ☐ at the
+        // character.
+        var html = Document("<ul><li>one</li><li>two ☐</li></ul>", "body { font-family: Lato } li::marker { color: #cc0000; content: \"\\2714 \" }");
+
+        var refusals = Refusals(html, policy);
+
+        refusals.Select(refusal => (refusal.Code, refusal.Metadata![ErrorMetadataKeys.CodePoint], refusal.Metadata![ErrorMetadataKeys.FontName]))
+            .Should().Equal((FontErrorCodes.GlyphMissing, "U+2714", "Lato-Regular"), (FontErrorCodes.GlyphMissing, "U+2610", "Lato-Regular"));
+        refusals.Select(Place).Should().Equal(
+            ((object?)PlaceOf(html, "content").Line, (object?)PlaceOf(html, "content").Column),
+            (PlaceOf(html, "☐").Line, PlaceOf(html, "☐").Column));
+        refusals[0].Message.Should().Be("The character '✔' (U+2714) has no glyph in the face 'Lato-Regular' that 'font-family: Lato' gives here, " +
+            "and the engine takes no glyph from another font: put the character in an element whose font has it, or use an image.");
+    }
+
+    [Fact]
+    public void A_number_marker_s_character_the_face_lacks_is_refused_at_its_item()
+    {
+        // The test subset of Roboto holds 'I' and 'Ɨ' only: an item's text of 'I' is drawn, its number "1. " is not. The
+        // number is checked as the label draws it, in the item's face, at the item's start tag; a disc is a shape and
+        // needs no glyph.
+        var html = Document("<ol><li>I</li></ol><ul><li>I</li></ul>", "body { font-family: Roboto }");
+
+        var refusals = Refusals(html);
+
+        refusals.Select(refusal => (refusal.Code, refusal.Metadata![ErrorMetadataKeys.CodePoint])).Should().Equal((FontErrorCodes.GlyphMissing, "U+0031"), (FontErrorCodes.GlyphMissing, "U+002E"));
+        refusals.Select(Place).Should().AllBeEquivalentTo(((object?)PlaceOf(html, "<li>").Line, (object?)PlaceOf(html, "<li>").Column));
+    }
+
     [Fact]
     public void Generated_text_and_the_element_s_own_text_are_each_refused_at_their_own_place()
     {

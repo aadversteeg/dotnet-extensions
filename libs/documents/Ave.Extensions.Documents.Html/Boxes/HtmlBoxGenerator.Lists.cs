@@ -324,9 +324,21 @@ public static partial class HtmlBoxGenerator
 
             // CSS Lists 3 §3.1: a ::marker rule gives the marker its colour, weight and style, a shape as a number, and a
             // content of strings its text (cases gc-marker-color, gc-marker-font, gc-marker-content).
-            if (type == "none" || FaceStyleOf(element.Marker is { } marker ? element with { Style = marker.Style } : element) is not { } face)
+            var styled = element.Marker is { } marker ? element with { Style = marker.Style } : element;
+            if (type == "none" || FaceStyleOf(styled) is not { } face)
             {
                 return null;
+            }
+
+            // The text of the label is checked for glyphs as it is drawn, in the marker's face: a content of strings at its
+            // declaration, as any generated text; a number at the item's start tag. A bullet is a shape and needs none.
+            if (element.Marker is { Text: { } written, Position: { } declared })
+            {
+                RefuseMissingGlyphs(written, styled, _ => declared);
+            }
+            else if (type is not ("disc" or "circle" or "square"))
+            {
+                RefuseMissingGlyphs(CounterText(type, _ordinals.GetValueOrDefault(element)), styled, _ => element.Element.Position);
             }
 
             if (TextStyleOf(element) is { Decorations.Count: > 0 })

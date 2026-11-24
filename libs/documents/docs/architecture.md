@@ -1614,7 +1614,7 @@ Each is documented next to its code as well.
   no glyph for is the error `GlyphMissing`; there is no fallback font and no substitute character, except U+2011
   NON-BREAKING HYPHEN, drawn with the font's U+2010 glyph where the font has that one (above). The HTML front-end
   refuses every such character of a document before layout, each pair of face and character once, at the character's
-  line and column (a page-margin box's: its `content` declaration), up to the limit in "Bounded work"; the message names
+  line and column (a page-margin box's, a `::before`'s, an `::after`'s and a `::marker`'s text: its `content` declaration; a list item's number: the item's start tag), up to the limit in "Bounded work"; the message names
   the face, the `font-family` list and a later family of that list that has the character. A hyphen before a letter that follows a space or an
   image in the line keeps the letter on its line (UAX #14 LB20a: "( sot | BK | CR | LF | NL | SP | ZW | CB | GL ) ( HY |
   HH ) × ( AL | HL )"); Chromium breaks after such a hyphen all the same (case `ii-hyphen`,
