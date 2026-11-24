@@ -2169,6 +2169,30 @@ public class MeasuredReferenceFilesTests
         ["tg-table.lines.txt"] = 63,
         ["tg-table.print.txt"] = 193,
         ["tg-table.words.txt"] = 72,
+        ["tg-text-align.boxes.txt"] = 5,
+        ["tg-text-align.lines.txt"] = 10,
+        ["tg-text-align.print.txt"] = 18,
+        ["tg-text-align.words.txt"] = 6,
+        ["tg-text-equal.boxes.txt"] = 4,
+        ["tg-text-equal.lines.txt"] = 10,
+        ["tg-text-equal.print.txt"] = 19,
+        ["tg-text-equal.words.txt"] = 7,
+        ["tg-text-header.boxes.txt"] = 6,
+        ["tg-text-header.lines.txt"] = 18,
+        ["tg-text-header.print.txt"] = 47,
+        ["tg-text-header.words.txt"] = 11,
+        ["tg-text-late.boxes.txt"] = 4,
+        ["tg-text-late.lines.txt"] = 10,
+        ["tg-text-late.print.txt"] = 18,
+        ["tg-text-late.words.txt"] = 6,
+        ["tg-text-three.boxes.txt"] = 4,
+        ["tg-text-three.lines.txt"] = 18,
+        ["tg-text-three.print.txt"] = 26,
+        ["tg-text-three.words.txt"] = 6,
+        ["tg-text-two.boxes.txt"] = 4,
+        ["tg-text-two.lines.txt"] = 7,
+        ["tg-text-two.print.txt"] = 14,
+        ["tg-text-two.words.txt"] = 5,
         ["tj-break.boxes.txt"] = 25,
         ["tj-break.lines.txt"] = 64,
         ["tj-break.print.txt"] = 91,
@@ -2561,7 +2585,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(629);
+        cases.Should().HaveCount(635);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

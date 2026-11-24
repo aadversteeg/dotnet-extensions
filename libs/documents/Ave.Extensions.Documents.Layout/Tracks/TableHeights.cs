@@ -25,8 +25,13 @@ namespace Ave.Extensions.Documents.Layout;
 /// cut after 43.125 pt goes on 16.875 pt; <c>tg-break-rows</c>, <c>tg-break-rows-separated</c>: rows of 30 pt and of a
 /// 24 pt cell below a header that repeats; <c>tg-break-cut-two</c>, <c>tg-break-cut-align</c>, <c>tg-break-cut-cell</c>;
 /// <c>tg-break-tall</c>: rows of 250 and 400 pt over two and four pages; <c>tg-break-table</c>: the shares of a table's
-/// height). Not measured, so refused (<see cref="LayoutErrors.TableBreak"/>): a table with heights where a cell's own
-/// content runs over the page end, or where a cell over several rows is cut.
+/// height). Where the page end cuts the text of a cell, the row is cut between two of its lines as a row without a height
+/// is, by the cell's orphans and widows (a cell of two lines whose second line does not fit moves the row whole to the next
+/// page), and its part on the next page is the rest of its height or, where that is taller, the rest of its content
+/// (cases <c>tg-text-late</c>, <c>tg-text-three</c>: the rest of the height, printed 15.375 and 30 pt; <c>tg-text-equal</c>,
+/// <c>tg-text-header</c>: the rest of the text, printed 28.125 and 28.5 pt, where the rest of the height is about 21 and 25 pt;
+/// <c>tg-text-two</c>, <c>tg-text-align</c>: the row moves). Not measured, so refused (<see cref="LayoutErrors.TableBreak"/>):
+/// a table with heights where a cell over several rows is cut.
 /// </remarks>
 internal static class TableHeights
 {
@@ -82,7 +87,7 @@ internal static class TableHeights
     }
 
     /// <summary>The result, or the refusal of a table with a height of its own, of a row or of a cell that breaks where no
-    /// case measured it (see remarks): a cut cell whose content goes on, or a cut cell over several rows.</summary>
+    /// case measured it (see remarks): a cut cell over several rows.</summary>
     /// <param name="box">The tracks box.</param>
     /// <param name="grid">Its grid.</param>
     /// <param name="space">The table's space.</param>
@@ -90,7 +95,7 @@ internal static class TableHeights
     /// <returns>The result, or the error.</returns>
     public static Result<LayoutResult, Error> Fits(Box box, TableGrid grid, ConstraintSpace space, LayoutResult result) =>
         result is not LayoutResult.Placed { Continuation: TracksBreakToken next }
-        || !next.Cells.Any(cut => !cut.IsComplete || grid.Cells[cut.Cell].Row != grid.Cells[cut.Cell].LastRow)
+        || !next.Cells.Any(cut => grid.Cells[cut.Cell].Row != grid.Cells[cut.Cell].LastRow)
         || !HasAnyHeight(box)
             ? Result<LayoutResult, Error>.Success(result)
             : Result<LayoutResult, Error>.Failure(LayoutErrors.HeightBreak(box, space.AvailableHeight));

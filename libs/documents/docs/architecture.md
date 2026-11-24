@@ -753,14 +753,18 @@ Refused: percentages (case `tg-percent`: Chromium prints them as `auto` in a pag
 height); a height on a row group or a caption; `min-height` and `max-height` (by the registry; case `tg-min`: Chromium
 prints them on rows and cells as if they were not there); a table height with a caption, over cells that span rows, under
 `box-sizing: content-box`, or where every body row has a height; a cell's `border-box` height with collapsed borders;
-and, by layout (`Documents.Layout.TableBreak`), a table with any of these heights where a page break cuts a cell's own
-content or a cell over several rows (not measured). Over a page break a row with a least height is cut at the page end
+and, by layout (`Documents.Layout.TableBreak`), a table with any of these heights where a page break cuts a cell over
+several rows (not measured). Over a page break a row with a least height is cut at the page end
 like any row, also where its content ends on the page, and goes on with the rest of the height on the next page: the
 least height less the part from the row's top to the page end (`TracksBreakToken.RowRest`), its content at the top of
 the part where it is cut, a row taller than a page over as many pages as it needs, a table's height shared over its rows
 first (cases `tg-break`, `tg-break-rows`, `tg-break-rows-separated`, `tg-break-cut-two`, `tg-break-cut-align`,
 `tg-break-cut-cell`, `tg-break-tall`, `tg-break-table`: where the row's first line fits, Chromium cuts such a row at the
-page end rather than moving it to the next page).
+page end rather than moving it to the next page). Where the page end cuts the text of a cell, the row is cut between two
+lines as a row without a height is, by the cell's orphans and widows, and the part on the next page is the rest of the
+height or, where that is taller, the rest of the text (cases `tg-text-late`, `tg-text-three`: the rest of the height;
+`tg-text-equal`, `tg-text-header`: the rest of the text, below a header that repeats; `tg-text-two`, `tg-text-align`: a
+cell of two lines whose second line does not fit moves the row whole to the next page).
 
 **Backgrounds of rows, groups and columns.** In both border models the HTML front-end gives them to the cells
 (CSS 2.1 §17.5.1, the table layers): a cell without a background of its own takes its row's, else its row group's, else

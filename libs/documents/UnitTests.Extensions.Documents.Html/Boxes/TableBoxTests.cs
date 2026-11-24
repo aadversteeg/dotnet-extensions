@@ -466,17 +466,82 @@ public class TableBoxTests
         parts.Sum().Should().BeApproximately(399.99609375, 1e-9, "400 pt is 533.328125 px on the 1/64 px step");
     }
 
-    /// <summary>Over a page break no case measured a table with heights where a cell's own content runs over the page end,
-    /// or where a cell over several rows is cut: both are refused, with the room the table had.</summary>
-    [Theory]
-    [InlineData("<table><tr style=\"height:20pt\"><td>a<br>b<br>c<br>d<br>e<br>f<br>g<br>h<br>i<br>j<br>k<br>l<br>m<br>n<br>o</td></tr></table>")]
-    [InlineData("<table><tr style=\"height:20pt\"><td rowspan=2>a</td><td>b</td></tr><tr style=\"height:200pt\"><td>c</td></tr></table>")]
-    public void A_table_with_heights_whose_break_cuts_content_or_a_row_span_is_refused(string body)
+    /// <summary>Over a page break no case measured a table with heights where a cell over several rows is cut: it is
+    /// refused, with the room the table had.</summary>
+    [Fact]
+    public void A_table_with_heights_whose_break_cuts_a_row_span_is_refused()
     {
-        var pages = Pages(body, Collapsed);
+        var pages = Pages("<table><tr style=\"height:20pt\"><td rowspan=2>a</td><td>b</td></tr><tr style=\"height:200pt\"><td>c</td></tr></table>", Collapsed);
 
         pages.IsFailure.Should().BeTrue();
         pages.Error.Code.Should().Be(LayoutErrorCodes.TableBreak);
+    }
+
+    /// <summary>The number of lines of a page.</summary>
+    private static int LineCount(PageFragment page)
+    {
+        var count = 0;
+        var pending = new Stack<Fragment>([page.Root.Fragment]);
+        while (pending.Count > 0)
+        {
+            switch (pending.Pop())
+            {
+                case BoxFragment box:
+                    foreach (var child in box.Children)
+                    {
+                        pending.Push(child.Fragment);
+                    }
+
+                    break;
+                case SliceFragment slice:
+                    pending.Push(slice.Content.Fragment);
+                    break;
+                case LineFragment:
+                    count++;
+                    break;
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>Where the page end cuts the text of a cell in a row with a height, the row is cut between two lines and
+    /// goes on with the rest of its height (cases <c>tg-text-late</c>, <c>tg-text-three</c>), or with the rest of its text
+    /// where that is taller (<c>tg-text-equal</c>, <c>tg-text-header</c>), in both border models. 80 pt is 79.9921875 pt on the
+    /// 1/64 px step.</summary>
+    [Theory]
+    [InlineData("height:80pt", "", 79.9921875)]
+    [InlineData("height:80pt", "table { border-collapse: separate; border-spacing: 3pt } ", 79.9921875)]
+    [InlineData("height:20pt", "", 0)]
+    [InlineData("height:20pt", "table { border-collapse: separate; border-spacing: 3pt } ", 0)]
+    public void A_row_with_a_height_whose_text_the_page_end_cuts_goes_on_with_the_rest_of_its_height_or_text(string height, string css, double least)
+    {
+        var pages = Pages($"<p style=\"padding-top:104pt\">first</p><table><tr style=\"{height}\"><td>one<br>more<br>lines<br>here</td><td>two</td></tr></table>", Collapsed + css);
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+
+        (LineCount(pages.Value[0]), LineCount(pages.Value[1])).Should().Be((4, 2), "first, one, two and more on the first page");
+        var first = RowHeights(pages.Value[0]);
+        var second = RowHeights(pages.Value[1]);
+        (first.Count, second.Count).Should().Be((1, 1));
+        var text = Pages("<table><tr><td>lines<br>here</td></tr></table>", Collapsed + css).Value.SelectMany(RowHeights).Single();
+        second[0].Should().BeGreaterThanOrEqualTo(Math.Max(least - first[0], text) - 1);
+        if (least > 0)
+        {
+            (first[0] + second[0]).Should().BeApproximately(least, 1e-9);
+        }
+    }
+
+    /// <summary>A cell of two lines whose second line does not fit at the page end would leave one line on the page, which
+    /// its orphans forbid: the row with a height moves whole to the next page, as a row without one does (cases
+    /// <c>tg-text-two</c>, <c>tg-text-align</c>).</summary>
+    [Fact]
+    public void A_row_with_a_height_whose_cell_would_leave_one_line_moves_whole()
+    {
+        var pages = Pages("<p style=\"padding-top:116pt\">first</p><table><tr style=\"height:60pt\"><td>one<br>more</td><td>two</td></tr></table>", Collapsed);
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+
+        RowHeights(pages.Value[0]).Should().BeEmpty();
+        RowHeights(pages.Value[1]).Should().ContainSingle().Which.Should().BeApproximately(60, 1e-9);
     }
 
     [Theory]

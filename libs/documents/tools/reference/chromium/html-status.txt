@@ -532,6 +532,12 @@ tg-percent refused Documents.Html.Unsupported.Value height: 50% at 5:1
 tg-row equal
 tg-table equal
 tg-table-small equal
+tg-text-align equal
+tg-text-equal equal
+tg-text-header equal
+tg-text-late equal
+tg-text-three equal
+tg-text-two equal
 tj-break equal
 tj-cell-table equal
 tj-four equal
