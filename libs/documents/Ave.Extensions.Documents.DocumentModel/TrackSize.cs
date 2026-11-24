@@ -3,14 +3,16 @@ using Ave.Extensions.Documents.Core;
 namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
-/// The size of one column of a tracks box (a table or a row of blocks). Four kinds, named after the CSS concepts
+/// The size of one column of a tracks box (a table or a row of blocks). Five kinds, named after the CSS concepts
 /// they follow (the sizing algorithm is described on the tracks layout):
 /// <list type="bullet">
 /// <item><see cref="Fixed"/>: an exact width, as a column width in the fixed table layout (CSS 2.1 §17.5.2.1);</item>
 /// <item><see cref="Auto"/>: as wide as its content needs, as in the automatic table layout (CSS 2.1 §17.5.2.2);</item>
 /// <item><see cref="Preferred"/>: a given width that content may widen and a narrow table may shrink, as a column
 /// length in the automatic table layout (CSS Tables 3 §3.8.3, a constrained column);</item>
-/// <item><see cref="Fill"/>: a share of the width left over, as CSS Grid's <c>fr</c> unit (CSS Grid 1 §7.2.4).</item>
+/// <item><see cref="Fill"/>: a share of the width left over, as CSS Grid's <c>fr</c> unit (CSS Grid 1 §7.2.4);</item>
+/// <item><see cref="Percent"/>: a percentage of the width the columns share, as a percent column of the automatic table
+/// layout (CSS Tables 3 §3.9.3).</item>
 /// </list>
 /// A closed set.
 /// </summary>
@@ -51,6 +53,25 @@ public abstract record TrackSize
         /// <summary>Formats as <c>preferred(70.866pt)</c>.</summary>
         /// <returns>The text form.</returns>
         public override string ToString() => $"preferred({Width})";
+    }
+
+    /// <summary>
+    /// A column of the automatic table layout with a percentage (CSS 2.1 §17.5.2.2 leaves the rule open; CSS Tables 3
+    /// §3.9.3, the min-content-percentage sizing-guess), as Chromium 159 prints it: its width is the percentage of the width
+    /// the columns share (the table's width less its border, padding and all spacing in the separated borders model, less
+    /// the outer halves of its outer grid lines in the collapsing one), never less than its cells' min-content (cases
+    /// <c>tpa-full</c>, <c>tpa-length</c>, <c>tpa-sum</c> c, d). Percentages past 100 in all get only what is left
+    /// (<c>tpa-sum</c> a, b). A table of width auto is as wide as its columns need to have their percentages and the
+    /// other columns their maximum widths (<c>tpa-auto</c>, <c>tpa-sum</c> d). It is a kind of its own because no other
+    /// kind is sized from the table's width and also widens a table of width auto: a preferred column keeps its length, a
+    /// fill column shares only what is left.
+    /// </summary>
+    /// <param name="Value">The percentage; more than zero.</param>
+    public sealed record Percent(double Value) : TrackSize
+    {
+        /// <summary>Formats as <c>30%</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => $"{InvariantNumber.Format(Value)}%";
     }
 
     /// <summary>A column sized to its content.</summary>

@@ -162,7 +162,7 @@ b3-keep-group equal
 b4-row-span equal
 b4-row-span-6pt equal
 b5-row-span-kept-cell equal
-c-cell-first-line refused Documents.Html.Unsupported.Value width: 50% at 3:58
+c-cell-first-line equal
 c-cell-orphan equal
 c-cell-orphan-moves equal
 c-custom equal
@@ -220,7 +220,7 @@ f-tiny-038 listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_
 font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 fr-border-continued equal
 fr-border-top-and-bottom equal
-fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value width: 50% at 3:58
+fr-cell-first-line-block-fits equal
 fr-continued-pad-past-33 equal
 fr-continued-pad-past-33-next-row equal
 fr-continued-pad-past-33-next-row-line-2-25pt equal
@@ -522,13 +522,21 @@ tl-fixed-width-auto equal
 tp-beside-auto equal
 tp-beside-length refused Documents.Html.Unsupported.Value width: 30% at 4:42
 tp-col-span equal
-tp-colgroup refused Documents.Html.Unsupported.Value width: 25% at 4:8
-tp-length-table refused Documents.Html.Unsupported.Value width: 25% at 4:25
+tp-colgroup equal
+tp-length-table equal
 tp-outer-border equal
 tp-sum-100 equal
 tp-sum-above equal
 tp-sum-below equal
 tp-thirds equal
+tpa-auto equal
+tpa-beside equal
+tpa-colgroup refused Documents.Html.Unsupported.Value width: 30% at 20:1
+tpa-fraction equal
+tpa-full equal
+tpa-length equal
+tpa-sum equal
+tpa-table equal
 ts-break-cut equal
 ts-break-cut-bottom equal
 ts-break-cut-middle equal

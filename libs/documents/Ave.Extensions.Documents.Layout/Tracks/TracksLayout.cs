@@ -114,8 +114,9 @@ public static class TracksLayout
             var lines = VerticalLineWidths(box, grid);
             return ColumnRanges(environment, box, grid).OnSuccessMap(sized =>
             {
-                var widths = new IntrinsicWidths(sized.Ranges.Sum(range => range.MinContent), sized.Ranges.Sum(range => range.MaxContent))
-                    .Plus(Outer(box, lines, sized.Ranges.Length));
+                var least = sized.Ranges.Sum(range => range.MinContent);
+                var most = Math.Max(least, Math.Max(sized.Ranges.Sum(range => range.MaxContent), TrackSizing.PercentWidth(sized.Columns, sized.Ranges) ?? 0));
+                var widths = new IntrinsicWidths(least, most).Plus(Outer(box, lines, sized.Ranges.Length));
                 return box.Style.Width is BoxWidth.Fixed { Width.Points: var given }
                     ? new IntrinsicWidths(Math.Max(given, widths.MinContent), Math.Max(given, widths.MinContent))
                     : widths;
@@ -222,7 +223,7 @@ public static class TracksLayout
             })
             .OnSuccessMap(measured =>
             {
-                var columns = CellColumns(box.Style.Columns, measured.Select(item => (item.Cell, item.Given)));
+                var columns = CellColumns(box.Style.Columns, measured.Select(item => (item.Cell, item.Given, item.Cell.Box.Style.Width is BoxWidth.Percent { Value: var percent } ? percent : (double?)null)));
                 var contributions = measured.Select(item =>
                 {
                     var widths = item.Cell.ColumnSpan > 1 && item.Given is { } given && Enumerable.Range(item.Cell.Column, item.Cell.ColumnSpan).All(index => columns[index] is TrackSize.Auto or TrackSize.Preferred)
@@ -253,14 +254,25 @@ public static class TracksLayout
     /// 'auto' for the 'width' property determines the width for that column"): a fill column whose first-row cell has a
     /// width is a <see cref="TrackSize.Fixed"/> column of it, a later row's width is not read, and a column element's
     /// length wins over a cell's (<c>twd-cell-row</c> c, d; <c>twd-cell-two</c> b, c: the first row's 60 or 90 pt;
-    /// <c>twd-cell-col</c> b: col 60 pt beside a cell of 90 pt gives 60). Cells over several columns do not set a
-    /// column's kind.
+    /// <c>twd-cell-col</c> b: col 60 pt beside a cell of 90 pt gives 60). A cell's percentage (<see cref="BoxWidth.Percent"/>)
+    /// makes an auto column a <see cref="TrackSize.Percent"/> column, in any row (cases <c>tpa-auto</c> a, e: 30% in the
+    /// first or a later row). Cells over several columns do not set a column's kind.
     /// </summary>
-    internal static ValueList<TrackSize> CellColumns(ValueList<TrackSize> columns, IEnumerable<(TableGrid.Cell Cell, double? Given)> cells)
+    internal static ValueList<TrackSize> CellColumns(ValueList<TrackSize> columns, IEnumerable<(TableGrid.Cell Cell, double? Given, double? Percent)> cells)
     {
         var kinds = columns.ToArray();
-        foreach (var (cell, given) in cells)
+        foreach (var (cell, given, percent) in cells)
         {
+            if (cell.ColumnSpan == 1 && percent is { } share)
+            {
+                kinds[cell.Column] = kinds[cell.Column] switch
+                {
+                    TrackSize.Auto => new TrackSize.Percent(share),
+                    TrackSize.Percent column => new TrackSize.Percent(Math.Max(column.Value, share)),
+                    var kept => kept,
+                };
+            }
+
             if (cell.ColumnSpan != 1 || given is not { } width)
             {
                 continue;
@@ -282,6 +294,11 @@ public static class TracksLayout
     private static IntrinsicWidths Covering(IntrinsicWidths widths, double gaps) =>
         new(Math.Max(0, widths.MinContent - gaps), Math.Max(0, widths.MaxContent - gaps));
 
+    /// <summary>The step a percentage of a width is floored to: 1/64 px under <see cref="LengthRounding.SixtyFourthPixels"/>,
+    /// none under <see cref="LengthRounding.Exact"/>.</summary>
+    private static double Step(LayoutEnvironment environment) =>
+        environment.Profile.LengthRounding == LengthRounding.SixtyFourthPixels ? 0.75 / 64 : 0;
+
     /// <summary>
     /// Places the columns: column j starts at x = <see cref="TablePreparation.ColumnX"/>[j] and is as wide as track
     /// sizing says; the next column starts the column gap after its end (<see cref="Insets"/>). In the collapsing border
@@ -295,7 +312,12 @@ public static class TracksLayout
         var lines = VerticalLineWidths(box, grid);
         var outer = Outer(box, lines, grid.ColumnCount);
         var (left, right, gap) = Insets(box, lines);
-        var given = box.Style.Width is BoxWidth.Fixed { Width.Points: var length } ? length : (double?)null;
+        var given = box.Style.Width switch
+        {
+            BoxWidth.Fixed { Width.Points: var length } => length,
+            BoxWidth.Percent { Value: var percent } => TrackSizing.Floor(percent * availableWidth / 100, Step(environment)),
+            _ => (double?)null,
+        };
         if (given is { } tooWide && !Fitting.Fits(tooWide, availableWidth))
         {
             return Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, tooWide, availableWidth));
@@ -305,13 +327,21 @@ public static class TracksLayout
         {
             var (columns, ranges) = sized;
             var mode = given is null ? box.Style.Width : BoxWidth.Stretch;
-            var (widths, needed) = TrackSizing.Resolve(columns, ranges, (given ?? availableWidth) - outer, mode);
+            var space = (given ?? availableWidth) - outer;
+            if (given is null && box.Style.Width == BoxWidth.Auto && TrackSizing.PercentWidth(columns, ranges) is { } wanted)
+            {
+                // A table of width auto with percent columns is as wide as they ask, within its container (TrackSizing.PercentWidth).
+                space = Math.Min(space, Math.Max(wanted, ranges.Sum(range => range.MinContent)));
+                mode = BoxWidth.Stretch;
+            }
+
+            var (widths, needed) = TrackSizing.Resolve(columns, ranges, space, mode, Step(environment));
             if (needed is { } least && given is not null && Fitting.Fits(least + outer, availableWidth))
             {
                 // A table of a given width is never narrower than its columns' minimum (cases twd-table-narrow a, c: 40 pt
                 // gives 63.773 and 79.523 pt, the content's min-content; twd-sum c: 150 pt over two fixed columns of
                 // 108.738 pt gives 218.227 pt).
-                (widths, needed) = TrackSizing.Resolve(columns, ranges, least, mode);
+                (widths, needed) = TrackSizing.Resolve(columns, ranges, least, mode, Step(environment));
             }
 
             if (needed is { } width)

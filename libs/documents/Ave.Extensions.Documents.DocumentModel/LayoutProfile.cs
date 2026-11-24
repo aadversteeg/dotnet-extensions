@@ -332,6 +332,11 @@ public enum LengthRounding
     /// 0.266 pt late), <c>ta-items-right</c> (right-aligned: the start of the line moves by the sum of the steps),
     /// <c>ta-items-fit</c> (in a block wider than the unrounded widths and narrower than the rounded ones the last word
     /// wraps) and <c>sk-size</c> (an underline gap's edge).</item>
+    /// <item>A percentage of a table's width, rounded DOWN to 1/64 px: a table's own percentage of its container's width,
+    /// and a percent column's share of the width the columns share in the automatic table layout. Cases
+    /// <c>tpa-table</c> (80% of 276 pt is 220.793 pt, not 220.8), <c>tpa-full</c> (30% of 258 pt is 77.391 pt, not 77.4;
+    /// table <c>c</c>: two columns of 30% and 20% floored put the next grid line half a pixel lower, a pixel to the left
+    /// once painted) and <c>tpa-fraction</c> (33.3% and 17.17% of 275.25 pt are 91.652 and 47.25 pt).</item>
     /// </list>
     /// </summary>
     SixtyFourthPixels,

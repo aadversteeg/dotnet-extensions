@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Percent widths in a table of a length (200pt): a, a cell of 30%; b, separated, a cell of 30%; c, cols of 25% and 75%; d, separated, cols of 25% and 75%; e, fixed layout, separated, cols of 25% and 75%. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a" style="width: 200pt">
+<tr><td id="one-a" style="width: 30%">one</td><td>text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s" style="width: 200pt">
+<tr><td id="one-b" style="width: 30%">one</td><td>text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" style="width: 200pt">
+<colgroup><col style="width: 25%"><col style="width: 75%"></colgroup>
+<tr><td id="one-c">one</td><td>text with more words</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s" style="width: 200pt">
+<colgroup><col style="width: 25%"><col style="width: 75%"></colgroup>
+<tr><td id="one-d">one</td><td>text with more words</td></tr>
+</table>
+<p>next 4</p>
+<table id="e" class="s f" style="width: 200pt">
+<colgroup><col style="width: 25%"><col style="width: 75%"></colgroup>
+<tr><td id="one-e">one</td><td>text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>

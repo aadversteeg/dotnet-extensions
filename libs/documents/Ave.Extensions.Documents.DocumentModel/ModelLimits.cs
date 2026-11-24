@@ -34,4 +34,8 @@ public static class ModelLimits
     /// range a PDF can hold.
     /// </summary>
     public static Length MaxLength { get; } = Length.FromPoints(14_400);
+
+    /// <summary>The largest percentage a width can be given as (a table's or a column's): 100 times the width it is of,
+    /// so a percentage stays as bounded as a length of <see cref="MaxLength"/> on a page that size.</summary>
+    public const double MaxPercent = 10_000;
 }

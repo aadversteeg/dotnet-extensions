@@ -630,7 +630,7 @@ start tag, with the property and the value) only where it would change the print
 | `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
 | `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders breaks over pages, sliced | a table with separated borders that breaks with a cell over several rows across the break, content sliced in a cell, `box-decoration-break: clone`, or past the page end (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
 | `border-spacing` | whole CSS pixels on a table with separated borders; any value with collapsed borders (no effect) | other lengths on a table with separated borders |
-| table width, column widths, `table-layout` | the table at `auto`, `100%` and a length; lengths of column elements and of cells; `table-layout: fixed` at a width other than `auto` (at width `auto` the table is laid out automatically, as Chromium does) | percentages on column elements, percentages on cells, a width on a column group, a cell width over several columns in the fixed layout, other table widths: see **Tables** |
+| table width, column widths, `table-layout` | the table at `auto`, a length and a percentage; lengths and percentages of column elements, of cells and of column groups without column elements; `table-layout: fixed` at a width other than `auto` (at width `auto` the table is laid out automatically, as Chromium does) | some percentages beside other widths, a width on a column group with column elements, a cell width over several columns in the fixed layout: see **Tables** |
 | margins | lengths of 0 or more; `auto` as 0 (width is auto); on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
 | padding, border widths | lengths on a block box | percentages; any on an inline box |
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
@@ -699,28 +699,43 @@ over several columns with a length asks it of them as its maximum in the automat
 Chromium floors these lengths to 1/64 px (200.1 pt prints 200.098 pt, `twd-fraction`); the engine keeps them, at most
 0.016 pt apart. Refused (`Value`, at the cell or column element): a cell length over several columns in the fixed layout
 (`twd-cell-span` b: Chromium's equal columns are what the width left out and the width shared both give, so the case
-shows no rule), a cell length in a table with percent columns and a percent column in a table of a length (neither
-measured). A limit of the fixed
+shows no rule), and in the fixed layout a cell length in a table with percent columns (not measured). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
 it; the two agree while the content fits its column (cases `tl-fixed-fill-wide-word` and `a4-line-beside-lines`, a
 200 pt word in the first of two columns of 137.625 pt in Chromium, listed; `HtmlListedDifferenceTests`: the columns'
-widths are the whole difference). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
-the fixed layout of a table of width `100%`, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
+widths are the whole difference). A table's percentage is of its container's width, its border box, floored to 1/64
+px, and then a given width as a length is (`tpa-table`: 80% of 276 pt is 220.793 pt, in both border models and both
+layouts). In the automatic layout a percentage on a `col`, on a cell (in any row) or on a column group without column
+elements (for each column of its span, `tpa-colgroup`) makes a percent column (`TrackSize.Percent`, CSS Tables 3 §3.9.3):
+its width is its percentage of the width the columns share (the table's width less its border, padding and all spacing
+in the separated model, less the outer half lines in the collapsing one), floored to 1/64 px, never less than its
+content's min-content (`tpa-full`, `tpa-length`, `tpa-fraction`, `tpa-sum` c and d); percentages past 100 in all get only
+what is left (`tpa-sum` a, b: 60% and 70% are 60% and 40%); the width left goes to the columns without a width, else to
+the length columns (`tpa-beside` c), and to the percent columns, in proportion to their percentages, only in a table of
+percent columns alone (`tpa-full` e); a table of width `auto` is as wide as its percent columns need for their
+percentages at their widest content and its other columns for their widest content in the percentage left, within its
+container (`tpa-auto`; `tpa-sum` d: a column of 10% holding a word of 76.2 pt fills the container). No other column kind
+does both, take a share of the table's width and widen a table of width `auto`, which is why it is a kind of its own.
+Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
+the fixed layout of a table of any width, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
 a percentage is of the width the columns share, the table's width less its outer half borders in the collapsing model
 (case `tp-outer-border`); percent columns alone grow or shrink in proportion to fill that width, whatever their sum
 (`tp-sum-100`, `tp-sum-below`, `tp-sum-above`, `tp-thirds`); beside columns without a width each keeps its percentage
 and those columns share the rest equally (`tp-beside-auto`); a span gives each of its columns the percentage
 (`tp-col-span`). Each is a fill column whose weight is its share, so layout divides the width exactly where Chromium cuts
 each share to 1/64 px and gives the last column the remainder (less than 0.012 pt per column). Refused at the column
-element (`Value`): a percent column in the automatic layout, beside a column of a length (Chromium widens the length
+element (`Value`): in the fixed layout a percent column beside a column of a length (Chromium widens the length
 columns to what the percentages leave, `tp-beside-length`), and percentages of 100 or more beside a column without a
-width (Chromium gives that column no width); a percent column, like a fill column, is never narrower than its
+width (Chromium gives that column no width); in the automatic layout, not measured, percentages of 100 or more beside
+other columns, a percentage beside another width in one column, a percentage on a cell over several columns and a cell
+over several columns beside a percent column; a percentage on a cell in the fixed layout; a width on a column group with
+column elements (one table of `tpa-colgroup` shows it unused, not enough for a rule). A percent column, like a fill column, is never narrower than its
 content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
 (§17.2.1); a table part on another element than its HTML element; captions, a header group after a row
 group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
-a column in which no cell starts; the percent columns named above, a percentage on a cell, the cell lengths named above, a width on a
-column group (`tp-colgroup`), a table width other than `auto`, `100%` and a length, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
+a column in which no cell starts; the percentages and cell lengths named above, a width on a column group with column
+elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
 
@@ -893,10 +908,10 @@ Each is documented next to its code as well.
   `a4-header-image-360-image`, `a4-header-row-image-row`, `a4-header-image-row-image`, `a4-header-two-image-rows` and
   those seven, listed; `HtmlListedDifferenceTests`). A writer does not want a header over an image, so the engine does
   not copy it.
-- **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
-  without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
-  column without a width, and in a table of a length they are refused, as are percentages on cells, widths on column
-  groups and cell lengths beside them. A fill column is never narrower than its content's min-content width in a
+- **Percent columns (HTML):** drawn in the fixed layout of a table of any width, alone or beside columns without a
+  width (cases `tp-*`), and in the automatic layout (cases `tpa-*`); in the fixed layout beside a column of a length,
+  at 100 % or more beside a column without a width, and on cells they are refused, and so are, in the automatic layout,
+  the combinations no case measured (Tables). A fill column is never narrower than its content's min-content width in a
   table of a length either (`twd-table-narrow` b and d: 40 pt, which Chromium keeps, the content overflowing; listed,
   `HtmlListedDifferenceTests`). A percent column is never
   narrower than its content's min-content width, where Chromium lets the content overflow (as for a fill column,

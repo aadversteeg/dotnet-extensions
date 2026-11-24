@@ -69,8 +69,9 @@ public sealed record BoxStyle
     /// <summary>How wide a box laid out by <see cref="LayoutAlgorithmId.Tracks"/> is when none of its columns is a
     /// <see cref="TrackSize.Fill"/> column (CSS 2.1 §17.5.2.2, CSS Sizing 3 §3.2): <see cref="BoxWidth.Auto"/>, the CSS
     /// initial value, unless set. With a fill column the box takes the width it is given (<see cref="BoxWidth.Stretch"/>
-    /// and <see cref="BoxWidth.Auto"/> mean the same) or its <see cref="BoxWidth.Fixed"/> width. On a table cell, a
-    /// <see cref="BoxWidth.Fixed"/> width its column takes (CSS 2.1 §17.5.2). Ignored for every other box.</summary>
+    /// and <see cref="BoxWidth.Auto"/> mean the same) or its <see cref="BoxWidth.Fixed"/> or <see cref="BoxWidth.Percent"/>
+    /// width. On a table cell, a <see cref="BoxWidth.Fixed"/> or <see cref="BoxWidth.Percent"/> width its column takes (CSS
+    /// 2.1 §17.5.2). Ignored for every other box.</summary>
     public BoxWidth Width { get; init; } = BoxWidth.Auto;
 
     /// <summary>The table part this box is (CSS Display 3 §2.4), or <see cref="TableDisplay.None"/>: a row group or a row
@@ -177,6 +178,22 @@ public abstract record BoxWidth
         /// <summary>Formats as the width, for example <c>150pt</c>.</summary>
         /// <returns>The text form.</returns>
         public override string ToString() => Width.ToString();
+    }
+
+    /// <summary>
+    /// A percentage of a width (CSS 2.1 §10.2, <c>width: &lt;percentage&gt;</c>). On a table, of the width it is given,
+    /// its containing block's: its border box, which is then a given width as <see cref="Fixed"/> is (cases
+    /// <c>tpa-table</c>: 80% and 50% of a page area of 276 pt make tables of 220.793 and 138 pt, in both border models and
+    /// both table layouts; <c>tpa-fraction</c> b). On a table cell, in the automatic table layout, the share its column
+    /// takes of the width the table's columns share (<see cref="TrackSize.Percent"/>; cases <c>tpa-auto</c>,
+    /// <c>tpa-full</c>, <c>tpa-length</c>).
+    /// </summary>
+    /// <param name="Value">The percentage; more than zero.</param>
+    public sealed record Percent(double Value) : BoxWidth
+    {
+        /// <summary>Formats as the percentage, for example <c>80%</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => $"{InvariantNumber.Format(Value)}%";
     }
 
     private sealed record Keyword(string Name) : BoxWidth

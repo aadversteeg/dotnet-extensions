@@ -92,16 +92,20 @@ names nothing.
 computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
 so `clip` beside `visible` is accepted and kept, as in Chromium.
 
-`width` on a table part: a table is drawn at `auto`, `100%` or a length (its border box; never narrower than its
-content needs, and refused where wider than its container); a cell (`td`, `th`) takes a length, of its content box,
-which its column takes: the widest in the automatic layout, the first row's in the fixed layout, where a `col` length
-wins. A `col` takes a length, or a percentage in the fixed layout (`table-layout: fixed` on a table of width `100%`)
-when every other column is a percentage or has no width and, beside a column without a width, the percentages add up
-to less than 100. Refused: a percentage on a `col` of the automatic layout or of a table of a length, a percentage on a
-cell, a width on a cell over several columns in the fixed layout, a cell width beside percent columns, a width on a
-`colgroup`. In the fixed layout a column without a width is never narrower than its content, where Chromium lets the
-content overflow (Known limits). A `tfoot` is drawn after the body rows, once; Chromium repeats a small one on every
-page of a table that breaks (Known limits).
+`width` on a table part: a table is drawn at `auto`, a length or a percentage of its container (its border box; never
+narrower than its content needs, and refused where wider than its container); a cell (`td`, `th`) takes a length, of
+its content box, which its column takes: the widest in the automatic layout, the first row's in the fixed layout,
+where a `col` length wins. A `col`, a cell and a `colgroup` without `col` elements (for each column of its span) take a
+length or a percentage. In the automatic layout a percentage is of the width the columns share, and a table of width
+`auto` grows until its columns have their percentages and the others their widest content; in the fixed layout a
+percentage on a `col` when every other column is a percentage or has no width and, beside a column without a width,
+the percentages add up to less than 100. Refused: in the automatic layout percentages of 100 or more beside other
+columns, a percentage beside another width in one column, a percentage on a cell over several columns and a cell over
+several columns beside a percent column; in the fixed layout a percentage on a cell, a width on a cell over several
+columns and a cell width beside percent columns; a width on a `colgroup` with `col` elements. In the fixed layout a
+column without a width is never narrower than its content, where Chromium lets the content overflow (Known limits). A
+`tfoot` is drawn after the body rows, once; Chromium repeats a small one on every page of a table that breaks (Known
+limits).
 
 `border-collapse`: both models are drawn. A table with separated borders (`separate`, the initial value) keeps its
 border, padding and background, each cell paints its own border, and `border-spacing` lies between the cells and

@@ -234,20 +234,20 @@ public class TableBoxTests
     }
 
     [Theory]
-    [InlineData("<table style=\"width:50%\"><tr><td>a</td></tr></table>", "", "width", "50%")]
+    [InlineData("<table style=\"width:0%\"><tr><td>a</td></tr></table>", "", "width", "0%")]
     // A width on a cell over two columns in the fixed layout shows no rule (case twd-cell-span, table b), and lengths beside
     // percent columns are not measured.
     [InlineData("<table style=\"width:200pt\"><tr><td colspan=2 style=\"width:100pt\">a</td></tr><tr><td>b</td><td>c</td></tr></table>", "table { table-layout: fixed }", "width", "100pt")]
-    [InlineData("<table style=\"width:200pt\"><col style=\"width:50%\"><col><tr><td>a</td><td>b</td></tr></table>", "table { table-layout: fixed }", "width", "50%")]
+    [InlineData("<table style=\"width:200pt\"><tr><td style=\"width:30%\">a</td><td>b</td></tr></table>", "table { table-layout: fixed }", "width", "30%")]
     [InlineData("<table style=\"margin-left:10pt\"><tr><td>a</td></tr></table>", "", "margin-left", "10pt")]
     [InlineData("<table style=\"width:auto;margin-right:10pt\"><tr><td>a</td></tr></table>", "", "margin-right", "10pt")]
     [InlineData("<table style=\"width:auto;margin-left:auto\"><tr><td>a</td></tr></table>", "", "margin-left", "auto")]
     [InlineData("<table><col style=\"width:50pt\"><col style=\"width:50%\"><tr><td>a</td><td>b</td></tr></table>", "", "width", "50%")]
     [InlineData("<table><col style=\"width:60%\"><col style=\"width:40%\"><col><tr><td>a</td><td>b</td><td>c</td></tr></table>", "", "width", "60%")]
     [InlineData("<table><col style=\"width:0%\"><col><tr><td>a</td><td>b</td></tr></table>", "", "width", "0%")]
-    [InlineData("<table><col style=\"width:50%\"><col><tr><td>a</td><td>b</td></tr></table>", "table { width: auto }", "width", "50%")]
-    [InlineData("<table><colgroup style=\"width:25%\" span=2></colgroup><tr><td>a</td><td>b</td></tr></table>", "", "width", "25%")]
-    [InlineData("<table><col style=\"width:50%\"><col><tr><td>a</td><td>b</td></tr></table>", "table { table-layout: auto }", "width", "50%")]
+    [InlineData("<table><col style=\"width:60%\"><col style=\"width:50%\"><col><tr><td>a</td><td>b</td><td>c</td></tr></table>", "table { width: auto }", "width", "60%")]
+    [InlineData("<table><tr><td colspan=2 style=\"width:30%\">a</td></tr><tr><td>b</td><td>c</td></tr></table>", "table { table-layout: auto }", "width", "30%")]
+    [InlineData("<table><col style=\"width:30%\"><col><tr><td style=\"width:40pt\">a</td><td>b</td></tr></table>", "table { table-layout: auto }", "width", "40pt")]
     [InlineData("<table style=\"width:100%\"><col style=\"width:50%\"><col><tr><td style=\"width:10pt\">a</td><td>b</td></tr></table>", "table { table-layout: fixed }", "width", "10pt")]
     [InlineData("<table style=\"background:#ccc\"><tr><td>a</td></tr></table>", "", "background-color", "rgb(204, 204, 204)")]
     [InlineData("<table><tbody style=\"background:#ccc\"><tr><td>a</td></tr></tbody></table>", "", "background-color", "rgb(204, 204, 204)")]

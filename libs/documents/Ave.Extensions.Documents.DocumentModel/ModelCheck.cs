@@ -239,7 +239,8 @@ public static class ModelCheck
         return null;
     }
 
-    /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and positive.</summary>
+    /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and
+    /// positive, percentages more than zero and at most <see cref="ModelLimits.MaxPercent"/>.</summary>
     private static Error? Columns(Box box)
     {
         foreach (var column in box.Style.Columns)
@@ -249,11 +250,12 @@ public static class ModelCheck
                 TrackSize.Fixed fixedWidth => IsBounded(fixedWidth.Width) && fixedWidth.Width.Points >= 0,
                 TrackSize.Preferred preferred => IsBounded(preferred.Width) && preferred.Width.Points >= 0,
                 TrackSize.Fill fill => double.IsFinite(fill.Weight) && fill.Weight > 0,
+                TrackSize.Percent percent => double.IsFinite(percent.Value) && percent.Value > 0 && percent.Value <= ModelLimits.MaxPercent,
                 _ => true,
             };
             if (!valid)
             {
-                return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed or preferred column width must be zero or more and at most {ModelLimits.MaxLength}, and a fill weight positive.", column.ToString()!, "columns", box);
+                return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed or preferred column width must be zero or more and at most {ModelLimits.MaxLength}, a fill weight positive, and a percentage more than zero and at most {ModelLimits.MaxPercent}.", column.ToString()!, "columns", box);
             }
         }
 
@@ -389,12 +391,17 @@ public static class ModelCheck
             : Problem(DocumentErrorCodes.Input.Invalid.Length, $"A border spacing must be zero or more and at most {ModelLimits.MaxLength}.", spacing.ToString(), "border-spacing", box);
     }
 
-    /// <summary>A given width (<see cref="BoxWidth.Fixed"/>) of zero or more, at most <see cref="ModelLimits.MaxLength"/>
+    /// <summary>A given width (<see cref="BoxWidth.Fixed"/>) of zero or more, at most <see cref="ModelLimits.MaxLength"/>,
+    /// and a percentage (<see cref="BoxWidth.Percent"/>) more than zero, at most <see cref="ModelLimits.MaxPercent"/>
     /// (CSS 2.1 §10.2: "Negative values for 'width' are illegal"; else Input.Invalid.Length).</summary>
-    private static Error? Width(BoxStyle style, Box box) =>
-        style.Width is BoxWidth.Fixed { Width: var width } && !(IsBounded(width) && width.Points >= 0)
-            ? Problem(DocumentErrorCodes.Input.Invalid.Length, $"A width must be zero or more and at most {ModelLimits.MaxLength}.", width.ToString(), "width", box)
-            : null;
+    private static Error? Width(BoxStyle style, Box box) => style.Width switch
+    {
+        BoxWidth.Fixed { Width: var width } when !(IsBounded(width) && width.Points >= 0) =>
+            Problem(DocumentErrorCodes.Input.Invalid.Length, $"A width must be zero or more and at most {ModelLimits.MaxLength}.", width.ToString(), "width", box),
+        BoxWidth.Percent { Value: var value } when !(double.IsFinite(value) && value > 0 && value <= ModelLimits.MaxPercent) =>
+            Problem(DocumentErrorCodes.Input.Invalid.Length, $"A width as a percentage must be more than zero and at most {ModelLimits.MaxPercent}.", style.Width.ToString()!, "width", box),
+        _ => null,
+    };
 
     /// <summary>Four sides: finite and at most <see cref="ModelLimits.MaxLength"/> (else Input.Invalid.Length), and not
     /// negative (else <paramref name="negativeCode"/>).</summary>

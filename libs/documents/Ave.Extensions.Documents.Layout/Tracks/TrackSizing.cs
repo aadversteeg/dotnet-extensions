@@ -35,9 +35,13 @@ namespace Ave.Extensions.Documents.Layout;
 /// with the minimum Grid gives <c>1fr</c> (<c>minmax(auto, 1fr)</c>: never narrower than its min-content) and the
 /// "Find the Size of an fr" loop of §11.7.1, which drops a fill column whose minimum is larger than its share and
 /// shares the rest again.</item>
+/// <item><b>Percent</b>: a percent column of the automatic table layout (<see cref="TrackSize.Percent"/>): its minimum
+/// and maximum are its cells' as for an auto column; it takes its percentage of the width the columns share
+/// (<see cref="GrowToPercentages"/>), and makes a table of width auto as wide as <see cref="PercentWidth"/>.</item>
 /// </list>
 /// <para>The order is Grid's (§11.4–§11.7) with the guesses of CSS Tables 3 §3.9.3: fixed and min-content widths
-/// first; then preferred columns grow towards their maximum, then auto columns; then fill columns share what is left. Without fill columns the box's <see cref="BoxStyle.Width"/> decides:
+/// first; then percent columns grow to their percentage; then preferred columns grow towards their maximum, then auto
+/// columns; then fill columns share what is left. Without fill columns the box's <see cref="BoxStyle.Width"/> decides:
 /// with <see cref="BoxWidth.Auto"/> a table is only as wide as its columns need (CSS 2.1 §17.5.2.2: with
 /// <c>width: auto</c> "use max(MAX, CAPMIN)" when that is less than the containing block), so leftover space is not
 /// spread; with <see cref="BoxWidth.Stretch"/> the columns past their maximum share it (<see cref="GrowPastMaximum"/>).</para>
@@ -105,9 +109,11 @@ internal static class TrackSizing
     /// <param name="available">The width the columns may take together.</param>
     /// <param name="width">Whether the columns stay at what they need or fill <paramref name="available"/> when no
     /// column is a fill column.</param>
+    /// <param name="step">The length step a percent column's width is floored to, 0 for none
+    /// (<see cref="LengthRounding.SixtyFourthPixels"/>).</param>
     /// <returns>The widths, or the width needed.</returns>
     public static (ImmutableArray<double> Widths, double? Needed) Resolve(
-        ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges, double available, BoxWidth? width = null)
+        ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges, double available, BoxWidth? width = null, double step = 0)
     {
         var widths = ranges.Select(range => range.MinContent).ToArray();
         var needed = widths.Sum();
@@ -116,6 +122,7 @@ internal static class TrackSizing
             return ([], needed);
         }
 
+        GrowToPercentages(columns, widths, available, step);
         GrowTowardsMaximum(columns, ranges, widths, available, column => column is TrackSize.Preferred);
         GrowTowardsMaximum(columns, ranges, widths, available, column => column is TrackSize.Auto);
         if (width == BoxWidth.Stretch)
@@ -126,6 +133,86 @@ internal static class TrackSizing
         ShareAmongFillColumns(columns, ranges, widths, available);
         return ([.. widths], null);
     }
+
+    /// <summary>
+    /// The percentage of every column: a <see cref="TrackSize.Percent"/> column's, cut where the percentages of the columns
+    /// before it and its own pass 100 (cases <c>tpa-sum</c> a, b: columns of 60% and 70% are 60% and 40% of the width the
+    /// columns share); 0 for every other column.
+    /// </summary>
+    private static double[] Percentages(ValueList<TrackSize> columns)
+    {
+        var percentages = new double[columns.Count];
+        var left = 100.0;
+        for (var index = 0; index < columns.Count; index++)
+        {
+            if (columns[index] is TrackSize.Percent { Value: var value })
+            {
+                percentages[index] = Math.Min(value, left);
+                left -= percentages[index];
+            }
+        }
+
+        return percentages;
+    }
+
+    /// <summary>
+    /// The width the columns of a table of width auto share when some of them are <see cref="TrackSize.Percent"/> columns
+    /// (CSS Tables 3 §3.9.3, the min-content-percentage sizing-guess, measured in Chromium 159): wide enough for each
+    /// percent column to have its percentage at its maximum width, and for the other columns to have their maximum widths
+    /// in the percentage the percent columns leave (cases <c>tpa-auto</c> a, b: a cell of 30% beside a column of 106.887 pt
+    /// makes the columns 152.695 pt wide, 106.887 / 0.7; <c>tpa-auto</c> d; <c>tpa-sum</c> d: a column of 10% holding a word
+    /// of 76.204 pt asks for 762 pt, so the table is as wide as its container). Null without percent columns.
+    /// </summary>
+    /// <param name="columns">The column definitions.</param>
+    /// <param name="ranges">The columns' ranges from <see cref="ColumnRanges"/>.</param>
+    /// <returns>The width, or null.</returns>
+    public static double? PercentWidth(ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges)
+    {
+        var percentages = Percentages(columns);
+        var total = percentages.Sum();
+        if (total <= 0)
+        {
+            return null;
+        }
+
+        var others = Enumerable.Range(0, columns.Count).Where(index => columns[index] is not TrackSize.Percent).Sum(index => ranges[index].MaxContent);
+        var width = total < 100 ? others * 100 / (100 - total) : 0;
+        for (var index = 0; index < columns.Count; index++)
+        {
+            if (percentages[index] > 0)
+            {
+                width = Math.Max(width, ranges[index].MaxContent * 100 / percentages[index]);
+            }
+        }
+
+        return width;
+    }
+
+    /// <summary>
+    /// Percent columns grow from their minimum to their percentage of the width the columns share, never below the
+    /// minimum (CSS Tables 3 §3.9.3, the min-content-percentage sizing-guess; cases <c>tpa-full</c>, <c>tpa-length</c>:
+    /// 30% of 275.25 pt is 82.570 pt; <c>tpa-sum</c> c: a column of 10% keeps the 75.457 pt of its word). Where the width
+    /// does not reach every percentage, each grows by the same fraction of what it asks. Each percentage is floored to the
+    /// profile's length step (<see cref="LengthRounding.SixtyFourthPixels"/>).
+    /// </summary>
+    private static void GrowToPercentages(ValueList<TrackSize> columns, double[] widths, double available, double step)
+    {
+        var percentages = Percentages(columns);
+        var wanted = widths.Select((width, index) => percentages[index] > 0 ? Math.Max(0, Floor(percentages[index] * available / 100, step) - width) : 0).ToArray();
+        var asked = wanted.Sum();
+        var fraction = asked <= 0 ? 0 : Math.Min(1, Math.Max(0, available - widths.Sum()) / asked);
+        for (var index = 0; index < widths.Length; index++)
+        {
+            widths[index] += fraction * wanted[index];
+        }
+    }
+
+    /// <summary>A length floored to a multiple of <paramref name="step"/>, as it is for a step of 0. A length within a
+    /// millionth of a step below a multiple is that multiple, so a product that should land on a step does.</summary>
+    /// <param name="length">The length.</param>
+    /// <param name="step">The step, or 0.</param>
+    /// <returns>The floored length.</returns>
+    public static double Floor(double length, double step) => step > 0 ? Math.Floor((length / step) + 1e-6) * step : length;
 
     /// <summary>
     /// Columns of one kind grow from their minimum towards their maximum with the width not yet taken: first the
@@ -153,7 +240,8 @@ internal static class TrackSizing
     /// columns (CSS Tables 3 §3.9.3, "Distribution algorithm": "starting from the max-content sizing-guess and
     /// distributing the excess width to the columns", by the rules of §3.9.3.2, "Distributing excess width to
     /// columns"). The auto columns receive it, each in proportion to its maximum width; when the table has no auto
-    /// column the fixed and preferred columns do, each in proportion to its maximum (a fixed column's width; the
+    /// column the fixed and preferred columns do (and no percent column: case <c>tpa-beside</c> c, a column of 60 pt beside
+    /// one of 30% in a table as wide as its container takes all of the 70%), each in proportion to its maximum (a fixed column's width; the
     /// automatic layout has preferred columns only, the fixed layout fixed ones); when those weights are all zero (empty
     /// columns without insets), in equal parts. A column whose weight is zero beside others that are not receives
     /// nothing. Chromium, <c>third_party/blink/renderer/core/layout/table/table_layout_utils.cc</c>: automatic layout in
@@ -171,13 +259,16 @@ internal static class TrackSizing
 
         var leftover = available - widths.Sum();
         var autos = Enumerable.Range(0, columns.Count).Where(index => columns[index] is TrackSize.Auto).ToImmutableArray();
-        var receivers = autos.IsEmpty ? Enumerable.Range(0, columns.Count).ToImmutableArray() : autos;
+        var others = Enumerable.Range(0, columns.Count).Where(index => columns[index] is not TrackSize.Percent).ToImmutableArray();
+        var receivers = !autos.IsEmpty ? autos : !others.IsEmpty ? others : Enumerable.Range(0, columns.Count).ToImmutableArray();
         if (leftover <= 0 || receivers.IsEmpty)
         {
             return;
         }
 
-        Share(widths, receivers, [.. ranges.Select(range => range.MaxContent)], leftover);
+        // Percent columns receive only in a table of percent columns alone, in proportion to their percentages (case
+        // tpa-full e: cells of 30% and 50% in a table of 100% grow to 103.207 and 172.043 pt).
+        Share(widths, receivers, others.IsEmpty ? Percentages(columns) : [.. ranges.Select(range => range.MaxContent)], leftover);
     }
 
     /// <summary>
