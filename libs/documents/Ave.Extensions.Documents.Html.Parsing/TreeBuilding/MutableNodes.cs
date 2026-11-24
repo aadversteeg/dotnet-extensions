@@ -261,6 +261,46 @@ internal sealed class MutableText : MutableNode
 {
     /// <summary>The characters.</summary>
     public StringBuilder Data { get; } = new();
+
+    /// <summary>Where the characters do not follow one another in the source (a character reference, or text added to
+    /// this node from another place): from each offset in <see cref="Data"/> on, the source index of its character.
+    /// Before the first, the characters follow <see cref="MutableNode.Start"/> one by one.</summary>
+    public List<(int Offset, int Source)> Jumps { get; } = [];
+
+    /// <summary>The source index the next character has when it follows the last one.</summary>
+    private int _nextSource = -1;
+
+    /// <summary>Appends a character written at a source index, noting a jump when it does not follow the last one.</summary>
+    /// <param name="c">The code point.</param>
+    /// <param name="source">Its source index.</param>
+    public void Append(int c, int source)
+    {
+        if (Data.Length == 0 ? source != Start : source != _nextSource)
+        {
+            Jumps.Add((Data.Length, source));
+        }
+
+        if (c > 0xFFFF)
+        {
+            Data.Append(char.ConvertFromUtf32(c));
+            _nextSource = source + 2;
+        }
+        else
+        {
+            Data.Append((char)c);
+            _nextSource = source + 1;
+        }
+    }
+
+    /// <summary>A copy of the text, its places too.</summary>
+    public MutableText Copy()
+    {
+        var copy = new MutableText { Start = Start };
+        copy.Data.Append(Data);
+        copy.Jumps.AddRange(Jumps);
+        copy._nextSource = _nextSource;
+        return copy;
+    }
 }
 
 /// <summary>A comment.</summary>

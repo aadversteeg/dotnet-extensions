@@ -320,8 +320,7 @@ internal sealed partial class TreeBuilder
                 Made(element: true);
                 return copy;
             case MutableText original:
-                var textCopy = new MutableText { Start = original.Start };
-                textCopy.Data.Append(original.Data);
+                var textCopy = original.Copy();
                 Made(element: false);
                 return textCopy;
             case MutableComment comment:
