@@ -1,0 +1,4 @@
+1 33.750 12.000 52.500 24.750 uri https://example.com/n
+1 52.500 12.000 74.250 24.750 uri https://example.com/n
+1 33.750 30.750 55.500 43.500 uri https://example.com/m
+1 55.500 30.750 82.500 43.500 uri https://example.com/m

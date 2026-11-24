@@ -69,6 +69,7 @@ public class ChromiumBehaviourTests
     [InlineData("<p>x<img id=t src=\"data:,\" width=4 height=4 align=\" top\"></p>", "t", "vertical-align", "baseline")]
     [InlineData("<hr id=t align=\" left\" width=50>", "t", "margin-left", "auto")]
     [InlineData("<table><caption id=t align=left>c</caption><tr><td>d</td></tr></table>", "t", "caption-side", "top")]
+    [InlineData("<table><caption id=t align=\" bottom\">c</caption><tr><td>d</td></tr></table>", "t", "caption-side", "bottom")]
     [InlineData("<table><tr><td id=t valign=initial>c</td></tr></table>", "t", "vertical-align", "baseline")]
     [InlineData("<table><tr><td id=t valign=\" top\">c</td></tr></table>", "t", "vertical-align", "top")]
     [InlineData("<table><tr><td id=t valign=bogus>c</td></tr></table>", "t", "vertical-align", "middle")]
@@ -260,8 +261,6 @@ public class ChromiumBehaviourTests
     // Chromium 159 floats the table (float: inline-start, " left"): refused as left and right are.
     [InlineData("<table align=inline-start><tr><td>c</td></tr></table>")]
     [InlineData("<table align=\" left\"><tr><td>c</td></tr></table>")]
-    // " bottom" is caption-side bottom.
-    [InlineData("<table><caption align=\" bottom\">c</caption><tr><td>d</td></tr></table>")]
     public void A_presentational_attribute_Chromium_reads_as_a_value_the_engine_does_not_support_is_refused(string body) =>
         Refusals(Styled(Doctype + body, MeasuredPage)).Should().Contain(error => error.Code == HtmlStyleErrorCodes.Unsupported.Attribute);
 
@@ -462,7 +461,7 @@ public class ChromiumBehaviourTests
     [InlineData("<p><math><mi>x</mi></math>", "math")]
     [InlineData("<noscript><p>x</p></noscript>", "noscript")]
     // The user-agent style of an element outside the profile names the element.
-    [InlineData("<p>a<sub>b</sub>", "sub")]
+    [InlineData("<p>a<abbr title=\"t\">b</abbr>", "abbr")]
     [InlineData("<div contenteditable>x</div>", "contenteditable")]
     public void What_the_engine_does_not_run_or_draw_is_refused_where_the_author_wrote_it(string body, string value)
     {

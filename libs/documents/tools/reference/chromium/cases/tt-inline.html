@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- text-transform across inline elements and line breaks, at 10.5 pt and 11 pt: capitalize where an element starts inside a word, after an element that ends a word, at a br and at a soft wrap; uppercase on an element inside a word and on text that wraps where its own letters would not. -->
+<style>@page { size: 300pt 600pt; margin: 12pt; } body { line-height: 18pt; } .a { font-size: 10.5pt; } .b { font-size: 11pt; }
+.u { text-transform: uppercase; } .c { text-transform: capitalize; } .r { color: #c00; } .w { margin-right: 186pt; }</style></head><body>
+<div class="a">
+<p class="c">word wo<span class="r">rd</span> <span class="r">next</span>word</p>
+<p>Word a<span class="c">bc</span> <span class="c">de</span>f g<span class="c"> hi</span></p>
+<p class="c">word one<br>two<br> three</p>
+<p class="c w">word alpha beta gamma delta</p>
+<p>Word wa<span class="u">ve</span>s to<span class="u">day</span></p>
+<p class="u w">word wave wave wave wave</p>
+</div>
+<div class="b">
+<p class="c">word wo<span class="r">rd</span> <span class="r">next</span>word</p>
+<p>Word a<span class="c">bc</span> <span class="c">de</span>f g<span class="c"> hi</span></p>
+<p class="c">word one<br>two<br> three</p>
+<p class="c w">word alpha beta gamma delta</p>
+<p>Word wa<span class="u">ve</span>s to<span class="u">day</span></p>
+<p class="u w">word wave wave wave wave</p>
+</div>
+</body></html>

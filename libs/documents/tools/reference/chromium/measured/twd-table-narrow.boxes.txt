@@ -1,0 +1,12 @@
+table 63.773 56.484 a
+td 26.109 55.734 one-a
+td 36.914 55.734 text with more words
+table 39.996 56.484 b
+td 19.617 55.734 one-b
+td 19.629 55.734 text with more words
+table 79.523 68.484 c
+td 26.859 56.484 one-c
+td 37.664 56.484 text with more words
+table 39.996 68.484 d
+td 12.492 56.484 one-d
+td 12.504 56.484 text with more words

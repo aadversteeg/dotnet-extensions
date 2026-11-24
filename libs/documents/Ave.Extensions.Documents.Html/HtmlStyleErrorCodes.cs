@@ -61,6 +61,23 @@ public static class HtmlStyleErrorCodes
         /// SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode Table = _ / "Table";
 
+        /// <summary>A list whose structure or numbering the document model's list does not have in the same form
+        /// (<c>Boxes/HtmlBoxGenerator.Lists.cs</c>): a child of a list element that is not a list item; a <c>start</c> or
+        /// <c>value</c> beyond a 32-bit integer, or a number that leaves it; a <c>value</c> in a reversed list, or outside an
+        /// <c>ol</c> where the list shows numbers; an item outside a list element that a list's numbering, or an item of
+        /// another parent, would number; the marker of a decorated item; lists deeper or longer than the model allows
+        /// (these fail under every policy). Metadata: Value (what is refused), SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode List = _ / "List";
+
+        /// <summary>A counter the engine does not count as Chromium does (<c>Boxes/HtmlBoxGenerator.Counters.cs</c>): a
+        /// <c>counter-reset</c>, <c>counter-increment</c> or <c>counter-set</c> that takes a counter beyond a 32-bit integer
+        /// (Chromium clamps it; refused at the declaration); a <c>counters()</c> of more levels than
+        /// <see cref="Css.CssInputLimits.MaxCountersLevels"/>, or generated text longer than
+        /// <see cref="Css.CssInputLimits.MaxGeneratedTextLength"/> once the counters are in it (refused at the <c>content</c>
+        /// declaration, the text left out); more live counters than <see cref="Css.CssInputLimits.MaxLiveCounters"/> (fails
+        /// under every policy). Metadata: Value (the counter), Property, SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode Counter = _ / "Counter";
+
         /// <summary>A background on the root or body element, which Chromium paints on the page canvas (CSS Backgrounds 3
         /// §2.11.2); the document model has no page background. Metadata: Property, Value, SourceFile, SourceLine,
         /// SourceColumn.</summary>
@@ -73,7 +90,8 @@ public static class HtmlStyleErrorCodes
 
         /// <summary>Text or a box whose font no family of its <c>font-family</c> list gives at its weight and style: no
         /// <c>@font-face</c> rule and no font of the caller's set (there are no system fonts and no fallback per
-        /// character). Metadata: Value (the family list), SourceFile, SourceLine, SourceColumn.</summary>
+        /// character); or a generic family, or the initial value, the caller's <c>GenericFamilies</c> do not map, or map
+        /// to a name no face answers. Metadata: Value (the family list), SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode Font = _ / "Font";
 
         /// <summary>Boxes nested deeper than the document model allows (<c>ModelLimits.MaxNestingDepth</c>). Metadata:
@@ -86,7 +104,39 @@ public static class HtmlStyleErrorCodes
         /// per text that holds any: Value (the first such code point), Offset (its place in the text), Count (how many
         /// the text holds), SourceFile, SourceLine, SourceColumn (where the text starts).</summary>
         public static readonly ErrorCode Character = _ / "Character";
+
+        /// <summary>An element's language (<c>lang</c>, or <c>xml:lang</c> in the XML namespace) that differs from its
+        /// parent's and is not written: not a well-formed language tag (THE RULE FOR A LANGUAGE TAG, <c>LanguageTags</c>), or
+        /// empty (the language is unknown, which a PDF/UA-1 <c>/Lang</c> cannot say: veraPDF rule 7.2-29 asks a tag). The
+        /// element is drawn, with its parent's language. Metadata: Property (<c>lang</c>), Value (the tag), SourceFile,
+        /// SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode Language = _ / "Language";
+
+        /// <summary>An <c>a</c> element with an <c>href</c> whose link is not made: its URL by THE RULE FOR A LINK'S URL IN
+        /// HTML (<c>LinkUrls</c>) names no element of the document (<c>#…</c>), is relative without an <c>http</c> or <c>https</c>
+        /// base, or is refused by THE RULE FOR A LINK'S URI (<c>LinkUris</c>: a scheme other than http, https, mailto and tel,
+        /// such as javascript, file or data); or the link lies inside another link, or outside a line of text. Metadata:
+        /// Property (<c>href</c>, or <c>title</c> for a description text may not hold), Value (the href), SourceFile,
+        /// SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode Link = _ / "Link";
+
+        /// <summary>An inline element with its own background, border, padding or horizontal margin (an inline box) where this
+        /// version does not draw one: around an image that lies inside a link too. The image is not drawn.
+        /// Metadata: Property, Value, SourceFile, SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode InlineBox = _ / "InlineBox";
+
+        /// <summary>A <c>meta</c> element whose <c>content</c>, or a <c>title</c> element whose text, the document's metadata
+        /// does not take, by THE RULE FOR A DOCUMENT'S METADATA IN HTML (<c>HtmlMetadata</c>) and THE RULE FOR A DOCUMENT'S
+        /// METADATA TEXT (<c>MetadataTexts</c>): an author or description longer than its limit, or a text holding a control
+        /// character or a character XML does not allow. The document is drawn without that title, author or description.
+        /// Metadata: Property (<c>content</c>, or <c>text</c> for a title), Value (the <c>name</c>, <c>author</c> or
+        /// <c>description</c>, or <c>title</c>), SourceFile, SourceLine, SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode Metadata = _ / "Metadata";
     }
+
+    /// <summary>Options that cannot be used, a caller's error: a family name of <c>GenericFamilies</c> that is empty, holds a
+    /// control character, is too long or is itself a generic family keyword. Metadata: Property (the option), Value.</summary>
+    public static readonly ErrorCode InvalidOptions = _ / "InvalidOptions";
 
     /// <summary>A document with no element (made in code; the parser always makes the html element): there is nothing to
     /// style, and the resolution fails. Metadata: SourceFile.</summary>

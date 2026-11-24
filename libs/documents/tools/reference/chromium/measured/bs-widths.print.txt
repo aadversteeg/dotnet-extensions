@@ -1,0 +1,53 @@
+page 1 300.000 600.000
+word 1 12.000 27.582 23.250 10.500 top #000000 Lato-Regular
+word 1 15.750 24.360 42.000 10.500 i1 #000000 Lato-Regular
+word 1 16.500 25.110 71.250 10.500 i2 #000000 Lato-Regular
+word 1 17.250 25.860 102.000 10.500 i3 #000000 Lato-Regular
+word 1 19.500 28.110 135.750 10.500 i6 #000000 Lato-Regular
+word 1 15.750 27.793 168.000 10.500 o1 #000000 Lato-Regular
+word 1 16.500 28.543 197.250 10.500 o2 #000000 Lato-Regular
+word 1 17.250 29.293 228.000 10.500 o3 #000000 Lato-Regular
+word 1 19.500 31.543 261.750 10.500 o6 #000000 Lato-Regular
+word 1 17.250 25.230 295.500 10.500 gi #808080 Lato-Regular
+word 1 17.250 28.579 327.000 10.500 go #808080 Lato-Regular
+word 1 12.000 29.283 353.250 10.500 end #000000 Lato-Regular
+rect 1 12.000 27.000 288.000 27.750 #9a9a9a
+rect 1 12.000 48.750 288.000 49.500 #eeeeee
+path 1 287.250 27.000 288.000 49.500 #eeeeee 8/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f
+path 1 12.000 27.000 12.750 49.500 #9a9a9a f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/7
+rect 1 12.000 55.500 288.000 57.000 #9a9a9a
+rect 1 12.000 78.000 288.000 79.500 #eeeeee
+path 1 286.500 55.500 288.000 79.500 #eeeeee 08/8f/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff
+path 1 12.000 55.500 13.500 79.500 #9a9a9a ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/f7/70
+rect 1 12.000 85.500 288.000 87.750 #9a9a9a
+rect 1 12.000 108.750 288.000 111.000 #eeeeee
+path 1 285.750 85.500 288.000 111.000 #eeeeee 008/08f/8ff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff
+path 1 12.000 85.500 14.250 111.000 #9a9a9a fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/ff7/f70/700
+rect 1 12.000 117.000 288.000 121.500 #9a9a9a
+rect 1 12.000 142.500 288.000 147.000 #eeeeee
+path 1 283.500 117.000 288.000 147.000 #eeeeee 000008/00008f/0008ff/008fff/08ffff/8fffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff
+path 1 12.000 117.000 16.500 147.000 #9a9a9a ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/fffff7/ffff70/fff700/ff7000/f70000/700000
+rect 1 12.000 153.000 288.000 153.750 #eeeeee
+rect 1 12.000 174.750 288.000 175.500 #9a9a9a
+path 1 287.250 153.000 288.000 175.500 #9a9a9a 8/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f
+path 1 12.000 153.000 12.750 175.500 #eeeeee f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/7
+rect 1 12.000 181.500 288.000 183.000 #eeeeee
+rect 1 12.000 204.000 288.000 205.500 #9a9a9a
+path 1 286.500 181.500 288.000 205.500 #9a9a9a 08/8f/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff
+path 1 12.000 181.500 13.500 205.500 #eeeeee ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/ff/f7/70
+rect 1 12.000 211.500 288.000 213.750 #eeeeee
+rect 1 12.000 234.750 288.000 237.000 #9a9a9a
+path 1 285.750 211.500 288.000 237.000 #9a9a9a 008/08f/8ff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff
+path 1 12.000 211.500 14.250 237.000 #eeeeee fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/ff7/f70/700
+rect 1 12.000 243.000 288.000 247.500 #eeeeee
+rect 1 12.000 268.500 288.000 273.000 #9a9a9a
+path 1 283.500 243.000 288.000 273.000 #9a9a9a 000008/00008f/0008ff/008fff/08ffff/8fffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff
+path 1 12.000 243.000 16.500 273.000 #eeeeee ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/ffffff/fffff7/ffff70/fff700/ff7000/f70000/700000
+rect 1 12.000 279.000 288.000 281.250 #9a9a9a
+rect 1 12.000 302.250 288.000 304.500 #eeeeee
+path 1 285.750 279.000 288.000 304.500 #eeeeee 008/08f/8ff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff
+path 1 12.000 279.000 14.250 304.500 #9a9a9a fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/ff7/f70/700
+rect 1 12.000 310.500 288.000 312.750 #eeeeee
+rect 1 12.000 333.750 288.000 336.000 #9a9a9a
+path 1 285.750 310.500 288.000 336.000 #9a9a9a 008/08f/8ff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff
+path 1 12.000 310.500 14.250 336.000 #eeeeee fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/ff7/f70/700

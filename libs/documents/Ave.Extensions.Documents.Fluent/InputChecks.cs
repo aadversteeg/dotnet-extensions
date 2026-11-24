@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Fluent;
@@ -236,8 +237,51 @@ internal static class InputChecks
             .SelectMany(part => part is RowGroupElement group ? group.Rows.AsEnumerable() : [(TableRowElement)part])
             .SelectMany(row => row.Cells)
             .SelectMany(cell => cell.Content),
+        ListElement list => list.Items.SelectMany(item => item.Content),
         _ => [],
     };
+
+    /// <summary>A list's own rules: at least one item and at most <see cref="InputLimits.MaxListItems"/>, nested at most
+    /// <see cref="ModelLimits.MaxListDepth"/> deep (<paramref name="level"/>: 1 for a list in no other list), a start number
+    /// only on a numbered list and a bullet only on a bulleted one, a bullet of its enum, and numbers that stay inside a
+    /// 32-bit integer.</summary>
+    public static IEnumerable<Error> List(ListElement list, int level)
+    {
+        if (list.Items.Count == 0 || list.Items.Count > InputLimits.MaxListItems)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, $"A list has 1 to {InputLimits.MaxListItems} items.",
+                list.Items.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), "items", list.Source);
+        }
+
+        if (level > ModelLimits.MaxListDepth)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, $"Lists may nest at most {ModelLimits.MaxListDepth} levels deep.",
+                level.ToString(System.Globalization.CultureInfo.InvariantCulture), "nesting", list.Source);
+        }
+
+        if (!list.IsNumbered && list.StartNumber is { } start)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, "A start number belongs on a numbered list (NumberedList); a bulleted list has no numbers.",
+                start.ToString(System.Globalization.CultureInfo.InvariantCulture), "start", list.Source);
+        }
+
+        if (list.IsNumbered && list.BulletShape is { } bullet)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, "A bullet belongs on a bulleted list (BulletedList); a numbered list shows numbers.",
+                bullet.ToString(), "bullet", list.Source);
+        }
+
+        if (list.BulletShape is { } shape && !System.Enum.IsDefined(shape))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, "A bullet is a disc, a circle, a square or none.", shape.ToString(), "bullet", list.Source);
+        }
+
+        if (list.IsNumbered && (long)(list.StartNumber ?? 1) + list.Items.Count - 1 > int.MaxValue)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, "The numbers of a list stay at most 2147483647: start lower.",
+                (list.StartNumber ?? 1).ToString(System.Globalization.CultureInfo.InvariantCulture), "start", list.Source);
+        }
+    }
 
     /// <summary>The document names no font family: fonts are explicit input, so there is no default family.</summary>
     public static Error MissingFontFamily(SourceLocation source) =>
@@ -396,6 +440,21 @@ internal static class InputChecks
             ? []
             : [Problem(DocumentErrorCodes.Input.Invalid.Language, "The language is not a language tag such as nl-NL.", language, "language", source)];
 
+    /// <summary>A language set on an image span: an image has no text whose language could be set.</summary>
+    /// <param name="source">The span's source location.</param>
+    public static Error LanguageOnImageSpan(SourceLocation source) =>
+        Problem(DocumentErrorCodes.Input.Invalid.Language, "An image span has no text, so it takes no language; set the language on the paragraph.", "image", "language", source);
+
+    /// <summary>A link's target by THE RULE FOR A LINK'S URI (<see cref="LinkUris"/>): an absolute URI of the schemes http,
+    /// https, mailto or tel, printable ASCII, at most <see cref="LinkUris.MaxLength"/> characters. The message names the
+    /// scheme and the reason.</summary>
+    /// <param name="link">The span's target, or null for a span that is no link.</param>
+    /// <param name="source">The span's source location.</param>
+    public static IEnumerable<Error> Link(LinkTarget? link, SourceLocation source) =>
+        link is LinkTarget.UriTarget uri && LinkUris.Problem(uri.Value) is { } problem
+            ? [Problem(DocumentErrorCodes.Input.Invalid.Link, $"The link is refused: {problem}.", uri.Value, "uri", source)]
+            : [];
+
     /// <summary>
     /// Text of the document (a span, an image's alternative text): only characters text may hold
     /// (<see cref="TextCharacters"/>: no control character but tab and the forced line breaks, no noncharacter, no
@@ -415,15 +474,19 @@ internal static class InputChecks
         char.IsSurrogatePair(text, offset) ? char.ConvertToUtf32(text, offset) : text[offset];
 
     /// <summary>
-    /// The document's title and author: text that goes into the XMP metadata, which is XML, so only characters XML 1.0
-    /// allows (§2.2, production [2] Char; <see cref="XmlCharacters"/>). Reported at the document's line.
+    /// The document's title, author and description by THE RULE FOR A DOCUMENT'S METADATA TEXT (<see cref="MetadataTexts"/>):
+    /// no control character other than tab, line feed and carriage return, no character XML 1.0 does not allow, and an
+    /// author or a description of at most <see cref="MetadataTexts.MaxLength"/> characters. Reported at the document's line.
     /// </summary>
-    public static IEnumerable<Error> Metadata(string? title, string? author, SourceLocation source) =>
-        new[] { (Text: title, Property: "title"), (Text: author, Property: "author") }
-            .SelectMany(field => MetadataText(field.Text, field.Property, source));
+    public static IEnumerable<Error> Metadata(string? title, string? author, string? description, SourceLocation source) =>
+        MetadataTexts.Problems(title, author, description).Select(field =>
+        {
+            var error = Problem(DocumentErrorCodes.Input.Invalid.MetadataText, $"The {field.Property} is refused: {field.Problem}.", field.Text, field.Property, source);
+            return field.Offset is { } offset ? error.With(ErrorMetadataKeys.Offset, offset) : error;
+        });
 
-    /// <summary>One metadata text: an error when it holds a character XML 1.0 does not allow.</summary>
-    private static IEnumerable<Error> MetadataText(string? text, string property, SourceLocation source) =>
+    /// <summary>An attachment's text: an error when it holds a character XML 1.0 does not allow.</summary>
+    private static IEnumerable<Error> XmlText(string? text, string property, SourceLocation source) =>
         text is not null && XmlCharacters.IndexOfForbidden(text) is { } offset
             ? [Problem(DocumentErrorCodes.Input.Invalid.MetadataText, $"The {property} holds a character XML does not allow, at position {offset}.", text, property, source)
                 .With(ErrorMetadataKeys.Offset, offset)]
@@ -431,7 +494,7 @@ internal static class InputChecks
 
     /// <summary>
     /// An attachment needs a file name, a media type of the form <c>type/subtype</c> (RFC 6838 §4.2, restricted names),
-    /// a file name and description of characters XML allows (as <see cref="Metadata"/>), and a name no other
+    /// a file name and description of characters XML allows (<see cref="XmlCharacters"/>), and a name no other
     /// attachment of the document has: the embedded-files name tree has one entry per name
     /// (ISO 32000-1 §7.9.6).
     /// </summary>
@@ -449,8 +512,8 @@ internal static class InputChecks
                 yield return Problem(DocumentErrorCodes.Input.Invalid.Attachment, "The media type is not of the form type/subtype.", attachment.MediaType ?? "null", "media-type", attachment.Source);
             }
 
-            foreach (var problem in MetadataText(attachment.FileName, "file-name", attachment.Source)
-                         .Concat(MetadataText(attachment.Description, "description", attachment.Source)))
+            foreach (var problem in XmlText(attachment.FileName, "file-name", attachment.Source)
+                         .Concat(XmlText(attachment.Description, "description", attachment.Source)))
             {
                 yield return problem;
             }
@@ -483,7 +546,7 @@ internal static class InputChecks
     /// against the whole string (<c>\z</c>).</summary>
     private static readonly Regex MediaType = new(@"^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}\z", RegexOptions.CultureInvariant);
 
-    private static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
+    internal static Error Problem(ErrorCode code, string message, string value, string property, SourceLocation source) =>
         new Error(code, $"{message} ({source})")
             .With(ErrorMetadataKeys.Value, value)
             .With(ErrorMetadataKeys.Property, property)

@@ -13,7 +13,8 @@ public sealed record LayoutProfile
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
     /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
     /// <see cref="CellsBesideSlices.GoOn"/>, <see cref="RepeatedHeaderRows.AboveEverySlice"/>,
-    /// <see cref="SliceRestEnd.InsideCell"/> and <see cref="CutRowAlignment.RestAlignedInItsPart"/>.</summary>
+    /// <see cref="SliceRestEnd.InsideCell"/>, <see cref="CutRowAlignment.RestAlignedInItsPart"/> and
+    /// <see cref="InlineBoxSnapping.Exact"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -60,6 +61,36 @@ public sealed record LayoutProfile
     /// <summary>Where the part of a table cell ends that holds nothing but the rest of a piece sliced on an earlier page
     /// (<see cref="DocumentModel.SliceRestEnd"/>).</summary>
     public SliceRestEnd SliceRestEnd { get; init; } = SliceRestEnd.InsideCell;
+
+    /// <summary>Whether the painted edges of an inline box and the text inside it are put on whole pixels
+    /// (<see cref="DocumentModel.InlineBoxSnapping"/>).</summary>
+    public InlineBoxSnapping InlineBoxSnapping { get; init; } = InlineBoxSnapping.Exact;
+}
+
+/// <summary>
+/// Where the background and border of an inline box (<see cref="InlineGroup.Box"/>) are painted, and where the text inside
+/// it is drawn in the block direction. The box takes the same room on the line under both values.
+/// </summary>
+public enum InlineBoxSnapping
+{
+    /// <summary>The box is painted where it lies, and the text inside it on the line's baseline.</summary>
+    Exact,
+
+    /// <summary>
+    /// As Chromium prints it: each painted edge of the box's border box lies on the nearest whole pixel, and the text inside
+    /// it is drawn from the box's top rounded to the nearest whole pixel, so a vertical padding or border of a fraction of a
+    /// pixel moves the text off the line's baseline by up to a pixel, while the text outside the box stays on it. Both in the
+    /// page's coordinates: a page margin in points puts the page area on a whole pixel (10 pt: 13 px), and a margin or a
+    /// padding in points around the paragraph does not move the pixels. Measured against Chromium's print
+    /// (<c>tools/reference/chromium</c>): a box from x 65.5625 to 111.28 px is painted from 66 to 111 px; a top padding of
+    /// 3.0625 px puts the box's top 3.0625 px above the line's top, painted from 3 px above it, and the text 0.0625 px below
+    /// the line's baseline; one of 0.53125 px puts the top 0.53125 px above the line's top, painted from 1 px above it, and
+    /// the text 0.46875 px above the baseline, where the line's top is on a whole pixel (case <c>ib-fraction</c>); a line
+    /// that starts at 26.3125 px across paints a box from 120.75 px from 121 px, not from 120.3125 as in the line's own
+    /// pixels (case <c>ib-origin-margin</c>); a line whose top lies at 37.56 px draws the text of a box 1.453 px taller than
+    /// its font from the box's top at 36 px, not 37 (case <c>ib-origin-page</c>, page 2; a table cell: <c>ib-origin-cell</c>).
+    /// </summary>
+    WholePixels,
 }
 
 /// <summary>
@@ -68,6 +99,9 @@ public sealed record LayoutProfile
 /// the rest's later slices, no other content, no padding below them. It decides where the grid line below the cell lies,
 /// and so where the table ends and what follows starts. Every other cell, and such a cell under either value on the page
 /// where the piece starts, holds its half of the line below it (CSS 2.1 §17.6.2).
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) the policy has no meaning: there is no grid line,
+/// and a table of that model with content sliced in a cell is refused (<c>Documents.Layout.TableBreak</c>; case
+/// <c>ts-break-image</c>).</para>
 /// </summary>
 public enum SliceRestEnd
 {
@@ -85,7 +119,9 @@ public enum SliceRestEnd
     /// line 240 pt tall (<c>a4-header-tall-line</c>) and of an image in a table nested in the cell
     /// (<c>a4-header-nested-image-228</c>, the nested table's line). A part that lays content out on the page holds its
     /// half under this value too (<c>a4-header-cut-text-row</c>, <c>a4-header-line2-25-cut-text-row</c>), and so does a
-    /// whole cell. Where the rest ends on a whole pixel, the two values print alike (<c>a4-noheader-image-228</c>).
+    /// whole cell. So does the part of a cell of the same row that goes on beside the rest with nothing left, so there the
+    /// row ends that half below the rest (<c>a4-header-image-228-beside-line</c>: the line from 76.5 to 77.25 pt). Where
+    /// the rest ends on a whole pixel, the two values print alike (<c>a4-noheader-image-228</c>).
     /// </summary>
     AtLineCentre,
 }
@@ -94,6 +130,9 @@ public enum SliceRestEnd
 /// On which later pages of a table its repeated header rows are drawn, where a piece in one of its body cells (an image,
 /// a line) is taller than the room below them (<see cref="MonolithicOverflow.Slice"/>). Only a table whose header rows
 /// repeat is concerned; nothing changes on its first page.
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) neither value is reached: a table of that model
+/// with content sliced in a cell is refused (<c>Documents.Layout.TableBreak</c>; case <c>ts-break-image</c>), and its
+/// header rows start every later fragment, one spacing above the first body row (case <c>ts-break-header</c>).</para>
 /// </summary>
 public enum RepeatedHeaderRows
 {
@@ -111,9 +150,10 @@ public enum RepeatedHeaderRows
     /// body row (<c>a4-header-row-image-228</c>), a 408 pt image (<c>a4-header-image-row</c>), a line 240 pt tall
     /// (<c>a4-header-tall-line</c>), images of 170, 174 and 180 pt, taller than the room below the header row and no
     /// taller than the page area (<c>a4-header-image-170</c>, <c>-174</c>, <c>-180</c>). Where the table has rows still to
-    /// come or a cell beside the piece goes on (<c>a4-header-image-360-image</c>, <c>a4-header-image-beside-lines</c>),
+    /// come or a cell of the piece's row beside it goes on, also an empty one, to the row's end
+    /// (<c>a4-header-image-360-image</c>, <c>a4-header-image-beside-lines</c>, <c>a4-header-image-228-beside-line</c>),
     /// Chromium draws the header rows over the slice at the top of the page; the engine draws them above it, the slice
-    /// below them, an open difference (docs/architecture.md, "Known limits", monolithic content taller than the page).
+    /// below them, a listed difference (docs/architecture.md, "Known limits", "A repeated header row over a slice").
     /// </summary>
     WhereContentIsLaidOut,
 }
@@ -123,6 +163,12 @@ public enum RepeatedHeaderRows
 /// the row starts, every cell of a cut row starts at the top of its part under both values, as Chromium prints it (case
 /// <c>fr-cut-row-uncut-bottom-cell</c>: a bottom-aligned cell that fits beside a cell that is cut); a row that no break
 /// cuts is aligned as its cells' <see cref="VerticalAlign"/> says under both values.
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) a cut row whose cells are all aligned at the top is
+/// drawn as under both values (cases <c>ts-break-cut</c>, <c>ts-break-move</c>). One with a cell aligned at the middle or
+/// bottom is drawn under <see cref="TopOnEveryPage"/>, as Chromium prints it: every cell at the top of its part on both
+/// pages (cases <c>ts-break-cut-middle</c>, the user agent's <c>middle</c>, and <c>ts-break-cut-bottom</c>, one cell at the
+/// bottom); under <see cref="RestAlignedInItsPart"/> it is refused (<c>Documents.Layout.TableBreak</c>), as no case
+/// measures that value with separated borders.</para>
 /// </summary>
 public enum CutRowAlignment
 {
@@ -146,6 +192,8 @@ public enum CutRowAlignment
 /// area in one of its cells (<see cref="MonolithicOverflow.Slice"/>): beside the slice from the top of the page, or below
 /// it. Only a cell that continues from the previous page is concerned; a cell whose content ended there stays empty either
 /// way, and nothing changes on the page where the piece starts.
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) neither value is reached: a table of that model
+/// with content sliced in a cell is refused (<c>Documents.Layout.TableBreak</c>; case <c>ts-break-image</c>).</para>
 /// </summary>
 public enum CellsBesideSlices
 {
@@ -194,6 +242,9 @@ public enum BodyClip
 /// <see cref="EmptyRowParts.Allow"/> (its content fits, its line below does not): below the table's last row, or at a
 /// break between rows after it. That part is never content: it is a grid line, or the half of a line that a cell holds.
 /// The page that ends draws the line under either value; the value decides what the next page does.
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) neither value is reached: a page of a table of that
+/// model that would pass the page end is refused (<c>Documents.Layout.TableBreak</c>), and a last row that fits only
+/// without the spacing, padding and border below it moves to the next page (case <c>ts-break-end</c>).</para>
 /// </summary>
 public enum TableEndOverflow
 {
@@ -219,7 +270,8 @@ public enum TableEndOverflow
     /// continues from the page before, a row at the top of the page (continued, or moved there whole) whose cells' content
     /// fits and whose bottom padding passes the page end keeps its lines there, and the padding and the line below
     /// continue on the next page, painted, however much taller than a line they are (cases <c>fr-continued-pad-past-33</c>,
-    /// <c>-45</c>, <c>-60</c>: 3, 15 and 30 pt of padding past the page end; <c>-33-next-row</c>;
+    /// <c>-45</c>, <c>-60</c>: 3, 15 and 30 pt of padding past the page end; <c>-33-next-row</c>, where the line to the
+    /// next row is drawn once, as the upper half that passed, also 6 and 2.25 pt wide: <c>-line-6pt</c>, <c>-line-2-25pt</c>;
     /// <c>fr-row-later-page-padding-overflows</c>; <c>a4-continued-cell-pad-bottom-30</c>). Where what passed is taller
     /// than the next page area, that page takes the whole area and the rest passes again (cases
     /// <c>fr-continued-pad-past-taller-than-page</c>, <c>-next-row</c>); every page takes the page area, so it ends.
@@ -232,6 +284,8 @@ public enum TableEndOverflow
 /// at its centre (<c>BoxDecorationBreak.Slice</c>): the upper half ends one page, the lower half starts the next. Only the
 /// paint follows the policy: each half takes its exact width in layout under either value, so content is where it is
 /// under <see cref="Exact"/>. A pixel here is the CSS pixel: 1/96 inch, 0.75 pt (CSS Values 4 §6.2).
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) the policy has no meaning: there is no grid line to
+/// split; the table and each cut cell are sliced as block boxes are (cases <c>ts-break-rows</c>, <c>ts-break-cut</c>).</para>
 /// </summary>
 public enum SplitLineHalves
 {
@@ -300,7 +354,7 @@ public enum LengthRounding
     /// <list type="number">
     /// <item>The width of a text item as line layout sees it, rounded UP: the part of one run's text that lies on one line
     /// (<c>Typesetting.LineSegment</c>), its glyphs' advances summed and rounded up to the next 1/64 px, for placing the
-    /// next item, for aligning the line and for whether the line fits. Blink's line breaker takes each text item's width
+    /// next item, for aligning the line, for whether the line fits and for the width of the item's text decorations. Blink's line breaker takes each text item's width
     /// as <c>ShapeResult::SnappedWidth</c>, <c>LayoutUnit::FromFloatCeil</c> of the shaped width
     /// (<c>core/layout/inline/line_breaker.cc</c>, <c>LineBreaker::HandleText</c>); a new item starts at every element
     /// boundary. The glyphs inside an item keep their exact advances; an image on the line is not a text item. Cases
@@ -308,7 +362,9 @@ public enum LengthRounding
     /// item widths rounded up, where unrounded widths put the last word up to 0.176 pt early and widths rounded per word
     /// 0.266 pt late), <c>ta-items-right</c> (right-aligned: the start of the line moves by the sum of the steps),
     /// <c>ta-items-fit</c> (in a block wider than the unrounded widths and narrower than the rounded ones the last word
-    /// wraps) and <c>sk-size</c> (an underline gap's edge).</item>
+    /// wraps), <c>sk-size</c> (an underline gap's edge) and <c>dw-half</c>, <c>dw-runs</c>, <c>dw-spacing</c> (each line of a
+    /// decoration ends at its item's start plus the rounded width: an exact end 1/128 px or less below a half pixel paints
+    /// one pixel more).</item>
     /// <item>A percentage width of a block box (<see cref="BoxStyle.SpecifiedWidth"/>, <see cref="BoxStyle.MinWidth"/>,
     /// <see cref="BoxStyle.MaxWidth"/>), resolved against its container's content width, rounded DOWN to 1/64 px. Cases
     /// <c>sz-width-percent</c> (40 % of 368 px, 147.2 px, is 147.1875 px: 110.391 pt), <c>sz-width-percent-parent</c>
@@ -320,6 +376,16 @@ public enum LengthRounding
     /// box, 161.328125 px, in 368 px leaves 206.671875 px; its left margin is 103.328125 px, where half is 103.3359375 px:
     /// its text starts at 89.496 pt). A length width is not listed here: the HTML front-end puts it on the unit, cut toward
     /// zero, as it does margins.</item>
+    /// <item>A percentage of a table's width, rounded DOWN to 1/64 px: a table's own percentage of its container's width,
+    /// and a percent column's share of the width the columns share in the automatic table layout. Cases
+    /// <c>tpa-table</c> (80% of 276 pt is 220.793 pt, not 220.8), <c>tpa-full</c> (30% of 258 pt is 77.391 pt, not 77.4;
+    /// table <c>c</c>: two columns of 30% and 20% floored put the next grid line half a pixel lower, a pixel to the left
+    /// once painted) and <c>tpa-fraction</c> (33.3% and 17.17% of 275.25 pt are 91.652 and 47.25 pt).</item>
+    /// <item>A height in a table (<see cref="BoxStyle.TableHeight"/>), rounded DOWN to 1/64 px: a row's height, a cell's
+    /// content height and a table's height, and each body row's share of the extra of a table's height, the last row taking
+    /// what is left. Cases <c>tg-row</c> (40 pt is 39.996 pt, 40.1 pt is 40.09 pt), <c>tg-fraction</c> (a row of 33.33 pt is
+    /// 33.328 pt, a cell's 21.37 pt is 21.363 pt, a table's 100.1 pt is 100.09 pt and its two rows 42.539 and 42.551 pt) and
+    /// <c>tg-table</c> (three rows of 44 pt are 43.992, 43.992 and 44.016 pt).</item>
     /// </list>
     /// </summary>
     SixtyFourthPixels,
@@ -393,6 +459,10 @@ public enum MonolithicOverflow
 /// Whether a table row may be cut at a page break where one part of it — the part on this page, or the rest on the
 /// next — shows nothing: a strip of empty cells at the end or the start of a page. CSS leaves where a row breaks to the
 /// user agent (CSS Fragmentation 3 §4.4 and CSS 2.1 §17 name no rule for it).
+/// <para>With separated borders (<see cref="TableBorderModel.Separate"/>) rows are cut and moved by the same rule; under <see
+/// cref="Allow"/> as Chromium prints it (cases <c>ts-break-cut</c>: a cell that ended goes on, empty, beside the cut
+/// cell; <c>ts-break-move</c>; <c>ts-break-first-row</c>: a table whose first row has no break that fits moves to the
+/// next page whole), under <see cref="Avoid"/> not measured, as with collapsed borders a deliberate rule of the engine.</para>
 /// </summary>
 public enum EmptyRowParts
 {
@@ -411,6 +481,8 @@ public enum EmptyRowParts
     /// <c>fr-row-later-page-padding-overflows</c>, <c>a2-row-end-nested-under-header</c>). Below header
     /// rows that repeat, a page does not end with the header alone where the first body row's content (an image, a line)
     /// does not fit below the header: the row is cut before it, its cells empty down to the page end, as Chromium prints
-    /// it (cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>, <c>a4-header-row-image-row</c>).</summary>
+    /// it (cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>, <c>a4-header-row-image-row</c>); its other cells
+    /// draw what they hold there, text or a background, and the content goes on in its cell's part on the next page
+    /// (<c>a4-header-image-228-beside-line</c>, <c>a4-header-image-beside-lines</c>, <c>a4-header-image-228-background</c>).</summary>
     Allow,
 }

@@ -160,13 +160,38 @@ public static class InlineLayout
     /// shaped: both its edges are safe places to break, so the breaker never asks for it again; if it did, it gets the same
     /// glyph.</remarks>
     private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, BoxStyle paragraph, FontSizeRounding sizes, LengthRounding lengths) =>
-        GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs, paragraph), width, (run, text, showsHyphen, budget) => runs[run] switch
+        OnlyEdges(runs) is { } edges ? Result<ValueList<TextLine>, Error>.Success(edges) : GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs, paragraph), width, (run, text, showsHyphen, budget) => runs[run] switch
             {
-                LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, ShapingSizeOf(sizes, shaped.Run.Style.FontSize.Points), showsHyphen, budget).MapError(error => error.WithSource(shaped.Run.Source)),
+                LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, ShapingSizeOf(sizes, shaped.Run.Style.FontSize.Points), showsHyphen, budget, FeaturesOf(shaped.Run.Style))
+                    .OnSuccessMap(glyphs => (ValueList<ShapedGlyph>)[.. Spaced(glyphs, shaped.Run.Style)])
+                    .MapError(error => error.WithSource(shaped.Run.Source)),
                 var atomic => Result<ValueList<ShapedGlyph>, Error>.Success(LineBoxes.GlyphsOf(atomic)),
             },
             LineEndAtSpace(runs, paragraph.TextAlign),
             lengths == LengthRounding.SixtyFourthPixels ? SixtyFourthPixel : 0);
+
+    /// <summary>
+    /// The lines of a paragraph whose only content is the edges of inline boxes and white space that collapses away (an
+    /// empty box alone, <see cref="HasLineBoxes"/>): when one edge takes room, one line with every edge in order, the spaces
+    /// gone as at the start of a line (CSS Text 3 §4.1.2), so <c>&lt;p&gt; &lt;span&gt; &lt;/span&gt; &lt;/p&gt;</c> with a
+    /// padding on the span is its padding wide (case <c>ib-empty-alone</c>); when none does, no line (a box with a
+    /// background alone). The line breaker breaks text, and such a paragraph has none; the line is never broken (a line
+    /// too narrow for its edges overflows, not measured). Null for any other paragraph.
+    /// </summary>
+    private static ValueList<TextLine>? OnlyEdges(IReadOnlyList<LineBoxes.Item> runs)
+    {
+        static bool CollapsesAway(LineBoxes.ShapedRun run) =>
+            WhiteSpaceCollapsing.IsAllCollapsible(string.Concat(run.Glyphs.Select(glyph => glyph.Text)), run.Run.Style.WhiteSpaceCollapse);
+
+        if (!runs.Any(item => item is LineBoxes.Edge) || !runs.All(item => item is LineBoxes.Edge || (item is LineBoxes.ShapedRun run && CollapsesAway(run))))
+        {
+            return null;
+        }
+
+        return runs.Any(item => item is LineBoxes.Edge { Width: > 0 })
+            ? [new TextLine([.. runs.Select((item, index) => (Item: item, Index: index)).Where(entry => entry.Item is LineBoxes.Edge).Select(entry => new LineSegment(entry.Index, LineBoxes.GlyphsOf(entry.Item)))])]
+            : [];
+    }
 
     /// <summary>Chromium's layout unit, 1/64 CSS pixel, in points (<see cref="LengthRounding.SixtyFourthPixels"/>).</summary>
     private const double SixtyFourthPixel = 0.75 / 64;
@@ -208,12 +233,104 @@ public static class InlineLayout
     /// A paragraph of only collapsible spaces has no line boxes (CSS 2.1 §9.4.2), which makes it an empty box for margin
     /// collapsing (<see cref="MarginCollapsing.IsEmpty"/>). A page counter always shows digits, and an atomic inline always
     /// makes a line (CSS 2.1 §9.4.2: line boxes that contain no "replaced elements" among other content are the ones that
-    /// do not exist).
+    /// do not exist). So does an inline box whose start or end edge takes room (<see cref="InlineBoxStyle.Start"/>,
+    /// <see cref="InlineBoxStyle.End"/>), also an empty one: §9.4.2 names "inline elements with non-zero margins, padding,
+    /// or borders" among what makes a line exist, and Chromium's print has such a line, the paragraph's line height high,
+    /// for an empty box with padding, with a left border alone and with a left margin alone; for one with a background
+    /// alone it has none, and the paragraph's margins collapse through it (case <c>ib-empty-alone</c>).
     /// </summary>
     /// <param name="box">An inline box.</param>
     /// <returns>Whether it has line boxes.</returns>
     public static bool HasLineBoxes(Box box) =>
-        box.Children.Any(child => child is CounterRun or Box || (child is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text, text.Style.WhiteSpaceCollapse)));
+        Leaves(box).Any(leaf => leaf.Node is CounterRun or Box || (leaf.Node is TextRun text && !WhiteSpaceCollapsing.IsAllCollapsible(text.Text, text.Style.WhiteSpaceCollapse)))
+        || Entries(box).Any(entry => entry.EdgeOf?.Box is { } edges && (entry.Edge == InlineBoxEdge.Start ? edges.Start : edges.End) > 0);
+
+    /// <summary>
+    /// The content of an inline box read through its inline groups (<see cref="InlineGroup"/>), which are transparent for
+    /// layout: every run and image box in document order, each with the groups it lies in, outermost first. One pass with
+    /// an explicit stack, so groups nested to any depth cost no call frames (the model check holds them to the nesting
+    /// limit).
+    /// </summary>
+    /// <param name="box">An inline box.</param>
+    /// <returns>Its leaves with their groups.</returns>
+    internal static IReadOnlyList<(Node Node, ImmutableArray<InlineGroup> Groups)> Leaves(Box box)
+    {
+        var leaves = new List<(Node, ImmutableArray<InlineGroup>)>(box.Children.Count);
+        var pending = new Stack<(Node Node, ImmutableArray<InlineGroup> Groups)>();
+        for (var index = box.Children.Count - 1; index >= 0; index--)
+        {
+            pending.Push((box.Children[index], []));
+        }
+
+        while (pending.Count > 0)
+        {
+            var (node, groups) = pending.Pop();
+            if (node is not InlineGroup group)
+            {
+                leaves.Add((node, groups));
+                continue;
+            }
+
+            var inner = groups.Add(group);
+            for (var index = group.Children.Count - 1; index >= 0; index--)
+            {
+                pending.Push((group.Children[index], inner));
+            }
+        }
+
+        return leaves;
+    }
+
+    /// <summary>One entry of a paragraph's content read through its inline groups (<see cref="Entries"/>): a leaf (a run or an
+    /// image box), or an edge of a group with a box of its own (<see cref="InlineGroup.Box"/>), each with the groups it lies in,
+    /// outermost first; an edge lies in its own group.</summary>
+    internal readonly record struct Entry(Node? Leaf, InlineGroup? EdgeOf, InlineBoxEdge Edge, ImmutableArray<InlineGroup> Groups);
+
+    /// <summary>
+    /// The content of an inline box as <see cref="Leaves"/> reads it, with the start and end edge of every group that has a
+    /// box of its own (<see cref="InlineGroup.Box"/>) before and after its content, also for a group without content. A group
+    /// without a box gives no entry of its own, so a paragraph without boxed groups has the entries of its leaves only. One
+    /// pass with an explicit stack.
+    /// </summary>
+    internal static IReadOnlyList<Entry> Entries(Box box)
+    {
+        var entries = new List<Entry>(box.Children.Count);
+        var pending = new Stack<(Node? Node, InlineGroup? EndOf, ImmutableArray<InlineGroup> Groups)>();
+        for (var index = box.Children.Count - 1; index >= 0; index--)
+        {
+            pending.Push((box.Children[index], null, []));
+        }
+
+        while (pending.Count > 0)
+        {
+            var (node, endOf, groups) = pending.Pop();
+            if (endOf is not null)
+            {
+                entries.Add(new Entry(null, endOf, InlineBoxEdge.End, groups));
+                continue;
+            }
+
+            if (node is not InlineGroup group)
+            {
+                entries.Add(new Entry(node, null, InlineBoxEdge.None, groups));
+                continue;
+            }
+
+            var inner = groups.Add(group);
+            if (group.Box is not null)
+            {
+                entries.Add(new Entry(null, group, InlineBoxEdge.Start, inner));
+                pending.Push((null, group, inner));
+            }
+
+            for (var index = group.Children.Count - 1; index >= 0; index--)
+            {
+                pending.Push((group.Children[index], null, inner));
+            }
+        }
+
+        return entries;
+    }
 
     /// <summary>
     /// Resolves every run to its text, collapses white space over the whole paragraph, finds each run's font, then shapes
@@ -234,7 +351,8 @@ public static class InlineLayout
     /// </remarks>
     private static Result<IReadOnlyList<LineBoxes.Item>, Error> ShapeRuns(LayoutEnvironment environment, Box box)
     {
-        if (box.Children.FirstOrDefault(child => child is not (TextRun or CounterRun) && !(child is Box image && image.Layout == LayoutAlgorithmId.Image)) is { } other)
+        var leaves = Leaves(box);
+        if (leaves.Select(leaf => leaf.Node).FirstOrDefault(child => child is not (TextRun or CounterRun) && !(child is Box image && image.Layout == LayoutAlgorithmId.Image)) is { } other)
         {
             return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(
                 LayoutErrors.InvalidContent(box, other is Box
@@ -242,36 +360,76 @@ public static class InlineLayout
                     : "inline layout needs text runs and images as children."));
         }
 
-        var collapsed = WhiteSpaceCollapsing.Collapse([.. box.Children.Select(child => child is InlineRun run
+        var entries = Entries(box);
+        // An empty box with a background alone makes no line (HasLineBoxes) and is not painted, as in Chromium's print; one with
+        // a vertical padding or border and no room on the line is not measured.
+        if (!HasLineBoxes(box) && entries.FirstOrDefault(entry => entry.EdgeOf?.Box is { } edges && (edges.Padding.Top.Points > 0 || edges.Padding.Bottom.Points > 0 || edges.Border.Top.IsVisible || edges.Border.Bottom.IsVisible)).EdgeOf is { } boxed)
+        {
+            return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(LayoutErrors.InlineBox(boxed, "an empty inline box with a vertical padding or border and no left or right margin, border or padding, alone in a paragraph without text, is not drawn in this version; give it a left or right padding, or put text beside it"));
+        }
+
+        var groupFonts = GroupFonts(environment, entries);
+        if (groupFonts.IsFailure)
+        {
+            return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(groupFonts.Error);
+        }
+
+        ValueList<LineBoxes.Group> GroupsOf(ImmutableArray<InlineGroup> groups) =>
+            [.. groups.Select(group => new LineBoxes.Group(group, groupFonts.Value[group.Id]))];
+
+        // White-space collapsing sees the leaves only: the edges of inline boxes are transparent to it.
+        var collapsed = WhiteSpaceCollapsing.Collapse([.. leaves.Select(leaf => leaf.Node is InlineRun run
             ? (TextOf(run, environment.Page), run.Style.WhiteSpaceCollapse)
             : (ObjectReplacement, WhiteSpaceCollapse.Collapse))]);
 
         // The paragraph in stretches: the runs between two atomic inlines are shaped in groups, an atomic inline is an item
-        // of its own.
+        // of its own, and so is the edge of an inline box that takes room (THE RULE FOR SHAPING ACROSS RUNS). An edge that
+        // takes no room stays among the runs of its stretch, in its place.
         var stretches = new List<Result<IEnumerable<LineBoxes.Item>, Error>>();
-        var members = new List<GroupMember>();
+        var members = new List<(GroupMember? Member, LineBoxes.Item? Edge)>();
         void EndStretch()
         {
             if (members.Count > 0)
             {
-                stretches.Add(ShapingGroups([.. members])
+                ImmutableArray<(GroupMember? Member, LineBoxes.Item? Edge)> stretch = [.. members];
+                stretches.Add(ShapingGroups([.. stretch.Where(entry => entry.Member is not null).Select(entry => entry.Member!)])
                     .TraverseAll(group => group[0].Font.IsFailure ? Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Failure(group[0].Font.Error) : ShapeGroup(group, environment.Profile.FontSizeRounding))
-                    .OnSuccessMap(shaped => shaped.SelectMany(group => group).Cast<LineBoxes.Item>()));
+                    .OnSuccessMap(shaped => InPlace(stretch, [.. shaped.SelectMany(group => group)])));
                 members.Clear();
             }
         }
 
-        foreach (var (child, text) in box.Children.Zip(collapsed))
+        var next = 0;
+        foreach (var entry in entries)
         {
+            if (entry.EdgeOf is { Box: { } inlineBox } edgeOf)
+            {
+                var width = entry.Edge == InlineBoxEdge.Start ? inlineBox.Start : inlineBox.End;
+                var edge = new LineBoxes.Edge(edgeOf, entry.Edge, width) { Groups = GroupsOf(entry.Groups) };
+                if (width == 0)
+                {
+                    members.Add((null, edge));
+                    continue;
+                }
+
+                EndStretch();
+                stretches.Add(Result<IEnumerable<LineBoxes.Item>, Error>.Success([edge]));
+                continue;
+            }
+
+            var (child, groups, text) = (entry.Leaf!, entry.Groups, collapsed[next++]);
             if (child is InlineRun run)
             {
-                members.Add(new GroupMember(run, text,
-                    environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle).MapError(error => error.WithSource(run.Source))));
+                members.Add((new GroupMember(run, text,
+                    environment.Fonts.Find(run.Style.FontFamily, run.Style.FontWeight, run.Style.FontStyle).MapError(error => error.WithSource(run.Source)))
+                {
+                    Groups = GroupsOf(groups),
+                }, null));
                 continue;
             }
 
             EndStretch();
-            stretches.Add(Result<IEnumerable<LineBoxes.Item>, Error>.Success([new LineBoxes.AtomicInline((Box)child, Fragment: null, Width: 0)]));
+            stretches.Add(Result<IEnumerable<LineBoxes.Item>, Error>.Success([new LineBoxes.AtomicInline((Box)child, Fragment: null, Width: 0) { Groups = GroupsOf(groups) }]));
         }
 
         EndStretch();
@@ -279,25 +437,72 @@ public static class InlineLayout
             .OnSuccessMap(items => (IReadOnlyList<LineBoxes.Item>)[.. items.SelectMany(stretch => stretch)]);
     }
 
+    /// <summary>The items of one stretch in their order: each run's shaped run where the run stands (<paramref name="shaped"/>
+    /// holds them in the runs' order), each edge that takes no room where it stands.</summary>
+    private static IEnumerable<LineBoxes.Item> InPlace(ImmutableArray<(GroupMember? Member, LineBoxes.Item? Edge)> stretch, ImmutableArray<LineBoxes.ShapedRun> shaped)
+    {
+        var items = new List<LineBoxes.Item>(stretch.Length);
+        var next = 0;
+        foreach (var (member, edge) in stretch)
+        {
+            items.Add(member is null ? edge! : shaped[next++]);
+        }
+
+        return items;
+    }
+
+    /// <summary>The font of every inline group of the paragraph, found as a run's font is: a missing font is the error a run
+    /// would get, at the group's source. Each group once.</summary>
+    private static Result<Dictionary<NodeId, TrueTypeFont>, Error> GroupFonts(LayoutEnvironment environment, IReadOnlyList<Entry> entries)
+    {
+        var fonts = new Dictionary<NodeId, TrueTypeFont>();
+        foreach (var group in entries.SelectMany(entry => entry.Groups))
+        {
+            if (fonts.ContainsKey(group.Id))
+            {
+                continue;
+            }
+
+            var font = environment.Fonts.Find(group.Style.FontFamily, group.Style.FontWeight, group.Style.FontStyle);
+            if (font.IsFailure)
+            {
+                return Result<Dictionary<NodeId, TrueTypeFont>, Error>.Failure(font.Error.WithSource(group.Source));
+            }
+
+            fonts[group.Id] = font.Value;
+        }
+
+        return Result<Dictionary<NodeId, TrueTypeFont>, Error>.Success(fonts);
+    }
+
     /// <summary>An atomic inline's text for white-space collapsing: the object replacement character U+FFFC.</summary>
     private static readonly string ObjectReplacement = ShapedGlyph.ObjectReplacementCharacter.ToString();
 
     /// <summary>A run of the paragraph with its collapsed text and its font, or the error of a font that was not found.</summary>
-    private sealed record GroupMember(InlineRun Run, string Text, Result<TrueTypeFont, Error> Font);
+    private sealed record GroupMember(InlineRun Run, string Text, Result<TrueTypeFont, Error> Font)
+    {
+        /// <summary>The inline groups the run lies in, outermost first.</summary>
+        public ValueList<LineBoxes.Group> Groups { get; init; } = [];
+    }
 
     /// <summary>
     /// THE RULE FOR SHAPING ACROSS RUNS: the groups of the paragraph's runs that are shaped as one text each. A run joins the
     /// group before it when it is set in the same font as the group's first run with text: the same family, size, weight and
     /// style, which choose and size the font. Its colour and its line height do not matter. A run without text joins the
-    /// group it lies in. CSS Text 3 §7.3, "Shaping Across Element Boundaries": "Text shaping must not be broken across inline
+    /// group it lies in. A run in another language than the group's first run with text (an inline group with a language of
+    /// its own) starts a new group: Chromium does not kern across that edge (case <c>tt-groups</c>: in "and wo", the "wo" in a
+    /// span with <c>lang</c>, the space keeps its whole advance, 2.692 pt at 10.5 pt Lato, where the pair of the space and
+    /// "w" takes 0.141 pt off it). CSS Text 3 §7.3, "Shaping Across Element Boundaries": "Text shaping must not be broken across inline
     /// box boundaries when there is no effective change in formatting, or if the only formatting changes do not affect the
     /// glyphs"; it "should not be broken across inline box boundaries otherwise, if it is reasonable and possible", which
     /// leaves a change of font to the user agent. As Chromium does it (Blink <c>InlineNode::ShapeText</c> and
     /// <c>ShouldBreakShapingBeforeText</c>, core/layout/inline/inline_node.cc: adjacent text items are shaped together while
     /// their fonts are equal, an item without text is passed over, and an item that starts with a zero width non-joiner
     /// U+200C starts a new text). Cases <c>sr-same-font</c> and <c>sr-font-changes</c>. Chromium also breaks the text at an
-    /// inline box with inline padding, border or margin or another vertical alignment (<c>ShouldBreakShapingBeforeBox</c>);
-    /// the model's runs have none of these. A run whose font is not found is a group of its own.
+    /// inline box with inline padding, border or margin (<c>ShouldBreakShapingBeforeBox</c>): so does the engine, at every
+    /// edge of an inline group's box that takes room (<see cref="ShapeRuns"/>; case <c>ib-kerning</c>: no kerning pair across
+    /// a padded edge, the pair kept across the edge of a box with a background only). A run whose font is not found is a
+    /// group of its own.
     /// </summary>
     /// <param name="members">The paragraph's runs, in order.</param>
     /// <returns>The groups, in order; together they hold every run once.</returns>
@@ -309,7 +514,8 @@ public static class InlineLayout
         foreach (var member in members)
         {
             var joins = current.Count > 0 && member.Font.IsSuccess && current[0].Font.IsSuccess
-                && (member.Text.Length == 0 || first is null || (SameFont(first.Run.Style, member.Run.Style) && member.Text[0] != ZeroWidthNonJoiner));
+                && (member.Text.Length == 0 || first is null
+                    || (SameFont(first.Run.Style, member.Run.Style) && member.Text[0] != ZeroWidthNonJoiner && string.Equals(LanguageOf(first), LanguageOf(member), StringComparison.OrdinalIgnoreCase)));
             if (!joins && current.Count > 0)
             {
                 groups.Add(current);
@@ -331,10 +537,70 @@ public static class InlineLayout
     /// <summary>The zero width non-joiner U+200C.</summary>
     private const char ZeroWidthNonJoiner = '\u200C';
 
-    /// <summary>True when two runs' text is set in the same font at the same size (<see cref="ShapingGroups"/>).</summary>
+    /// <summary>The language a run's text is in where an inline group gives it one (the innermost group with a language of
+    /// its own), or null for the paragraph's (<see cref="ShapingGroups"/>).</summary>
+    private static string? LanguageOf(GroupMember member)
+    {
+        for (var index = member.Groups.Count - 1; index >= 0; index--)
+        {
+            if (member.Groups[index].Node.Language is { } language)
+            {
+                return language;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>True when two runs' text is set in the same font at the same size, with the same spacing and font features
+    /// (<see cref="ShapingGroups"/>; Chromium shapes text of another letter or word spacing as another font).</summary>
     private static bool SameFont(TextStyle one, TextStyle other) =>
         string.Equals(one.FontFamily, other.FontFamily, StringComparison.Ordinal)
-        && one.FontSize == other.FontSize && one.FontWeight == other.FontWeight && one.FontStyle == other.FontStyle;
+        && one.FontSize == other.FontSize && one.FontWeight == other.FontWeight && one.FontStyle == other.FontStyle
+        && one.LetterSpacing == other.LetterSpacing && one.WordSpacing == other.WordSpacing && one.FontFeatures.Equals(other.FontFeatures);
+
+    /// <summary>The switchable features a run is shaped with: no ligatures where its letter spacing is not zero
+    /// (<see cref="ShapingFeatures.Ligatures"/>), and its font features (<see cref="TextStyle.FontFeatures"/>).</summary>
+    private static ShapingFeatures FeaturesOf(TextStyle style) => (style.LetterSpacing == Length.Zero, style.FontFeatures.Count) switch
+    {
+        (true, 0) => ShapingFeatures.Default,
+        (false, 0) => NoLigatures,
+        var (ligatures, _) => new ShapingFeatures(ligatures) { Enabled = style.FontFeatures },
+    };
+
+    private static readonly ShapingFeatures NoLigatures = new(Ligatures: false);
+
+    /// <summary>
+    /// THE RULE FOR LETTER AND WORD SPACING (CSS Text 3 §7.2, CSS Text 4 §7.1), as Chromium 159 prints it: the run's
+    /// <see cref="TextStyle.LetterSpacing"/> is added to the advance of each glyph that ends a typographic character unit
+    /// (the glyph before a glyph with text of its own, and the run's or the piece's last glyph, so also after the last
+    /// letter of a line and of an element), spaces included; its <see cref="TextStyle.WordSpacing"/> to each space U+0020
+    /// and no-break space U+00A0. Nothing is rounded per glyph (case <c>ls-values</c>: 46 spacings of 0.37pt move the
+    /// last word 17.02pt); a text item's width, spacing included, is rounded as any (<see cref="LengthRounding"/>). A
+    /// line-break glyph gets none. Marks and invisible characters in letter-spaced text are refused before layout (the
+    /// front-end's rule), so a unit is one glyph or a glyph and the glyphs without text that a substitution made after it.
+    /// Cases <c>ls-letters</c>, <c>ls-align</c>, <c>ls-word-spacing</c>.
+    /// </summary>
+    private static IEnumerable<ShapedGlyph> Spaced(IReadOnlyList<ShapedGlyph> glyphs, TextStyle style)
+    {
+        var (letter, word) = (style.LetterSpacing.Points, style.WordSpacing.Points);
+        if (letter == 0 && word == 0)
+        {
+            return glyphs;
+        }
+
+        return glyphs.Select((glyph, index) =>
+        {
+            if (glyph.IsLineBreak || glyph.IsAtomicInline)
+            {
+                return glyph;
+            }
+
+            var endsUnit = index == glyphs.Count - 1 || glyphs[index + 1].Text.Length > 0;
+            var added = (endsUnit ? letter : 0) + (glyph.Text is " " or "\u00A0" ? word : 0);
+            return added == 0 ? glyph : glyph with { Advance = glyph.Advance + added };
+        });
+    }
 
     /// <summary>
     /// Shapes the runs of one group (<see cref="ShapingGroups"/>) as one text, in the font and size of its first run with
@@ -354,20 +620,20 @@ public static class InlineLayout
         // inline box counts for the line's height with (LineBoxes.Build). A group of runs without text shapes nothing.
         if (group.FirstOrDefault(member => member.Text.Length > 0) is not { } shaping)
         {
-            return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success([.. group.Select(member => new LineBoxes.ShapedRun(member.Run, member.Font.Value, []))]);
+            return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success([.. group.Select(member => new LineBoxes.ShapedRun(member.Run, member.Font.Value, []) { Groups = member.Groups })]);
         }
 
         var (font, size) = (shaping.Font.Value, shaping.Run.Style.FontSize.Points);
         Result<IEnumerable<LineBoxes.ShapedRun>, Error> Alone(GroupMember member) =>
-            Shaper.Shape(member.Text, member.Font.Value, ShapingSizeOf(sizes, member.Run.Style.FontSize.Points))
-                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, member.Font.Value, glyphs)])
+            Shaper.Shape(member.Text, member.Font.Value, ShapingSizeOf(sizes, member.Run.Style.FontSize.Points), FeaturesOf(member.Run.Style))
+                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. Spaced(glyphs, member.Run.Style)]) { Groups = member.Groups }])
                 .MapError(error => error.WithSource(member.Run.Source));
         if (group.Count == 1)
         {
             return Alone(group[0]);
         }
 
-        var shaped = Shaper.Shape(string.Concat(group.Select(member => member.Text)), font, ShapingSizeOf(sizes, size));
+        var shaped = Shaper.Shape(string.Concat(group.Select(member => member.Text)), font, ShapingSizeOf(sizes, size), FeaturesOf(shaping.Run.Style));
         if (shaped.IsFailure)
         {
             var alone = group.TraverseAll(Alone);
@@ -389,7 +655,7 @@ public static class InlineLayout
                 next++;
             }
 
-            runs.Add(new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. glyphs.Skip(start).Take(next - start)]));
+            runs.Add(new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. Spaced(glyphs.Skip(start).Take(next - start).ToList(), member.Run.Style)]) { Groups = member.Groups });
         }
 
         return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success(runs);

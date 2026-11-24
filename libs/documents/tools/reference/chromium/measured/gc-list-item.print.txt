@@ -1,0 +1,9 @@
+page 1 300.000 300.000
+word 1 30.738 39.306 22.500 10.500 1. #000000 Lato-Regular
+word 1 42.000 72.352 22.500 10.500 LI-first #000000 Lato-Regular
+word 1 75.035 95.478 22.500 10.500 item #000000 Lato-Regular
+word 1 98.172 115.455 22.500 10.500 end #000000 Lato-Regular
+word 1 30.738 39.306 35.250 10.500 2. #000000 Lato-Regular
+word 1 42.000 86.937 35.250 10.500 LI-second #000000 Lato-Regular
+word 1 89.624 110.068 35.250 10.500 item #000000 Lato-Regular
+word 1 112.762 130.045 35.250 10.500 end #000000 Lato-Regular

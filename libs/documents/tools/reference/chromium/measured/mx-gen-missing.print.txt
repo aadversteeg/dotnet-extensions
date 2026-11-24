@@ -1,0 +1,8 @@
+page 1 300.000 300.000
+word 1 12.000 35.966 22.500 10.500 Mark #000000 Lato-Regular
+word 1 38.654 46.246 22.500 10.500 Ɑ #000000 LiberationSerif
+word 1 46.247 48.872 22.500 10.500 : #000000 Lato-Regular
+word 1 51.562 71.544 22.500 10.500 own #000000 Lato-Regular
+word 1 74.232 83.115 22.500 10.500 ✔ #000000 FreeSans
+word 1 85.803 104.015 22.500 10.500 text #000000 Lato-Regular
+word 1 12.000 35.404 42.000 10.500 After #000000 Lato-Regular

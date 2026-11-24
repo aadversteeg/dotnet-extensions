@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
 
@@ -8,7 +9,7 @@ namespace Ave.Extensions.Documents.Css.Properties;
 public static partial class PropertyRegistry
 {
     /// <summary>The list-style-type values the engine draws (CSS Counter Styles 3 §6 predefined styles).</summary>
-    private static readonly string[] SupportedListStyles =
+    internal static readonly string[] SupportedListStyles =
     [
         "disc", "circle", "square", "decimal", "decimal-leading-zero", "lower-roman", "upper-roman", "lower-alpha",
         "upper-alpha", "lower-latin", "upper-latin", "none",
@@ -26,9 +27,9 @@ public static partial class PropertyRegistry
 
         yield return Keywords("table-layout", inherited: false, "auto", ["auto", "fixed"], [], "table and inline-table boxes", "CSS 2.1 §17.5.2");
 
-        yield return Keywords("caption-side", inherited: true, "top", ["top"], ["bottom"], "table-caption boxes", "CSS 2.1 §17.4.1");
+        yield return Keywords("caption-side", inherited: true, "top", ["top", "bottom"], ["block-start", "block-end", "inline-start", "inline-end", "left", "right"], "table-caption boxes", "CSS 2.1 §17.4.1");
 
-        yield return Keywords("empty-cells", inherited: true, "show", ["show"], ["hide"], "table-cell boxes", "CSS 2.1 §17.6.1.1");
+        yield return Keywords("empty-cells", inherited: true, "show", ["show", "hide"], [], "table-cell boxes", "CSS 2.1 §17.6.1.1");
 
         yield return new PropertyDefinition(
             "list-style-type", inherited: true, new CssKeyword("disc"), "list items", string.Join(" | ", SupportedListStyles),
@@ -56,7 +57,80 @@ public static partial class PropertyRegistry
         yield return Keywords("list-style-position", inherited: true, "outside", ["outside"], ["inside"], "list items", "CSS Lists 3 §3.5");
 
         yield return InitialKeyword("list-style-image", inherited: true, "none", [], otherValuesRefused: true, "list items", "CSS Lists 3 §3.4");
+
+        yield return CounterProperty("counter-reset", 0, "CSS Lists 3 §4.2");
+        yield return CounterProperty("counter-increment", 1, "CSS Lists 3 §4.3");
+        yield return CounterProperty("counter-set", 0, "CSS Lists 3 §4.4");
     }
+
+    /// <summary>
+    /// <c>counter-reset</c>, <c>counter-increment</c> or <c>counter-set</c> (CSS Lists 3 §4.1): <c>none</c>, or counters
+    /// by name, each with an integer or the default (0 for a reset and a set, 1 for an increment). A name may not be
+    /// <c>none</c> or a CSS-wide keyword (invalid, CSS Values 4 §4.2). Refused at the declaration: the
+    /// <c>list-item</c> counter (the numbers of a list follow the list's own rules here), an integer beyond 32 bits
+    /// (Chromium 159 clamps it, measured: <c>counter-reset: n 2147483648</c> prints 2147483647), more than
+    /// <see cref="CssInputLimits.MaxCounterNames"/> counters, and <c>reversed()</c>.
+    /// </summary>
+    private static PropertyDefinition CounterProperty(string name, int defaultValue, string specification) =>
+        new(name, inherited: false, new CssKeyword("none"), "all elements, ::before, ::after",
+            "none | [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)",
+            PropertySupport.Supported, specification,
+            reader =>
+            {
+                if (reader.Count == 1 && reader.Keyword("none") is not null)
+                {
+                    return ParsedValue.Of(new CssKeyword("none"));
+                }
+
+                var changes = new List<CssCounterChange>();
+                while (!reader.AtEnd)
+                {
+                    if (reader.Peek is FunctionValue function)
+                    {
+                        return function.IsNamed("reversed")
+                            ? ParsedValue.Refused($"'{CssSerializer.Shortened([function])}' is not drawn yet: a counter that counts down is not; reset it to its first number")
+                            : ParsedValue.Invalid($"not a value of {name}");
+                    }
+
+                    if (reader.Peek is not CssToken { Kind: CssTokenKind.Ident } identifier)
+                    {
+                        return ParsedValue.Invalid($"not a value of {name}");
+                    }
+
+                    reader.Next();
+                    var counter = identifier.Text;
+                    if (InfraAscii.ToLower(counter) is "none" or "initial" or "inherit" or "unset" or "default" or "revert" or "revert-layer")
+                    {
+                        return ParsedValue.Invalid($"'{CssSerializer.Shortened(counter)}' is not a counter name");
+                    }
+
+                    var mark = reader.Mark;
+                    var value = reader.Integer();
+                    if (value is null && reader.Mark != mark)
+                    {
+                        return ParsedValue.Invalid($"not a value of {name}");
+                    }
+
+                    if (counter == "list-item")
+                    {
+                        return ParsedValue.Refused($"'{name}' of list-item is not drawn yet: the numbers of a list follow its own rules here (ol start, reversed, li value); write them there");
+                    }
+
+                    if (value is > int.MaxValue or < int.MinValue)
+                    {
+                        return ParsedValue.Refused($"the value of the counter '{CssSerializer.Shortened(counter)}' is beyond a 32-bit integer, where a browser clamps it; write a number within ±2147483647");
+                    }
+
+                    changes.Add(new CssCounterChange(counter, (int)(value ?? defaultValue)));
+                    if (changes.Count > CssInputLimits.MaxCounterNames)
+                    {
+                        return ParsedValue.Refused($"it names more than {CssInputLimits.MaxCounterNames} counters; split the declaration over the elements");
+                    }
+                }
+
+                return changes.Count == 0 ? ParsedValue.Invalid($"not a value of {name}") : ParsedValue.Of(new CssCounterChanges([.. changes]));
+            },
+            AsSpecified);
 
     private static IEnumerable<PropertyDefinition> FragmentationProperties()
     {

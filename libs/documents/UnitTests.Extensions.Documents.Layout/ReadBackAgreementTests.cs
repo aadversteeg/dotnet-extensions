@@ -43,8 +43,9 @@ public class ReadBackAgreementTests
         {
             // pdftotext leaves out a word whose glyphs pass the page's edge (a slice of a line taller than the page, cases
             // a4-*): it finds every word inside the page, and no word PyMuPDF does not.
-            var poppler = lines.Where(fields => int.Parse(fields[0], CultureInfo.InvariantCulture) == page.Number).Select(fields => System.Net.WebUtility.HtmlDecode(fields[5])).Order(StringComparer.Ordinal).ToList();
-            // pdftotext joins the pieces of a word that PyMuPDF splits where its colour or font changes (cases sr-*).
+            var poppler = PopplerWords(page, lines).Order(StringComparer.Ordinal).ToList();
+            // pdftotext joins the pieces of a word that PyMuPDF splits where its colour or font changes (cases sr-*), and
+            // splits a word PyMuPDF joins where the gap between its pieces is wide enough for one reader only (cases wg-*).
             var inside = page.JoinedWords.Select(joined => joined.Word).Where(word => word.Baseline <= page.Height && word.Baseline - word.FontSize >= 0).Select(word => word.Text).Order(StringComparer.Ordinal);
             poppler.Should().Equal(inside, $"{caseName}, page {page.Number}: the words of pdftotext and PyMuPDF inside the page");
             poppler.Except(page.JoinedWords.Select(joined => joined.Word.Text), StringComparer.Ordinal).Should().BeEmpty($"{caseName}, page {page.Number}: pdftotext finds no word PyMuPDF does not");
@@ -74,5 +75,33 @@ public class ReadBackAgreementTests
                 words.Should().Contain(word => text.StartsWith(word, StringComparison.Ordinal), $"{caseName}: the cell {box[3]} starts with a word of the print");
             }
         }
+    }
+
+    /// <summary>
+    /// The words of pdftotext on a page, in the order of the file, with the pieces of a word PyMuPDF reads as one joined
+    /// again: pdftotext keeps two pieces with no white space between them apart from a gap of
+    /// <see cref="PrintedPage.PopplerWordGap"/> of the font size, PyMuPDF from <see cref="PrintedPage.PyMuPdfWordGap"/>
+    /// (cases <c>wg-cell-gap</c>, <c>wg-spacing-gap</c>). Two pieces are joined only where they are on one line, the gap
+    /// between them lies between those two, and a word of PyMuPDF starts where the first starts, with the text of both.
+    /// </summary>
+    private static List<string> PopplerWords(PrintedPage page, List<string[]> lines)
+    {
+        var words = page.JoinedWords.Select(joined => joined.Word).ToList();
+        var joined = new List<(double X0, double X1, double Bottom, string Text)>();
+        foreach (var fields in lines.Where(fields => int.Parse(fields[0], CultureInfo.InvariantCulture) == page.Number))
+        {
+            var row = (X0: Number(fields[1]), X1: Number(fields[3]), Bottom: Number(fields[4]), Text: System.Net.WebUtility.HtmlDecode(fields[5]));
+            if (joined.Count > 0 && joined[^1] is var last && Math.Abs(last.Bottom - row.Bottom) < 0.01
+                && words.Find(word => Math.Abs(word.X0 - last.X0) < 0.02 && word.Text.StartsWith(last.Text + row.Text, StringComparison.Ordinal)) is { } word
+                && row.X0 - last.X1 >= PrintedPage.PopplerWordGap * word.FontSize && row.X0 - last.X1 < PrintedPage.PyMuPdfWordGap * word.FontSize)
+            {
+                joined[^1] = last with { X1 = row.X1, Text = last.Text + row.Text };
+                continue;
+            }
+
+            joined.Add(row);
+        }
+
+        return [.. joined.Select(row => row.Text)];
     }
 }

@@ -27,7 +27,7 @@ public class TextDecorationMappingTests
 
     private static HtmlResource? Resources(string url) => url.EndsWith("figure.png", StringComparison.Ordinal) ? new HtmlResource(Figure) : null;
 
-    /// <summary>Every text run of the document in order, the empty runs of inline elements left out.</summary>
+    /// <summary>Every text run of the document in order, also inside inline groups (links), the empty runs of inline elements left out.</summary>
     private static List<TextRun> Runs(string html, UnsupportedPolicy policy = UnsupportedPolicy.Refuse)
     {
         var result = Boxes(html, policy);
@@ -43,6 +43,13 @@ public class TextDecorationMappingTests
                     break;
                 case Box box:
                     foreach (var child in box.Children.Reverse())
+                    {
+                        pending.Push(child);
+                    }
+
+                    break;
+                case InlineGroup group:
+                    foreach (var child in group.Children.Reverse())
                     {
                         pending.Push(child);
                     }
@@ -122,7 +129,7 @@ public class TextDecorationMappingTests
     [InlineData("<s>x</s>", "LineThrough")]
     [InlineData("<del>x</del>", "LineThrough")]
     [InlineData("<strike>x</strike>", "LineThrough")]
-    [InlineData("<a href=\"t.html\">x</a>", "Underline")]
+    [InlineData("<a href=\"https://example.com/t.html\">x</a>", "Underline")]
     [InlineData("<a>x</a>", "")]
     public void The_elements_the_user_agent_style_sheet_decorates_are_drawn_with_their_lines(string element, string lines)
     {
@@ -134,7 +141,7 @@ public class TextDecorationMappingTests
     [Fact]
     public void A_link_is_underlined_in_its_colour()
     {
-        var run = Run(Doc("<p><a href=\"t.html\">x</a></p>"), "x");
+        var run = Run(Doc("<p><a href=\"https://example.com/t.html\">x</a></p>"), "x");
         (run.Style.Color, run.Style.Decorations.Single().Color).Should().Be((new Color(0, 0, 0xEE), new Color(0, 0, 0xEE)));
     }
 

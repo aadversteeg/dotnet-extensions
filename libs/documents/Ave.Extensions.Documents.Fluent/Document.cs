@@ -27,6 +27,9 @@ public sealed record Document(
     /// <summary>The document's language as a language tag (for example <c>nl-NL</c>), or null.</summary>
     public string? Language { get; init; }
 
+    /// <summary>What the document is about, or null: the PDF's subject and its XMP description.</summary>
+    public string? Description { get; init; }
+
     /// <summary>The files embedded in the document, in the order they were attached.</summary>
     public ValueList<Attachment> Attachments { get; init; }
 

@@ -1,0 +1,21 @@
+page 1 300.000 400.080
+word 1 12.000 17.439 30.750 19.995 I #000000 Roboto-Regular
+word 1 22.435 27.874 30.750 19.995 I #000000 Roboto-Regular
+word 1 12.000 17.439 58.500 19.995 I #000000 Roboto-Regular
+word 1 21.440 26.878 58.500 19.995 I #000000 Roboto-Regular
+word 1 12.000 17.439 87.000 19.995 I #000000 Roboto-Regular
+word 1 21.440 26.878 87.000 19.995 I #000000 Roboto-Regular
+word 1 12.000 17.439 114.750 19.995 I #000000 Roboto-Regular
+word 1 27.433 32.872 114.750 19.995 I #000000 Roboto-Regular
+word 1 12.000 17.439 142.500 19.995 I #000000 Roboto-Regular
+word 1 37.430 42.868 142.500 19.995 I #000000 Roboto-Regular
+word 1 12.000 17.439 171.000 19.995 I #000000 Roboto-Regular
+word 1 27.433 32.872 171.000 19.995 I #000000 Roboto-Regular
+word 1 12.000 17.439 198.750 19.995 I #000000 Roboto-Regular
+word 1 22.435 27.874 198.750 19.995 I #000000 Roboto-Regular
+word 1 12.000 17.439 226.500 19.995 I #000000 Roboto-Regular
+word 1 19.107 24.545 226.500 19.995 I #000000 Roboto-Regular
+word 1 12.000 14.719 245.250 9.997 I #000000 Roboto-Regular
+word 1 24.715 27.434 245.250 9.997 I #000000 Roboto-Regular
+word 1 32.431 35.151 245.250 9.997 I #000000 Roboto-Regular
+word 1 37.151 39.871 245.250 9.997 I #000000 Roboto-Regular

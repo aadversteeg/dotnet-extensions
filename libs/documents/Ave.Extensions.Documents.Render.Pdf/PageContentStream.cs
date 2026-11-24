@@ -78,6 +78,7 @@ internal static class PageContentStream
     private static IEnumerable<ContentOperation> Operations(DrawItem item, Page page, ResourceNames resources) => item switch
     {
         FillRectangle fill => Rectangle(fill, page.Size.Height),
+        FillPath path => FilledPath(path, page.Size.Height),
         GlyphRun run => Text(run, resources.Fonts[run.Font], page.Size.Height),
         DrawImage image => Image(image, resources.Images[image.Image].ResourceName, page.Size.Height),
         _ => throw new InvalidOperationException($"The PDF back-end cannot draw a {item.GetType().Name} yet."),
@@ -93,6 +94,26 @@ internal static class PageContentStream
         FillColor(fill.Color),
         ContentOperators.Rectangle(fill.Area.Origin.X, pageHeight - fill.Area.Origin.Y - fill.Area.Size.Height, fill.Area.Size.Width, fill.Area.Size.Height),
         ContentOperators.Fill(),
+        ContentOperators.RestoreState(),
+    ];
+
+    /// <summary>
+    /// A filled path: set the colour, build the path — each contour as <c>m</c> at its start, <c>l</c> or <c>c</c> per
+    /// segment and <c>h</c> to close it (§8.5.2.1), every y as its height above the foot of the page — and fill it with
+    /// <c>f</c> (non-zero) or <c>f*</c> (even-odd) by the item's rule (§8.5.3.1), inside q/Q as a rectangle is.
+    /// </summary>
+    private static ImmutableArray<ContentOperation> FilledPath(FillPath path, double pageHeight) =>
+    [
+        ContentOperators.SaveState(),
+        FillColor(path.Color),
+        .. path.Contours.SelectMany(contour => contour.Segments.Select(segment => segment switch
+            {
+                PathCubic cubic => ContentOperators.CurveTo(cubic.Control1.X, pageHeight - cubic.Control1.Y, cubic.Control2.X, pageHeight - cubic.Control2.Y, cubic.End.X, pageHeight - cubic.End.Y),
+                _ => ContentOperators.LineTo(segment.End.X, pageHeight - segment.End.Y),
+            })
+            .Prepend(ContentOperators.MoveTo(contour.Start.X, pageHeight - contour.Start.Y))
+            .Append(ContentOperators.ClosePath())),
+        path.Rule == PathFillRule.EvenOdd ? ContentOperators.FillEvenOdd() : ContentOperators.Fill(),
         ContentOperators.RestoreState(),
     ];
 

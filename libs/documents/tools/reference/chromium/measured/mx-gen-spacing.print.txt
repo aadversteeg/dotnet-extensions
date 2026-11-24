@@ -1,0 +1,17 @@
+page 1 300.000 300.000
+word 1 12.000 31.393 22.500 10.500 Text #000000 Lato-Regular
+word 1 34.078 53.031 22.500 10.500 PRE #000000 Lato-Regular
+word 1 55.723 77.389 22.500 10.500 after #000000 Lato-Regular
+word 1 79.868 97.151 22.500 10.500 end #000000 Lato-Regular
+word 1 12.000 31.393 41.250 10.500 Text #000000 Lato-Regular
+word 1 34.078 59.270 41.250 10.500 wide #000000 Lato-Regular
+word 1 63.961 85.628 41.250 10.500 after #000000 Lato-Regular
+word 1 88.106 105.389 41.250 10.500 end #000000 Lato-Regular
+word 1 12.000 31.703 60.000 10.500 One #000000 Lato-Regular
+word 1 34.076 53.485 60.000 10.500 Two #000000 Lato-Regular
+word 1 55.863 75.257 60.000 10.500 Text #000000 Lato-Regular
+word 1 77.588 100.992 60.000 10.500 After #000000 Lato-Regular
+word 1 12.000 31.393 78.750 10.500 Text #000000 Lato-Regular
+word 1 34.078 68.571 78.750 10.500 spaced #000000 Lato-Regular
+word 1 72.270 87.751 78.750 10.500 tail #000000 Lato-Regular
+word 1 90.942 108.225 78.750 10.500 end #000000 Lato-Regular

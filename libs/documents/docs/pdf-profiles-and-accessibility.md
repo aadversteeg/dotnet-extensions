@@ -27,8 +27,8 @@ For a business document, choose `PdfA3a.AndPdfUa1()`. The samples do.
 
 You do not build any of this; the profile does.
 
-- **Metadata.** The title, author, language and dates go into the XMP metadata and the document information, with
-  the same values. The file says which standards it follows.
+- **Metadata.** The title, author, description, language and dates go into the XMP metadata and the document
+  information, with the same values. The file says which standards it follows.
 - **Colour.** PDF/A needs device-independent colour. The engine embeds an sRGB colour profile, so your RGB colours,
   greys and images are defined exactly.
 - **Structure (tagged PDF).** Every paragraph, heading, table, row, cell and image becomes a structure element, in
@@ -36,7 +36,8 @@ You do not build any of this; the profile does.
 - **Decoration and page furniture.** Backgrounds, borders and table grid lines are marked as decoration. The page
   header and footer are marked as page furniture, so a screen reader does not read "page 3 of 7" between two
   paragraphs. A table's header row that repeats on every page is in the structure once.
-- **Tables.** Header cells (from `HeaderRow`) are marked as column headers. Cells that span columns or rows say so.
+- **Tables.** Header cells (from `HeaderRow`) are marked as column headers. From HTML, a `th` heads its row or its
+  column, by its `scope` or by its row. Cells that span columns or rows say so.
 - **Attachments.** Attached files are embedded as PDF/A-3 asks: with their media type, a description and their
   relationship to the document.
 
@@ -120,7 +121,7 @@ the "How" column says **H**: a person has to judge. (The protocol's own introduc
 change log added one and moved two from machine to human.) The table lists all 48 and says, for this engine's output,
 whether the condition cannot occur, is met by the design, or is left to you or still open.
 
-"Not possible" means the engine cannot produce the feature at all (no forms, links, annotations, sound, scripts).
+"Not possible" means the engine cannot produce the feature at all (no forms, sound or scripts, and no annotations but links).
 
 | Condition | What a person checks | This engine |
 | --- | --- | --- |
@@ -137,9 +138,9 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 09-002 | structure nested in a meaningless way | Mostly met: the front-end cannot put a table inside a heading or paragraph. A table inside a table cell is allowed and tagged as written. |
 | 11-007 | the declared language is wrong | **Your part:** one language per document. Open: no language per paragraph or span yet, so a quote in another language is read in the document's language. |
 | 12-001 | stretched characters not represented | Not possible: justification stretches spaces, never glyphs. |
-| 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. |
-| 13-002 | a link with a meaningful background | Not possible: no links yet. |
-| 13-003 | a caption not tagged as Caption | **Open:** there is no caption element; a caption is a paragraph. |
+| 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. A filled path of the page model is content or an artifact as its producer marks it, as any drawn item; the layout draws none yet. |
+| 13-002 | a link with a meaningful background | Met by design: a link draws nothing of its own, no background and no border; a background behind it is its paragraph's and is decoration. |
+| 13-003 | a caption not tagged as Caption | **Partly:** a table's caption (HTML `caption`) is a Caption, the first kid of its Table; there is no other caption element, so a figure's caption is a paragraph. |
 | 13-005 | ActualText used where Alt fits better | Met: images and figures get Alt. ActualText is written only on the marked content of a glyph whose text differs from its ToUnicode entry (a ligature, a shared hyphen glyph), to give that glyph's own text, where Alt does not apply. |
 | 13-006 | a graphic that means something only in its group, tagged alone | Not possible: an image is always one picture. |
 | 13-007 | a more accessible form is not used | **Your part.** |
@@ -147,18 +148,18 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 14-001 | headings not tagged | Met when you use `Heading`. **Your part** otherwise (see 01-006). |
 | 14-004 | numbered headings not in Arabic numerals | Met: H1–H6. |
 | 14-005 | a 7th-level heading not tagged H7 | **Open (limit):** levels above 6 are refused as input; such content cannot be expressed. |
-| 15-001 | a row header not tagged as header | **Open (limit):** header cells exist only in header rows; there are no row headers. |
+| 15-001 | a row header not tagged as header | Met from HTML: a `th` outside a header row is tagged TH with Scope Row (or as its `scope` says). **Open (limit)** in code: header cells exist only in header rows; there are no row headers. |
 | 15-002 | a column header not tagged as header | Met when you use `HeaderRow`; **your part** to use it. |
 | 15-004 | a table used for non-tabular content | Met for `Row(...)`: a row of blocks is a layout, tagged as Div, not Table. **Your part** for `Table(...)`. |
-| 15-005 | a cell's header cannot be determined | Met for simple tables: every header cell has Scope Column and its spans. **Open** for header rows that nest (a header spanning two sub-headers): no Headers/IDs attributes yet. |
-| 16-001, 16-002, 16-003 | lists without list tags or numbering | **Open (limit):** there is no list element; a list written as paragraphs is tagged as paragraphs. |
+| 15-005 | a cell's header cannot be determined | Met for simple tables: every header cell has its Scope (Column, or Row for a row header from HTML) and its spans. **Open** for header rows that nest (a header spanning two sub-headers): no Headers/IDs attributes yet. |
+| 16-001, 16-002, 16-003 | lists without list tags or numbering | Met when you use `BulletedList` and `NumberedList`: each list is `L` with its `ListNumbering` attribute (`Disc`, `Circle`, `Square`, `Decimal`, `None` for a list without labels), each item `LI` with `Lbl` and `LBody` (no `Lbl` without a label), a list inside an item in that item's `LBody`; a drawn bullet's `Lbl` carries the bullet's character as `/ActualText`, so the text of the page has no bullet character, as in Chromium's print. The page model's rules refuse an `LI` outside an `L` and an `L` or `LI` with other kids (veraPDF 7.2-17 to 7.2-20). From HTML the same for `ul`, `ol`, `menu`, `dir` and every element of `display: list-item`; items outside a list element are an `L` of their own (veraPDF PDF/A-3a and PDF/UA-1 pass on cases `li-ol-nested` and `li-bare`, `ListMappingTests`). **Your part** for a list written as paragraphs. |
 | 17-001 | a formula not tagged as Formula | **Open (limit):** no formula element. |
 | 18-001 | headers and footers not pagination artifacts | Met. |
 | 18-002 | header and footer artifacts without Header/Footer subtype | Met. |
 | 19-001, 19-002 | notes and references not tagged | Not possible: no footnotes or references. |
 | 22-001 | article threads out of order | Not possible. |
 | 24-001 | non-interactive forms without PrintFields | Not possible. |
-| 28-001, 28-003, 28-013 | annotations out of order, used for formatting, image maps | Not possible: no annotations. |
+| 28-001, 28-003, 28-013 | annotations out of order, used for formatting, image maps | Met by design: the only annotations are links, listed on each page in content order (`/Annots`), with the tab order following the structure (`/Tabs /S`); one annotation per line part of a link, none used for formatting; no image maps. |
 | 29-001 | scripts that need keystroke timing | Not possible. |
 | 31-010 | a font embedded that may not legally be embedded | Partly met: the engine refuses a font whose licence bits forbid embedding (`Documents.Pdf.Write.FontEmbeddingNotPermitted`). The bits are not the licence; **your part** to use fonts you may embed (Lato: SIL OFL). |
 

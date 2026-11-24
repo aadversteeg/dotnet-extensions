@@ -144,6 +144,13 @@ public static class CssErrorCodes
         /// <c>counter(page)</c>, <c>counter(pages)</c> and an image, <c>rem</c>, <c>var()</c>, a margin box without a
         /// font family. Metadata: Property or Value, SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode PageRule = _ / "PageRule";
+
+        /// <summary>Generated content of <c>::before</c> or <c>::after</c> the engine does not draw (CSS Generated Content
+        /// 3 §1, CSS Pseudo 4 §4.1): a <c>content</c> item other than strings and <c>attr(name)</c>, more text than
+        /// <see cref="CssInputLimits.MaxGeneratedTextLength"/>, a pseudo-element that is not inline or has box properties,
+        /// a position or a float, or one on an element where Chromium makes anonymous boxes for it. Metadata: Property,
+        /// Value, SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode GeneratedContent = _ / "GeneratedContent";
     }
 
     /// <summary>Input past one of the limits of <see cref="CssInputLimits"/>: a style sheet longer than

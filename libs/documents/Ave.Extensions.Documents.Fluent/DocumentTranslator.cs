@@ -14,7 +14,7 @@ namespace Ave.Extensions.Documents.Fluent;
 /// Translates a code-front-end <see cref="Fluent.Document"/> into the engine's <see cref="StyledDocument"/>. This
 /// is the front-end's cascade: specified values become computed values (CSS Cascade 4 §4), and every value is
 /// validated. The front-end contains no layout code. Tables and rows of blocks are translated by
-/// <see cref="TableTranslator"/>.
+/// <see cref="TableTranslator"/>, lists by <see cref="ListTranslator"/>.
 /// </summary>
 public static class DocumentTranslator
 {
@@ -37,7 +37,7 @@ public static class DocumentTranslator
         var format = document.Format.Text;
         var problems = InputChecks.Page(document.Page, document.Source)
             .Concat(InputChecks.Text(format, document.Source))
-            .Concat(InputChecks.Metadata(document.Title, document.Author, document.Source))
+            .Concat(InputChecks.Metadata(document.Title, document.Author, document.Description, document.Source))
             .Concat(InputChecks.Language(document.Language, document.Source))
             .Concat(InputChecks.Profile(document.Profile, document.Source))
             .Concat(InputChecks.Attachments(document.Attachments))
@@ -61,8 +61,10 @@ public static class DocumentTranslator
             format.TextAlign ?? TextAlign.Left,
             format.Orphans ?? BoxStyle.Initial.Orphans,
             format.Widows ?? BoxStyle.Initial.Widows).Decorated(format);
-        var root = Children(document.Body, new NodeId(1), inherited).OnSuccessMap(children =>
-            new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source));
+        var links = new InternalLinks();
+        var root = Children(document.Body, new NodeId(1), inherited with { Links = links }).OnSuccessMap(children =>
+            new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source))
+            .OnSuccessBind(links.Resolve);
         var page = PageStyle(document.Page, new NodeId(1 + document.Body.Sum(NodeCount)), inherited);
 
         // The body and the page areas are translated independently, so the problems of both are reported together.
@@ -74,6 +76,7 @@ public static class DocumentTranslator
     private static DocumentMetadata Metadata(Document document) => new(document.Title, document.Author)
     {
         Language = document.Language,
+        Description = document.Description,
         Attachments = document.Attachments,
     };
 
@@ -84,6 +87,11 @@ public static class DocumentTranslator
     /// <param name="Widows">The <c>widows</c> value (initial 2).</param>
     internal sealed record Inherited(TextStyle Text, TextAlign Align, int Orphans, int Widows)
     {
+        /// <summary>How many lists the element is in (0 outside every list): a list's bullet follows its level.</summary>
+        public int Lists { get; init; }
+        /// <summary>The anchors and the links to them of the body; null in a page area, where neither may stand.</summary>
+        public InternalLinks? Links { get; init; }
+
         /// <summary>CSS inheritance (CSS Cascade 4 §7.2): what an element does not specify is its parent's value. A line
         /// height the element specifies is computed with its own font size (CSS 2.1 §10.8.1).</summary>
         public Inherited With(TextFormat format)
@@ -105,7 +113,7 @@ public static class DocumentTranslator
                 },
                 format.TextAlign ?? Align,
                 format.Orphans ?? Orphans,
-                format.Widows ?? Widows).Decorated(format);
+                format.Widows ?? Widows) { Lists = Lists, Links = Links }.Decorated(format);
         }
 
         /// <summary>The decorations an element applies (CSS Text Decoration 3 §2: "When specified on or propagated to a
@@ -171,12 +179,16 @@ public static class DocumentTranslator
     internal static int NodeCount(Element element) => element switch
     {
         BlockElement block => 1 + block.Children.Sum(NodeCount),
-        ParagraphElement paragraph => 1 + paragraph.Spans.Sum(span => span.Image is null ? 1 : NodeCount(span.Image)),
+        ParagraphElement paragraph => 1 + paragraph.Spans.Sum(SpanNodeCount),
         ImageElement => 2,
         TableElement table => TableTranslator.NodeCount(table),
         RowElement row => TableTranslator.NodeCount(row),
+        ListElement list => ListTranslator.NodeCount(list),
         _ => 0,
     };
+
+    /// <summary>How many model nodes a span becomes: one run, an image's nodes, or a link's group and its run.</summary>
+    private static int SpanNodeCount(Span span) => span.Image is { } image ? NodeCount(image) : span.Link is null && span.LinkAnchor is null && span.LanguageTag is null ? 1 : 2;
 
     /// <summary>The computed box style of an element from its specified box values and the inherited paragraph
     /// properties it computes (its own <see cref="Inherited"/>).</summary>
@@ -222,6 +234,7 @@ public static class DocumentTranslator
         ImageElement image => Image(image, id, pageBreakBefore),
         TableElement table => TableTranslator.Table(table, id, pageBreakBefore, inherited),
         RowElement row => TableTranslator.Row(row, id, pageBreakBefore, inherited),
+        ListElement list => ListTranslator.List(list, id, pageBreakBefore, inherited),
         _ => throw new System.InvalidOperationException($"No translation for {element.GetType().Name}."),
     };
 
@@ -250,10 +263,19 @@ public static class DocumentTranslator
             .Concat(InputChecks.Text(text, paragraph.Source))
             .Concat(InputChecks.Role(paragraph.Role, paragraph.Source))
             .Concat(paragraph.Spans.SelectMany(SpanProblems))
+            .Concat(InternalLinks.Problems(paragraph, inherited.Links))
+            .Concat(paragraph.LanguageTag is { } tag ? InputChecks.Language(tag, paragraph.Source) : [])
+            .Concat(paragraph.Spans.SelectMany(span => span.LanguageTag is not { } spanTag ? []
+                : span.Image is not null ? [InputChecks.LanguageOnImageSpan(span.Source)] : InputChecks.Language(spanTag, span.Source)))
             .ToImmutableArray();
         if (!problems.IsEmpty)
         {
             return Result<Node, Error>.Failure(Errors.Aggregate(problems));
+        }
+
+        if (paragraph.AnchorName is { } anchor && inherited.Links?.Anchor(anchor, id, paragraph.Source) is { } duplicate)
+        {
+            return Result<Node, Error>.Failure(duplicate);
         }
 
         var own = (inherited with { Text = WithRoleDefaults(inherited.Text, paragraph.Role) }).With(text);
@@ -263,21 +285,52 @@ public static class DocumentTranslator
         var spans = paragraph.Spans.Select(span =>
         {
             var spanId = new NodeId(next);
-            next += span.Image is null ? 1 : NodeCount(span.Image);
+            next += SpanNodeCount(span);
             return (Span: span, Id: spanId);
         }).ToImmutableArray();
         var runs = spans.TraverseAll(item => item.Span.Image is { } image
             ? Image(image, item.Id, pageBreakBefore: false)
-            : Result<Node, Error>.Success(Run(item.Span, item.Id, IsLineBreaks(item.Span) ? own.Text : own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)));
+            : Result<Node, Error>.Success(item.Span.Link is { } || item.Span.LinkAnchor is { }
+                ? LinkGroup(item.Span, item.Id, own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text, inherited.Links)
+                : item.Span.LanguageTag is { } language
+                    ? SpanGroup(item.Span, item.Id, own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text, language)
+                    : Run(item.Span, item.Id, IsLineBreaks(item.Span) ? own.Text : own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)));
         // The paragraph's own font and line height make the strut of its lines (CSS 2.1 §10.8.1).
         return runs.OnSuccessMap(children => (Node)new Box(
-            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own) with { Text = own.Text }, children.ToValueList(), paragraph.Source));
+            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own) with { Text = own.Text }, children.ToValueList(), paragraph.Source)
+        {
+            Language = paragraph.LanguageTag,
+        });
     }
 
     /// <summary>A span whose text is one or more forced line breaks: the line separator U+2028 that LineBreak() writes,
     /// or another mandatory break character that white-space collapsing keeps.</summary>
     private static bool IsLineBreaks(Span span) =>
         span.Counter is null && span.Text.Length > 0 && span.Text.All(character => character is '\u2028' or '\n' or '\r' or '\v' or '\f' or '\u0085');
+
+    /// <summary>A link span: an inline group with the link's role (<see cref="InlineGroup"/>) around one run of its text, both
+    /// in the span's text style; its description by THE RULE FOR A LINK'S DESCRIPTION (<see cref="LinkDescription"/>): the
+    /// text, else the URI or the anchor's name. A link to an anchor gets its node when the body is built
+    /// (<see cref="InternalLinks"/>).</summary>
+    private static Node LinkGroup(Span span, NodeId id, TextStyle style, InternalLinks? links)
+    {
+        var target = span.Link ?? links!.Link(id, span.LinkAnchor!, span.Source);
+        var fallback = span.Link is LinkTarget.UriTarget uri ? uri.Value : span.LinkAnchor!;
+        return new InlineGroup(
+            id,
+            SemanticRole.Link(target, LinkDescription.Of(null, span.Text, null, fallback)),
+            style,
+            [new TextRun(new NodeId(id.Value + 1), span.Text, style, span.Source)],
+            span.Source)
+        {
+            Language = span.LanguageTag,
+        };
+    }
+
+    /// <summary>A span with a language of its own: a span group (<see cref="SemanticRole.Span"/>) with the language around one
+    /// run of its text, both in the span's text style.</summary>
+    private static Node SpanGroup(Span span, NodeId id, TextStyle style, string language) =>
+        new InlineGroup(id, SemanticRole.Span, style, [Run(span, new NodeId(id.Value + 1), style)], span.Source) { Language = language };
 
     private static Node Run(Span span, NodeId id, TextStyle style) =>
         span.Counter is { } counter ? new CounterRun(id, counter, style, span.Source) : new TextRun(id, span.Text, style, span.Source);
@@ -361,6 +414,7 @@ public static class DocumentTranslator
             ? span.Format == Style.Empty && span.Style == Style.Empty ? [] : [InputChecks.FormatOnImageSpan(span.Source)]
             : InputChecks.Text(Cascade.Text(span.Format, span.Style), span.Source)
             .Concat(InputChecks.Characters(span.Text, "text", span.Source))
+            .Concat(InputChecks.Link(span.Link, span.Source))
             .Concat(span.Style.Box.IsEmpty && span.Style.Text.TextAlign is null ? [] : [InputChecks.BoxPropertiesOnSpan(span.Source)]);
 
     /// <summary>The user-agent defaults for a heading: bold, and a size relative to the inherited one.</summary>

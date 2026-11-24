@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A height on a cell: a, height 30pt, collapsed; b, the same, separated; c, height 30pt with box-sizing border-box and padding 6pt, separated; d, a row of height 40pt with a cell of height 30pt; e, a row of height 20pt with a cell of height 40pt; f, two cells of 30pt and 45pt in one row, middle. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<tr><td id="one-a" style="height: 30pt">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s">
+<tr><td id="one-b" style="height: 30pt">one</td><td>two</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="s">
+<tr><td id="one-c" style="height: 30pt; box-sizing: border-box; padding: 6pt">one</td><td>two</td></tr>
+</table>
+<p>next 3</p>
+<table id="d">
+<tr style="height: 40pt"><td id="one-d" style="height: 30pt">one</td><td>two</td></tr>
+</table>
+<p>next 4</p>
+<table id="e">
+<tr style="height: 20pt"><td id="one-e" style="height: 40pt">one</td><td>two</td></tr>
+</table>
+<p>next 5</p>
+<table id="f">
+<tr><td id="one-f" style="height: 30pt">one</td><td style="height: 45pt; vertical-align: middle">two</td></tr>
+</table>
+<p>after</p>
+</body></html>

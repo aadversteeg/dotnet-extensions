@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- letter-spacing of a whole pixel on a line (1px, so that a reader of the PDF keeps each word whole: at 3px PyMuPDF and pdftotext read single letters, each at its own gap), at 10.5 pt and 11 pt: where the spacing is added (after each letter, the last one of the line and of an inline element too), with kerning (AV, To) and with a ligature (fi, ffi): whether Chromium keeps them. The word after an element shows the spacing after its last letter (a colour changes only at a space, where both readers of the PDF start a word); the same text without spacing above each line. -->
+<style>@page { size: 300pt 480pt; margin: 12pt; } body { line-height: 18pt; } div { white-space: nowrap; } .a { font-size: 10.5pt; } .b { font-size: 11pt; }
+.s { letter-spacing: 1px; } .r { color: #c00; }</style></head><body>
+<div class="a">
+<p>Wave To AVA fix office</p>
+<p class="s">Wave To AVA fix office</p>
+<p class="s">Word <span class="r">ab</span> c d <span class="r">e</span></p>
+<p>Word a<span class="s">bc</span> d e<span class="s r">f</span></p>
+<p class="s">Word 12 i&nbsp;j</p>
+</div>
+<div class="b">
+<p>Wave To AVA fix office</p>
+<p class="s">Wave To AVA fix office</p>
+<p class="s">Word <span class="r">ab</span> c d <span class="r">e</span></p>
+<p>Word a<span class="s">bc</span> d e<span class="s r">f</span></p>
+<p class="s">Word 12 i&nbsp;j</p>
+</div>
+</body></html>

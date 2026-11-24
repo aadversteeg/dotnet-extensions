@@ -1,0 +1,23 @@
+page 1 300.000 400.080
+word 1 12.000 27.582 23.250 10.500 top #000000 Lato-Regular
+word 1 15.750 26.854 42.000 10.500 c1 #000000 Lato-Regular
+word 1 17.250 28.354 72.000 10.500 c3 #000000 Lato-Regular
+word 1 21.000 32.104 107.250 10.500 c8 #000000 Lato-Regular
+word 1 17.848 28.090 142.500 10.500 cx #000000 Lato-Regular
+word 1 12.000 29.283 169.500 10.500 end #000000 Lato-Regular
+rect 1 12.000 27.000 288.000 27.750 #ff0000
+rect 1 12.000 48.750 288.000 49.500 #0000ff
+path 1 287.250 27.000 288.000 49.500 #008000 8/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/8
+path 1 12.000 27.000 12.750 49.500 #ffa500 7/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/f/7
+rect 1 12.000 55.500 288.000 57.750 #ff0000
+rect 1 12.000 78.750 288.000 81.000 #0000ff
+path 1 285.750 55.500 288.000 81.000 #008000 008/08f/8ff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/8ff/08f/008
+path 1 12.000 55.500 14.250 81.000 #ffa500 800/f80/ff8/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/ff7/f70/700
+rect 1 12.000 87.000 288.000 93.000 #ff0000
+rect 1 12.000 114.000 288.000 120.000 #0000ff
+path 1 282.000 87.000 288.000 120.000 #008000 00000008/0000008f/000008ff/00008fff/0008ffff/008fffff/08ffffff/8fffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/8fffffff/08ffffff/008fffff/0008ffff/00008fff/000008ff/0000008f/00000008
+path 1 12.000 87.000 18.000 120.000 #ffa500 80000000/f8000000/ff800000/fff80000/ffff8000/fffff800/ffffff80/fffffff8/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/ffffffff/fffffff7/ffffff70/fffff700/ffff7000/fff70000/ff700000/f7000000/70000000
+rect 1 12.750 126.000 288.000 128.250 #ff0000
+rect 1 12.750 150.000 288.000 152.250 #0000ff
+path 1 285.750 126.000 288.000 152.250 #008000 008/08f/8ff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/8ff/08f/008
+path 1 12.750 126.000 15.000 152.250 #ffa500 800/f80/ff8/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/ff7/f70/700

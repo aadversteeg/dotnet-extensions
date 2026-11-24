@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p, div { margin: 0 0 4pt; }
+body { counter-reset: section; }
+h2 { margin: 0 0 6pt; font-size: 13pt; counter-increment: section; counter-reset: sub; }
+h3 { margin: 0 0 4pt; font-size: 11pt; counter-increment: sub; }
+h2::before { content: counter(section) ". "; color: #8c1c13; }
+h3::before { content: counter(section) "." counter(sub) " "; }
+</style></head><body>
+<h2>Summary</h2>
+<h3>Scope</h3>
+<h3>Method</h3>
+<h2>Results</h2>
+<h3>Tables</h3>
+<p id="closing">closing text</p>
+</body></html>

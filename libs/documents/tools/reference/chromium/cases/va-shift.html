@@ -1,0 +1,9 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- vertical-align super and sub on spans of the paragraph's own font size, at 10.5 pt and 11 pt, under a line height of 18pt and of normal: how far each baseline moves, and how the line box grows with it. Each shifted digit stands alone, so a reader of the PDF reads its baseline. -->
+<style>@page { size: 300pt 480pt; margin: 12pt; } .a { font-size: 10.5pt; } .b { font-size: 11pt; } .f { line-height: 18pt; } .n { line-height: normal; }
+.u { vertical-align: super; } .d { vertical-align: sub; }</style></head><body>
+<div class="a f"><p>Word x <span class="u">2</span> y</p><p>Word x <span class="d">2</span> y</p><p>Word x</p></div>
+<div class="a n"><p>Word x <span class="u">2</span> y</p><p>Word x <span class="d">2</span> y</p><p>Word x</p></div>
+<div class="b f"><p>Word x <span class="u">2</span> y</p><p>Word x <span class="d">2</span> y</p><p>Word x</p></div>
+<div class="b n"><p>Word x <span class="u">2</span> y</p><p>Word x <span class="d">2</span> y</p><p>Word x</p></div>
+</body></html>

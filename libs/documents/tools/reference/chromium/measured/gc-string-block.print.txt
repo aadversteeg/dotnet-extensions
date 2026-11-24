@@ -1,0 +1,9 @@
+page 1 300.000 300.000
+word 1 12.000 37.620 22.500 10.500 Note: #000000 Lato-Regular
+word 1 40.312 58.525 22.500 10.500 text #000000 Lato-Regular
+word 1 61.207 82.874 22.500 10.500 after #000000 Lato-Regular
+word 1 85.342 100.509 22.500 10.500 the #000000 Lato-Regular
+word 1 103.197 149.570 22.500 10.500 generated #000000 Lato-Regular
+word 1 152.043 180.214 22.500 10.500 words #000000 Lato-Regular
+word 1 12.000 33.961 41.250 10.500 plain #000000 Lato-Regular
+word 1 36.649 82.869 41.250 10.500 paragraph #000000 Lato-Regular

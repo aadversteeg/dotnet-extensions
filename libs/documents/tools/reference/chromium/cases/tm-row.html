@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Hidden empty cells that fill a row and a column, separated: a, a middle row whose cells are all empty; b, a column whose cells are all empty, with widths of 30pt on its cells. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; } .f td { background-color: #00ff00; } .h { empty-cells: hide; }</style></head><body>
+<table id="a" class="s h f"><tr><td id="one-a">one</td><td>two</td></tr><tr><td></td><td></td></tr><tr><td>three</td><td>four</td></tr></table>
+<p>next 1</p>
+<table id="b" class="s h f"><tr><td id="one-b">one</td><td style="width: 30pt"></td><td>two</td></tr><tr><td>three</td><td style="width: 30pt"></td><td>four</td></tr></table>
+<p>after</p>
+</body></html>

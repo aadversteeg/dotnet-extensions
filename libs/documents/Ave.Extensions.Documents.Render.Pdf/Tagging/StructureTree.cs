@@ -20,15 +20,18 @@ namespace Ave.Extensions.Documents.Render.Pdf.Tagging;
 /// <param name="ParentTree">Per page, the element of each marked-content identifier on it (index = MCID): the parent
 /// tree's array for that page (§14.7.4.4).</param>
 /// <param name="Marks">Per page, how each of its <see cref="ContentRun"/>s is marked, in order.</param>
+/// <param name="AnnotationOwners">Per link annotation of the document (<see cref="LinkAnnotations"/>, in the same order),
+/// the index of its link's element: the parent tree's value for the annotation's <c>/StructParent</c> key.</param>
 internal sealed record StructureTree(
     ImmutableArray<StructureElement> Elements,
     ImmutableArray<int> TopLevel,
     ImmutableArray<ImmutableArray<int>> ParentTree,
-    ImmutableArray<ImmutableArray<MarkedRun>> Marks)
+    ImmutableArray<ImmutableArray<MarkedRun>> Marks,
+    ImmutableArray<int> AnnotationOwners)
 {
     /// <summary>
     /// Builds the tree. Reading order is document order (the order of the markers), which is also the order of the
-    /// kids of every element (§14.8.2.3.1: "the logical structure order defined by a depth-first traversal of the
+    /// kids of every element but a table's caption, which is its table's first kid (<see cref="IsTableCaption"/>) (§14.8.2.3.1: "the logical structure order defined by a depth-first traversal of the
     /// page's logical structure hierarchy"). A node split over pages is ONE
     /// element: it is reopened on the next page and its content there is added after its earlier content. Every
     /// content run outside an artifact gets the next MCID of its page and becomes a kid of the innermost open element.
@@ -44,6 +47,7 @@ internal sealed record StructureTree(
         var topLevel = ImmutableArray.CreateBuilder<int>();
         var parentTree = ImmutableArray.CreateBuilder<ImmutableArray<int>>();
         var marks = ImmutableArray.CreateBuilder<ImmutableArray<MarkedRun>>();
+        var annotationOwners = ImmutableArray.CreateBuilder<int>();
 
         for (var page = 0; page < pages.Count; page++)
         {
@@ -75,9 +79,14 @@ internal sealed record StructureTree(
                         var index = elements.Count;
                         elements.Add(new ElementUnderConstruction(opened.Start, type, parent, page));
                         indexOfNode[opened.Start.Node] = index;
-                        if (parent is { } parentIndex)
+                        if (parent is { } parentIndex && IsTableCaption(type, elements[parentIndex].Type))
                         {
-                            elements[parentIndex].Kids.Add(new ElementKid(index));
+                            // A table's caption is its first kid wherever it is drawn (IsTableCaption).
+                            elements[parentIndex].Kids.Insert(0, new ElementKid(index));
+                        }
+                        else if (parent is { } other)
+                        {
+                            elements[other].Kids.Add(new ElementKid(index));
                         }
                         else
                         {
@@ -88,6 +97,12 @@ internal sealed record StructureTree(
                         break;
                     case StructureClosed:
                         open.Pop();
+                        break;
+                    case LinkAreaRead:
+                        // The link is the innermost open node (the page-model rules); its element holds an object reference
+                        // to the annotation (ISO 32000-1 §14.7.4.3), and the annotation's parent-tree entry names it.
+                        elements[open.Peek()].Kids.Add(new AnnotationKid(page, annotationOwners.Count));
+                        annotationOwners.Add(open.Peek());
                         break;
                     case ContentRun { Artifact: { } kind } run:
                         pageMarks.Add(new MarkedRun(run, new ArtifactContent(kind)));
@@ -113,8 +128,17 @@ internal sealed record StructureTree(
             [.. elements.Select(element => element.Build())],
             topLevel.ToImmutable(),
             parentTree.ToImmutable(),
-            marks.ToImmutable()));
+            marks.ToImmutable(),
+            annotationOwners.ToImmutable()));
     }
+
+    /// <summary>
+    /// True for a Caption element of a Table. ISO 32000-1 Table 337 lets a table's caption be its first or its last kid,
+    /// and veraPDF's PDF/UA-1 rule 7.2-16 accepts either; the tree makes it the first, also for a caption drawn below the
+    /// table, after the rows on the table's last page: a reader then meets the caption before the rows, whatever page each
+    /// is on, as an HTML caption element is the first child of its table (HTML Standard §4.9.1, the content model of the table element).
+    /// </summary>
+    private static bool IsTableCaption(PdfName type, PdfName parent) => type.Value == "Caption" && parent.Value == "Table";
 
     /// <summary>The marks of untagged output: every run unmarked.</summary>
     /// <param name="pages">The events of every page.</param>
@@ -158,6 +182,11 @@ internal abstract record StructureKid
 /// <summary>A child element.</summary>
 /// <param name="Index">Its index.</param>
 internal sealed record ElementKid(int Index) : StructureKid;
+
+/// <summary>A link annotation, by an object reference (§14.7.4.3, Table 325).</summary>
+/// <param name="Page">The page it lies on, 0-based.</param>
+/// <param name="Annotation">Its index among the document's link annotations.</param>
+internal sealed record AnnotationKid(int Page, int Annotation) : StructureKid;
 
 /// <summary>A marked-content sequence on a page (§14.7.4.2).</summary>
 /// <param name="Page">The page, 0-based.</param>

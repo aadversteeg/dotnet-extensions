@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p, div { margin: 0 0 4pt; }
+.seven { counter-reset: n 5; counter-increment: n 2; } .seven::before { content: "[" counter(n) "] "; }
+.ten { counter-reset: a 1; counter-increment: a 1; counter-set: a 10; } .ten::before { content: counter(a) " "; }
+.many { counter-reset: x 1 y 2 z; counter-increment: x y 5 z; } .many::before { content: counter(x) "," counter(y) "," counter(z) " "; }
+.twice { counter-reset: d 2 q 1 q 5; counter-increment: d 3 d 4; } .twice::before { content: counter(d) "," counter(q) " "; }
+.plain { counter-reset: c; counter-increment: c; } .plain::before { content: counter(c) " "; }
+.list { counter-reset: h; } .list p { counter-increment: h; } .list p.no { counter-increment: none; } .list p::before { content: counter(h) ". "; }
+</style></head><body>
+<div class="seven">reset five, then two more</div>
+<div class="ten">reset, increment, then set</div>
+<div class="many">three counters in one</div>
+<div class="twice">a name written twice</div>
+<div class="plain">the defaults</div>
+<div class="list"><p>one</p><p class="no">none</p><p>two</p></div>
+</body></html>

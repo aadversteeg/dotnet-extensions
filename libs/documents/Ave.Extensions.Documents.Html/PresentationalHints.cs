@@ -39,14 +39,14 @@ internal static class PresentationalHints
         ("html, head", "", "align"),
         ("body", "bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag)", "align, background"),
         ("table", "width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center", "align=left/right/inline-start/inline-end (float), background, frame, rules"),
-        ("caption", "align=top", "align=bottom"),
+        ("caption", "align=top, align=bottom (caption-side: bottom)", ""),
         ("col, colgroup", "width, align (-webkit-left/right/center, or one text-align value)", ""),
         ("thead, tbody, tfoot, tr", "height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign", "background"),
         ("td, th", "width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535; 0 when that integer is beyond 2,147,483,647) and border (1px inset, or solid with bordercolor)", "background; a td or th with no table around it (only a tree made in code has one)"),
         ("div, p", "align (-webkit-left/right/center, or one text-align value)", ""),
         ("hr", "align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width", ""),
         ("img", "width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom", "align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG)"),
-        ("ol, ul, li", "type", "ol start, ol reversed, li value"),
+        ("ol, ul, li", "type; ol start, ol reversed and li value number the items (box generation)", "a start or value beyond a 32-bit integer; li value in a reversed ol, or outside an ol where its list shows numbers"),
         ("pre", "wrap", ""),
         ("br", "", "clear"),
         ("font", "color, face (one font-family value), size", ""),
@@ -271,7 +271,7 @@ internal static class PresentationalHints
                 // "\u3000bottom" are no value (measured).
                 if (Attr("align") is { } captionAlign && InfraAscii.ToLower(CssTrim(captionAlign)) == "bottom")
                 {
-                    Refuse("align", "puts the caption below the table");
+                    hints.Add(("caption-side", "bottom"));
                 }
 
                 break;
@@ -371,18 +371,8 @@ internal static class PresentationalHints
 
                 break;
             case "ol" or "ul" or "li":
+                // start, reversed and value are no hints: box generation numbers the items (Boxes/HtmlBoxGenerator.Lists.cs).
                 ListType(html, hints);
-                if (html.LocalName == "ol")
-                {
-                    RefuseIfPresent("start", "sets where the list's numbering starts");
-                    RefuseIfPresent("reversed", "numbers the list backwards");
-                }
-
-                if (html.LocalName == "li")
-                {
-                    RefuseIfPresent("value", "sets the item's number");
-                }
-
                 break;
             case "pre":
                 if (Attr("wrap") is not null)

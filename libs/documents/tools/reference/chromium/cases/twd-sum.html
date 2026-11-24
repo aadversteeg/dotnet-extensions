@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A table width with cell widths that add up to more and to less: a, automatic, 150pt over 100pt + 100pt; b, automatic, separated, 250pt over 50pt + 50pt; c, fixed, 150pt over 100pt + 100pt; d, fixed, separated, 250pt over 50pt + 50pt. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a" style="width: 150pt">
+<tr><td id="one-a" style="width: 100pt">one</td><td style="width: 100pt">text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s" style="width: 250pt">
+<tr><td id="one-b" style="width: 50pt">one</td><td style="width: 50pt">text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="f" style="width: 150pt">
+<tr><td id="one-c" style="width: 100pt">one</td><td style="width: 100pt">text with more words</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s f" style="width: 250pt">
+<tr><td id="one-d" style="width: 50pt">one</td><td style="width: 50pt">text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>

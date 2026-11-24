@@ -31,6 +31,12 @@ public static partial class HtmlBoxGenerator
                 return;
             }
 
+            if (ShiftOf(frame.Element) != Length.Zero)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Element, $"A <br> inside the raised or lowered <{frame.Element.Element.LocalName}> is not drawn in this version: where Chromium puts its line height is not measured.",
+                    "br", element.Element.Position);
+            }
+
             if (TextStyleOf(element) is { } style)
             {
                 frame.Target.Add(new TextRun(NewId(), ForcedLineBreak, style, Source(element.Element.Position)));
@@ -71,7 +77,7 @@ public static partial class HtmlBoxGenerator
         /// names it; under <see cref="UnsupportedPolicy.Warn"/> each tab is drawn as a space. A preserved tab moves the
         /// text to the next tab stop (CSS Text 3 §4.2), and tab stops are not built.</summary>
         /// <returns>Whether the text holds such a tab.</returns>
-        private bool RefusePreservedTab(StyledText text)
+        private bool RefusePreservedTab(StyledText text, string? sourceName = null)
         {
             var mode = CollapseOf(text.Style);
             var offset = text.Text.Data.IndexOf('\t', System.StringComparison.Ordinal);
@@ -83,7 +89,7 @@ public static partial class HtmlBoxGenerator
             var name = mode == WhiteSpaceCollapse.Preserve ? "preserve" : "break-spaces";
             Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"A tab in text under 'white-space-collapse: {name}' is not drawn in this version: tab stops are not built.")
                 .With(ErrorMetadataKeys.Value, name).With(ErrorMetadataKeys.Property, "white-space-collapse").With(ErrorMetadataKeys.Offset, offset)
-                .WithSource(_sourceName, text.Text.Position));
+                .WithSource(sourceName ?? _sourceName, text.Text.Position));
             return true;
         }
 

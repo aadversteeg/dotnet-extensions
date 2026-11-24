@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- The corners of inset and outset borders: equal sides of 6 px, a 6 px top against a 2 px left, a 2 px top against a 6 px left, and an inset side beside a solid red one; where the dark and the light side meet. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } div { padding: 3pt; margin-bottom: 6pt; }</style></head><body>
+<p>top</p>
+<div id="e6" style="border:6px inset">e6</div>
+<div id="f6" style="border:6px outset">f6</div>
+<div id="t6" style="border:2px inset;border-top-width:6px;border-bottom-width:6px">t6</div>
+<div id="l6" style="border:2px inset;border-left-width:6px;border-right-width:6px">l6</div>
+<div id="m6" style="border:6px inset;border-top-style:solid;border-top-color:#ff0000">m6</div>
+<div id="n6" style="border:6px inset #336699">n6</div>
+<p>end</p>
+</body></html>

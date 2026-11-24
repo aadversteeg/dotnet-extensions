@@ -93,8 +93,12 @@ public static class Paginator
             .OfType<CounterRun>()
             .Where(run => run.Counter == PageCounter.PageCount);
 
-    private static IEnumerable<Node> Descendants(Node node) =>
-        node is Box box ? [box, .. box.Children.SelectMany(Descendants)] : [node];
+    private static IEnumerable<Node> Descendants(Node node) => node switch
+    {
+        Box box => [box, .. box.Children.SelectMany(Descendants)],
+        InlineGroup group => [group, .. group.Children.SelectMany(Descendants)],
+        _ => [node],
+    };
 
     /// <summary>
     /// One layout pass: every page with the given page count. Each page is the page style's size. Its page area (the
@@ -171,11 +175,19 @@ public static class Paginator
             var origin = new Point(page.Margins.Left.Points, page.Margins.Top.Points);
             var body = origin + new Point(0, header.Height);
             var clip = new Rect(body, new Size(System.Math.Max(0, areaWidth - page.BodyClipInset.Width), System.Math.Max(0, bodyHeight - page.BodyClipInset.Height)));
+            if (number > 1 && InlineBoxPixels.AboveArea(Moved(placement.Fragment, body), body.Y) is { } above)
+            {
+                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.InlineBox(above, "it starts a later page and reaches above its page area, where Chromium paints it on both pages; give it no vertical padding or border, or keep its line off the page start"));
+            }
+
+            // Inline boxes go on whole pixels of the page only here, where every line's place on the page is known.
+            var pixels = environment.Profile.InlineBoxSnapping == InlineBoxSnapping.WholePixels;
+            PlacedFragment OnPage(PlacedFragment fragment, Point by) => pixels ? InlineBoxPixels.Snap(Moved(fragment, by)) : Moved(fragment, by);
             pages.Add(new PageFragment(
                 pageSize,
-                Moved(placement.Fragment, body),
-                header.Fragment is { } headerFragment ? Moved(headerFragment, origin) : null,
-                footer.Fragment is { } footerFragment ? Moved(footerFragment, origin + new Point(0, areaHeight - footer.Height)) : null,
+                OnPage(placement.Fragment, body),
+                header.Fragment is { } headerFragment ? OnPage(headerFragment, origin) : null,
+                footer.Fragment is { } footerFragment ? OnPage(footerFragment, origin + new Point(0, areaHeight - footer.Height)) : null,
                 environment.Profile.BodyClip == BodyClip.BodyArea ? clip : null));
             token = placement.Continuation;
         }

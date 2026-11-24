@@ -53,4 +53,42 @@ public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight Fo
     /// in. A line-through is never cut.
     /// </summary>
     public TextDecorationSkipInk DecorationSkipInk { get; init; } = TextDecorationSkipInk.Auto;
+
+    /// <summary>
+    /// The space added after each typographic character unit of the run (CSS Text 3 §7.2, <c>letter-spacing</c>, inherited,
+    /// as a computed length); zero, the initial value <c>normal</c>, unless set. Added after every character, a space too,
+    /// also after the last one of a line and of the run, so it counts for where the line ends, its alignment and whether
+    /// a word fits; a mark goes with the character before it. Kerning stays; ligatures are not formed where it is not
+    /// zero. May be negative. As Chromium 159 prints it (cases <c>ls-letters</c>, <c>ls-values</c>, <c>ls-align</c>).
+    /// </summary>
+    public Length LetterSpacing { get; init; }
+
+    /// <summary>
+    /// The space added to each word-separator character of the run (CSS Text 4 §7.1, <c>word-spacing</c>, inherited, as a
+    /// computed length): the space U+0020 and the no-break space U+00A0, not the other spaces; zero unless set. A space that
+    /// white-space collapsing removes takes it with it. May be negative. As Chromium 159 prints it (case
+    /// <c>ls-word-spacing</c>).
+    /// </summary>
+    public Length WordSpacing { get; init; }
+
+    /// <summary>
+    /// How far the run's baseline lies above the baseline of its line (CSS Inline 3 §4, <c>vertical-align</c> as the shift it
+    /// comes to; CSS 2.1 §10.8.1: a raised or lowered box), positive up, negative down; zero, the initial value
+    /// <c>baseline</c>, unless set. The model takes the shift as a length: a front-end resolves <c>super</c>, <c>sub</c>, a
+    /// length or a percentage, and adds the shifts of nested elements. Layout draws the run's glyphs and its decorations on
+    /// the shifted baseline, and the run's inline box, shifted with it, counts for the height of its line
+    /// (<c>LineBoxes.Build</c>); the line breaker does not see it. The shift of a box's strut (<see cref="BoxStyle.Text"/>) is
+    /// not read: the strut sits on the line's baseline. As Chromium 159 prints it (cases <c>va-shift</c>, <c>va-elements</c>,
+    /// <c>va-sizes</c>, <c>va-length</c>, <c>va-decorated</c>).
+    /// </summary>
+    public Length BaselineShift { get; init; }
+
+    /// <summary>
+    /// The optional OpenType features switched on for the run (CSS Fonts 4 §6.7, <c>font-variant-numeric</c>, and §7.1,
+    /// <c>font-feature-settings</c>, as the tags they select), each one of <see cref="OptionalFontFeatures.Tags"/>, in the
+    /// order of that list; empty unless set. The font applies them where it has them, as its lookups say (a font without the
+    /// feature draws the text as without it); measured in Lato, whose default figures are tabular and lining (cases
+    /// <c>fn-numeric</c>, <c>fn-table</c>).
+    /// </summary>
+    public ValueList<string> FontFeatures { get; init; } = [];
 }

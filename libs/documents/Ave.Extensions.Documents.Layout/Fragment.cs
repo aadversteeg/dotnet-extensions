@@ -56,7 +56,47 @@ public sealed record RuleFragment(Color Color, Size Size) : Fragment(Size);
 /// <param name="Size">The line's content width and its height (CSS 2.1 §10.8).</param>
 /// <param name="Children">The text fragments and atomic inlines on the line, left to right, and the text decoration lines
 /// of each text fragment around it, in painting order (<see cref="RuleFragment"/>).</param>
-public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children) : Fragment(Size);
+public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children) : Fragment(Size)
+{
+    /// <summary>Where the line's baseline lies below its top edge, in points: the strut's and every piece's part above the
+    /// baseline, the largest of them (CSS 2.1 §10.8). A list item's label sits on the baseline of its body's first line.</summary>
+    public double Baseline { get; init; }
+    /// <summary>The parts of the inline groups (<see cref="InlineGroup"/>) on this line, each a range of
+    /// <see cref="Children"/>: outer groups before the groups inside them, in document order; two ranges are disjoint or
+    /// one holds the other. Empty when the line lies in no group.</summary>
+    public ValueList<LineGroupPart> Groups { get; init; } = [];
+}
+
+/// <summary>
+/// The part of an inline group (<see cref="InlineGroup"/>) on one line: the children of the line it holds and, for a link,
+/// the area a reader clicks. The painter opens the group's structure marker around these children
+/// (<see cref="PagePainter"/>); a group draws nothing of its own but its box (<see cref="Box"/>).
+/// </summary>
+/// <param name="Group">The group.</param>
+/// <param name="Area">Relative to the line's top-left corner: in the inline direction from the start of the group's first
+/// piece on the line to the end of its last (a space removed at the line's end is no piece), in the block direction from
+/// the group's own font's ascent above the line's baseline to its descent below it and over the border box of every box
+/// inside it; for a group with a box, its border box (<see cref="Box"/>) (THE RULE FOR A LINK'S AREA,
+/// <see cref="LineBoxes"/>).</param>
+/// <param name="First">The index of its first child in <see cref="LineFragment.Children"/>.</param>
+/// <param name="Count">How many children it holds: one or more, or none for a group with a box (<see cref="InlineGroup.Box"/>)
+/// whose part holds only its edges (an empty inline box).</param>
+public sealed record LineGroupPart(InlineGroup Group, Rect Area, int First, int Count)
+{
+    /// <summary>For a group with a box (<see cref="InlineGroup.Box"/>): its border box on this line, relative to the line's
+    /// top-left corner, where its background and border are painted (THE INLINE BOX STYLE; on whole pixels of the page under
+    /// <see cref="InlineBoxSnapping.WholePixels"/>, <see cref="InlineBoxPixels"/>); null for a group without a box.</summary>
+    public Rect? Box { get; init; }
+
+    /// <summary>True when the group's start edge (<see cref="InlineBoxStyle.Start"/>) lies in this part: the part paints the
+    /// box's left border. A box over two or more lines is sliced (<c>box-decoration-break: slice</c>): its first part holds the
+    /// start edge, its last the end edge, a part between them neither (THE RULE FOR AN INLINE BOX OVER LINES).</summary>
+    public bool HoldsStart { get; init; }
+
+    /// <summary>True when the group's end edge (<see cref="InlineBoxStyle.End"/>) lies in this part: the part paints the box's
+    /// right border.</summary>
+    public bool HoldsEnd { get; init; }
+}
 
 /// <summary>
 /// The part of one <see cref="InlineRun"/> that lies on one line. Its top edge is <see cref="Ascent"/> above the
@@ -69,6 +109,15 @@ public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children)
 /// <param name="Size">The glyphs' total advance and the font's ascent plus descent.</param>
 public sealed record TextFragment(InlineRun Run, TrueTypeFont Font, double Ascent, ValueList<ShapedGlyph> Glyphs, Size Size)
     : Fragment(Size);
+
+/// <summary>
+/// A list item's bullet drawn as a shape (<see cref="DocumentModel.MarkerSymbol"/>), the only child of its label's box
+/// fragment: a disc and a circle fill the circle inscribed in the fragment (the circle as a ring one CSS pixel wide, centred
+/// on that circle), a square the fragment.
+/// </summary>
+/// <param name="Symbol">The document node.</param>
+/// <param name="Size">The bullet's box: w × w, w from the font's ascent (<see cref="ListItemLayout"/>).</param>
+public sealed record MarkerFragment(MarkerSymbol Symbol, Size Size) : Fragment(Size);
 
 /// <summary>
 /// One page's slice of monolithic content taller than the page area — an image, or a line box — under

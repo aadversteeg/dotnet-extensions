@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- The box of a caption: a, margins, padding, a border, a background and text-align left, in a table with a top margin, collapsed; b, the same, separated; c, the same below the table, text-align right, in a table with a bottom margin. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; } .b { caption-side: bottom; }</style></head><body>
+<table id="a" style="margin-top: 9pt">
+<caption id="caption-a" style="margin: 6pt 3pt 4.5pt 1.5pt; padding: 3pt; border: 1.5pt solid #000000; background: #00ffff; text-align: left">Caption</caption>
+<tr><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s" style="margin-top: 9pt">
+<caption id="caption-b" style="margin: 6pt 3pt 4.5pt 1.5pt; padding: 3pt; border: 1.5pt solid #000000; background: #00ffff; text-align: left">Caption</caption>
+<tr><td id="one-b">one</td><td>two</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="b" style="margin-bottom: 9pt">
+<caption id="caption-c" style="margin: 6pt 3pt 4.5pt 1.5pt; padding: 3pt; border: 1.5pt solid #000000; background: #00ffff; text-align: right">Caption</caption>
+<tr><td id="one-c">one</td><td>two</td></tr>
+</table>
+<p>after</p>
+</body></html>

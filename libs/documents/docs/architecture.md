@@ -23,7 +23,7 @@ test-only package in a product assembly".
 | `Ave.Extensions.Documents` | composition: `ToPages` joins the front-end and the layout, `ToPdf` and `ToPng`/`ToPngPages`/`ToImages` add a back-end; the one package an application needs |
 | `Ave.Extensions.Documents.Fluent` | code front-end: a document as an immutable value; translates it to the document model (cascade + validation); knows nothing about layout or PDF |
 | `Ave.Extensions.Documents.Render.Pdf` | page model → PDF: fonts, images, content streams, and the conformance profiles (tagging, XMP, output intent, attachments, refusals) |
-| `Ave.Extensions.Documents.Render.Raster` | page model → pixels: glyph outlines, rectangles and images drawn with Graphics (beside Render.Pdf, not above it) |
+| `Ave.Extensions.Documents.Render.Raster` | page model → pixels: glyph outlines, rectangles, filled paths and images drawn with Graphics (beside Render.Pdf, not above it) |
 | `Ave.Extensions.Documents.Layout` | layout algorithms, pagination driver, painter (fragments → page model) |
 | `Ave.Extensions.Documents.PageModel` | page model: per page a display list plus structure and artifact markers |
 | `Ave.Extensions.Documents.DocumentModel` | document model: a styled box tree with computed values |
@@ -51,16 +51,35 @@ Document ──DocumentTranslator.ToModel──▶ StyledDocument ──Document
 
 - **Document model** (`DocumentModel/Node.cs`, `BoxStyle.cs`, `TextStyle.cs`, `StyledDocument.cs`). What the author
   meant, with CSS semantics and only computed values: a tree of `Box` (with a `SemanticRole` and a
-  `LayoutAlgorithmId`), `TextRun`/`CounterRun` and `ImageNode`. Every node has an id (pre-order) and the source
+  `LayoutAlgorithmId`), `TextRun`/`CounterRun`, `InlineGroup` and `ImageNode`. `InlineGroup` is THE inline grouping:
+  a part of an inline box's content (runs, images in the line, other groups) with a role, a link
+  (`SemanticRole.Link(LinkTarget, description)`) or a span (`SemanticRole.Span`), its text style and a language
+  (held, not yet written). Without a box it is transparent for layout (no margin, padding, border or line height of
+  its own); with a box (`InlineGroup.Box`, an `InlineBoxStyle`: left and right margin, padding, border, background) it
+  is an inline box that takes room on the line before its first character and after its last and paints its
+  background and border (THE INLINE BOX STYLE); such a group may have no role, and then opens no structure element.
+  Groups nest, one nesting level per group, a link never inside a link; a link may have a box, lie inside one and hold
+  one, and in this version an image inside a group with a box is not inside a link as well. A link's target is a closed set (`Core/LinkTarget.cs`), today only an absolute URI of an
+  accepted scheme (`Core/LinkUris.cs`, THE RULE FOR A LINK'S URI). The title, the author and the description keep THE RULE
+  FOR A DOCUMENT'S METADATA TEXT (`Core/MetadataTexts.cs`: characters XML 1.0 allows, no control character but tab, line
+  feed and carriage return, an author or a description at most 4 096 UTF-16 code units), checked by the front-ends, the
+  model check and the page model check. Every node has an id (pre-order) and the source
   location of the call that made it. Roles (`Core/SemanticRole.cs`) are separate from layout: a box laid out as a
-  table is not necessarily a table for a screen reader. Any front-end (code now, markup later) produces this model.
+  table is not necessarily a table for a screen reader. A list is a box with the list role, which carries its numbering
+  (`ListNumbering`, the values of ISO 32000-1 Table 347); each of its children is a list item, a box laid out by the
+  list-item algorithm, whose children are an optional label (inline: text runs such as "1. ", or one `MarkerSymbol`, a
+  disc, circle or square the layout draws) and then its body, a flow box with the item's content. A front-end computes
+  a label's text; layout places the label. Any front-end (code now, markup later) produces this model.
   The document also carries its layout profile (`DocumentModel/LayoutProfile.cs`): the policies its front-end chose
   where layout has a choice (see the policy table below).
 - **Fragment tree** (`Layout/Fragment.cs`). The output of layout per page: boxes cut at page breaks, lines, text,
   images, table rules, and slices of content taller than a page, with positions relative to the parent. Internal to
   the layout layer, but serialised for tests.
 - **Page model** (`PageModel/DrawItem.cs`, `PageDocument.cs`). What to draw, in absolute page coordinates: glyph runs
-  (glyph ids, not text plus a font name), filled rectangles, images, and markers — `StructureStart`/`StructureEnd`
+  (glyph ids, not text plus a font name), filled rectangles, filled paths (`FillPath`: closed contours of straight
+  lines and cubic curves, a fill rule, non-zero or even-odd, and a colour; a ring is two contours under even-odd), images,
+  link areas (`LinkArea`: the rectangle a reader clicks, one per line part of a link and one per image in it, which draws
+  nothing and stands right inside its link's structure marker, outside every artifact), and markers — `StructureStart`/`StructureEnd`
   (node, role, source location, cell span) for content, `ArtifactStart`/`ArtifactEnd` for decoration and page
   furniture, `ClipStart`/`ClipEnd` (a rectangle) around what is drawn clipped. It does not depend on the document
   model, so other back-ends (raster, SVG) and a future PDF reader can share it. One nesting rule for all three kinds
@@ -84,7 +103,7 @@ paginator (`Layout/Paginator.cs`) calls the root algorithm once per page with th
 is left. When the document shows its page count, it repeats the whole document until that count settles (at most 5
 passes); otherwise one pass is all.
 
-The five algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
+The six algorithms are public, and a caller can hand one any break token: one it built, one changed with `with`, or one
 that another box's layout returned. Each algorithm checks the token it is given, and a token it cannot have returned for
 the box — another algorithm's kind, a child, line, row or cell the box does not have, a height shown that is negative,
 not finite, or the whole height of the sliced image or line or more — is the error `Documents.Layout.InvalidBreakToken`,
@@ -115,7 +134,7 @@ here, which paints at 307.5); the widths computed in 1/64 px would give Chromium
 
 **The seam for later front-ends.** The layout contract (a pure function from box, space and break token to fragment
 and token) is what a later front-end — markup, a Typst-like language, a report definition — plugs into. Today the
-engine ships five algorithms (flow, inline, tracks, image, margin-boxes) and registering another is internal
+engine ships six algorithms (flow, inline, tracks, image, margin-boxes, list-item) and registering another is internal
 (`LayoutEnvironment.WithAlgorithm`); `BreakToken` can only be derived inside the layout assembly, and the parts of a
 table are a display type (`TableDisplay`), not algorithms. When a front-end needs an algorithm of its own, these are
 the three places to open, with that front-end as their first user.
@@ -154,9 +173,11 @@ The whole algorithms and the other rules:
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
 | box slicing at page breaks | `Layout/SlicedBox.cs` | CSS Fragmentation 3 §5.2–§5.4 |
 | inline layout, line boxes | `Layout/InlineLayout.cs`, `LineBoxes.cs` | CSS 2.1 §9.4.2, §10.8 |
-| tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
+| tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders, separated borders on one page), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
 | images | `Layout/ImageLayout.cs` | CSS 2.1 §10.3.2 (with a stated deviation for width + height) |
+| list items (outside markers): the body laid out as block flow, the label outside the item's content box on the baseline of the body's first line (found down the first children, past empty boxes; an image, a table or no line first: a line of the label's own at the item's top, which an empty item grows to), only with the fragment of the first line. A bullet is w × w px with A the font's ascent in px as the profile's font metric rounding gives it, o = ⌊2A/3⌋, w = ⌊(o + 1)/2⌋, its left edge o + 7 px left of the content edge, its top ⌊3(A − o)/2⌋ − A px from the baseline; a disc is a filled circle of four cubics, a circle a ring one pixel wide under even-odd, a square a filled rectangle. A text label is right-aligned so its advance (the space after the number included) ends on the content edge, its width on 1/64 px under `LengthRounding.SixtyFourthPixels`. A label left of the sheet is refused (`Documents.Layout.MarkerOutsideSheet`, `ListMarkers`); one wholly outside a clipped body's area is not drawn (`PagePainter`). LIMIT: an item whose first fragment has no line and breaks gets its label at that fragment's top | `Layout/ListItemLayout.cs` (THE RULE FOR THE LABEL), `ListMarkers.cs`, `PagePainter.cs` (`Bullet`), `DocumentModel/ModelCheck.cs` (`List`), `Fluent/ListTranslator.cs`, `Html/Boxes/HtmlBoxGenerator.Lists.cs` | CSS Lists 3 §3, §3.1; CSS Counter Styles 3 §6.1 (`disc`, `circle`, `square`); ISO 32000-1 §14.8.4.3.3; checked against Chromium's print (cases `li-symbol-sizes`, `li-ol-12`, `li-ol-nested`, `li-ul-levels`, `li-first-line`, `li-page-break`, `li-marker-clip`, `li-marker-sheet`; `ListLayoutTests`) |
 | page templates, page counters | `Layout/PageAreas.cs`, `Paginator.cs`, `PageContext.cs` | CSS Paged Media 3 §4.2.2, §5, §6.1 |
+| links: an inline group with the link role is read through by inline layout (`Leaves`, an explicit stack); each line records its groups' parts as ranges of its children with their area (`LineFragment.Groups`, `LineGroupPart`); the painter opens the group's structure marker around each part and puts the link's areas first inside it; inside an artifact a link is only drawn. A link's area runs from the start of its first piece on the line to the end of its last (a space removed at the line end is outside it) and from its own font's ascent above its own baseline to its descent below, whatever the runs inside it (a link on or inside a raised or lowered element has the element's baseline shift, as its text has: case `va-link`, a footnote mark `<sup><a href>`), and over the border box of every inline box inside it on the line (one area per line part, where Chromium writes one before the box, one for it and one after it: a listed difference); a link with a box of its own has that box's border box on the line as its area; under the body's clip an area is the part the clip shows (Chromium's rectangle of a box above the page area starts at its top); the edges are exact (not printed, so not rounded to Chromium's pixels). The PDF writes one link annotation per area (`/Rect`, `/F 4`, `/Border [0 0 0]`, `/Contents` the description, `/A` a URI action, no appearance stream, which veraPDF rule 6.3.3-1 exempts a link from), listed in the page's `/Annots`; tagged, a `Link` element holds the link's content and an object reference (OBJR) to each annotation, and each annotation's `/StructParent` key, after the pages' keys, names that element in the parent tree. The raster back-end draws nothing for an area. A link inside the document (`LinkTarget.Node`) leads to a box or an inline group of the body outside every artifact (THE RULE FOR A LINK INSIDE THE DOCUMENT, `ModelCheck`); the painter writes one `Anchor` for each such node at its first fragment (a box's border box, a group's first line part: THE RULE FOR A LINK TARGET'S PLACE), the page-model rules check one anchor per node and one for every link to a node, and the PDF writes the annotation's `/Dest [page /XYZ null top null]`, the anchor's page and top, left and zoom unchanged (THE RULE FOR A LINK'S DESTINATION); veraPDF has no rule on destinations | `DocumentModel/Node.cs` (`InlineGroup`), `ModelCheck.cs` (`Targets`), `LinkDescription.cs`, `Core/LinkTarget.cs`, `LinkUris.cs`, `Layout/InlineLayout.cs` (`Leaves`), `LineBoxes.cs` (THE RULE FOR A LINK'S AREA), `PagePainter.cs` (`Line`), `PageModel/DrawItem.cs` (`LinkArea`), `Render.Pdf/LinkAnnotations.cs`, `Tagging/StructureTree.cs`, `StructureObjects.cs` | ISO 32000-1 §12.5.2 (Table 164), §12.5.3 (Table 165), §12.5.6.5 (Table 173), §12.6.4.7, §14.7.4.3 (Table 325), §14.7.4.4, §14.8.4.4.2; ISO 19005-3 §6.3 (veraPDF rules 6.3.2-1, 6.3.2-2, 6.3.3-1), §6.5.1; ISO 14289-1 §7.18.1, §7.18.3, §7.18.5 (veraPDF rules 7.18.1-2, 7.18.3-1, 7.18.5-1, 7.18.5-2); Chromium 159's print (one rectangle per line part, from the link's own font); checked by `LinkAreaTests`, `LinkOutputTests` (read back with PdfPig, veraPDF PDF/A-3a and PDF/UA-1) |
 | what is content and what is an artifact (a repeated header row and every slice of a line of text after the first are pagination artifacts; every slice of an image is content of its figure) | `Layout/PagePainter.cs` | ISO 32000-1 §14.8.2.2 |
 | clips in PDF: `q x y w h re W n` … `Q` between marked-content sequences, never across one | `Render.Pdf/PageContentStream.cs` (`Clips`) | ISO 32000-1 §8.4.2, §8.5.4 |
 | line breaking | `Typesetting/LineBreaking/UnicodeLineBreaking.cs`, `GreedyLineBreaker.cs` | UAX #14 rev. 57 |
@@ -166,9 +187,11 @@ The whole algorithms and the other rules:
 | Unicode normalization before shaping: decompose, reorder marks, recompose, as far as the font allows | `Typesetting/Unicode/Normalization.cs`, data `UnicodeNormalizationData.g.cs` | UAX #15; HarfBuzz's normalizer (hb-ot-shape-normalize.cc) |
 | shaping at a break and where a line ends: Where a line ends and how wide it is follows Chromium 159 (Blink `ShapingLineBreaker::ShapeLine`, `LineBreaker`): the paragraph is shaped once and a line keeps the paragraph's glyphs; the start of a wrapped line and the end of a line are shaped again on their own from and to the nearest place that is safe to break, when that end is not safe (the shaper sets HarfBuzz's `HB_GLYPH_FLAG_UNSAFE_TO_BREAK` as HarfBuzz does: a pair whose values are all zero marks nothing, a lookup marks the clusters after its first glyph's own). The hyphen shown at a soft hyphen is shaped alone and never kerned with the letter before it. At a line end at a collapsible space, left-aligned text keeps the paragraph's glyphs (the last letter keeps its kerning with the space, and the line is measured with it); right-aligned, centred and justified text, and a line whose space at the end lies in a run with a text decoration, shape the end again before the space (case `dl-end`: with the space outside the underlined element the kerning stays). Before a forced break and at the paragraph's end the end is shaped again in every alignment, as measured in Chromium 159's print, which is the reference for where lines end and wins over the reading of its source (that reading says start-aligned text keeps the end): `xx AV <br>To AV` fits "xx AV" on one line only from 252 px in all four alignments, and the right-aligned line shows the unkerned 5,037 units; `xx AV To AV ` at 254 px is `xx AV | To | AV` in all four. When a line, shaped as it is, does not fit, the break opportunity before it is taken. So a line can differ from shaping its text alone: a ligature cut by a break is shaped as its half alone, as measured: `ff` + U+200B + `fi` ends `f f` (1,402 units in Chromium's print), not the ff ligature HarfBuzz gives "ff" alone; each piece shaped again equals HarfBuzz for that piece. | `Typesetting/GreedyLineBreaker.cs`, `ShapedGlyph.UnsafeToBreak`, `Shaper.ShapeLinePiece`, `LineShapingBudget`, `Layout/InlineLayout.cs` (`LineEndAtSpace`) | Blink `ShapingLineBreaker::ShapeLine`, `LineBreaker`; HarfBuzz's unsafe-to-break flag (hb-buffer.h); checked against Chromium's print (`ChromiumLineEndTests`) |
 | an image in a line of text (an atomic inline, CSS Display 3 Appendix A): a box laid out by the image algorithm among the runs of an inline box. It is the object replacement character U+FFFC in the paragraph's text: white-space collapsing keeps a space on each side of it, it ends the shaping group before it, and it is one glyph of its margin box's width that is never shaped. A line may break before and after it whatever is beside it, also beside a no-break space or a joiner, between letters and before closing punctuation (Chromium's rule, which UAX #14 alone does not give for U+FFFC; beside GL, WJ and ZWJ other than U+00A0 a deliberate deviation from CSS Text 3 §5.5, under "Deliberate deviations from CSS"). Its margin box sits with its bottom edge on the baseline and makes the line taller when it reaches above the strut; it is no expansion opportunity of a justified line; its outer min-content and max-content widths count in the paragraph's intrinsic widths. It is laid out at its shrink-to-fit width, so an image wider than the line overflows it (unlike a block image, which is scaled down to the available width). Only the image algorithm is accepted there, and only with the initial page break properties (`Documents.Input.Unsupported.AtomicInline`) | `Layout/InlineLayout.cs` (`ShapeRuns`, `LaidOut`, `Measured`), `Layout/LineBoxes.cs` (`Build`, `AtomicInline`), `Typesetting/LineBreaking/BreakableSegments.cs` (`WithAtomicInlines`), `DocumentModel/ModelCheck.cs` (`AtomicInlines`), `Fluent/Elements.cs` (`InlineImage`) | CSS 2.1 §10.8 (the margin box), §10.8.1 (`vertical-align: baseline`), §10.3.9; CSS Text 3 §5.5; CSS Display 3 Appendix A (atomic inline); Blink `InlineItemsBuilder::AppendAtomicInline`, `LineBreaker::CanBreakAfterAtomicInline`, `LineBreaker::CanBreakAfter`, `LogicalBoxFragment::BaselineMetrics`; checked against Chromium's print (cases `ii-*`, `InlineImageTests`) |
+| an inline box (CSS 2.1 §8, §10.8; THE INLINE BOX STYLE, THE RULE FOR AN INLINE BOX'S EDGES IN A LINE, THE RULE FOR PAINTING AN INLINE BOX): an inline group with a box (`InlineGroup.Box`). Its start edge (left margin, border and padding) and end edge are items of the line without text: the start edge stays with the group's first character and the end edge with its last, an edge is no break opportunity, no space, no expansion opportunity of a justified line, white-space collapsing does not see it, and an edge that takes room ends the shaping of the text before it (no kerning pair across it; one of a background alone keeps the pair). Vertically the box is its font's content area (ascent and descent of the group's own font) with its padding and border outside it; it does not make the line taller. Its background and then its border are painted where its part of the line opens, after the line's content before it, as a layout artifact. Under `InlineBoxSnapping.WholePixels` (the HTML profile) each painted edge lies on the nearest whole pixel of the page and the text inside is drawn from the box's top rounded to a whole pixel of the page, after pagination, where each line's place on its page is known (THE RULE FOR AN INLINE BOX ON WHOLE PIXELS). An empty box alone in a paragraph without text makes a line of the paragraph's line height when an edge takes room (CSS 2.1 §9.4.2), none with a background alone; one with only a vertical padding or border is refused. A box over two or more lines is sliced (`box-decoration-break: slice`, THE RULE FOR AN INLINE BOX OVER LINES): one part per line, each painted from its first to its last piece on the line, with the top and bottom sides on every part, the left side and the start edge's room on the first part only and the right side and the end edge's room on the last only; a box whose first character is a space that ends a line keeps its start edge on that line (its padding painted alone), a space removed at a line end carries no background; a box broken between two of its lines over a page break is a part on each page (THE RULE FOR AN INLINE BOX OVER A PAGE BREAK). A justified line that a box goes on from is widened by its room as any justified line (cases `ib-justify-*`; where a box ends on such a line Chromium may shrink the page: Known limits). Refused at layout, at the group: a box that breaks at a soft hyphen, and one on a line that starts a later page and reaches above its page area (Chromium paints that one on both pages). A link inside a box, a box inside a link and a link with a box of its own are drawn (a link's text is underlined, its edges are not: Chromium's print); an image inside a box is drawn on the baseline as any inline image, the box keeps its font's content area (cases `ib-image-*`); an image inside both a box and a link is refused | `Layout/InlineLayout.cs` (`Entries`, `ShapeRuns`), `Layout/LineBoxes.cs` (`Edge`, `LineGroups`), `Layout/InlineBoxPixels.cs`, `Layout/PagePainter.cs` (`Line`, `InlineBox`), `Typesetting/LineBreaking/BreakableSegments.cs` (`GluedEdges`), `DocumentModel/Node.cs` (`InlineBoxStyle`), `DocumentModel/ModelCheck.cs` (`Group`, `InlineBox`), `Html/Boxes/HtmlBoxGenerator.cs` (`InlineBoxOf`) | CSS 2.1 §8, §10.6.1, §10.8; CSS Text 3 §7.3; Blink `ShouldBreakShapingBeforeBox`; checked against Chromium's print (cases `ib-*`, `InlineBoxTests`, `InlineBoxEdgeBreakTests`, `InlineBoxMappingTests`) |
 | text decoration lines (`TextStyle.Decorations`, the decorations applied to a run, outermost decorating box first): each is one filled rectangle per piece of the run on a line, a layout artifact, never content. Thickness a tenth of the decorating box's font size, at least one pixel; an underline's top a gap below the baseline (half the thickness rounded up, at least one pixel), one straight line across text of other sizes; a line-through's top 2A/3 − T/2 below the piece's text top and an overline's T above it (A the decorating font's ascent, T the thickness), so these two follow each piece's text; under whole-pixel metrics the thickness is floored and each top rounded to a whole pixel. A line runs across the piece's advances, widened justified spaces and hanging preserved spaces included; a collapsible space trimmed at a line end is not decorated; an image gets no line. Underlines and overlines are painted before the piece's glyphs, line-throughs after them. The lines change no line height and no break; a line end at a space of a decorated run is shaped again before the space, as in right-aligned text (case `dl-end`) | `Layout/TextDecorations.cs` (THE RULE FOR TEXT DECORATION LINES), `Layout/InkGaps.cs` (THE RULE FOR THE GAPS AROUND A GLYPH'S INK), `Layout/LineBoxes.cs` (`Build`), `Layout/InlineLayout.cs` (`WithDecorationFonts`, `LineEndAtSpace`), `Typesetting/ShapedGlyph.cs` (`Overhang`), `DocumentModel/ModelCheck.cs` (`Decorations`), `Fluent/TextModifiers.cs` (`Underline`, `LineThrough`, `Overline`) | CSS Text Decoration 3 §2, §2.5, §5.1, §5.2; CSS 2.1 Appendix E.2 step 7.2.1.4.1.1; Blink `TextDecorationInfo::ResolveDecorationAt`, `ComputeUnderlineLineData`, `ComputeLineThroughLineData`, `ComputeOverlineLineData`, `ComputeDecorationThickness`, `TextDecorationOffset::ComputeUnderlineOffsetAuto`, `DecorationLinePainter::Paint` (`SnapYAxis`), `TextFragmentPainter::Paint`, `NeedsAccurateEndPosition`; checked against Chromium's print (cases `dl-*`, `TextDecorationTests`) |
 | the gaps an underline or overline leaves around a glyph's ink (`TextStyle.DecorationSkipInk`, `text-decoration-skip-ink`, inherited, initial `Auto`; the value of the text decides, not that of the decorating box): under `Auto` each underline and overline of a piece is the pieces of its rectangle left between the gaps, each its own rectangle in the line's place in the paint order; a line-through is never cut. One glyph's gap: the band is the line's computed rectangle (its painted top, its unrounded thickness T) inset by half a pixel above and below; the gap reaches from the leftmost to the rightmost x of the glyph's outline inside the band: where a segment crosses the band's top or bottom edge, and every point of a segment strictly inside it, a curve's control point included (as Skia counts it, so the gap can be wider than the ink); then widened by min(T, 13 px) on each side. The glyphs are the piece's own, in its own font and size; the band is the decorating box's line (case `sk-size`). A line is cut by its own gaps over its whole height, and by the gaps of the underlines and overlines painted before it on the same piece over the rows those lines' clips reach (each clip half a pixel past its line's computed rectangle; cases `sk-nest`, `sk-part`), written as rectangles: the line split along x at every gap end, in each column its rows minus the rows of the clips whose gaps cover it, neighbouring columns of equal rows one rectangle; a glyph never cuts the line of another piece (case `sk-touch`); spaces, an image, a soft hyphen's hyphen outside the band leave no gap | `Layout/InkGaps.cs` (THE RULE FOR THE GAPS AROUND A GLYPH'S INK; `InkOutlines`), `Layout/TextDecorations.cs` (`Of`), `Layout/LineBoxes.cs` (`Build`), `Layout/InlineLayout.cs` (`StackLines`), `Core/TextDecorationSkipInk.cs`, `DocumentModel/TextStyle.cs` (`DecorationSkipInk`), `Fluent/TextModifiers.cs` (`TextDecorationSkipInk`) | CSS Text Decoration 4 §2.10.4; Blink `TextPainter::ClipDecorationLine`, `TextDecorationPainter::PaintUnderOrOverLineDecorations`, `Font::GetTextIntercepts`; Skia `SkTextBlob::getIntercepts`, `SkGlyph::ensureIntercepts`, `calculate_path_gap`, `SkBezierQuad::IntersectWithHorizontalLine`; checked against Chromium's print (cases `sk-*`, `dl-skip`, `SkipInkTests`) |
-| shaping across runs: the runs of a paragraph that are set in the same font (family, size, weight and style; the colour and the line height do not count) are shaped as one text, so a kerning pair or a ligature across their border is kept; a run without text joins the text it lies in, and a run that starts with U+200C starts a new one. Each run gets back the glyphs whose cluster starts in it: a ligature across a border belongs to the run with its first character and is drawn in that run's colour, as Chromium splits the shared result. Chromium's print maps such a ligature to the first run's characters only (`f<span>i</span>x` reads "fx"); the engine's glyph keeps every character it shows, for copying, search and tagged PDF. The start and end of a wrapped line are shaped again within their run (Chromium shapes them again within one item), so a wrapped line's first word loses a kerning pair across its run border, as in Chromium | `Layout/InlineLayout.cs` (`ShapingGroups`, `ShapeGroup`), `Typesetting/LineBreaking/BreakableSegments.cs` (`IsSafe`, `NextSafe`, `PreviousSafe`) | CSS Text 3 §7.3; Blink `InlineNode::ShapeText`, `ShouldBreakShapingBeforeText`, `ShapingLineBreaker::ShapeLine`; checked against Chromium's print (cases `sr-*`, `ShapingAcrossRunsTests`) |
+| letter and word spacing (`TextStyle.LetterSpacing`, `TextStyle.WordSpacing`): after shaping, the letter spacing is added to the advance of each glyph that ends a typographic character unit (the glyph before a glyph with text of its own, and the run's or the line piece's last glyph), spaces included, so also after the last letter of a line and of an element, where it counts for where the line ends, its alignment and whether a word fits; the word spacing to each space U+0020 and no-break space U+00A0, not to other spaces (U+2003). Nothing is rounded per glyph; a text item's width, spacing included, is rounded as any (`LengthRounding`). Kerning stays; a letter-spaced run is shaped without the ligatures `liga` and `clig` (`ShapingFeatures`). Runs of other spacing or other font features (`TextStyle.FontFeatures`, the figure and ordinal features a run switches on, `ShapingFeatures.Enabled`) are shaped apart. A collapsed or trimmed space takes its spacing with it | `Layout/InlineLayout.cs` (`Spaced`, THE RULE FOR LETTER AND WORD SPACING; `FeaturesOf`, `SameFont`), `Typesetting/ShapingFeatures.cs`, `DocumentModel/ModelCheck.cs` (`Text`) | CSS Text 3 §7.2; CSS Text 4 §7.1; checked against Chromium's print (cases `ls-*`, every word equal: "fix" and "office" without ligatures, 46 spacings of 0.37 pt move the last word 17.02 pt, right-aligned and justified lines end one spacing short of the edge) |
+| shaping across runs: the runs of a paragraph that are set in the same font (family, size, weight and style; the colour and the line height do not count) are shaped as one text, so a kerning pair or a ligature across their border is kept; a run without text joins the text it lies in, and a run that starts with U+200C or lies in another language (an inline group with a language of its own) starts a new one (case `tt-groups`: no kerning pair across the edge of a span with `lang`). Each run gets back the glyphs whose cluster starts in it: a ligature across a border belongs to the run with its first character and is drawn in that run's colour, as Chromium splits the shared result. Chromium's print maps such a ligature to the first run's characters only (`f<span>i</span>x` reads "fx"); the engine's glyph keeps every character it shows, for copying, search and tagged PDF. The start and end of a wrapped line are shaped again within their run (Chromium shapes them again within one item), so a wrapped line's first word loses a kerning pair across its run border, as in Chromium | `Layout/InlineLayout.cs` (`ShapingGroups`, `ShapeGroup`), `Typesetting/LineBreaking/BreakableSegments.cs` (`IsSafe`, `NextSafe`, `PreviousSafe`) | CSS Text 3 §7.3; Blink `InlineNode::ShapeText`, `ShouldBreakShapingBeforeText`, `ShapingLineBreaker::ShapeLine`; checked against Chromium's print (cases `sr-*`, `ShapingAcrossRunsTests`) |
 | alignment and justification | `Typesetting/LineJustification.cs` | CSS Text 3 §6.1, §6.4 (inter-word) |
 | font parsing and subsetting | `Fonts/FontParser.cs`, `Tables/`, `OpenType/`, `FontSubsetter.cs` | OpenType specification per table |
 | glyph outlines (simple and composite glyphs, no hinting) | `Fonts/Tables/GlyphOutlineDecoder.cs`, `GlyphShape.cs` | OpenType "glyf — Glyph data" |
@@ -199,9 +222,9 @@ error with the code `Aggregate` (Ave.Extensions.ErrorPaths), whose parts carry e
 
 | Layer | Checks | Error codes |
 | --- | --- | --- |
-| front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (XML characters), language tags, media types, unique attachment names, nesting depth, a layout profile with defined policy values | `Documents.Input.*` |
+| front-end (`Fluent/InputChecks.cs`, `InputLimits.cs`) | the author's input: lengths, borders, columns, spans, table shape, page breaks only where they can apply, metadata text (THE RULE FOR A DOCUMENT'S METADATA TEXT, `Core/MetadataTexts.cs`), language tags, media types, unique attachment names, nesting depth, a layout profile with defined policy values, a link's URI (THE RULE FOR A LINK'S URI, `Core/LinkUris.cs`) | `Documents.Input.*` |
 | layout (`Layout/LayoutErrors.cs`) | only what cannot be laid out: content that does not fit, content that would need more than 100 slices (one piece) or 1 000 (one document), columns that do not fit, a page-count fixpoint that does not settle | `Documents.Layout.*` |
-| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata and at least one page, each of positive finite size, nothing missing, finite positions and sizes (and edges) within the range of a PDF real, glyphs of their font with a text, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier`; while the structure tree is built (`Render.Pdf/Tagging/StructureTree.cs`), a node under two parents or a decorative node in the structure: `Documents.Pdf.Write.InvalidStructure` |
+| back-end contract, one rule set for both back-ends (`PageModel/PageModelRules.cs`; each back-end reports a breach under its own code), plus the options (`Render.Pdf/PdfRenderer.cs`) | a page model from any producer: metadata whose title, author and description keep THE RULE FOR A DOCUMENT'S METADATA TEXT and at least one page, each of positive finite size, nothing missing, finite positions and sizes (and edges) within the range of a PDF real, glyphs of their font with a text, filled paths of at least one contour of at least one segment and at most 4 096 segments, enum values, spans within the table model's limits, table structure that nests, a table of rows or of row groups with at most one head, which comes first, one role per node, attachments with a name, a media type and a unique name; a link role with a target THE RULE FOR A LINK'S URI accepts and a description that is not blank; link areas right inside their own link's structure marker, outside every artifact, at most 8 191 per page; markers (structure, artifact, clip) that nest by the one nesting rule, with at most 27 clips one inside the other (`MarkerNesting`); render options with a profile and a file identifier of 1 to 32 767 bytes | `Documents.Pdf.Write.InvalidPageModel`, `InvalidOptions`, `InvalidFileIdentifier`; while the structure tree is built (`Render.Pdf/Tagging/StructureTree.cs`), a node under two parents or a decorative node in the structure: `Documents.Pdf.Write.InvalidStructure` |
 | raster back-end (`Render.Raster/PageRasterizer.cs`) | the same page-model contract (`PageModel/PageModelRules.cs`); options with a positive finite resolution; a page of at most 2^26 pixels at that resolution; a page number of the document | `Documents.Raster.InvalidPageModel`, `InvalidOptions`, `TooLarge`, `PageNotFound` |
 | profile rules (`Render.Pdf/ConformanceRules.cs`, `ProfileLimits.cs`, `Tagging/TableRegularity.cs`) | what a profile forbids: no title or language, a figure without (or with blank) alternative text, heading order, attachments without relationship, irregular tables (and tables too large to check), the PDF/A limits (page size, string and name length, media type form, object count), glyph and text rules; every veraPDF rule and how it is met is in `docs/conformance-matrix.md` | `Documents.Pdf.Conformance.*` |
 
@@ -226,7 +249,7 @@ painting order; markers draw nothing.
 | Fonts | `TrueTypeFont.Shape`: a glyph's contours from 'glyf', composites resolved, no hinting, quadratic curves |
 | Images | `ImageDecoder.DecodeSamples`: PNG samples, or a JPEG decoded (baseline and progressive); `ImageEncoder.EncodePng` |
 | Graphics | flattening (1/64 pixel), clipping to a box, exact-area coverage, source-over compositing, the exact box filter for images |
-| Render.Raster | glyphs as outlines filled with the non-zero rule at their exact positions (no hinting, no snapping, no cache), rectangles, images mapped onto their rectangle as PDF maps an image's unit square |
+| Render.Raster | glyphs as outlines filled with the non-zero rule at their exact positions (no hinting, no snapping, no cache), rectangles, filled paths by their own rule (non-zero or even-odd), images mapped onto their rectangle as PDF maps an image's unit square |
 | composition | `ToPng`, `ToPngPages`, `ToImages` on a document or on its pages (`ToPages`) |
 
 Choices, each stated at its code: coverage is exact for straight edges, to 10^-9 within about 2^22 pixels of the
@@ -389,13 +412,22 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | coordinates the graphics library draws with | ±10^150 after the transform; a clip box within ±2^30 pixels | `Graphics/Canvas.cs` | `Documents.Graphics.InvalidValue` |
 | PDF/UA grid of one table | the first row's width; 4 194 304 slots | `Render.Pdf/Tagging/TableRegularity.cs` | `Documents.Pdf.Conformance.PdfUa1.TableTooLarge` |
 | nesting of elements | 64 levels | `Fluent/InputLimits.cs` | `Documents.Input.Invalid.TooDeep` |
+| a list: its items, how deep lists nest, the text of one label | 10 000 items; 16 lists one inside another; 64 UTF-16 code units | `DocumentModel/ModelLimits.cs` | `Documents.Input.Invalid.List` |
+| a link's URI | 32 767 characters of printable ASCII (the longest string a PDF/A file may hold, veraPDF rule 6.1.13-3) | `Core/LinkUris.cs` | `Documents.Input.Invalid.Link`, from the front-end and the model check; in a page model the back-end's code, `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
+| link areas on one page | 8 191, a fixed bound on the annotations one page writes (one object and one `/Annots` entry each), far more than a page of text can show | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
+| nodes the links inside one document lead to | 65 536 in the model, and as many anchors in a page model | `DocumentModel/ModelCheck.cs`, `PageModel/PageModelRules.cs` | `Documents.Input.Invalid.Link`; in a page model the back-end's code, `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
+| an anchor's name in the code front-end | 1 024 characters | `Fluent/InternalLinks.cs` | `Documents.Input.Invalid.Link` |
+| a document's author or description | 4 096 UTF-16 code units each (from an HTML `meta`, after stripping white space at both ends); the title has no bound of its own, under PDF/A the 32 767 bytes of any string | `Core/MetadataTexts.cs` | `Documents.Input.Invalid.MetadataText`, from the code front-end and the model check; from HTML `Documents.Html.Unsupported.Metadata` (at the `meta`; the document has no author or description); in a page model the back-end's code, `Documents.Pdf.Write.InvalidPageModel` or `Documents.Raster.InvalidPageModel` |
 | nesting of arrays and dictionaries in one PDF object | 64 levels | `Pdf/PdfSerializer.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | nesting of arrays and structures in one XMP property | 64 levels | `Pdf/Xmp/XmpPacket.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
 | an HTML document | 2^24 UTF-16 code units (bytes are checked against the same number); nesting 512 elements, the depth at which Chromium stops nesting; 2^18 elements and 2^20 nodes made, the elements the parser opens again or clones included; selectedcontent clones 4 nodes and characters per input character, at least 65 536; 10 000 diagnostics kept | `Html.Parsing/HtmlInputLimits.cs`, `Html.Parsing/TreeBuilding/TreeBuilder.Select.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails); `Documents.TooManyDiagnostics` (the last diagnostic) |
+| characters without a glyph one HTML document is refused for | 64, each pair of face and character once, in source order | `Html/Boxes/HtmlBoxGenerator.cs` (`MaxMissingGlyphs`) | `Documents.Font.GlyphMissing`, in both modes; the characters past the limit are not reported |
 | a style sheet | 2^24 UTF-16 code units; as bytes, 3 × 2^24 before decoding (UTF-8 takes at most 3 bytes per code unit), then 2^24 code units; nesting of blocks, functions and rules 64 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (the reading fails; a style resolution fails with it) |
 | nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels below the top one (a style rule and 32 nested in it) | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the style resolution fails) |
 | work of one cascade | 2^26 units: a matching fact computed, a simple selector tested, 64 characters compared, a sibling counted, a rule or declaration collected, a candidate looked at, a comparison of a sort, a var() reference followed | `Css/CssInputLimits.cs` (`MaxCascadeWork`) | `Documents.Css.TooLarge` (the style resolution fails) |
+| generated text of one `::before` or `::after` | 16 items in its `content`; 4 096 characters of text, its strings and attribute values together | `Css/CssInputLimits.cs` (`MaxGeneratedContentItems`, `MaxGeneratedTextLength`) | `Documents.Css.Unsupported.GeneratedContent` (the declaration is refused, the text left out) |
+| counters | 32-bit values; 16 counters in one `counter-reset`, `counter-increment` or `counter-set`; 1 000 live at one place; 32 levels joined by one `counters()` | `Css/CssInputLimits.cs` (`MaxCounterNames`, `MaxLiveCounters`, `MaxCountersLevels`) | a value beyond 32 bits or more names: `Documents.Css.Unsupported.Value` (the declaration is refused); a count that leaves 32 bits or more levels: `Documents.Html.Unsupported.Counter` (refused at the declaration); more live counters: `Documents.Html.Unsupported.Counter` (box generation fails) |
 | entries one cascade remembers | 2^22: matching facts, parent-rule matches, sibling tables, var() substitutions, custom-property tables; past it they are computed again, inside the work limit | `Css/CssInputLimits.cs` (`MaxCascadeMemo`) | none |
 | entries of one cascade's index | 2^21: a selector of a style rule or a declaration, counted each time a sheet is taken in | `Css/CssInputLimits.cs` (`MaxCascadeEntries`) | `Documents.Css.TooLarge` (the style resolution fails) |
 | style sheets of one cascade | 1 024: the user-agent sheet, style elements, linked and imported sheets; a sheet taken in twice counts twice | `Css/CssInputLimits.cs` (`MaxStyleSheets`) | `Documents.Css.TooLarge` (the style resolution fails) |
@@ -406,6 +438,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | points of one glyph outline, components included | 65 536 | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 | component references one glyph outline visits | 65 536 | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
 | nesting of composite glyphs | 64 levels | `Fonts/Tables/GlyphOutlineDecoder.cs` | `Documents.Font.Parse.InvalidValue` |
+| segments of one filled path, its contours together, for both back-ends | 4 096 (a curve flattens to at most 4 096 pieces in the raster back-end, so a path to at most 2^24 edges, below one fill's work limit of 2^27) | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel` |
 | clips open one inside the other on a page, for both back-ends | 27 (in PDF one `q` each, plus the drawing's own: the 28 levels of ISO 32000-1 Annex C and ISO 19005-3 §6.1.13; the raster back-end takes the same) | `PageModel/PageModelRules.cs` | `Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel` |
 | slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`) | 100, one per page | `Layout/MonolithicSlices.cs` | `Documents.Layout.TooManySlices` |
 | slices of one document, all pieces together (`MonolithicOverflow.Slice`) | 1 000, counted page by page; a document without a piece taller than the page area has none | `Layout/MonolithicSlices.cs`, `Layout/Paginator.cs` | `Documents.Layout.TooManySlices` (the message names the limit for one document) |
@@ -441,7 +474,8 @@ attachment without relationship — `Documents.Pdf.Conformance.*`, all reported 
 reads each page's markers into events, builds the structure tree from them (tagged profiles), refuses an irregular
 table (PDF/UA), and writes: XMP metadata in sync with the document information, the sRGB output intent, the
 structure tree with marked content (one MCID per content run between markers), artifacts with their kind, the
-attachments with `/AF`. A plain file is written exactly as before profiles existed (same object numbers, no marked
+attachments with `/AF`, and a link annotation per link area, with its description in every profile and, tagged, its
+object reference in the Link element. A plain file is written exactly as before profiles existed (same object numbers, no marked
 content).
 
 ## Determinism
@@ -500,7 +534,7 @@ chooses whether refusals fail the document (the default) or are only reported.
 The policy for each refusal: input above CSS Syntax 3 that the engine cannot read is either
 invalid, which a browser drops, or valid CSS beyond this profile, which a browser uses, and the engine cannot tell
 which. Its one answer to both is a refusal, "not valid or not supported in this profile": a value that does not match
-its grammar of a known property (`vertical-align: 5px`, `color: 12px`), also after `var()` substitution; a selector or
+its grammar of a known property (`vertical-align: -webkit-baseline-middle`, `color: 12px`), also after `var()` substitution; a selector or
 media query that does not parse; an unknown at-rule; a media feature it does not evaluate; an `@supports` condition it
 cannot answer as Chromium. Valid CSS the engine does not implement is refused as before. A refused declaration that
 would win is skipped, so the next one applies, as in a browser that does not know the value. So the engine refuses
@@ -548,7 +582,8 @@ Known limits of stage 3 (also in the profile document):
   row with an open formatting element in a template (HD-11). Each is a case of
   `tools/reference/chromium/html-tree/cases.tsv`, pinned as still different; the foreign contexts and the HD-10
   clones are pinned by the engine's own tree (`ChromiumTreeTests`).
-- No pseudo-elements, no `:has()`, `:lang()`, `:dir()`; selectors Chromium 159 rejects are invalid here too (the `s`
+- No pseudo-elements but `::before` and `::after` with strings, `attr()` and counters (see **Generated text**), no `:has()`,
+  `:lang()`, `:dir()`; selectors Chromium 159 rejects are invalid here too (the `s`
   attribute modifier, `:heading`).
 - A computed `calc()` that keeps a length and a percentage is refused (the document model's length holds one of
   them); typed arithmetic and the math functions other than calc, min, max and clamp are refused; ex and ch need the
@@ -581,8 +616,9 @@ Known limits of stage 3 (also in the profile document):
   `overflow: hidden | clip` (hr, img) clips; `aspect-ratio: auto` with a ratio (the width and height attributes of
   img) gives a ratio to an element that is not replaced; `unicode-bidi: isolate` is accepted as it changes nothing in
   left-to-right text. Box generation (next section) aligns text with the `-webkit-*` values (a descendant block is as
-  wide as its container while sizes are refused, so aligning it changes nothing), refuses `inset` and `outset` borders
-  that have a width, `overflow: hidden | clip` and `aspect-ratio` with a ratio on a block box, and draws `isolate` as
+  wide as its container while sizes are refused, so aligning it changes nothing), draws `inset` and `outset` borders on
+  block boxes in two shades as Chromium does (refused on table parts), refuses `overflow: hidden | clip` on a block box
+  but `hidden` on one with no children (hr), and `aspect-ratio` with a ratio on a block box, and draws `isolate` as
   `normal`.
 - The code front-end keeps its own cascade (`Fluent/Cascade.cs`: own style, shared style, table cell
   defaults, inherited) with its own initial values and its own list of what inherits, beside the property registry
@@ -605,7 +641,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`, `InlineBoxSnapping.WholePixels`). It draws `display: block`, `inline` and `none`, tables with collapsed borders and, on one page, with separated borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -615,11 +651,21 @@ Where each rule lives:
 | block, inline and none; anonymous block boxes (CSS 2.1 §9.2.1.1); white space between blocks makes no box (§9.2.2.1); roles (h1–h6, p); the walk with an explicit stack; ids in pre-order; the nesting limit | `Html/Boxes/HtmlBoxGenerator.cs` |
 | white-space collapsing across inline element boundaries (CSS Text 3 §4.1.1) | inline layout (`Typesetting/WhiteSpaceCollapsing.cs`), for both front-ends: box generation hands the text on as written, and each inline element starts with an empty run in its style, which carries its line height (CSS 2.1 §10.8.1) |
 | which computed values are drawn, and every refusal | `Html/Boxes/BoxProperties.cs`, one row per registry longhand |
-| font matching: `@font-face` (TrueType, through the resolver, loaded when first needed), then the caller's fonts; first family with a face; exact weight and style | `Html/Boxes/FontMatcher.cs` |
+| font matching: `@font-face` (TrueType, through the resolver, loaded when first needed), then the caller's fonts; first family with a face; exact weight and style. A generic family is the family the caller maps it to (`GenericFamilies`: `Standard`, `Serif`, `SansSerif`, `Monospace`), looked up as a written name; one the caller does not map is refused, as is a list that runs out. The initial value is the registry's one value, which `initial`, `inherit`, `unset` and `revert` pass on as it is: the name "Times New Roman" (an `@font-face` rule or a caller's font of it), then `Standard`; a written "Times New Roman" is a name like any other. Equal to Chromium is measured for the written-out family (cases `gf-*`); that a mapping prints exactly as the written-out family is shown page model by page model (`GenericFamilyTests`) | `Html/Boxes/FontMatcher.cs`, `Html/Boxes/GenericFamilies.cs` |
 | `@page`: size and margins of rules without a selector, Chromium's rounding of the page | `Html/Boxes/PageRules.cs` |
 | line height in Chromium's layout unit (a length rounded to 1/64 px, a number times the font size floored to it) | `HtmlBoxGenerator.LineHeightOf` |
+| `font-variant-numeric`, `font-feature-settings`: the feature tags of a text | `HtmlBoxGenerator.FeaturesOf`; the tags in `Core/OptionalFontFeatures.cs` |
+| `letter-spacing`, `word-spacing`: the computed lengths, the characters refused in letter-spaced text | `HtmlBoxGenerator.FaceStyleOf` (`SpacingOf`), `HtmlBoxGenerator.RefuseUnspacedCharacter` |
+| `vertical-align` on inline text: the baseline shift in Chromium's layout unit, summed over nested elements; the shapes refused | `Html/Boxes/HtmlBoxGenerator.BaselineShifts.cs` (`OpenShift`, `OwnShift`) |
+| `text-transform`: case mapping per text node, capitalize's word starts, the refused letters | `Html/Boxes/TextTransforms.cs`; the character before a text in `HtmlBoxGenerator.Transformed` |
 | margins and padding in Chromium's layout unit (cut toward zero to 1/64 px) | `HtmlBoxGenerator.LayoutUnits` |
 | tables: the parts, their structure, column sizes, spans; what the model's table cannot show | `Html/Boxes/TableBoxes.cs`; the values in `Html/Boxes/TableProperties.cs` |
+| lists: list elements and items, the numbering, each label's text, items outside a list element | `Html/Boxes/HtmlBoxGenerator.Lists.cs` |
+| links inside the document: an `a href="#…"` leads to the element the HTML Standard's "indicated part of the document" names (an empty fragment and `top` in any case: the top of the document, the root's box; else the first element with that `id`, else the first `a` with that `name`, then both again with the fragment percent-decoded), also under a `base`; its node is the element's box, its link group, or for another inline element a span group made only for it; the links get their nodes when the tree is built (`LinkTargets`), so a link may come before its target; a name without a target is refused at the link | `Html/Boxes/HtmlBoxGenerator.Targets.cs` (THE RULE FOR A LINK INSIDE AN HTML DOCUMENT), `Html/LinkUrls.cs` (`Fragment`, `PercentDecoded`), `DocumentModel/LinkTargets.cs` |
+| languages: an element's language (HTML Standard §3.2.6.2: `xml:lang` in the XML namespace, else `lang`, else the parent's) where it differs from its parent's, without regard to case, goes on its box, or for an inline element on a span group made for it (an `a href`: its link group); written as given when THE RULE FOR A LANGUAGE TAG accepts it (BCP 47 well-formed, at most 64 characters), else, and for the empty tag, refused at the start tag (`Documents.Html.Unsupported.Language`) and not written: no language is guessed | `Html/Boxes/HtmlBoxGenerator.Targets.cs` (THE RULE FOR AN ELEMENT'S LANGUAGE IN HTML), `Core/LanguageTags.cs`, `Render.Pdf/Tagging/StructureObjects.cs` (`Languages`) |
+| links: an `a` with `href` inside a line is an inline group with the link role around its content, its empty run first (so the line height is as without the link); the URI by THE RULE FOR A LINK'S URL IN HTML (white space removed as the URL Standard's basic URL parser removes it, a relative URL resolved by RFC 3986 §5.2 only against an `http` or `https` base, the scheme in lower case, the C0 controls, space, `"`, `<`, `>`, U+007F and every character beyond ASCII percent-encoded as UTF-8, the shared part of the URL Standard's percent-encode sets, §1.3), then THE RULE FOR A LINK'S URI of the model, the only rule on schemes; the description by THE RULE FOR A LINK'S DESCRIPTION (`title`, text, an image's `alt`, the URI); refusals at the start tag (`Documents.Html.Unsupported.Link`) | `Html/LinkUrls.cs`, `Html/Boxes/HtmlBoxGenerator.Links.cs`; `Core/LinkUris.cs`, `DocumentModel/LinkDescription.cs` |
+| table header cells: a `th`'s scope by THE RULE FOR A HEADER CELL'S SCOPE IN HTML (`scope` row or rowgroup heads the row, col or colgroup the column, in any ASCII case; else a `th` in a `thead` or in a row of `th` only heads its column, any other its row); the `headers` attribute is not read | `Html/Boxes/HtmlBoxGenerator.HeaderScopes.cs`; `Core/TableHeaderScope.cs` |
+| document metadata: the title from the first `title`, the author and the description from the first `meta` with that `name` (any ASCII case) and a content not empty after stripping, by THE RULE FOR A DOCUMENT'S METADATA IN HTML; a text that THE RULE FOR A DOCUMENT'S METADATA TEXT does not accept (an author or description past 4 096 characters, a control character or one XML does not allow) refused at the `meta` or the `title` (`Documents.Html.Unsupported.Metadata`) and left out; no other `meta` name is read | `Html/HtmlMetadata.cs`, `Core/MetadataTexts.cs` |
 
 **The refusal table.** `BoxProperties.Rows` holds one row per longhand of the property registry: what is drawn, and
 where a value has no effect, the condition. A value is refused (`Documents.Html.Unsupported.Value`, at the element's
@@ -627,25 +673,107 @@ start tag, with the property and the value) only where it would change the print
 
 | Properties | Drawn | Refused |
 | --- | --- | --- |
-| `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
-| `border-collapse` | `collapse` on a table | `separate` (the initial value, and HTML's) |
-| table width, column widths, `table-layout` | the table at `auto` and `100%`; lengths of column elements; `table-layout: fixed` at width `100%` (at width `auto` the table is laid out automatically, as Chromium does) | percentages on column elements, any width on a cell or a column group, other table widths: see **Tables** |
-| margins | lengths of 0 or more; horizontal `auto` on a block box with a width shares the width it leaves (`BoxStyle.AutoMargins`), else 0; on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
-| padding, border widths | lengths on a block box | percentages; any on an inline box |
-| border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
-| `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
+| `display` | `block`, `inline`, `none`, `list-item` (see **Lists** below), `table` and its parts, the caption among them | every other type |
+| `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders breaks over pages, sliced | a table with separated borders that breaks with a cell over several rows across the break, content sliced in a cell, `box-decoration-break: clone`, or past the page end (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
+| `border-spacing` | whole CSS pixels on a table with separated borders; any value with collapsed borders (no effect) | other lengths on a table with separated borders |
+| table width, column widths, `table-layout` | the table at `auto`, a length and a percentage; lengths and percentages of column elements, of cells and of column groups without column elements; `table-layout: fixed` at a width other than `auto` (at width `auto` the table is laid out automatically, as Chromium does) | some percentages beside other widths, a width on a column group with column elements, a cell width over several columns in the fixed layout: see **Tables** |
+| margins | lengths of 0 or more; horizontal `auto` on a block box with a width shares the width it leaves (`BoxStyle.AutoMargins`), else 0; on an inline box the vertical ones have no effect | negative, percentage, calculated |
+| padding, border widths | lengths on a block box and on an inline box (border widths in whole pixels, as the style sheet snaps them) | percentages |
+| border styles and colours | `none`, `hidden`, `solid`; `inset` and `outset` on a block box that is no table part (`BorderSide.Style`; layout paints the two shades, `BorderShades`, and cuts the corners, cases `bs-*`, `hr-*`); solid sides of more than one colour, cut at the corners by the same rule (`PagePainter`, cases `bs-solid-*`; a border of one colour stays four rectangles); colours of alpha 1; anything where the width is 0 | `inset`, `outset` on a table or a part of one, and inset beside outset sides on one box; `dotted`, `dashed`, `double`, `groove`, `ridge` (by the registry); other alphas |
+| `background-color` | alpha 1 on a block box, a table in both border models included, and on an inline box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); other alphas |
 | `width`, `min-width`, `max-width`, `box-sizing` | on a block box a length or a percentage, for the content or the border box (`BoxStyle.SpecifiedWidth`, `MinWidth`, `MaxWidth`, `BoxSizing`; layout: `InFlowChild.Horizontal`, CSS 2.1 §10.3.3, §10.4); any on an inline box; on an image a positive `width`; on a table part what **Tables** says | calculated and intrinsic sizes; `min-width` and `max-width` on a table part or an image; a size on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`, by the model check: the intrinsic widths of a sized box are not built); `border-box` on an image with padding or a border |
-| `height`, `min-height`, `max-height` | on a block box a length, for the content or the border box, and a `height` percentage of a parent whose height is a length in a content box, or `auto` (`BoxStyle.SpecifiedHeight`, `MinHeight`, `MaxHeight`; layout: `BlockSizes`, `SlicedBox`, CSS 2.1 §10.5–10.7; the height the pages before showed is carried in the box's break token); any on an inline box; on an image a positive `height` | calculated and intrinsic sizes; another percentage height; a percentage `min-height` or `max-height`; a height on a table part, or on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`); content that goes on past a page break after the box's height ended (`Documents.Layout.OverflowAcrossPages`) |
-| `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
-| `border-spacing`, `empty-cells`, `caption-side`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (collapsed borders, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| `height`, `min-height`, `max-height` | on a block box a length, for the content or the border box, and a `height` percentage of a parent whose height is a length in a content box, or `auto` (`BoxStyle.SpecifiedHeight`, `MinHeight`, `MaxHeight`; layout: `BlockSizes`, `SlicedBox`, CSS 2.1 §10.5–10.7; the height the pages before showed is carried in the box's break token); any on an inline box; on an image a positive `height`; a length `height` on a table, a row or a cell (see **Tables**, heights) | calculated and intrinsic sizes; another percentage height; a percentage `min-height` or `max-height`; a percentage `height` on a table part, a `height` on a row group or a caption, a `min-height` or `max-height` on a table part, a height on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`); content that goes on past a page break after the box's height ended (`Documents.Layout.OverflowAcrossPages`) |
+| `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image `auto` with a ratio (the natural one) and any `overflow`; `overflow: hidden` on a block box with no children and a border, padding or height that is not 0 at its top or bottom (the clip covers nothing, and its margins do not collapse through it: hr, cases `hr-*`) | other values on a block box |
+| `caption-side` | `top` and `bottom` on a caption; no effect on another box | other values (by the registry) |
+| `box-sizing` on a table part | both values, on a table or a cell with a height (see **Tables**, heights) | `content-box` on a table with a height; `border-box` on a cell with a height in a table with collapsed borders |
+| `empty-cells` | `show`; `hide` with separated borders: a cell without content, of white space that collapses or of comments paints no border or background of its own and keeps its size, the background of its row, row group, column or column group still painted under it; a row of only such cells keeps its height and spacings (cases `tm-empty`, `tm-row`, `tk-empty`: a no-break space and an empty inline element are content); no effect with collapsed borders (`tm-collapse`) | `hide` on a cell of only elements that are not displayed or of white space that is preserved |
+| `list-style-type`, `list-style-position` | the twelve counter styles the registry accepts (`disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha`, `lower-latin`, `upper-latin`, `none`), `outside`; no effect on a box that is not a list item | `inside`, `list-style-image` other than `none`, other counter styles and strings (by the registry); a `::marker` declaration other than `color`, `font-weight`, `font-style` and a `content` of strings (refused at it) |
+| outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
 | `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-decoration-skip-ink` | every line and combination, applied to the element's text and the text of every element inside it, through block boxes, not into an image: the parent's lines, then the element's own in the order underline, overline, line-through, each in the element's font and its decoration colour (`currentcolor` its `color`; `TextStyle.Decorations`); `solid`; `auto`, `none` from the element the text lies in (`TextStyle.DecorationSkipInk`) | a decoration colour of another alpha than 1; a text with more than 16 lines (at the start tag of the element it lies in); `blink`, `spelling-error`, `grammar-error`, other styles, a thickness, an underline offset or position other than `auto` and `skip-ink: all` (refused by the registry) |
-| `vertical-align` | `baseline`; any on a block box | other values on an inline box |
-| `box-decoration-break` | `slice`; `clone` on a box without border, padding or background | `clone` where it would draw |
+| `vertical-align` | `baseline`; any on a block box; on an inline element that is not an image `super`, `sub`, a length and a percentage (of its own line height), as the shift of its text's baseline in Chromium's layout unit (`TextStyle.BaselineShift`; `super` the parent's font size in 1/64 px divided by 3, `sub` by 5, each cut to 1/64 px plus 1 px; a length or percentage cut toward zero; cases `va-*`); laid out by THE RULE FOR A SHIFTED RUN ON THE LINE; on a table cell `top`, `middle`, `bottom` and `baseline`, which is drawn as `top`, as Chromium prints it (cases `tv-baseline-sizes`, `tv-baseline-height`: each cell's first line at its own content top, whatever the font sizes and paddings of the row; a browser window aligns the baselines) | `text-top`, `text-bottom` (by the registry); `top`, `middle`, `bottom` on an inline box; any other value on an image; at the element's start tag: a shifted element inside another inline element (Chromium paints the outer element's text at a whole pixel) and one inside text with a decoration from around it (Chromium draws that line on the outer baseline; case `va-nested`); an image or a `br` inside a shifted element |
+| `box-decoration-break` | `slice`; `clone` on a box without border, padding or background (on an inline box, without horizontal margins either) | `clone` where it would draw |
+| an inline box (an inline element with a background, border, padding or horizontal margin) | a group with a box (THE RULE FOR AN INLINE BOX IN HTML), on one line or sliced over lines and pages, also an empty one (alone in a paragraph too), nested ones, `mark` (its yellow background), `code` and `kbd` with a font family that resolves, links with a box of their own, inside a box or around one, images inside a box | a box broken at a soft hyphen, and one on a line that starts a later page and reaches above its page area (`Documents.Input.Unsupported.InlineBox`, at layout, at the element); an image inside both a box and a link (`Documents.Html.Unsupported.InlineBox`, at the image) and an empty link with a box of its own (`Documents.Html.Unsupported.Link`, at the link); an empty box alone in a paragraph with a vertical padding or border and no left or right edge; rounded corners (by the registry) |
+| `font-variant-numeric`, `font-feature-settings` | `normal`, `lining-nums`, `oldstyle-nums`, `proportional-nums`, `tabular-nums`, `ordinal`; the tags `lnum`, `onum`, `pnum`, `tnum`, `ordn` on or off, over the variant (`TextStyle.FontFeatures`, applied by the shaper as the font's lookups say; cases `fn-*`) | `diagonal-fractions`, `stacked-fractions` (Lato's `frac` is a contextual substitution the shaper does not apply), `slashed-zero` (no font of the cases has one), other tags and values (by the registry) |
+| `letter-spacing`, `word-spacing` | `normal` and a length, negative too, as the computed length (`em` of the element's own font size) in the text style (`TextStyle.LetterSpacing`, `TextStyle.WordSpacing`), added in layout (THE RULE FOR LETTER AND WORD SPACING); `0%` of word-spacing as zero | a percentage (by the registry); in letter-spaced text a combining mark or a format character (soft hyphen, joiners), at the text with its offset; a spacing on a page-margin box |
+| `text-transform` | `none`, `uppercase`, `lowercase`, `capitalize`: each text node mapped in box generation, before white space is collapsed (`TextTransforms`): Unicode's simple case mapping of each character, with SpecialCasing.txt's Turkish and Azerbaijani i, ı and İ and its Final_Sigma; capitalize titlecases a letter after anything but a letter, a digit, connector punctuation or an apostrophe after a letter, looking back one character into the text before it (cases `tt-*`: the print's text is the mapped text) | `full-width`, `full-size-kana`, `math-auto` (by the registry); at the text, with its offset: a letter Chromium maps to more characters (ß, ﬁ, ŉ, İ in lowercase outside Turkish, a first letter without a capital of its own in capitalize), Greek under `el` and Lithuanian, Dutch ij in capitalize, a character whose word-boundary class is not measured (capitalize: other scripts, marks, modifier letters, middle dots), a sigma beside a mark; in a page-margin box (inherited from the root element) |
 | `font-kerning` | `auto`, `normal` (Chromium kerns with both: cases `h-kerning-*`) | `none` (refused by the registry) |
 | break properties, `orphans`, `widows`, `text-align`, font family, size, weight and style, `line-height` | every value (`avoid-page` as `avoid`; `break-after: page` as a forced break before the next box, none after the last box, as Chromium prints it) but a font size of 0 | a font size of 0; a family without a face (`Font`) |
 | the properties supported only at their initial value | the initial value | any other (the registry already refuses it) |
+
+**Lists** (`Html/Boxes/HtmlBoxGenerator.Lists.cs`; CSS Lists 3, HTML Standard §4.4.5–§4.4.8, §15.3.7). A `ul`, `ol`,
+`menu` or `dir` at `display: block` is the model's list (tagged `L` with the `ListNumbering` of its own
+`list-style-type`; an empty one is a plain block), each child of `display: list-item` one of its items (`LI`), with its
+label (`Lbl`) and its body (`LBody`, the item's content). The front-end computes each label: the `list-item` counter
+(CSS Lists 3 §4.6), counted in one pass before the boxes are built, instantiated by every list element and by an item
+with no counter in scope, whose scope runs on through the following siblings (case `li-div-list-item`: "2." and "3." on
+`div` items after a disc one); `ol start`, `ol reversed` (from the number of items down) and `li value`; the text in the
+item's `list-style-type` with the suffix ". " (CSS Counter Styles 3 §6.1: `decimal` with "-" before a negative number,
+`decimal-leading-zero` padded to two with the sign counted, the alphabetic styles from 1 and the roman ones from 1 to
+3999, `decimal` outside those ranges; cases `li-counter-styles`, `li-types`, `li-ol-attrs`); a disc, circle or square
+for the symbols, whose tag carries U+2022, U+25E6 or U+25AA; no label for `none` (the item still counts, case
+`li-none`). The label is in the item's own font, size and colour, not its first line's (case `li-font`). An item
+outside a list element (a bare `li`, case `li-bare`, or a `div` of `display: list-item`) draws as in a list; each run
+of such items among siblings is wrapped in a list box without margin or padding, tagged `L` with the first item's
+numbering, as PDF has no `LI` outside an `L`. Refused (`Documents.Html.Unsupported.List`, at the start tag): a child
+of a list element that is not a list item (text too); a `start` or `value` beyond a 32-bit integer, or a number that
+leaves it; `value` in a reversed `ol`, or outside an `ol` where its list shows numbers; an item outside a list element
+that a list's counter would number (inside a list's item, or after a list among its siblings), or whose number would
+continue the counter of an item with another parent; the marker of an item with text decorations. Lists deeper than
+16 or longer than 10 000 items fail under both policies. The style sheet refuses `list-style-position: inside`
+(case `li-inside`), `list-style-image`, the `::marker` declarations the marker does not draw (below) and writes to the
+`list-item` counter (**Counters**); layout
+refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types`).
+
+**Generated text** (`Css/Cascade/StyleComputer.PseudoElements.cs`, `HtmlStyleResolver.Generated`; CSS Pseudo 4 §4.1, CSS
+Generated Content 3 §1). A rule whose selector ends in `::before` or `::after` (or `:before`, `:after`) matches the
+element the selector matches without it, never the element itself; its declarations are cascaded as an element's
+(origin, layer, specificity counting the pseudo-element, order), inheriting from the element's computed style. A
+`content` of strings and `attr(name)` (the attribute's value, empty when it has none; case `gc-attr`) makes an inline
+box of that style, the first or the last child of the element, with one text per item of the `content` (Chromium rounds
+the width of each item up to its layout unit on its own: cases `gc-counter-styles`, `gc-items-kern`): in the same inline
+formatting context, so white space collapses across the items and the join (cases `gc-string-space`, `gc-items-kern`),
+the items are shaped together (kerning and ligatures across them), the join is no break opportunity
+(`gc-string-nobreak`, `gc-items-break`), and text decorations apply as to an inline element. With `display: block` it
+is a block box instead, the first or the last child box of the element, whose own text then lies in anonymous boxes
+around it (cases `gc-block-anonymous`, `gc-block-break`): its margins collapse as any child's, and it has its padding,
+border, background and alignment (`gc-block-margins`, `gc-block-box`); it is tagged as a `Div` of the element, as the
+anonymous boxes are, and one without text (`content: ""` with a border, a rule under a heading) is an artifact. Its runs are `TextRun.Generated`, at the line of the `content`
+declaration; tagged as real text of the element, in reading order (Chromium's text layer has them so). Nothing is made,
+and nothing is said, for `content: normal`, `none`, no `content`, a CSS-wide keyword or `display: none`, nor on `img`
+and `br` (case `gc-nothing`: Chromium draws nothing there either), so `*, *::before, *::after { box-sizing: border-box }`
+costs nothing, and a pseudo-element of `display: none` reports nothing of what it declares. Refused at the declaration
+(`Documents.Css.Unsupported.GeneratedContent`), and the text left out: `counter(page)` and `counter(pages)` (a browser
+prints 0 outside the page-margin boxes), a counter style other than the 12 of `list-style-type` (`@counter-style`,
+`symbols()`, a string), the quote keywords, `url()` and the other images, `attr()` with a type or a fallback, the
+alternative text after `/`, `var()` and `revert`; `display` other than `inline`, `block` and `none`; a block one on an
+element that is not a block (Chromium breaks an inline element's lines around it: case `gc-block-span`); on an inline
+one a margin, padding, border or background (they need inline boxes); a position or a float that differs from what an
+inline child of the element has without it; the pseudo-elements of `table`, its row groups and rows (Chromium draws them in an anonymous cell), of a
+list element (its children are its items here) and of the other void elements. A `::marker` rule (cascaded the same
+way, on a list item) gives the marker its `color`, `font-weight` and `font-style`, a shape as a number (cases
+`gc-marker-color`, `gc-marker-weight`), and a `content` of strings replaces the marker's text, right-aligned as a
+number, also in place of a shape (`gc-marker-content`); its other declarations are refused at their place (a larger
+`font-size` makes the item's first line taller in Chromium: case `gc-marker-font`), and so are a counter or `none` in
+its `content`. `::first-line` and `::first-letter` stay refused at their selector. Text past the limits below is refused, never cut. The `content` of
+page-margin boxes keeps its own grammar (`ContentValue.Parse`): a document's counter is refused there (Chromium 159
+prints 0 for it on every page, measured). A refusal raised in box generation inside generated text (a character, a
+font) names the style sheet of the `content` declaration.
+
+**Counters** (`Html/Boxes/HtmlBoxGenerator.Counters.cs`; CSS Lists 3 §4). `counter-reset`, `counter-increment` and
+`counter-set` on elements and on `::before` and `::after`, read by `counter(name[, style])` and `counters(name, string[,
+style])` in their `content`, in the 12 styles of `list-style-type` (`disc` U+2022, `circle` U+25E6, `square` U+25A0,
+`none` nothing; roman and alphabetic fall back to decimal outside their range). One walk in document order after the
+lists' numbering, with an explicit stack: an element sees its parent's counters and those of its previous sibling whose
+name the parent has none of (cases `gc-counter-scope`, `gc-counter-implicit`); then reset (in place of a previous
+sibling's counter of the name, else nested), increment, set (case `gc-counter-order`), an increment or set of a counter
+it does not see making one at 0; then its `::before` (its own counter properties, then its content), its children, its
+`::after`. Reading a counter it does not see makes one at 0 on the pseudo-element. `display: none` counts nothing
+(`gc-counter-hidden`). `list-item` is read as the lists number their items (`gc-counter-list-item`), never written:
+`counter-*` of `list-item` is refused. A value beyond 32 bits is refused at its declaration (`Documents.Css.Unsupported.Value`),
+and so is a count that leaves them (`Documents.Html.Unsupported.Counter`, the counter kept at the bound as Chromium
+prints it; case `gc-counter-bound`).
 
 Elements whose rendering no property says are refused by their own rule (`Documents.Html.Unsupported.Rendering`):
 `wbr`, `q`. A `br` is the model's forced line break, the line separator U+2028, in its own text style (a block-level
@@ -657,9 +785,10 @@ or does not decode is refused (`Rendering`), and so is a width and a height in a
 Chromium stretches the image to and the image algorithm does not (`Value`, case `hi-stretch`). An `img` inside a line of text (`display: inline`) is the same image box
 among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
 in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
-break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: lists by `display`, a table without collapsed borders by
-`border-collapse`, `hr` by its `inset` border, `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`
-(in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
+break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: `abbr` with a title by its dotted underline (in style resolution). `sub` and
+`sup` are drawn with `vertical-align` and `font-size: smaller` (the parent's size divided by 1.2; cases `va-elements`,
+`va-sizes`); the HTML Standard's `line-height: normal` for them is left out of the user-agent style sheet, as Chromium 159 does
+not apply it (case `va-decorated`). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
 at its text, once per text with the first such character, its offset and their count (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed
 and U+0085 as a missing glyph), the line and paragraph separators (Chromium prints a space that does not collapse), a
@@ -687,29 +816,147 @@ its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only f
 `table-layout: fixed` and width `auto` gets its content's width), a column element's length is an exact width
 (`TrackSize.Fixed`) and the
 columns without one share what is left (fill columns of weight 1). A table of width `auto` is as wide as its columns
-need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
+need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`), and one of a length
+(`BoxWidth.Fixed`, its border box: HTML's user agent sheet gives a table `box-sizing: border-box`) is that wide, its
+columns sharing it as at `100%`, in both border models and both layouts (cases `twd-table-wide`, `twd-sum`), and never
+narrower than its columns' minimum: the content's min-content in the automatic layout, the fixed columns in the fixed one
+(`twd-table-narrow` a and c, `twd-sum` c); a length wider than the container is refused (`ColumnsDoNotFit`). A cell's
+length is of its content box (`BoxWidth.Fixed` on the cell; layout adds its padding and border, in the collapsing model
+half of its lines) and sets its column (`TracksLayout.CellColumns`): in the automatic layout every row counts and the
+column is a preferred one of the widest, or of a column element's length when that is wider (`twd-cell-row` a and b,
+`twd-cell-two` a, `twd-cell-col` a and c); in the fixed layout only the first row counts (§17.5.2.1), a later row's width
+is not read and a column element's length wins (`twd-cell-row` c and d, `twd-cell-two` b and c, `twd-cell-col` b); a cell
+over several columns with a length asks it of them as its maximum in the automatic layout (`twd-cell-span` a and c).
+Chromium floors these lengths to 1/64 px (200.1 pt prints 200.098 pt, `twd-fraction`); the engine keeps them, at most
+0.016 pt apart. Refused (`Value`, at the cell or column element): a cell length over several columns in the fixed layout
+(`twd-cell-span` b: Chromium's equal columns are what the width left out and the width shared both give, so the case
+shows no rule), and in the fixed layout a cell length in a table with percent columns (not measured). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
 it; the two agree while the content fits its column (cases `tl-fixed-fill-wide-word` and `a4-line-beside-lines`, a
 200 pt word in the first of two columns of 137.625 pt in Chromium, listed; `HtmlListedDifferenceTests`: the columns'
-widths are the whole difference). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
-the fixed layout of a table of width `100%`, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
+widths are the whole difference). A table's percentage is of its container's width, its border box, floored to 1/64
+px, and then a given width as a length is (`tpa-table`: 80% of 276 pt is 220.793 pt, in both border models and both
+layouts). In the automatic layout a percentage on a `col`, on a cell (in any row) or on a column group without column
+elements (for each column of its span, `tpa-colgroup`) makes a percent column (`TrackSize.Percent`, CSS Tables 3 §3.9.3):
+its width is its percentage of the width the columns share (the table's width less its border, padding and all spacing
+in the separated model, less the outer half lines in the collapsing one), floored to 1/64 px, never less than its
+content's min-content (`tpa-full`, `tpa-length`, `tpa-fraction`, `tpa-sum` c and d); percentages past 100 in all get only
+what is left (`tpa-sum` a, b: 60% and 70% are 60% and 40%); the width left goes to the columns without a width, else to
+the length columns (`tpa-beside` c), and to the percent columns, in proportion to their percentages, only in a table of
+percent columns alone (`tpa-full` e); a table of width `auto` is as wide as its percent columns need for their
+percentages at their widest content and its other columns for their widest content in the percentage left, within its
+container (`tpa-auto`; `tpa-sum` d: a column of 10% holding a word of 76.2 pt fills the container). No other column kind
+does both, take a share of the table's width and widen a table of width `auto`, which is why it is a kind of its own.
+Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
+the fixed layout of a table of any width, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
 a percentage is of the width the columns share, the table's width less its outer half borders in the collapsing model
 (case `tp-outer-border`); percent columns alone grow or shrink in proportion to fill that width, whatever their sum
 (`tp-sum-100`, `tp-sum-below`, `tp-sum-above`, `tp-thirds`); beside columns without a width each keeps its percentage
 and those columns share the rest equally (`tp-beside-auto`); a span gives each of its columns the percentage
 (`tp-col-span`). Each is a fill column whose weight is its share, so layout divides the width exactly where Chromium cuts
 each share to 1/64 px and gives the last column the remainder (less than 0.012 pt per column). Refused at the column
-element (`Value`): a percent column in the automatic layout, beside a column of a length (Chromium widens the length
+element (`Value`): in the fixed layout a percent column beside a column of a length (Chromium widens the length
 columns to what the percentages leave, `tp-beside-length`), and percentages of 100 or more beside a column without a
-width (Chromium gives that column no width); a percent column, like a fill column, is never narrower than its
+width (Chromium gives that column no width); in the automatic layout, not measured, percentages of 100 or more beside
+other columns, a percentage beside another width in one column, a percentage on a cell over several columns and a cell
+over several columns beside a percent column; a percentage on a cell in the fixed layout; a width on a column group with
+column elements (one table of `tpa-colgroup` shows it unused, not enough for a rule). A percent column, like a fill column, is never narrower than its
 content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
-(§17.2.1); a table part on another element than its HTML element; captions, a header group after a row
-group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
-a column in which no cell starts; the percent columns named above, a width on a cell or a column group (`tp-colgroup`), a table width other than
-`auto` and `100%`, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
+(§17.2.1); a table part on another element than its HTML element; a second caption, a block inside a caption, a width on
+a caption, a header group after a row group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
+a column in which no cell starts; the percentages and cell lengths named above, a width on a column group with column
+elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
+
+**Heights.** A `height` on a table, a row or a cell is a least height (CSS 2.1 §17.5.3; `BoxStyle.TableHeight`), in both
+border models. A row is as tall as the largest of its content, its own height and its cells' heights; a cell's height is
+of its content box, its padding and border (with collapsed borders its halves of the grid lines) on top, or under
+`box-sizing: border-box` with separated borders of its border box (cases `tg-row`, `tg-cell`). A table's height is of its
+border box: the extra goes to the body rows without a height of their own or of a cell, in proportion to their heights;
+header rows and rows with a height keep theirs; a height less than the rows' has no effect (cases `tg-table`,
+`tg-table-small`). A cell's content keeps its alignment in the taller row. Each height, and each row's share of a table's
+height, is floored to 1/64 px under `LengthRounding.SixtyFourthPixels` (`tg-fraction`), the last row taking what is left.
+Refused: percentages (case `tg-percent`: Chromium prints them as `auto` in a page, but not measured in a cell with a
+height); a height on a row group or a caption; `min-height` and `max-height` (by the registry; case `tg-min`: Chromium
+prints them on rows and cells as if they were not there); a table height with a caption, over cells that span rows, under
+`box-sizing: content-box`, or where every body row has a height; a cell's `border-box` height with collapsed borders;
+and, by layout (`Documents.Layout.TableBreak`), a table with any of these heights where a page break cuts a cell over
+several rows (not measured). Over a page break a row with a least height is cut at the page end
+like any row, also where its content ends on the page, and goes on with the rest of the height on the next page: the
+least height less the part from the row's top to the page end (`TracksBreakToken.RowRest`), its content at the top of
+the part where it is cut, a row taller than a page over as many pages as it needs, a table's height shared over its rows
+first (cases `tg-break`, `tg-break-rows`, `tg-break-rows-separated`, `tg-break-cut-two`, `tg-break-cut-align`,
+`tg-break-cut-cell`, `tg-break-tall`, `tg-break-table`: where the row's first line fits, Chromium cuts such a row at the
+page end rather than moving it to the next page). Where the page end cuts the text of a cell, the row is cut between two
+lines as a row without a height is, by the cell's orphans and widows, and the part on the next page is the rest of the
+height or, where that is taller, the rest of the text (cases `tg-text-late`, `tg-text-three`: the rest of the height;
+`tg-text-equal`, `tg-text-header`: the rest of the text, below a header that repeats; `tg-text-two`, `tg-text-align`: a
+cell of two lines whose second line does not fit moves the row whole to the next page).
+
+**Backgrounds of rows, groups and columns.** In both border models the HTML front-end gives them to the cells
+(CSS 2.1 §17.5.1, the table layers): a cell without a background of its own takes its row's, else its row group's, else
+its column's, else its column group's, over its whole area, and the groups and rows keep none. Chromium paints each layer
+once per cell over the cell's box, never in the spacing, bottom to top column group, column, row group, row, cell, so
+with colours of alpha 1 a cell shows the highest (cases `tk-separated`, `tk-collapsed`, `tk-thick`); a cell over several
+rows or columns takes the row and the column it starts in, over all of its area (`tk-span`); on every page, in a repeated
+header and in both parts of a cut row, as the cell's own (`tk-break-stripe`, `tk-break-cut`). Other alphas stay refused,
+as on any block; under `empty-cells: hide` a hidden empty cell paints none of its own, and the row's and the column's
+background are still painted under it (`tk-empty`, `tm-empty`). A table's own background is painted under its border box as on any block, below
+the cells' and rows' backgrounds and the lines: with separated borders spacing included, with collapsed borders out to
+the outer edge of its outer lines (a 3 pt table border, the cells' 0.75 pt lines and cells without borders alike), never
+under its caption, and on a page where the table breaks down to the page end, as the table's fragment there runs to the
+page end in both models (cases `tk-table-collapsed`, `tk-table-caption`, `tk-table-break`).
+
+**Captions.** A table's `caption` element (CSS 2.1 §17.4) is the first child of the table's box in the model
+(`TableDisplay.Caption`, role `Caption`), wherever it stands among the row groups, and the table lays it out
+(`TableCaption`): a block as wide as the table's border box, with its own margins, padding, border, background and text
+alignment (the user agent centres it), its margins inside the table's outer box and never collapsing with the table's.
+It is drawn above the grid on the table's first page, or below it on the table's last page (`caption-side: bottom`, or
+HTML's `align=bottom`), and is not repeated on the pages between. The table's own border, padding and background lie
+around the grid alone. The caption's min-content width with its margins is the least width of the table, also of a table
+of a length or a percentage: a longer word widens the table and its columns share the width as any width above their
+maximum, while a longer text wraps at the table's width. Cases `tc-side`, `tc-wrap`, `tc-box`, `tc-width`,
+`tc-break-rows`, `tc-break-bottom`, both border models. In a tagged PDF the caption is the table's Caption element, its
+first kid also where it is drawn below the rows (ISO 32000-1 Table 337 allows the first or the last kid, and veraPDF's
+PDF/UA-1 rules 7.2-16 and 7.2-39 accept either and one at most); Chromium's print is untagged. Refused: a second caption
+(Chromium draws every caption element, `tc-two`), a block inside a caption, a width on a caption; and, by layout
+(`Documents.Layout.TableBreak`, at the table's line), a caption that does not fit on the page with the first body row
+below it whole (case `tc-break-first`: with collapsed borders Chromium leaves the caption alone at the page end and moves
+the grid, with separated borders it moves both, a rule the cases do not settle), and a caption below the table that does
+not fit below the last row.
+
+**Separated borders.** A table of `border-collapse: separate` (CSS 2.1 §17.6.1, the initial value and HTML's) is the same
+tracks box with `BoxStyle.BorderModel` `Separate` and its `border-spacing` (`BoxStyle.BorderSpacing`, horizontal then
+vertical), as Chromium prints it (cases `ts-*`, all equal): no grid lines; each cell keeps and paints its own border and
+padding, and a cell without a border takes no room for one; the table keeps its border, padding and background, painted
+as a block box paints them, the background under the whole border box, spacing included, under the cells; one spacing
+lies between two columns and between two rows, and between the outer cells and the table's padding edge, so a table is
+as wide as its columns, its border and padding and one spacing more than it has columns (`ts-plain`, `ts-table-border`,
+`ts-table-padding`, `ts-spacing-one`, `ts-spacing-two`); at width `100%` the columns share the width less all of that
+(`ts-width-100`); a cell over several columns or rows covers the spacing between them, and gives its columns its width
+less that spacing (`ts-span`); a thicker cell border widens its own column and heightens its own row (`ts-paint`). Refused:
+a spacing other than whole CSS pixels (Chromium's rounding of it is not measured), a border on a row or a row group of
+such a table (CSS 2.1 §17.6.1 gives them none; not measured). Over pages the table and each cell a break cuts are sliced as block boxes are (CSS Fragmentation 3
+§5.4), as Chromium prints them (cases `ts-break-*`, equal): a fragment that breaks runs to the page end with its side
+borders and background, without its bottom border and without the spacing below its last row; the next page starts
+with its first row (or the repeated header row) at the fragment's top, with no border, padding or spacing above it,
+and one spacing between the header and the first body row (`ts-break-rows`, `ts-break-header`); only the last fragment
+ends with the spacing, padding and border below the last row, and a last row that fits only without them moves to the
+next page (`ts-break-end`). A row cut inside itself slices each of its cells, and a cell whose content ended above the
+cut goes on, empty, as tall as the row, its bottom border on the next page (`ts-break-cut`); rows are cut and moved by
+the rules of collapsed tables (`ts-break-move`, `ts-break-first-row`); the cells of a cut row, aligned at the middle
+(the user agent's) or at the bottom, start at the top of their part on both pages, as in the collapsing model
+(`CutRowAlignment.TopOnEveryPage`; `ts-break-cut-middle`, `ts-break-cut-bottom`). Refused by layout with
+`Documents.Layout.TableBreak` at the table's source line, where no case shows a rule: a cell over several rows across
+the break (`ts-break-span`: Chromium starts the next row one spacing below the page's top while the spanning cell's
+rest ends higher); content sliced in a cell, or a row cut empty below a repeated header (`ts-break-image`: Chromium
+moves the image's row to the next page with its cells empty and draws the last fragment twice); a cut row with a cell
+aligned at the middle or bottom under `CutRowAlignment.RestAlignedInItsPart` (not measured in this model);
+`box-decoration-break: clone`; a page of the table that would pass the page end. The
+policies of `LayoutProfile` say what each means in this model. The code front-end keeps collapsed grid lines; the
+separated model is reached through HTML.
 
 **The page.** Without an `@page` rule the page is the caller's, as Chromium prints on the paper of the print call:
 `HtmlStyleOptions.Page`, by default A4 with no margins; media queries and viewport units see its page area, `size:
@@ -734,8 +981,9 @@ bottom row from right to left, the order Chromium paints them in whatever the or
 `pm-paint-order`); the row keeps that order and places each box by its place. Box generation makes
 the page as Chromium lays it out and prints it (`PageRules`, which cites the Chromium functions): the page area starts
 at the left and top margins rounded to a whole CSS pixel, half up, and its width and height are what the margins
-leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch (A4
-prints 594.96 × 841.92 pt). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
+leave, rounded up to a whole pixel; the sheet is the page size rounded to whole points, then to whole 1/300 inch computed in single precision (A4
+prints 594.96 × 841.92 pt; at the tie 75 pt prints 75.12, case `h-page-size-hundred-px`, and 201 pt 200.88, case
+`li-page-break`). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
 area reaches past the sheet (cases `h-page-size-*`, `h-page-area-*`, `h-page-margin-*`).
 
 **The status file.** `tools/reference/chromium/html-status.txt` has one line per reference case, written by
@@ -761,6 +1009,14 @@ through the whole HTML path unchanged and its pages are compared with every file
   a box it cuts over pages is compared in the engine's layout of the same boxes on one page as tall as the model allows,
   which must stay one page; the parts of a cut box are what `print.txt`, `lines.txt` and `words.txt` compare. A box
   named by its id is found by its place among the boxes of the role its tag gives on its source line.
+- `<case>.links.txt`, only for a print that has link annotations, the links read back by `links.py` (each annotation's
+  page, `/Rect` and target, in the order of the page's `/Annots`): the engine's link areas (`LinkArea`, each with the
+  target of its link) the same number in the same order, each on the same page, every edge within one CSS pixel
+  (`HtmlCases.LinkBound`, 0.75 pt: Chromium writes each edge at a whole pixel, the engine at its exact place), and the
+  same target: a URI compared whole; a link inside the document on the same page, the top of the engine's anchor within
+  one CSS pixel (`HtmlCases.DestinationBound`, 0.75 pt) of Chromium's top plus the page's top margin (Chromium writes a
+  destination in page-area coordinates, one margin above the target, at a whole pixel). A case without the file has no
+  link, and the engine must have none either.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole
@@ -783,7 +1039,8 @@ file does not load.
 A line reads `<case> equal`; `<case> refused <code> <property: value or element> at <line>:<column>` (the first
 refusal, counted as one by its exact code: the next packages' work list; for content layout cannot place on any page,
 `Documents.Layout.DoesNotFit`, the value is the room it had in points and the place only the line, the one a box
-keeps); `<case> listed <test>: <difference>` for a
+keeps; for an inline box layout does not draw where it stands, `Documents.Input.Unsupported.InlineBox`, the line and
+column of the element that made it); `<case> listed <test>: <difference>` for a
 difference of layout already listed and pinned by that test of the code front-end, which must stay the same
 difference; or `<case> open <difference>` for a known difference, engine against Chromium, that is not fixed yet (no
 pull request while one is open). The status is the line's second field. A case that lays out and differs otherwise
@@ -831,6 +1088,24 @@ Each is documented next to its code as well.
   footer group, so the engine draws the footer once, after the last body row (case `tf-pages`, listed;
   `HtmlListedDifferenceTests`). With `break-inside: auto` on the footer group Chromium does not repeat it either
   (case `tf-pages-auto`), and a table on one page prints the same in both (case `tf-after`).
+- **A link in a repeated table header row (HTML):** the engine writes the link's annotation from the header row's first
+  copy only; the copies on later pages are artifacts, which carry no annotation (ISO 14289-1 §7.18.1: an annotation is
+  tagged). Chromium 159 writes the link twice on every page that shows the header, at the same rectangle (case
+  `lk-header-row`, listed; `HtmlListedDifferenceTests`). The print is the same.
+- **A link around an inline box (HTML):** the engine writes one link area per line part of the link, over its text and
+  the boxes inside it: the link is one thing to click, described once, and a link annotation's `/Rect` may be any
+  rectangle (ISO 32000-1 §12.5.6.5). Chromium 159 writes one rectangle for the link's text before the box, one at the
+  box's border box and one for the text after it (case `ib-link-span-inside`: 51.75..81.75, 81.75..109.5 and
+  109.5..140.25 pt on the first line, where the engine's area is 51.504..140.18 pt; listed; `HtmlListedDifferenceTests`).
+  Each of the engine's areas is the rectangle around Chromium's of its line. The print is the same.
+- **An inline box that ends on a justified line (HTML):** Chromium 159 can end such a box 1/64 px past the page area,
+  and then shrinks the whole page as for content wider than the page area (above), by 112/112.015625 on a page area
+  112 px wide, lays it out one pixel wider and clips it at the page area. So every justified line of that page runs
+  0.75 pt past the line's end, each space up to 0.25 pt wider, and the box's end border is cut off. The engine justifies
+  each line to its end. Seen in one of ten measured paragraphs where a box goes on over a justified line or ends on
+  one (case `ib-break-justify`: "kk ll" in a box with 5 pt padding and a 1 px border, listed; `HtmlListedDifferenceTests`;
+  the cases `ib-justify-*` are equal). Which rounding of Chromium's makes the 1/64 px is not known, so the engine cannot
+  tell when it happens.
 - **What follows the row of an image sliced in a table (HTML):** Chromium lays an image taller than the page area out
   whole on the page where it starts and draws it in slices on the following pages. It ends the image's row on the next
   page, as tall as the rest of the image, also past the page end. In a row of two or more cells the next row starts
@@ -852,12 +1127,21 @@ Each is documented next to its code as well.
   never shown. The engine draws the header, then the slice below it (28.125 pt), so the piece shows whole and once, and
   what follows the slices in the table starts that much lower; where Chromium starts the next row in an empty part below
   the header on the page of the last slice, that row goes on 0.375 pt higher on the next page than the engine's, which
-  starts it there. That is the whole difference (cases `a4-header-image-360-image`, `a4-header-row-image-row`,
-  `a4-header-image-row-image`, `a4-header-two-image-rows`, listed; `HtmlListedDifferenceTests`). A writer does not want
-  a header over an image, so the engine does not copy it.
-- **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
-  without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
-  column without a width they are refused, as are widths on cells and column groups. A percent column is never
+  starts it there. The same on the page of the rest of a 228 pt image where the header is repeated because a cell of
+  the image's row beside it goes on (text, or the cell's empty part down to the row's end): the text beside the rest and
+  what follows the table start 16.125 pt lower in the engine, by the header's room, and in a cell of thirty lines one
+  line moves on to the next page (`a4-header-image-beside-lines`, `a4-header-image-228-beside-fit`, `-beside-line`,
+  `-beside-two-pages`, `-background-beside`, `a4-header-row-image-228-beside-line`; over the rest of an image in a
+  table nested in the cell, `a4-header-nested-image-228`). That is the whole difference (cases
+  `a4-header-image-360-image`, `a4-header-row-image-row`, `a4-header-image-row-image`, `a4-header-two-image-rows` and
+  those seven, listed; `HtmlListedDifferenceTests`). A writer does not want a header over an image, so the engine does
+  not copy it.
+- **Percent columns (HTML):** drawn in the fixed layout of a table of any width, alone or beside columns without a
+  width (cases `tp-*`), and in the automatic layout (cases `tpa-*`); in the fixed layout beside a column of a length,
+  at 100 % or more beside a column without a width, and on cells they are refused, and so are, in the automatic layout,
+  the combinations no case measured (Tables). A fill column is never narrower than its content's min-content width in a
+  table of a length either (`twd-table-narrow` b and d: 40 pt, which Chromium keeps, the content overflowing; listed,
+  `HtmlListedDifferenceTests`). A percent column is never
   narrower than its content's min-content width, where Chromium lets the content overflow (as for a fill column,
   `tl-fixed-fill-wide-word`). The percentages are of the table's width less its outer half borders; the engine and
   Chromium both take that half border from the widest line at the table's edge in any row, on every page (cases
@@ -870,10 +1154,13 @@ Each is documented next to its code as well.
   face prints in both (case `pm-inherit-family`).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
+- **A link around generated text:** Chromium writes two link annotations for such a link on a line, one around the
+  generated text and one around the element's own; the engine writes one, their union (case `mx-gen-link`, listed;
+  `HtmlListedDifferenceTests`). A link area is not printed.
 
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured
-  borders; a keep rule moves a break into an earlier table only between its rows, not to a cut inside a row (a cut
+  borders of table cells; a keep rule moves a break into an earlier table only between its rows, not to a cut inside a row (a cut
   depends on where the page ends, so a table offers no early break there); bottom padding and a bottom border taller
   than the page area overflow the page they start (as in Chromium) when the box ends the document, and are refused
   (`Documents.Layout.DoesNotFit`) when content follows them; a table cell whose content does not fit under
@@ -964,23 +1251,37 @@ Each is documented next to its code as well.
   through the HTML front-end too, `HtmlListedDifferenceTests`, where that height is the whole difference). Where a
   cell's lines all fit and only its bottom padding or grid line does not, at the top of a page the engine cuts the row
   as a last resort, where Chromium leaves the first page blank and prints the row whole on the next (cases
-  `fr-f4-padding-page-start`, listed through the HTML front-end too, where the engine's first page is Chromium's
-  second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
+  `fr-f4-padding-page-start`, and `a2-row-end-pad-past`, `a2-row-end-pad-past-after` with 12 pt of bottom padding that
+  passes Chromium's second page by 7.5 pt, listed through the HTML front-end too, where the engine's first page is
+  Chromium's second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
   after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
   line, where Chromium prints all its lines on that page and lets the padding overflow (cases
   `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`). Under
   `TableEndOverflow.ContinuesOnNextPage`, the HTML front-end's value, such a row and a row that continues from the page
   before keep their lines and their padding continues on the next page, as Chromium prints it, where every cell of the
-  row passes the page end with content on the page (cases `fr-continued-pad-past-*`,
-  `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). Still cut so: a row
-  with a cell that ends above the page end, whose whole bottom padding Chromium gives the next page (13.5 pt in
-  `-two-cells`), and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
+  row that passes the page end has content on the page that fits, beside cells that end above it (cases `fr-continued-pad-past-*`,
+  `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). With a row after
+  it, the line between the two rows is drawn there once, as the upper half that passed, and the next row keeps the room
+  of the lower half without drawing it (cases `fr-continued-pad-past-33-next-row`, with a 6 pt and a 2.25 pt line
+  `-line-6pt`, `-line-2-25pt`, and `-taller-than-page-next-row`). Still cut so: a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
   Padding that passes by more than the page area takes the whole next page and the rest the page after, as in Chromium;
   without a row after the table Chromium then starts what follows 0.75 pt below the page's top, over the padding, where
-  the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, open).
+  the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, listed through the HTML front-end,
+  `HtmlListedDifferenceTests`, where that start is the whole difference: text over a table is not what a writer wants,
+  as with what follows a sliced image).
+  Beside a cell whose bottom padding passes the page end, the cells of the row that ended above the page end give the
+  next page nothing: it continues only what passed. Chromium gives the next page, besides what passed, the largest
+  whole bottom padding of those cells, which had its room on the page before: empty space printed a second time, which
+  no writer wants. The line below the row lies, as Chromium prints it, 13.125 pt below the next page's top beside 12 pt
+  of padding (`fr-row-later-page-padding-overflows-two-cells`), 7.125 pt beside 6 pt (`-two-cells-pad-6`) and 19.125 pt
+  beside 6 and 18 pt (`-three-cells`), where the engine's lies 1.125 pt below it, as Chromium's does beside no such cell
+  (`fr-row-later-page-padding-overflows`); listed through the HTML front-end, `HtmlListedDifferenceTests`, where that
+  padding is the whole difference.
   Under a repeated header row, a cell whose box's bottom padding does not fit on a page with the box's content: where
-  the header is repeated, the engine leaves the header alone on the first page, where Chromium cuts the row below it
-  because its line fits and only its padding does not (`fr-header-pad-box-72`). Where the header is more than a quarter
+  the header is repeated, Chromium cuts the row below it because its line fits and only its padding does not, and so
+  does the HTML front-end (`EmptyRowParts.Allow`); on the next page Chromium repeats the header above the rest of the
+  padding, where the engine leaves it out (`fr-header-pad-box-72`); the code front-end leaves the header alone on the
+  first page (`EmptyRowParts.Avoid`). Where the header is more than a quarter
   of the page area, neither repeats it and both print the same pages (cases `fr-header-pad-box-20`,
   `fr-header-pad-box-36`, `fr-header-pad-grid-36`, `fr-header-pad-top-36`), as they do without the header row
   (`fr-header-pad-none-36`). Padding taller than the page area with content after it is refused (the limit above;
@@ -1131,9 +1432,11 @@ Each is documented next to its code as well.
   page 1, moves to page 2 whole). (v) With 13.875 pt of top padding, under `Allow` that page goes on without the outer
   header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and Chromium repeats
   the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`,
-  `a2-row-end-nested-under-header-13875`): below the header the engine starts the inner table 0.375 pt higher than
-  Chromium (its top line at 28.125, Chromium's at 28.5), so the row's ten lines fit there with only its line below past
-  the page end, and such a row is not cut. With 9 lines below 12 pt of top padding the
+  `a2-row-end-nested-under-header-13875`). Below the header both lay the inner table out in one place (its line laid
+  out at 28.125, which Chromium prints at 28.5, the nearest whole pixel), the row's lines from 42.375: 149.625 pt of
+  room for ten lines of 15 pt, which do not fit by 0.375; Chromium cuts the row there (widows 2: `x0`..`x7`), and the
+  engine finds no cut below the header that is not a last resort and goes on without it (with 13.125 or 14.25 pt it
+  keeps the header). With 9 lines below 12 pt of top padding the
   rest of the inner table fits below the repeated header but for the outer table's bottom line: Chromium repeats the
   header and lets that line pass the page end (and draws it again on a third page that shows nothing else), and the
   engine goes on without the header under every profile (`H a0`..`a9`, `x0`..`x8 after`;
@@ -1195,10 +1498,15 @@ Each is documented next to its code as well.
   below it and draws the row's cells empty down to the page end, their side lines and no line below them
   (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-tall-line`, `a4-header-row-image-row`, and so every
   `a4-header-*` case); a header that does not repeat ends its page alone (`a4-header-unrepeated-image-228`). Under
-  `EmptyRowParts.Allow`, the HTML front-end's value, the engine cuts the row there too, where the row's cells draw
-  nothing on that page; under `Avoid`, the code front-end's default, that page holds the header alone, and so it does
-  under `Allow` where a cell of the row would draw something on it (`fr-header-pad-box-72` above, where Chromium cuts
-  the row; with an image beside text, not measured). The cut row's cells then go on below the header on the next page,
+  `EmptyRowParts.Allow`, the HTML front-end's value, the engine cuts the row there too; under `Avoid`, the code
+  front-end's default, that page holds the header alone. Chromium cuts it so also where another cell of the row draws
+  something on that page: the text beside the image as far as the page reaches, an empty cell's background, the image's
+  own cell's background (`a4-header-image-228-beside-fit`, `-beside-two-pages`, `-beside-line`, `-background-beside`,
+  `-background`, `a4-header-image-beside-lines`, `a4-header-row-image-228-beside-line`), and the engine does too. The
+  row has then moved on once: on the next page the image starts in its cell's part below the header, beside the rest of
+  the text, and is not moved on again. One level down the same: a table nested in the cut cell starts on the page of
+  the cut, its top line and its own row cut empty below it, as at the top of a page, and its image starts on the next
+  page (`a4-header-nested-image-228`, three pages). The cut row's cells then go on below the header on the next page,
   where the part of a cell that continues starts at the centre of the grid line below the header, as in Chromium: below
   a 0.75 pt line at 28.125 pt, half a pixel below a whole one, which Chromium paints at the next whole pixel, 28.5 pt
   (`a4-header-image-228`; "c10" at 40.125 pt, painted at 40.5 pt, `a4-header-cut-row-image-row`; below a 2.25 pt line
@@ -1210,14 +1518,18 @@ Each is documented next to its code as well.
   its half of the grid line below it, so the line is centred on the rest's end (a 0.75 pt line at 75.75–76.5 pt below a
   rest that ends at 76.125 pt, `a4-header-image-228`; a 2.25 pt line at 75–77.25 pt, `a4-header-image-228-line3-below`;
   the text after the table that much higher, `a4-header-image-row`, `a4-header-image-174`, `-180`; in a cell with a
-  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, both open for
-  other reasons). A part that lays content out on
+  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, listed with
+  the header over a slice). Beside a cell of the same row that goes on with nothing left, that cell's part keeps its half, so the
+  row ends half the line below the rest (the line at 76.5–77.25 pt, `a4-header-image-228-beside-line`,
+  `-beside-fit`, `-background-beside`; 60–60.75 pt below a rest that ends at 60 pt, `a4-image-in-cell`); a cell that
+  spans into the row from an earlier one does not keep it (`a4-header-empty-rowspan-line-image`). A part that lays content out on
   the page keeps its half (`a4-header-cut-text-row`). Under `SliceRestEnd.AtLineCentre`, the HTML front-end's value,
   the engine does the same (`Tracks/TableSegments.cs`, `AtRestEnd`; `SliceRestEndTests`); under `InsideCell`, the code
   front-end's default, the part holds its half as every cell does, and the line starts where the rest ends.
   On the later pages the policy `RepeatedHeaderRows` decides. Chromium lays the piece out whole below the header of the
   page where it starts, also a piece no taller than the page area, and lets it pass the page end; it repeats the header
-  on every later page where the table still lays content out (a row still to come, a cell beside the piece that goes on),
+  on every later page where the table still lays content out (a row still to come, a cell of the piece's row beside it
+  that goes on, also an empty one to the row's end, `a4-header-image-228-beside-line`),
   and not on a page that only shows the rest of content laid out before: there the rest starts at the top of the page
   area (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-row-image-228`, `a4-header-image-row`,
   `a4-header-tall-line`, `a4-header-image-170`, `-174`, `-180`). Under `WhereContentIsLaidOut`, the HTML front-end's
@@ -1227,8 +1539,6 @@ Each is documented next to its code as well.
   the page area goes on without the header. Under both values, on a page where the header is repeated over a slice,
   Chromium still moves the content up a whole page area and draws the header over 16.5 pt of it, which are never shown;
   the engine draws the header above the slice, the slice below it (Known limits, "A repeated header row over a slice").
-  With text beside the image (`a4-header-image-beside-lines`, open) the engine also differs on the first page: it leaves
-  the header alone where the cut row's other cell would draw text, where Chromium starts the row.
   A piece that fits the page area alone, but not with the insets around it in its table cell (the cell's padding and
   grid lines), is sliced too: the test for slicing is "the piece with its insets does not fit a page", not "the piece is
   taller than the page area" (`Tracks/TableSegments.cs`, `SlicedAboveBottomInset`; `SliceAboveInsetTests`, cases
@@ -1266,8 +1576,11 @@ Each is documented next to its code as well.
   ones (`hb-unicode.hh`, `_hb_modified_combining_class`: Hebrew, Arabic shadda, Telugu, Thai, Tibetan), so marks of
   those scripts can come in another order; after a reorder that then composes, the clusters (which glyph carries which
   characters) differ while glyphs and positions agree; Unicode variation sequences (cmap format 14) are not read, the
-  default glyph is drawn; the fallbacks for a missing space and for U+2011 are not made (the text is refused with
-  `GlyphMissing`) (`Typesetting/Unicode/Normalization.cs`). The variation selector and the two fallbacks are pinned
+  default glyph is drawn; the fallback for a missing space is not made (the text is refused with `GlyphMissing`;
+  Chromium draws such a space from a font of the system, case `gm-spaces-roboto`), while U+2011 in a font without it is
+  drawn with the font's U+2010 glyph, as HarfBuzz does and Chromium prints (case `gm-nbhyphen-lato`; a font without
+  U+2010 too has it refused, case `gm-nbhyphen-theano`) (`Typesetting/Unicode/Normalization.cs`, `Typesetting/Shaper.cs`
+  `StandIn`). The variation selector and the two fallbacks are pinned
   against HarfBuzz (`NormalizationReferenceTests`); the enclosing mark, the combining classes, the clusters after a
   reorder and the variation sequences need a font the family's tests do not have, and are not pinned. A zero width joiner between a base and a mark: the shaper
   skips it and attaches the mark; HarfBuzz applies `mark` with manual joiners and leaves the mark unattached. In the
@@ -1293,9 +1606,12 @@ Each is documented next to its code as well.
   return to be shown as visible glyphs; for U+000B, U+000C and U+0085 the two rules conflict, and the engine follows
   §5.5.) A
   soft hyphen (U+00AD) shows a hyphen only where the line breaks. Default-ignorable characters, such as U+2060 WORD
-  JOINER and the zero-width space, take no space and need no glyph. A character the font has no glyph for is the
-  error `GlyphMissing`; there is no fallback font and no substitute character: U+2011 NON-BREAKING HYPHEN, which Lato
-  lacks, is refused where HarfBuzz would draw the ordinary hyphen. A hyphen before a letter that follows a space or an
+  JOINER and the zero-width space, take no space and need no glyph (`Shaper.NeedsNoGlyph`). A character the font has
+  no glyph for is the error `GlyphMissing`; there is no fallback font and no substitute character, except U+2011
+  NON-BREAKING HYPHEN, drawn with the font's U+2010 glyph where the font has that one (above). The HTML front-end
+  refuses every such character of a document before layout, each pair of face and character once, at the character's
+  line and column (a page-margin box's: its `content` declaration), up to the limit in "Bounded work"; the message names
+  the face, the `font-family` list and a later family of that list that has the character. A hyphen before a letter that follows a space or an
   image in the line keeps the letter on its line (UAX #14 LB20a: "( sot | BK | CR | LF | NL | SP | ZW | CB | GL ) ( HY |
   HH ) × ( AL | HL )"); Chromium breaks after such a hyphen all the same (case `ii-hyphen`,
   `InlineImageTests.A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it`).
@@ -1310,6 +1626,11 @@ Each is documented next to its code as well.
 - **Input size:** elements nest at most 64 deep (`Fluent/InputLimits.cs`; `Documents.Input.Invalid.TooDeep`), which
   keeps every recursive step of the engine far from the stack limit; no length is longer than 14 400 pt
   (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
+- **Separated borders:** a table with separated borders (`BoxStyle.BorderModel` `Separate`) breaks between rows and
+  inside rows, as Chromium prints it; it is refused (`Documents.Layout.TableBreak`) where it breaks with a cell over
+  several rows across the break, with content sliced in a cell, with `box-decoration-break: clone`, or past the page end (cases `ts-break-span`,
+  `ts-break-image`; the others not measured). The code front-end has no separated model (its tables keep collapsed grid
+  lines). Measured with spacings of whole CSS pixels only, which is what the HTML front-end draws.
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
   the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the
   lower half starting the next (as Chromium 159 does, cases `mf4-line-*`, `a2-row-break-line-6pt`). Chromium puts both
@@ -1353,10 +1674,27 @@ Each is documented next to its code as well.
 - **PDF:** classic cross-reference table, no object streams; flat page tree; name and number trees as one node; one
   text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
   replacement text (`/ActualText`) where it is drawn.
-- **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
-  nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
-  language, no Span, Link, List, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
-  marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above); empty structure elements are
+- **Tagging and PDF/UA:** a header cell's `/Scope` is Column, Row or Both, from its role; the code front-end makes header
+  cells only in header rows (Column), the HTML front-end by THE RULE FOR A HEADER CELL'S SCOPE IN HTML (Row or Column,
+  never Both); no Headers/IDs for nested headers (HTML's `headers` attribute is not read); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; the language of a
+  box or an inline group is written as `/Lang` on its structure element where it differs from its parent's (the
+  document's is in the catalog), never as marked content; an unknown language (HTML `lang=""`) cannot be written and is
+  refused, as veraPDF rule 7.2-29 asks every PDF/UA-1 `/Lang` to be a tag (its PDF/A-3 rule 6.7.4-1 allows the empty
+  one); lists are `L` with `ListNumbering`, `LI`, `Lbl`, `LBody` (ISO 32000-1 §14.8.4.3.3, §14.8.5.5; from HTML,
+  items outside a list element are an `L` of their own); a Caption only for a table; no Note, Formula or TOC
+  structure elements, no bookmarks; Link elements come from inline groups, which the code front-end (`Link`) and the
+  HTML front-end (`a` with `href`) make, and Span elements from span groups, which the HTML front-end makes only around an
+  inline element a link leads to or whose language differs from its parent's, and the code front-end around a span with
+  a language; a link inside the document leads to a box or an inline group (an HTML image, and an inline element that draws nothing, is no target, and a link to it is
+  refused), never to a
+  named destination (no `/Dests`, no names in the file); a link
+  inside an artifact (a page header or footer, a repeated copy of a table's header rows, a later slice of a line taller
+  than the page) gets no annotation and no Link element, its text is only drawn, while the first, real occurrence of a
+  header row keeps its links (Chromium 159 writes such a link on every page, twice: case `lk-header-row`, a listed
+  difference); HTML's links: a host beyond ASCII is refused (no IDNA), dot segments of an absolute URL are written as
+  given, and a percent-encoded dot (`%2e`) is not read as a dot when a relative URL is resolved; ActualText only on the
+  marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above) and on the `Lbl` structure element of a drawn
+  bullet (its character, U+2022, U+25E6 or U+25AA); empty structure elements are
   written for empty cells; the XMP packet has no padding; everything in page headers and footers is an artifact.
   Figures and tables wholly on one page carry their `/BBox` (ISO 32000-1 Table 344); a table that continues on
   another page has none, and no other layout attributes are written.

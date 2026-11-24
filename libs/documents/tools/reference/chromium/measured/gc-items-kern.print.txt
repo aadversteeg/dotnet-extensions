@@ -1,0 +1,24 @@
+page 1 300.000 300.000
+word 1 12.000 33.782 22.500 10.500 Kern #000000 Lato-Regular
+word 1 36.118 56.316 22.500 10.500 AVA #000000 Lato-Regular
+word 1 58.652 72.632 22.500 10.500 tail #000000 Lato-Regular
+word 1 12.000 29.787 41.250 10.500 Attr #000000 Lato-Regular
+word 1 31.903 52.097 41.250 10.500 AVA #000000 Lato-Regular
+word 1 54.433 68.414 41.250 10.500 tail #000000 Lato-Regular
+word 1 12.000 40.271 60.000 10.500 Count #000000 Lato-Regular
+word 1 42.609 62.819 60.000 10.500 AVA #000000 Lato-Regular
+word 1 65.156 79.136 60.000 10.500 tail #000000 Lato-Regular
+word 1 12.000 30.590 78.750 10.500 Liga #000000 Lato-Regular
+word 1 33.278 45.309 78.750 10.500 fifi #000000 Lato-Regular
+word 1 47.992 65.275 78.750 10.500 end #000000 Lato-Regular
+word 1 12.000 39.148 97.500 10.500 Space #000000 Lato-Regular
+word 1 41.836 82.108 97.500 10.500 between #000000 Lato-Regular
+word 1 84.801 102.084 97.500 10.500 end #000000 Lato-Regular
+word 1 12.000 37.956 116.250 10.500 Many #000000 Lato-Regular
+word 1 40.381 63.739 116.250 10.500 small #000000 Lato-Regular
+word 1 66.427 91.411 116.250 10.500 items #000000 Lato-Regular
+word 1 94.106 102.485 116.250 10.500 in #000000 Lato-Regular
+word 1 105.173 122.529 116.250 10.500 one #000000 Lato-Regular
+word 1 125.217 141.618 116.250 10.500 line #000000 Lato-Regular
+word 1 144.306 153.830 116.250 10.500 of #000000 Lato-Regular
+word 1 156.318 174.530 116.250 10.500 text #000000 Lato-Regular

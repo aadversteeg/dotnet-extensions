@@ -46,12 +46,14 @@ public static class FragmentText
             BoxFragment box =>
                 [$"{indent}box {box.Box.Id} {box.Box.Role} {position}{BoxExtras(box)}", .. box.Children.SelectMany(child => FragmentLines(child, depth + 1))],
             LineFragment line =>
-                [$"{indent}line {position}", .. line.Children.SelectMany(child => FragmentLines(child, depth + 1))],
+                [$"{indent}line {position}", .. line.Children.SelectMany(child => FragmentLines(child, depth + 1)),
+                    .. line.Groups.Select(part => $"{indent}  group {part.Group.Id} {part.Group.Role?.StandardStructureType ?? "none"} area={part.Area} children={part.First}+{part.Count}{(part.Box is { } box ? $" box={box}" : string.Empty)}")],
             TextFragment text =>
                 [$"{indent}text {text.Run.Id} {text.Font} {text.Run.Style.FontSize} {position} ascent={InvariantNumber.Format(text.Ascent)} "
                     + QuotedText.Quote(string.Concat(text.Glyphs.Select(glyph => glyph.Text)))],
             ImageFragment image => [$"{indent}image {image.Image.Id} {position} {image.Image.Image.Describe()}"],
             RuleFragment rule => [$"{indent}rule {position} {rule.Color}"],
+            MarkerFragment marker => [$"{indent}marker {marker.Symbol.Id} {marker.Symbol.Shape.ToString().ToLowerInvariant()} {position} {marker.Symbol.Style.Color}"],
             SliceFragment slice =>
                 [$"{indent}slice {position}{(slice.IsContinuation ? " continued" : string.Empty)}", .. FragmentLines(slice.Content, depth + 1)],
             _ => [$"{indent}unknown {placed.Fragment.GetType().Name} {position}"],

@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A width on a cell over two columns: a, automatic layout, 150pt, first row; b, fixed layout (table 250pt), separated, 150pt, first row; c, automatic, separated, 150pt, second row. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<tr><td id="span-a" style="width: 150pt" colspan="2">span</td></tr>
+<tr><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s f" style="width: 250pt">
+<tr><td id="span-b" style="width: 150pt" colspan="2">span</td></tr>
+<tr><td id="one-b">one</td><td>two</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="s">
+<tr><td id="one-c">one</td><td>two</td></tr>
+<tr><td id="span-c" style="width: 150pt" colspan="2">span</td></tr>
+</table>
+<p>after</p>
+</body></html>

@@ -191,7 +191,7 @@ internal static class DeclarationPreparer
             }
             else
             {
-                whenApplied.Add(new Notice(prepared, Diagnostic(CssErrorCodes.Unsupported.Property, $"The property '{CssSerializer.Shortened(declaration.Name)}' is not supported.", prepared)));
+                whenApplied.Add(new Notice(prepared, Diagnostic(CssErrorCodes.Unsupported.Property, $"The property '{CssSerializer.Shortened(declaration.Name)}' is not supported{(name == "string-set" ? RunningHeaders : string.Empty)}.", prepared)));
             }
 
             return;
@@ -271,7 +271,8 @@ internal static class DeclarationPreparer
             }
             else
             {
-                entries.Add(new Entry(longhand, null, new RefusedEntry(CssErrorCodes.Unsupported.Value, NotReadable(prepared, parsed.Problem)), prepared));
+                var running = longhand.Name == "position" && ContainsFunction(declaration.Value, "running") ? RunningHeaders : string.Empty;
+                entries.Add(new Entry(longhand, null, new RefusedEntry(CssErrorCodes.Unsupported.Value, NotReadable(prepared, parsed.Problem) + running), prepared));
             }
 
             return;
@@ -295,6 +296,11 @@ internal static class DeclarationPreparer
             AddAll(new RefusedEntry(CssErrorCodes.Unsupported.Value, NotReadable(prepared, expanded.Problem)));
         }
     }
+
+    /// <summary>What a refusal of a running header adds (CSS Generated Content for Paged Media: <c>string-set</c>,
+    /// <c>string()</c>, <c>running()</c>, <c>element()</c>): Chromium 159 does not print one either (measured:
+    /// <c>string-set</c> is unknown to it, <c>position: running()</c> is invalid, so the element stays in the flow).</summary>
+    public const string RunningHeaders = ": running headers are not printed by a browser either; write the header text in the margin box's content";
 
     /// <summary>The one answer for a value the engine's grammar does not read (above CSS Syntax 3): the engine cannot
     /// tell CSS a browser drops from valid CSS beyond this profile (docs/html-css-profile.md), so it refuses both, in the

@@ -1,0 +1,4 @@
+1 101.250 18.000 181.500 33.000 uri https://example.com/long
+1 18.000 28.500 111.000 45.750 uri https://example.com/long
+1 108.000 49.500 171.750 62.250 uri https://example.com/plain
+1 18.000 62.250 164.250 75.000 uri https://example.com/plain

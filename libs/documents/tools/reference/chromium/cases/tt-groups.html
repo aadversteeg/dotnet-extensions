@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- text-transform across the edge of an inline group at 10.5 pt: capitalize where a plain span, a link, a span with a language, a span with a background, with padding, with a border, with a margin and a sup start inside a word, and where such an element ends inside one (the sup in a paragraph of its own: on a line raised by it, the text of a box is drawn at a whole pixel and the text beside it is not, which the read-back joins as one word); generated text before an element's first letter and a transform on generated text alone; uppercase and lowercase across the same edges. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } p { margin: 0 0 6pt 0; } .c { text-transform: capitalize; } .u { text-transform: uppercase; } .l { text-transform: lowercase; } .y { background-color: #ffd700; } .p { padding: 0 2pt; } .b { border-left: 0.75pt solid #0000ff; } .m { margin-left: 2pt; } .g::before { content: "xy"; } .t::before { content: "pre"; text-transform: uppercase; }</style></head><body>
+<p class="c">plain wo<span>rd</span> link wo<a href="https://example.com/">rd</a> lang wo<span lang="nl">rd</span></p>
+<p class="c">back wo<span class="y">rd</span> pad wo<span class="p">rd</span> edge wo<span class="b">rd</span></p>
+<p class="c">margin wo<span class="m">rd</span> out <span class="y">wo</span>rd</p>
+<p class="c">sup wo<sup>rd</sup> end</p>
+<p class="c">out <a href="https://example.com/">wo</a>rd and <span class="p">wo</span>rd and <span lang="nl">wo</span>rd</p>
+<p class="c">gen <span class="g">ab</span> <span class="g" lang="nl">cd</span> <a class="g" href="https://example.com/">ef</a> pre <span class="t">gh</span></p>
+<p class="u">upper wo<a href="https://example.com/">rd</a> wo<span class="y">rd</span> wo<span lang="nl">rd</span> <span class="t">ij</span></p>
+<p class="l">LOWER ΟΔΟ<span class="y">Σ</span> ΟΔΟ<a href="https://example.com/">Σ</a>. WO<span lang="nl">RD</span> W<span class="p">ORD</span></p>
+</body></html>

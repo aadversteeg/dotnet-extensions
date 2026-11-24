@@ -12,7 +12,7 @@ reference is Chromium 159; see `docs/architecture.md`, "HTML/CSS front-end".
 
 Longhands with every value the engine supports. A value CSS defines that is not listed is refused. So is a value that
 does not match the engine's grammar of a known property: a typing error such as `color: 12px`, or valid CSS beyond this
-profile such as `vertical-align: 5px`. The engine cannot tell the two apart, and a browser drops the first and uses the
+profile such as `vertical-align: -webkit-baseline-middle`. The engine cannot tell the two apart, and a browser drops the first and uses the
 second, so both get the one answer "not valid or not supported in this profile". The same holds for a selector or media
 query that does not parse and an unknown at-rule. Dropped with a warning, as in a browser, is only what CSS Syntax 3
 recovers from (an unclosed block, a declaration without a colon), a top-level `!` other than `!important`, a rule in a
@@ -41,20 +41,26 @@ names nothing.
 | `break-after` | no | `auto` | `auto \| avoid \| avoid-page \| page` | CSS Fragmentation 3 §3.1 |
 | `break-before` | no | `auto` | `auto \| avoid \| avoid-page \| page` | CSS Fragmentation 3 §3.1 |
 | `break-inside` | no | `auto` | `auto \| avoid \| avoid-page` | CSS Fragmentation 3 §3.2 |
-| `caption-side` | yes | `top` | `top` | CSS 2.1 §17.4.1 |
+| `caption-side` | yes | `top` | `top \| bottom` | CSS 2.1 §17.4.1 |
 | `color` | yes | `rgb(0, 0, 0)` | `<color>` | CSS Color 4 §3.1; the initial value is black (HTML Standard §15.3.4) |
 | `color-scheme` | yes | `normal` | `normal \| light` | CSS Color Adjust 1 §2.1 |
+| `counter-increment` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.3 |
+| `counter-reset` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.2 |
+| `counter-set` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.4 |
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
-| `empty-cells` | yes | `show` | `show` | CSS 2.1 §17.6.1.1 |
+| `empty-cells` | yes | `show` | `show \| hide` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
+| `font-feature-settings` | yes | `normal` | `normal \| <feature-tag-value># (the tags "lnum", "onum", "pnum", "tnum" and "ordn", each with 0, 1, on or off)` | CSS Fonts 4 §7.1 |
 | `font-kerning` | yes | `auto` | `auto \| normal` | CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured) |
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |
 | `font-style` | yes | `normal` | `normal \| italic` | CSS Fonts 4 §2.4 |
 | `font-synthesis-small-caps` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
-| `font-synthesis-style` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
-| `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
+| `font-synthesis-style` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: under none the nearest face is taken plainly, under auto a missing face is an error) |
+| `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: under none the nearest face is taken plainly, under auto a missing face is an error) |
+| `font-variant-numeric` | yes | `normal` | `normal \| [ lining-nums \| oldstyle-nums ] \|\| [ proportional-nums \| tabular-nums ] \|\| ordinal` | CSS Fonts 4 §6.7 |
 | `font-weight` | yes | `400` | `normal \| bold \| bolder \| lighter \| <number [1,1000]>` | CSS Fonts 4 §2.2 |
 | `height` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
+| `letter-spacing` | yes | `normal` | `normal \| <length>` | CSS Text 3 §7.2 |
 | `line-height` | yes | `normal` | `normal \| <number [0,∞]> \| <length-percentage [0,∞]>` | CSS Inline 3 §5.1; CSS 2.1 §10.8.1 |
 | `list-style-position` | yes | `outside` | `outside` | CSS Lists 3 §3.5 |
 | `list-style-type` | yes | `disc` | `disc \| circle \| square \| decimal \| decimal-leading-zero \| lower-roman \| upper-roman \| lower-alpha \| upper-alpha \| lower-latin \| upper-latin \| none` | CSS Lists 3 §3.3; CSS Counter Styles 3 §6 |
@@ -83,22 +89,59 @@ names nothing.
 | `text-decoration-line` | no | `none` | `none \| [ underline \|\| overline \|\| line-through ]` | CSS Text Decoration 3 §2.1 |
 | `text-decoration-skip-ink` | yes | `auto` | `auto \| none` | CSS Text Decoration 4 §2.10.4 |
 | `text-decoration-style` | no | `solid` | `solid` | CSS Text Decoration 3 §2.2 |
+| `text-transform` | yes | `none` | `none \| capitalize \| uppercase \| lowercase` | CSS Text 3 §2.1 |
 | `text-wrap-mode` | yes | `wrap` | `wrap \| nowrap` | CSS Text 4 §6.1 |
 | `unicode-bidi` | no | `normal` | `normal \| isolate` | CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text |
-| `vertical-align` | no | `baseline` | `baseline \| top \| middle \| bottom` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
+| `vertical-align` | no | `baseline` | `baseline \| sub \| super \| top \| middle \| bottom \| <length-percentage>` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
 | `white-space-collapse` | yes | `collapse` | `collapse \| preserve \| preserve-breaks \| break-spaces` | CSS Text 4 §3.1 |
 | `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
+| `word-spacing` | yes | `0pt` | `normal \| <length>` | CSS Text 4 §7.1 |
 
 `overflow-x` and `overflow-y`: `hidden` on one axis while the other stays `visible` is refused, since Chromium
 computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
 so `clip` beside `visible` is accepted and kept, as in Chromium.
 
-`width` on a table part: a table is drawn at `auto` or `100%`; a `col` takes a length, or a percentage in the fixed
-layout (`table-layout: fixed` on a table of width `100%`) when every other column is a percentage or has no width
-and, beside a column without a width, the percentages add up to less than 100. A percentage on a `col` of the
-automatic layout, a width on a cell (`td`, `th`) and on a `colgroup` are refused. A `tfoot` is drawn after the body
-rows, once; Chromium repeats a small one on every page of a table that breaks (Known limits).
+`border-style: inset` and `outset` on a block box: the top and left sides are drawn darker and the bottom and right
+sides lighter for `inset`, the other way round for `outset`, in two colours taken from the border colour as Chromium
+takes them (by the colour's luminance: a dark colour gets two lighter shades, a light one its darker shade and
+itself, any other a darker and a lighter shade; `currentcolor` gives the shades of #eeeeee whatever the text colour);
+where two sides of different colours meet, the corner is split on the line from its outer to its inner point (cases
+`bs-*`, `hr-*`). Refused: on a table or a part of one, whose lines are drawn solid, and inset beside outset sides on
+one box. Solid sides of more than one colour on a block box are split at the corners in the same way (cases
+`bs-solid-*`); a solid border of one colour is drawn as four rectangles. `hr` is drawn with its default style and
+its `color`, `noshade`, `size`, `width` and `align` attributes:
+`overflow: hidden` is accepted on a block box with no children and a border, padding or height that is not 0 at its
+top or bottom, where it clips nothing.
+
+`width` on a table part: a table is drawn at `auto`, a length or a percentage of its container (its border box; never
+narrower than its content needs, and refused where wider than its container); a cell (`td`, `th`) takes a length, of
+its content box, which its column takes: the widest in the automatic layout, the first row's in the fixed layout,
+where a `col` length wins. A `col`, a cell and a `colgroup` without `col` elements (for each column of its span) take a
+length or a percentage. In the automatic layout a percentage is of the width the columns share, and a table of width
+`auto` grows until its columns have their percentages and the others their widest content; in the fixed layout a
+percentage on a `col` when every other column is a percentage or has no width and, beside a column without a width,
+the percentages add up to less than 100. Refused: in the automatic layout percentages of 100 or more beside other
+columns, a percentage beside another width in one column, a percentage on a cell over several columns and a cell over
+several columns beside a percent column; in the fixed layout a percentage on a cell, a width on a cell over several
+columns and a cell width beside percent columns; a width on a `colgroup` with `col` elements. In the fixed layout a
+column without a width is never narrower than its content, where Chromium lets the content overflow (Known limits). A
+`tfoot` is drawn after the body rows, once; Chromium repeats a small one on every page of a table that breaks (Known
+limits).
+
+`border-collapse`: both models are drawn. A table with separated borders (`separate`, the initial value) keeps its
+border, padding and background, each cell paints its own border, and `border-spacing` lies between the cells and
+around them, in whole CSS pixels (another spacing is refused). Such a table breaks over pages as Chromium prints it,
+sliced: between rows and inside rows, the cells of a cut row at the top of each part whatever their alignment, with a
+repeated header. It is refused at the table's line where it breaks with a cell over several rows across the break,
+with content sliced in a cell, or with `box-decoration-break: clone`. A border on a row or a row group of such a table
+is refused; put borders on the cells. In both models the background of a row, a row group, a column or a column group
+is drawn on the cells of it that have none of their own (the row's first, then the group's, the column's, the column
+group's), as Chromium prints it; a table's background is drawn in both models, under its border box.
+
+`vertical-align: baseline` on a table cell, the initial value, is drawn as `top`, as Chromium prints it: each cell's
+first line at its own content top, whatever the font sizes and paddings in the row (cases `tv-baseline-sizes`,
+`tv-baseline-height`). A browser window aligns the cells' first baselines instead.
 
 `width`, `min-width`, `max-width` and `box-sizing` on a block box: a length or a percentage of the containing block's
 width, for the content box or the border box; `max-width` limits the width and `min-width` wins over both. The
@@ -127,8 +170,8 @@ What the layout always does: a declaration that sets one of these to its initial
 the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,
 which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and
 on any other element stage 4 applies the ratio or refuses it. A zero length where the initial value is a keyword or
-a percentage is the same value and accepted too: `letter-spacing: 0` (computed normal), `background-position-x: 0`
-and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other value is refused.
+a percentage is the same value and accepted too: `background-position-x: 0` and `background-position-y: 0`
+(computed 0px, as Chromium keeps it). Any other value is refused.
 
 | Property | Initial | Accepted | Defined in |
 | --- | --- | --- | --- |
@@ -156,13 +199,9 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `contain` | `none` | `none` | CSS Containment 2 §2 |
 | `content` | `normal` | `normal` | CSS Generated Content 3 §1 |
 | `content-visibility` | `visible` | `visible` | CSS Containment 2 §4 |
-| `counter-increment` | `none` | `none` | CSS Lists 3 §4.3 |
-| `counter-reset` | `none` | `none` | CSS Lists 3 §4.2 |
-| `counter-set` | `none` | `none` | CSS Lists 3 §4.4 |
 | `direction` | `ltr` | `ltr` | CSS Writing Modes 4 §2.1 |
 | `filter` | `none` | `none` | Filter Effects 1 §5 |
 | `float` | `none` | `none` | CSS 2.1 §9.5.1 |
-| `font-feature-settings` | `normal` | `normal` | CSS Fonts 4 §7.1 |
 | `font-language-override` | `normal` | `normal` | CSS Fonts 4 §7.4 |
 | `font-optical-sizing` | `auto` | `auto` | CSS Fonts 4 §2.6 |
 | `font-size-adjust` | `none` | `none` | CSS Fonts 5 §2.1 |
@@ -172,14 +211,12 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `font-variant-east-asian` | `normal` | `normal` | CSS Fonts 4 §6.10 |
 | `font-variant-emoji` | `normal` | `normal` | CSS Fonts 4 §6.11 |
 | `font-variant-ligatures` | `normal` | `normal` | CSS Fonts 4 §6.4 |
-| `font-variant-numeric` | `normal` | `normal` | CSS Fonts 4 §6.7 |
 | `font-variant-position` | `normal` | `normal` | CSS Fonts 4 §6.5 |
 | `font-variation-settings` | `normal` | `normal` | CSS Fonts 4 §7.2 |
 | `hyphens` | `manual` | `manual` | CSS Text 3 §5.4 |
 | `image-rendering` | `auto` | `auto` | CSS Images 3 §5.3 |
 | `isolation` | `auto` | `auto` | Compositing 1 §3.3 |
 | `left` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
-| `letter-spacing` | `normal` | `normal` | CSS Text 3 §7.2 |
 | `line-break` | `auto` | `auto` | CSS Text 3 §5.3 |
 | `list-style-image` | `none` | `none` | CSS Lists 3 §3.4 |
 | `mix-blend-mode` | `normal` | `normal` | Compositing 1 §3.2 |
@@ -200,7 +237,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `text-overflow` | `clip` | `clip` | CSS Overflow 3 §5.1 |
 | `text-rendering` | `auto` | `auto` | SVG 2 §11.9 |
 | `text-shadow` | `none` | `none` | CSS Text Decoration 3 §4 |
-| `text-transform` | `none` | `none` | CSS Text 3 §2.1 |
 | `text-underline-offset` | `auto` | `auto` | CSS Text Decoration 4 §2.8 |
 | `text-underline-position` | `auto` | `auto` | CSS Text Decoration 3 §2.5 |
 | `text-wrap-style` | `auto` | `auto` | CSS Text 4 §6.2 |
@@ -208,7 +244,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `transform` | `none` | `none` | CSS Transforms 1 §5 |
 | `visibility` | `visible` | `visible` | CSS Display 3 §4 |
 | `word-break` | `normal` | `normal` | CSS Text 3 §5.2 |
-| `word-spacing` | `0pt` | `normal \| 0` | CSS Text 4 §7.1 |
 | `writing-mode` | `horizontal-tb` | `horizontal-tb` | CSS Writing Modes 4 §3.1 |
 | `z-index` | `auto` | `auto` | CSS 2.1 §9.9.1 |
 
@@ -456,7 +491,9 @@ selector & (CSS Nesting 1). Pseudo-classes:
 | `:window-inactive` | never matches (ignored by rule) | window focus |
 | `:xr-overlay` | never matches (ignored by rule) | an immersive session |
 
-Pseudo-elements never draw in an accepted document and are ignored by rule: `::placeholder`, `::selection`, `::-webkit-scrollbar`, `::-webkit-scrollbar-button`, `::-webkit-scrollbar-thumb`, `::-webkit-scrollbar-track`, `::-webkit-scrollbar-track-piece`, `::-webkit-scrollbar-corner`, `::-webkit-resizer`. The others are refused: `::before`, `::after`, `::first-line`, `::first-letter`, `::marker`, `::target-text`, `::spelling-error`, `::grammar-error`, `::search-text`, `::highlight()`, `::backdrop`, `::file-selector-button`, `::cue`, `::cue()`, `::part()`, `::slotted()`, `::details-content`, `::picker()`, `::picker-icon`, `::checkmark`, `::column`, `::scroll-marker`, `::scroll-marker-group`, `::scroll-button()`, `::view-transition`, `::view-transition-group()`, `::view-transition-image-pair()`, `::view-transition-old()`, `::view-transition-new()`, `::view-transition-group-children()`, and Chromium's other `::-webkit-*`.
+Pseudo-elements supported: `::before` (CSS Pseudo 4 §4.1: inline generated text (strings and attr()) before the element's content), `::after` (CSS Pseudo 4 §4.1: inline generated text (strings and attr()) after the element's content), `::marker` (CSS Lists 3 §3.1: the color, font-weight, font-style and a content of strings of a list item's marker).
+
+Pseudo-elements never draw in an accepted document and are ignored by rule: `::placeholder`, `::selection`, `::-webkit-scrollbar`, `::-webkit-scrollbar-button`, `::-webkit-scrollbar-thumb`, `::-webkit-scrollbar-track`, `::-webkit-scrollbar-track-piece`, `::-webkit-scrollbar-corner`, `::-webkit-resizer`. The others are refused: `::first-line`, `::first-letter`, `::target-text`, `::spelling-error`, `::grammar-error`, `::search-text`, `::highlight()`, `::backdrop`, `::file-selector-button`, `::cue`, `::cue()`, `::part()`, `::slotted()`, `::details-content`, `::picker()`, `::picker-icon`, `::checkmark`, `::column`, `::scroll-marker`, `::scroll-marker-group`, `::scroll-button()`, `::view-transition`, `::view-transition-group()`, `::view-transition-image-pair()`, `::view-transition-old()`, `::view-transition-new()`, `::view-transition-group-children()`, and Chromium's other `::-webkit-*`.
 
 ## At-rules
 
@@ -482,6 +519,86 @@ margins of `@page :first`, and content wider than its box (`Documents.Layout.Mar
 Chromium draws over its neighbours. Content taller than its box is drawn as Chromium draws it: from the top of
 the box whatever its vertical alignment, unclipped, under the body; the box keeps its height.
 
+## Fonts
+
+There are no system fonts. A family name the document writes is taken from its `@font-face` rules (the first TrueType
+source, through the caller's resolver), then from the caller's fonts (`HtmlRenderOptions.Fonts`). The first family of a
+`font-family` list that has any face is the family of the text, and it must have the computed weight and style
+exactly: no synthesis, no fallback per character. Where a browser would synthesise bold or italic, the face is
+refused ("… Give the face, or write font-synthesis: none to print in the nearest face."). Under
+`font-synthesis-weight: none` a face of another weight is taken, under `font-synthesis-style: none` one of another
+style, plainly, the nearest by CSS Fonts 4 §5.2 (the style first, then the weight: from 400 to 500 the heavier ones up
+to 500, then the lighter, then those above 500; below 400 the lighter first; above 500 the heavier first), as Chromium
+159 prints it (cases `fs-none-regular-only`, `fs-none-regular-bold`: 600 and 800 take a 700 face, 500 and 300 a 400
+face, italic the upright face).
+
+A browser takes a font of the system for a generic family. Here the caller maps them in
+`HtmlRenderOptions.GenericFamilies`, and a mapped name is looked up as a written name is (`@font-face` rules first):
+
+- `Standard`: the initial value of `font-family`, and `cursive`, `fantasy`, `math`, `emoji`, `fangsong` and the `ui-*`
+  keywords, which Chromium 159 prints in its standard font (measured);
+- `Serif`: `serif`; when it is not set, `serif` takes `Standard`;
+- `SansSerif`: `sans-serif` and `system-ui`;
+- `Monospace`: `monospace` (the keyword still gives text in `monospace` alone its own sizes, 13px at `medium`).
+
+The initial value is the name "Times New Roman", as Chromium computes it: an `@font-face` rule or a caller's font of
+that family is taken first, then `Standard`. `initial`, `inherit`, `unset` and `revert` keep the initial value; a
+"Times New Roman" written in the document is a family name like any other. A generic family never takes an
+`@font-face` rule of its own name, as in Chromium.
+
+Refused in both modes, also with warnings only (`Documents.Html.Unsupported.Font`, at the element's start tag; for a
+page-margin box at its `content` declaration):
+
+- a generic family the options do not map, where the list reaches it, also when a later family is supplied:
+  "'font-family: sans-serif' needs a family for the generic family 'sans-serif': set GenericFamilies.SansSerif in the
+  options (a browser would take a font of the system; there are no system fonts)."
+- a mapped name no face answers: "The family 'Inter' that GenericFamilies.SansSerif maps 'sans-serif' to has no face:
+  give it in a @font-face rule or in the fonts of the options."
+- the initial value with neither a "Times New Roman" face nor `Standard`: "'font-family' is not set here, and its
+  initial value needs a family: set GenericFamilies.Standard in the options, or give 'Times New Roman' in a @font-face
+  rule or in the fonts of the options (…)."
+- a list that runs out: "No family of 'font-family: Inter, Roboto' is supplied: give one in a @font-face rule or in
+  the fonts of the options, or end the list with a generic family the options map (there are no system fonts)."
+
+The mapped names are checked once, as input (`Documents.Html.InvalidOptions`): not empty, no control character, at
+most 32,767 characters (the longest family name of a TrueType font), and not a generic family keyword.
+
+What is shown, and how. Chromium prints a generic family in a font of the system it runs on, not in the family the
+caller maps, so a document with a generic family is not a measured case. Equal to Chromium is shown for the
+written-out family: the cases `gf-*` measure the initial value through an `@font-face` rule of "Times New Roman" (in
+the body, in a page-margin box, through `inherit`, `unset` and `revert`) and lists that end in a generic family after
+a supplied one. That a mapping prints exactly as the written-out family is shown by `GenericFamilyTests`: each generic
+document, printed with its mapping, gives the same page model item for item as the equal case it was made from.
+
+### A character the face has no glyph for
+
+A browser takes such a character from a later family of the list, or from any font of the system. The engine takes
+no glyph from another font and draws no box for a missing one, so the character is refused in both modes
+(`Documents.Font.GlyphMissing`), at its own line and column in the document (a character reference: its ampersand;
+the text of a page-margin box: its `content` declaration). Every missing character of the document is reported, each
+pair of face and character once, in source order, up to 64 (`HtmlBoxGenerator.MaxMissingGlyphs`). The message names
+the character, its code point, the face, the list and what to do, and a later family of the list that has it:
+
+"The character '※' (U+203B) has no glyph in the face 'Lato-Regular' that 'font-family: Lato, Theano Didot' gives
+here, and the engine takes no glyph from another font: put the character in an element whose font has it, or use an
+image. The family 'Theano Didot' of the list has it: set 'Theano Didot' on an element around the character."
+
+The text is checked as it is drawn, after its `text-transform`: a character only the transform makes (a capital, a
+small letter, the final sigma) is refused at the place of the character it is made of, and the message says so: "The
+character 'Ɑ' (U+2C6D), which 'text-transform: uppercase' makes of 'ɑ' (U+0251) written here, has no glyph in the face
+'Lato-Regular' …"
+
+The check is the shaper's own rule, which `HtmlRendering` passes in (`HtmlBoxOptions.MissingCharacters`); a caller of
+`HtmlBoxGenerator` alone who leaves it out gets layout's refusal of the first paragraph with a missing character, at
+the line of its text. Never missing: the characters that need no glyph (Default_Ignorable_Code_Point, among them the
+soft hyphen where no line breaks at it, U+200B, U+200C, U+200D, U+2060, U+FEFF and the variation selectors; the
+mandatory breaks), white space that collapses (a tab, a line feed), and a tab where white space is preserved (refused
+on its own). One character is drawn with another's glyph, as Chromium prints it: U+2011 NON-BREAKING HYPHEN, in a face
+without it, with the face's U+2010 (case `gm-nbhyphen-lato`, Lato at 12 and 20 pt: the same advance, no break at it,
+read back as U+2011). Refused, because Chromium takes them from a font of the system: U+2010 and U+2011 in a face that
+has only U+002D (case `gm-nbhyphen-theano`), and the spaces U+00A0, U+202F, U+2009, U+2002, U+2003, U+2007, U+2008 and
+U+200A in a face without them (case `gm-spaces-roboto`).
+
 ## HTML
 
 - The user-agent style sheet: `Ave.Extensions.Documents.Html/UserAgent/html.css` (HTML Standard §15, as Chromium 159
@@ -494,6 +611,46 @@ the box whatever its vertical alignment, unclipped, under the body; the box keep
   event handler attribute (`on…`) are refused; a data block (any other type) is not.
 - Style sheets: style elements, link rel=stylesheet (not alternate; the preferred title set), with media and type;
   linked sheets and imports through the caller's `ResourceResolver`; a sheet it does not give is refused.
+- Links: an `a` with `href` inside a line of text is a link to a URI (a link annotation; in a tagged PDF a Link element),
+  around all of its content: text, images and the inline elements inside it. Its URI is the `href` resolved as HTML
+  resolves it (`LinkUrls`): white space at the ends and tabs and line breaks inside removed, the scheme in lower case, a
+  relative URL resolved against the document base only when that base is `http` or `https`, and the C0 controls, space,
+  `"`, `<`, `>`, U+007F and every character beyond ASCII percent-encoded as UTF-8. Accepted are the schemes `http`, `https`,
+  `mailto` and `tel` (`LinkUris`, the model's one rule): a link opens a web page, a mail program or a phone call. Its
+  description (`/Contents`, which PDF/UA-1 needs) is the `title`, else the link's text, else the `alt` of an image in it,
+  else the URI. Refused at the start tag (`Documents.Html.Unsupported.Link`, with the `href`): any other scheme
+  (`javascript`, `vbscript`, `file`, `data`, `ftp`, …), also in mixed case or with white space, tabs or line breaks in it;
+  a relative URL without an `http` or `https` base (a document read from a file has a `file:` base, and Chromium would
+  write a path of the printing machine); a host with characters beyond ASCII; an `a` with `href` that is not inside a
+  line (`display: block`, a table display). An `a` without `href`, and an `a` with `href` that draws nothing, is no link,
+  as in Chromium. A link in a table header row that repeats on every page leads from its first copy only (the copies
+  are artifacts); Chromium writes it on every page (a listed difference, case `lk-header-row`).
+- Links inside the document: an `href` that starts with `#` (also under a `base`) leads to the element the HTML
+  Standard's "indicated part of the document" names: `#` alone, and `#top` in any case when no element has that id, the
+  top of the first page; else the first element with that `id`, else the first `a` with that `name`, then both again
+  with the fragment percent-decoded. The PDF's destination is the page where the target starts and the top of its box
+  (or of its first line part, for an inline element), the left edge and the zoom unchanged; no names are written.
+  Refused at the start tag: a name no element has (Chromium writes no link), and an element that makes no box or text
+  a link can lead to (not rendered, an inline element that draws nothing, an image).
+- Languages: an element's language (`xml:lang` in the XML namespace, else `lang`, else its parent's) that differs from
+  its parent's is written as `/Lang` on its structure element in a tagged PDF: a block's on its box's element, an inline
+  element's on a `Span` element made for it (an `a href`: on its `Link` element). The tag is written as given when it is
+  well-formed by BCP 47 (at most 64 characters); any other tag, and `lang=""` (an unknown language, which a PDF/UA-1
+  `/Lang` cannot say), is refused at the start tag (`Documents.Html.Unsupported.Language`) and the element keeps its
+  parent's language. The root's language is the document's, in the catalog.
+- Table header cells: a `th` is a `TH` element whose `/Scope` says what it heads (`Html/Boxes/HtmlBoxGenerator.HeaderScopes.cs`).
+  `scope=row` and `scope=rowgroup` head the row, `scope=col` and `scope=colgroup` the column, in any ASCII case; PDF has
+  no scope for a group, so a group scope heads the cell's own row or column only. Without a valid `scope`, a `th` in a
+  `thead`, or in a row whose cells are all `th`, heads its column; any other `th` heads its row. No cell heads both.
+  Not read, and drawn as without them: the `headers` attribute of a cell (no `/Headers` and no element ids are
+  written, so a cell under headers that nest has only the scopes to name its headers), `scope` on a `td`, and `abbr`.
+- Document metadata: the first `title` is the title. The first `meta` in tree order whose `name` is `author`, in any
+  ASCII case, with a `content` that is not empty after stripping white space at both ends is the author; the same for
+  `description`, written as the PDF's subject and XMP description (`HtmlMetadata`). Such a content longer than 4 096
+  characters, or a title or content with a control character (other than tab, line feed and carriage return) or a
+  character XML does not allow (`MetadataTexts`), is refused at the `meta` or the `title`
+  (`Documents.Html.Unsupported.Metadata`) and left out, not cleaned. Every other `meta` name (`keywords`, `generator`,
+  `date`, `application-name`, …) is ignored. Chromium writes neither the author nor the description into its PDF.
 
 Presentational attributes (HTML Standard §15.2–§15.4):
 
@@ -502,14 +659,14 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 | html, head |  | align |
 | body | bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag) | align, background |
 | table | width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center | align=left/right/inline-start/inline-end (float), background, frame, rules |
-| caption | align=top | align=bottom |
+| caption | align=top, align=bottom (caption-side: bottom) |  |
 | col, colgroup | width, align (-webkit-left/right/center, or one text-align value) |  |
 | thead, tbody, tfoot, tr | height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign | background |
 | td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535; 0 when that integer is beyond 2,147,483,647) and border (1px inset, or solid with bordercolor) | background; a td or th with no table around it (only a tree made in code has one) |
 | div, p | align (-webkit-left/right/center, or one text-align value) |  |
 | hr | align, color (a solid border, in that colour when it is one), noshade (gray), size (the integer it starts with, 0 when none), width |  |
 | img | width, height (and aspect-ratio auto w / h), border (solid; a width that is not a non-negative integer is 0), hspace, vspace, align=top/baseline/absmiddle/abscenter/bottom/absbottom | align=left/right (float), texttop, middle/center; alt text with a size when the image is not there (no src, or the resource resolver gives no PNG or JPEG) |
-| ol, ul, li | type | ol start, ol reversed, li value |
+| ol, ul, li | type; ol start, ol reversed and li value number the items (box generation) | a start or value beyond a 32-bit integer; li value in a reversed ol, or outside an ol where its list shows numbers |
 | pre | wrap |  |
 | br |  | clear |
 | font | color, face (one font-family value), size |  |

@@ -1,0 +1,1 @@
+1 49.500 22.500 118.500 35.250 uri https://example.com/mixed

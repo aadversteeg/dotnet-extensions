@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Cells that span rows and columns under row and column backgrounds: c1, collapsed: the first column has a background, the first row a red one, the second row a yellow one; one spans two rows, four spans two columns; s1, the same with separated borders. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }
+.t { background: #eeeeee; } .g { background: #ccffcc; } .c { background: #ccccff; } .b { background: #ffffcc; } .r { background: #ffcccc; } .d { background: #ccffff; }</style></head><body>
+<table id="c1">
+<col class="c"><col><tr class="r"><td id="one-c1" rowspan=2>one</td><td>two</td></tr>
+<tr class="b"><td>three</td></tr>
+<tr><td colspan=2>four</td></tr>
+</table>
+<p>next 1</p>
+<table id="s1" class="s">
+<col class="c"><col><tr class="r"><td id="one-s1" rowspan=2>one</td><td>two</td></tr>
+<tr class="b"><td>three</td></tr>
+<tr><td colspan=2>four</td></tr>
+</table>
+<p>after</p>
+</body></html>

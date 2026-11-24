@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- border-style inset and outset at 1, 2, 3 and 6 px in the default colour (currentcolor, black), and inset and outset at 3 px in currentcolor gray: which sides are dark and which light, and their colours. -->
+<style>@page { size: 300pt 600pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } div { padding: 3pt; margin-bottom: 6pt; } .i { border-style: inset; } .o { border-style: outset; } .g { color: gray; }</style></head><body>
+<p>top</p>
+<div id="i1" class="i" style="border-width:1px">i1</div>
+<div id="i2" class="i" style="border-width:2px">i2</div>
+<div id="i3" class="i" style="border-width:3px">i3</div>
+<div id="i6" class="i" style="border-width:6px">i6</div>
+<div id="o1" class="o" style="border-width:1px">o1</div>
+<div id="o2" class="o" style="border-width:2px">o2</div>
+<div id="o3" class="o" style="border-width:3px">o3</div>
+<div id="o6" class="o" style="border-width:6px">o6</div>
+<div id="gi" class="i g" style="border-width:3px">gi</div>
+<div id="go" class="o g" style="border-width:3px">go</div>
+<p>end</p>
+</body></html>

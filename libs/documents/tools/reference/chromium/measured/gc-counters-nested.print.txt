@@ -1,0 +1,16 @@
+page 1 300.000 300.000
+word 1 24.000 30.090 22.500 10.500 1 #000000 Lato-Regular
+word 1 32.438 58.966 22.500 10.500 Alpha #000000 Lato-Regular
+word 1 36.000 50.658 35.250 10.500 1.1 #000000 Lato-Regular
+word 1 53.355 74.555 35.250 10.500 Beta #000000 Lato-Regular
+word 1 77.254 93.495 35.250 10.500 (I/I) #000000 Lato-Regular
+word 1 36.000 50.658 48.000 10.500 1.2 #000000 Lato-Regular
+word 1 53.355 88.704 48.000 10.500 Gamma #000000 Lato-Regular
+word 1 48.000 71.226 60.750 10.500 1.2.1 #000000 Lato-Regular
+word 1 73.922 98.838 60.750 10.500 Delta #000000 Lato-Regular
+word 1 101.536 128.405 60.750 10.500 (I/II/I) #000000 Lato-Regular
+word 1 36.000 55.186 73.500 10.500 (I/II) #000000 Lato-Regular
+word 1 24.000 32.557 86.250 10.500 (I) #000000 Lato-Regular
+word 1 24.000 30.090 99.000 10.500 2 #000000 Lato-Regular
+word 1 32.789 65.948 99.000 10.500 Epsilon #000000 Lato-Regular
+word 1 68.641 80.136 99.000 10.500 (II) #000000 Lato-Regular

@@ -68,9 +68,11 @@ public sealed record BoxStyle
 
     /// <summary>How wide a box laid out by <see cref="LayoutAlgorithmId.Tracks"/> is when none of its columns is a
     /// <see cref="TrackSize.Fill"/> column (CSS 2.1 §17.5.2.2, CSS Sizing 3 §3.2): <see cref="BoxWidth.Auto"/>, the CSS
-    /// initial value, unless set. With a fill column the box always takes the width it is given, so both values mean
-    /// the same. Ignored for every other box.</summary>
-    public BoxWidth Width { get; init; }
+    /// initial value, unless set. With a fill column the box takes the width it is given (<see cref="BoxWidth.Stretch"/>
+    /// and <see cref="BoxWidth.Auto"/> mean the same) or its <see cref="BoxWidth.Fixed"/> or <see cref="BoxWidth.Percent"/>
+    /// width. On a table cell, a <see cref="BoxWidth.Fixed"/> or <see cref="BoxWidth.Percent"/> width its column takes (CSS
+    /// 2.1 §17.5.2). Ignored for every other box.</summary>
+    public BoxWidth Width { get; init; } = BoxWidth.Auto;
 
     /// <summary>The width of a box laid out by <see cref="LayoutAlgorithmId.Flow"/> or <see cref="LayoutAlgorithmId.Inline"/>
     /// in block flow (CSS Sizing 3 §3.1, <c>width</c>), or null for <c>auto</c>, the initial value: the box then fills its
@@ -117,6 +119,18 @@ public sealed record BoxStyle
     /// of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>.</summary>
     public TableDisplay TableDisplay { get; init; }
 
+    /// <summary>The height of a part of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>, named after CSS
+    /// <c>height</c>, which is a least height there (CSS 2.1 §17.5.3: a row is as tall as the tallest of its height and
+    /// its cells'): on a row the least height of its cells' border boxes; on a cell the least height of its content box,
+    /// which the cell's padding and border make taller; on the table the least height of its border box, whose extra the
+    /// body rows without a height share in proportion to their heights. Null for <c>auto</c>, unless set. Ignored for every
+    /// other box.</summary>
+    public Length? TableHeight { get; init; }
+
+    /// <summary>Where a table's caption (<see cref="TableDisplay.Caption"/>) is drawn, named after <c>caption-side</c> (CSS
+    /// 2.1 §17.4.1); <see cref="CaptionSide.Top"/>, the CSS initial value, unless set. Ignored for every other box.</summary>
+    public CaptionSide CaptionSide { get; init; }
+
     /// <summary>How many columns and rows a table cell covers (HTML <c>colspan</c> / <c>rowspan</c>, HTML §4.9.11; CSS 2.1 §17.5);
     /// <see cref="CellSpan.Single"/> for every other box.</summary>
     public CellSpan Span { get; init; } = CellSpan.Single;
@@ -125,6 +139,16 @@ public sealed record BoxStyle
     /// <c>box-decoration-break</c> (CSS Fragmentation 3 §5.4); <see cref="BoxDecorationBreak.Slice"/>, the CSS initial
     /// value, unless set. Used by the tracks algorithm for a table; every other box is sliced.</summary>
     public BoxDecorationBreak DecorationBreak { get; init; }
+
+    /// <summary>How the borders of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/> are drawn, named after CSS
+    /// <c>border-collapse</c> (CSS 2.1 §17.6); <see cref="TableBorderModel.Collapse"/> unless set (where CSS's initial
+    /// value is <c>separate</c>). Ignored for every other box.</summary>
+    public TableBorderModel BorderModel { get; init; }
+
+    /// <summary>The room between the cells of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/> in the separated
+    /// borders model (CSS 2.1 §17.6.1, <c>border-spacing</c>); <see cref="BorderSpacing.Zero"/> unless set. Never
+    /// negative. Ignored in the collapsing border model and for every other box.</summary>
+    public BorderSpacing BorderSpacing { get; init; }
 
     /// <summary>Which page-margin box of its edge this box is (CSS Paged Media 3 §5: the start, centre and end boxes
     /// of the row, <c>@top-left</c>, <c>@top-center</c> and <c>@top-right</c> on the top edge), for a child of a box laid
@@ -170,22 +194,65 @@ public enum BoxDecorationBreak
 }
 
 /// <summary>
-/// The values of <see cref="BoxStyle.Width"/>, named after the CSS <c>width</c> values they follow, for a table whose
-/// columns do not fill the width it is given.
+/// The values of <see cref="BoxStyle.Width"/>, named after the CSS <c>width</c> values they follow: for a table, how wide it
+/// is when its columns do not fill the width it is given; for a table cell, the width its column takes from it. A closed
+/// set.
 /// </summary>
-public enum BoxWidth
+public abstract record BoxWidth
 {
+    private BoxWidth()
+    {
+    }
+
     /// <summary>As wide as its columns need, never wider than the width it is given (<c>width: auto</c>; CSS 2.1
     /// §17.5.2.2: "use max(MAX, CAPMIN)" when that is less than the containing block). Width left over the columns'
-    /// maximum widths stays empty.</summary>
-    Auto,
+    /// maximum widths stays empty. The initial value; on a cell, no width.</summary>
+    public static BoxWidth Auto { get; } = new Keyword("auto");
 
     /// <summary>As wide as the width it is given (<c>width: stretch</c>, CSS Sizing 3 §3.2: the margin box matches the
     /// containing block; for a table without horizontal margins this is <c>width: 100%</c>). The width left over the
     /// columns' maximum widths is shared over the auto columns in proportion to their maximum widths, or over the fixed
     /// columns in proportion to their widths when the table has no auto column (CSS Tables 3 §3.9.3.2, "Distributing
-    /// excess width to columns": "increased in proportion to max-content width", as Chromium implements it).</summary>
-    Stretch,
+    /// excess width to columns": "increased in proportion to max-content width", as Chromium implements it). Only for a
+    /// table.</summary>
+    public static BoxWidth Stretch { get; } = new Keyword("stretch");
+
+    /// <summary>
+    /// A given width (CSS 2.1 §17.5.2, <c>width: &lt;length&gt;</c>). On a table, its border box (HTML's user agent sheet
+    /// gives a table <c>box-sizing: border-box</c>): the columns share it as under <see cref="Stretch"/>, and a table
+    /// whose columns need more is as wide as they need (cases <c>twd-table-wide</c>, <c>twd-table-narrow</c>,
+    /// <c>twd-sum</c>). On a table cell, its content box: the cell's padding and border are added, and its column takes
+    /// it as a preferred width in the automatic table layout and as an exact width in the fixed one (the tracks layout says
+    /// which cell counts; cases <c>twd-cell-*</c>).
+    /// </summary>
+    /// <param name="Width">The width; zero or more.</param>
+    public sealed record Fixed(Length Width) : BoxWidth
+    {
+        /// <summary>Formats as the width, for example <c>150pt</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => Width.ToString();
+    }
+
+    /// <summary>
+    /// A percentage of a width (CSS 2.1 §10.2, <c>width: &lt;percentage&gt;</c>). On a table, of the width it is given,
+    /// its containing block's: its border box, which is then a given width as <see cref="Fixed"/> is (cases
+    /// <c>tpa-table</c>: 80% and 50% of a page area of 276 pt make tables of 220.793 and 138 pt, in both border models and
+    /// both table layouts; <c>tpa-fraction</c> b). On a table cell, in the automatic table layout, the share its column
+    /// takes of the width the table's columns share (<see cref="TrackSize.Percent"/>; cases <c>tpa-auto</c>,
+    /// <c>tpa-full</c>, <c>tpa-length</c>).
+    /// </summary>
+    /// <param name="Value">The percentage; more than zero.</param>
+    public sealed record Percent(double Value) : BoxWidth
+    {
+        /// <summary>Formats as the percentage, for example <c>80%</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => $"{InvariantNumber.Format(Value)}%";
+    }
+
+    private sealed record Keyword(string Name) : BoxWidth
+    {
+        public override string ToString() => Name;
+    }
 }
 
 /// <summary>The values of <c>break-before</c> and <c>break-after</c> (CSS Fragmentation 3 §3.1) that this version

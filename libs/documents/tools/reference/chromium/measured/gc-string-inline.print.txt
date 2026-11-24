@@ -1,0 +1,5 @@
+page 1 300.000 300.000
+word 1 12.000 36.780 22.500 10.500 inline #000000 Lato-Regular
+word 1 39.469 60.978 22.500 10.500 span #000000 Lato-Regular
+word 1 63.672 86.247 22.500 10.500 (end) #c00000 Lato-Regular
+word 1 88.938 102.919 22.500 10.500 tail #000000 Lato-Regular

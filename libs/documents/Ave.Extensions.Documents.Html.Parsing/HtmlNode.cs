@@ -123,7 +123,46 @@ public sealed record HtmlElement(
 /// "insert a character").</summary>
 /// <param name="Data">The characters, with character references resolved and line ends normalised to line feeds.</param>
 /// <param name="Position">Where its first character was written.</param>
-public sealed record HtmlText(string Data, TextPosition Position) : HtmlNode(Position);
+public sealed record HtmlText(string Data, TextPosition Position) : HtmlNode(Position)
+{
+    /// <summary>Where the characters stop following one another in the source, from the parser (empty when they all
+    /// follow <see cref="HtmlNode.Position"/>, and for a text made in code): see <see cref="PositionOf"/>.</summary>
+    internal ValueList<HtmlValueAnchor> Anchors { get; init; } = [];
+
+    /// <summary>Where a character of <see cref="Data"/> was written in the source: its own place for a character written
+    /// as itself, the ampersand for the characters of a character reference. A line feed in <see cref="Data"/> that
+    /// follows the character before it is a line end of the source, so the place moves to the next line there. For a
+    /// text made in code, the places as if <see cref="Data"/> were written at <see cref="HtmlNode.Position"/>.</summary>
+    /// <param name="offset">An offset in <see cref="Data"/>, from 0 to its length.</param>
+    /// <returns>The line and column.</returns>
+    public TextPosition PositionOf(int offset)
+    {
+        var anchors = Anchors;
+        int low = 0, high = anchors.Count - 1, found = -1;
+        while (low <= high)
+        {
+            var middle = (low + high) / 2;
+            if (anchors[middle].Offset <= offset)
+            {
+                found = middle;
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        var (start, place) = found < 0 ? (0, Position) : (anchors[found].Offset, anchors[found].Position);
+        var (line, column) = (place.Line, place.Column);
+        for (var i = start; i < offset && i < Data.Length; i++)
+        {
+            (line, column) = Data[i] == '\n' ? (line + 1, 1) : (line, column + 1);
+        }
+
+        return new TextPosition(line, column);
+    }
+}
 
 /// <summary>A comment (DOM Standard §4.14).</summary>
 /// <param name="Data">The comment's text, between <c>&lt;!--</c> and <c>--&gt;</c>.</param>

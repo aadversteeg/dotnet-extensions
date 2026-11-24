@@ -69,6 +69,23 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     /// </summary>
     public bool IsAtomicInline { get; init; }
 
+    /// <summary>
+    /// For the stand-in of an edge of an inline box (an inline element with its own margin, border or padding): which edge
+    /// it is, <see cref="InlineBoxEdge.None"/> for every other glyph. Its advance is the room the edge takes on the line; it
+    /// shows no character (its text is empty) and draws nothing. THE RULE FOR AN INLINE BOX'S EDGES IN A LINE: the start edge
+    /// stays with the box's first character and the end edge with its last, as Chromium keeps an open tag with what follows
+    /// it and a close tag with what goes before it; an edge is no break opportunity, no space and no place where a justified
+    /// line widens, and white-space collapsing does not see it (<see cref="LineBreaking.BreakableSegments.Split"/>). Made by
+    /// <see cref="BoxEdge"/>.
+    /// </summary>
+    public InlineBoxEdge Edge { get; init; }
+
+    /// <summary>The stand-in of an edge of an inline box (<see cref="Edge"/>) of the given width.</summary>
+    /// <param name="advance">The room the edge takes, in points: margin, border and padding on that side.</param>
+    /// <param name="edge">Which edge: <see cref="InlineBoxEdge.Start"/> or <see cref="InlineBoxEdge.End"/>.</param>
+    /// <returns>The glyph.</returns>
+    public static ShapedGlyph BoxEdge(double advance, InlineBoxEdge edge) => new(default, advance, string.Empty) { Edge = edge };
+
     /// <summary>The object replacement character U+FFFC, which stands for an atomic inline in a paragraph's text.</summary>
     public const char ObjectReplacementCharacter = '￼';
 
@@ -77,4 +94,17 @@ public sealed record ShapedGlyph(GlyphId Glyph, double Advance, string Text, dou
     /// <returns>The glyph.</returns>
     public static ShapedGlyph AtomicInline(double advance) =>
         new(default, advance, ObjectReplacementCharacter.ToString()) { IsAtomicInline = true };
+}
+
+/// <summary>Which edge of an inline box a glyph stands for (<see cref="ShapedGlyph.Edge"/>).</summary>
+public enum InlineBoxEdge
+{
+    /// <summary>No edge: a glyph of text or an atomic inline.</summary>
+    None,
+
+    /// <summary>The start edge, before the box's first character.</summary>
+    Start,
+
+    /// <summary>The end edge, after the box's last character.</summary>
+    End,
 }

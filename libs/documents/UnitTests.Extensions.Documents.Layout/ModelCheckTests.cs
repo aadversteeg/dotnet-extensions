@@ -27,6 +27,38 @@ public class ModelCheckTests
     private static StyledDocument WithText(TextStyle text) =>
         Document(new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(new NodeId(2), "x", text, At(0))], At(0)));
 
+    /// <summary>THE RULE FOR A DOCUMENT'S METADATA TEXT on a model built by hand: a title, an author or a description it
+    /// does not accept is refused before layout, with the field and the offset of the character.</summary>
+    [Theory]
+    [InlineData("title")]
+    [InlineData("author")]
+    [InlineData("description")]
+    public void A_title_an_author_or_a_description_with_a_control_character_is_refused(string field)
+    {
+        var text = "Hours\u0085";
+        var metadata = field switch
+        {
+            "title" => new DocumentMetadata(text, null),
+            "author" => new DocumentMetadata(null, text),
+            _ => new DocumentMetadata(null, null) { Description = text },
+        };
+
+        var error = Refused(Document(Paragraph(1, "x")) with { Metadata = metadata });
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.MetadataText);
+        error.Metadata![ErrorMetadataKeys.Property].Should().Be(field);
+        error.Metadata![ErrorMetadataKeys.Offset].Should().Be(5);
+    }
+
+    [Fact]
+    public void A_description_longer_than_4096_characters_is_refused_and_a_long_title_is_not()
+    {
+        var document = Document(Paragraph(1, "x"));
+
+        Refused(document with { Metadata = new DocumentMetadata(null, null) { Description = new string('a', 4_097) } }).Code.Should().Be(DocumentErrorCodes.Input.Invalid.MetadataText);
+        DocumentLayout.Run(document with { Metadata = new DocumentMetadata(new string('a', 8_192), new string('a', 4_096)) }, TestFonts.Set).IsSuccess.Should().BeTrue();
+    }
+
     [Theory]
     [InlineData(0, 2)]
     [InlineData(-1, 2)]
@@ -52,6 +84,33 @@ public class ModelCheckTests
 
         error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LineHeight);
     }
+
+    [Theory]
+    [InlineData("frac")]
+    [InlineData("TNUM")]
+    [InlineData("")]
+    public void A_font_feature_the_model_does_not_switch_is_refused(string tag) =>
+        Refused(WithText(Text() with { FontFeatures = [tag] })).Code.Should().Be(DocumentErrorCodes.Input.Invalid.FontFeature);
+
+    [Theory]
+    [InlineData(double.NaN, 0)]
+    [InlineData(double.PositiveInfinity, 0)]
+    [InlineData(0, -14_400.5)]
+    [InlineData(0, 14_400.5)]
+    public void A_letter_or_word_spacing_that_is_not_finite_or_beyond_the_limit_either_way_is_refused(double letter, double word)
+    {
+        var error = Refused(WithText(Text() with { LetterSpacing = letter.Pt(), WordSpacing = word.Pt() }));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Spacing);
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.NegativeInfinity)]
+    [InlineData(-14_400.5)]
+    [InlineData(14_400.5)]
+    public void A_baseline_shift_that_is_not_finite_or_beyond_the_limit_either_way_is_refused(double shift) =>
+        Refused(WithText(Text() with { BaselineShift = shift.Pt() })).Code.Should().Be(DocumentErrorCodes.Input.Invalid.BaselineShift);
 
     [Theory]
     [InlineData(-0.5)]
@@ -126,6 +185,17 @@ public class ModelCheckTests
     }
 
     [Fact]
+    public void A_header_cell_with_a_scope_outside_the_three_is_refused()
+    {
+        var cell = Paragraph(1, "x") with { Role = new SemanticRole.TableHeaderCellRole((TableHeaderScope)3) };
+
+        var error = Refused(Document(cell));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Table);
+        error.Message.Should().Contain("heads its column, its row or both");
+    }
+
+    [Fact]
     public void Boxes_nested_to_the_limit_are_laid_out_and_one_level_more_is_refused()
     {
         static Box Nested(int levels)
@@ -193,5 +263,38 @@ public class ModelCheckTests
                     [new Box(new NodeId(503), SemanticRole.TableCell, LayoutAlgorithmId.Flow, BoxStyle.Initial, [Paragraph(1, "x")], At(0))], At(0))], At(0))], At(0));
 
         Refused(Document(table)).Code.Should().Be(DocumentErrorCodes.Input.Invalid.Columns);
+    }
+
+    [Fact]
+    public void A_border_style_the_enum_does_not_have_is_refused()
+    {
+        var side = new BorderSide(1.Pt(), Color.Black, (BorderStyle)7);
+
+        Refused(WithStyle(BoxStyle.Initial with { Border = new Border(side, BorderSide.None, BorderSide.None, BorderSide.None) })).Code.Should().Be(DocumentErrorCodes.Input.Invalid.BorderStyle);
+    }
+
+    [Fact]
+    public void An_inset_side_on_a_table_cell_is_refused_its_lines_are_drawn_solid()
+    {
+        var inset = Border.All(new BorderSide(1.Pt(), Color.Black, BorderStyle.Inset));
+        var table = new Box(new NodeId(500), SemanticRole.Table, LayoutAlgorithmId.Tracks, BoxStyle.Initial with { Columns = [new TrackSize.Preferred(50.Pt())] },
+            [new Box(new NodeId(501), SemanticRole.TableBody, LayoutAlgorithmId.Flow, BoxStyle.Initial with { TableDisplay = TableDisplay.RowGroup },
+                [new Box(new NodeId(502), SemanticRole.TableRow, LayoutAlgorithmId.Flow, BoxStyle.Initial with { TableDisplay = TableDisplay.Row },
+                    [new Box(new NodeId(503), SemanticRole.TableCell, LayoutAlgorithmId.Flow, BoxStyle.Initial with { Border = inset }, [Paragraph(1, "x")], At(0))], At(0))], At(0))], At(0));
+
+        var error = Refused(Document(table));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.BorderStyle);
+        error.Metadata![ErrorMetadataKeys.Node].Should().Be("#503");
+    }
+
+    [Fact]
+    public void Inset_and_outset_sides_on_one_box_are_refused_and_an_outset_side_of_width_0_is_no_side()
+    {
+        var inset = new BorderSide(1.Pt(), Color.Black, BorderStyle.Inset);
+        var outset = new BorderSide(1.Pt(), Color.Black, BorderStyle.Outset);
+
+        Refused(WithStyle(BoxStyle.Initial with { Border = new Border(inset, outset, inset, inset) })).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.BorderStyle);
+        DocumentLayout.Run(WithStyle(BoxStyle.Initial with { Border = new Border(inset, outset with { Width = 0.Pt() }, inset, inset) }), TestFonts.Set).IsSuccess.Should().BeTrue();
     }
 }

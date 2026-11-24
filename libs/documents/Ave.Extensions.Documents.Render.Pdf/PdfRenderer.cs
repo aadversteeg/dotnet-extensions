@@ -72,6 +72,8 @@ public static class PdfRenderer
         var attachments = document.Metadata.Attachments;
         var fonts = UsedFont.Collect(document);
         var images = UsedImage.Collect(document);
+        var annotations = LinkAnnotations.Of(pages);
+        var places = LinkAnnotations.Places(document);
         var plan = new ObjectPlan(fonts.Length, [.. images.Select(image => image.HasMask)], document.Pages.Count)
         {
             HasMetadata = profile.HasXmpMetadata,
@@ -79,6 +81,7 @@ public static class PdfRenderer
             IsTagged = tree is not null,
             StructureElementCount = tree?.Elements.Length ?? 0,
             AttachmentCount = attachments.Count,
+            AnnotationCount = annotations.Sum(page => page.Length),
         };
         var resources = new ResourceNames(
             fonts.ToImmutableDictionary(used => used.Font),
@@ -89,7 +92,7 @@ public static class PdfRenderer
         var fontObjects = fonts.Select((used, index) => (used, index))
             .TraverseAll(font => FontEmbedding.Build(font.used, plan.Font(font.index)));
         var pageObjects = document.Pages.Select((page, index) => (page, index))
-            .TraverseAll(page => PageObjects(new PageInput(page.page, page.index, marked[page.index]), shared));
+            .TraverseAll(page => PageObjects(new PageInput(page.page, page.index, marked[page.index], annotations[page.index]), shared));
 
         var metadataObjects = plan.HasMetadata
             ? Metadata(document.Metadata, options, plan).OnSuccessMap(stream => ImmutableArray.Create(stream))
@@ -108,8 +111,14 @@ public static class PdfRenderer
                     .. pageParts.SelectMany(parts => parts),
                     .. metadataParts,
                     .. plan.HasOutputIntent ? [OutputIntentProfile(plan)] : ImmutableArray<IndirectObject>.Empty,
-                    .. tree is not null ? StructureObjects.Build(tree, ElementBounds.Of(tree, pages, document.Pages), plan) : [],
+                    .. tree is not null ? StructureObjects.Build(tree, ElementBounds.Of(tree, pages, document.Pages), plan, document.Metadata.Language) : [],
                     .. attachments.SelectMany((attachment, index) => AttachmentEmbedding.Build(attachment, plan.Attachment(index))),
+                    .. annotations.SelectMany((onPage, page) => onPage.Select(annotation => (IndirectObject)new IndirectValue(
+                        plan.Annotation(annotation.Index),
+                        LinkAnnotations.Dictionary(annotation, document.Pages[page].Size.Height, plan.IsTagged ? plan.PageCount + annotation.Index : null,
+                            annotation.Link.Target is LinkTarget.NodeTarget target && places.TryGetValue(target.Value, out var place)
+                                ? (new PdfReference(plan.Page(place.Page).Page), document.Pages[place.Page].Size.Height - place.At.Y)
+                                : null)))),
                 ])
             .OnSuccessBind(objects => ProfileLimits.ObjectCount(objects.Length, profile).ToList() is [var tooMany]
                 ? Result<ImmutableArray<byte>, Error>.Failure(tooMany)
@@ -183,11 +192,12 @@ public static class PdfRenderer
         ("Kids", new PdfArray([.. Enumerable.Range(0, plan.PageCount).Select(index => new PdfReference(plan.Page(index).Page))])),
         ("Count", new PdfInteger(plan.PageCount)));
 
-    /// <summary>The document information dictionary (§14.3.3, Table 317). Absent title or author: entry left out. The
-    /// same values go into the XMP metadata (<see cref="MetadataPacket"/>).</summary>
+    /// <summary>The document information dictionary (§14.3.3, Table 317). Absent title, author or description
+    /// (<c>/Subject</c>): entry left out. The same values go into the XMP metadata (<see cref="MetadataPacket"/>).</summary>
     private static PdfDictionary Info(DocumentMetadata metadata, PdfRenderOptions options) => PdfDictionary.Of(
         ("Title", metadata.Title is null ? null : PdfString.FromText(metadata.Title)),
         ("Author", metadata.Author is null ? null : PdfString.FromText(metadata.Author)),
+        ("Subject", metadata.Description is null ? null : PdfString.FromText(metadata.Description)),
         ("Producer", PdfString.FromText(PdfRenderOptions.Producer)),
         ("CreationDate", PdfDate.Format(options.CreationDate)),
         ("ModDate", PdfDate.Format(options.CreationDate)));
@@ -197,7 +207,8 @@ public static class PdfRenderer
     /// and images this page uses. MediaBox is the page size in points with the origin at the bottom-left. In a tagged
     /// file, <c>/StructParents</c> is the page's key in the parent tree (§14.7.4.4) and <c>/Tabs /S</c> makes the tab
     /// order follow the structure (§7.7.3.3, Table 30, <c>/Tabs</c>, see §12.5; ISO 14289-1 §7.18.3, veraPDF rule
-    /// 7.18.3-1).
+    /// 7.18.3-1, which asks it of every page with an annotation). <c>/Annots</c> lists the page's link annotations
+    /// (<see cref="LinkAnnotations"/>) in content order, when it has any.
     /// </summary>
     private static Result<ImmutableArray<IndirectObject>, Error> PageObjects(PageInput input, SharedResources shared)
     {
@@ -225,6 +236,7 @@ public static class PdfRenderer
                     ("Font", PdfDictionary.Of(fontResources)),
                     ("XObject", imageResources.IsEmpty ? null : PdfDictionary.Of(imageResources)))),
                 ("Contents", new PdfReference(numbers.Contents)),
+                ("Annots", input.Annotations.IsEmpty ? null : new PdfArray([.. input.Annotations.Select(annotation => new PdfReference(plan.Annotation(annotation.Index)))])),
                 ("StructParents", plan.IsTagged ? new PdfInteger(pageIndex) : null),
                 ("Tabs", plan.IsTagged ? new PdfName("S") : null))),
             new IndirectStream(numbers.Contents, new PdfStream(PdfDictionary.Of(), content, StreamEncoding.Flate))));
@@ -235,7 +247,8 @@ public static class PdfRenderer
 /// <param name="Page">The page.</param>
 /// <param name="Index">Its index, 0-based.</param>
 /// <param name="Runs">Its content runs, each with its mark.</param>
-internal sealed record PageInput(Page Page, int Index, ImmutableArray<MarkedRun> Runs);
+/// <param name="Annotations">Its link annotations, in content order.</param>
+internal sealed record PageInput(Page Page, int Index, ImmutableArray<MarkedRun> Runs, ImmutableArray<LinkAnnotation> Annotations);
 
 /// <summary>What every page of the file shares: the object plan, the used fonts and images, and their resource names.</summary>
 /// <param name="Plan">The object numbers.</param>

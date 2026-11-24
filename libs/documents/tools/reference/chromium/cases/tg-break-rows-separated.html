@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Rows with a height on the cell over a page break that falls between rows, separated, with a header that repeats: eight rows whose first cell has height 24pt. -->
+<style>@page { size: 300pt 200pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }</style></head><body>
+<p id="first" style="padding-top: 60pt">first</p>
+<table id="a" class="s">
+<thead><tr><th id="head-a">head</th><th>two</th></tr>
+</thead>
+<tbody>
+<tr><td id="row1-a" style="height: 24pt">row1</td><td>cell</td></tr>
+<tr><td style="height: 24pt">row2</td><td>cell</td></tr>
+<tr><td style="height: 24pt">row3</td><td>cell</td></tr>
+<tr><td style="height: 24pt">row4</td><td>cell</td></tr>
+<tr><td style="height: 24pt">row5</td><td>cell</td></tr>
+<tr><td style="height: 24pt">row6</td><td>cell</td></tr>
+<tr><td style="height: 24pt">row7</td><td>cell</td></tr>
+<tr><td style="height: 24pt">row8</td><td>cell</td></tr>
+</tbody>
+</table>
+<p>after</p>
+</body></html>

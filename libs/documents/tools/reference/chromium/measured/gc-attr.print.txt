@@ -1,0 +1,7 @@
+page 1 300.000 300.000
+word 1 12.000 38.649 22.500 10.500 seven #000000 Lato-Regular
+word 1 41.344 62.181 22.500 10.500 days #000000 Lato-Regular
+word 1 12.000 38.302 41.250 10.500 hover #000000 Lato-Regular
+word 1 40.774 63.590 41.250 10.500 (Hint #000000 Lato-Regular
+word 1 66.273 87.283 41.250 10.500 text) #000000 Lato-Regular
+word 1 12.000 52.522 60.000 10.500 []missing #000000 Lato-Regular

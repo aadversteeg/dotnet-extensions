@@ -40,6 +40,60 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(rest))
             .WithSource(box.Source);
 
+    /// <summary>A list item's label that would start left of the sheet (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>).</summary>
+    /// <param name="label">The label; its source is the item's.</param>
+    /// <param name="left">The label's left edge on the sheet, in points (negative).</param>
+    public static Error MarkerOutsideSheet(Box label, double left) =>
+        new Error(
+                LayoutErrorCodes.MarkerOutsideSheet,
+                $"The label of the list item made at {label.Source} would start {InvariantNumber.Format(-left)}pt left of the sheet's edge: it is wider than the room left of its item. Give the list more padding on the left.")
+            .With(ErrorMetadataKeys.Node, label.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(left))
+            .WithSource(label.Source);
+    /// <summary>A table with separated borders that breaks over pages in a way this version does not draw
+    /// (<see cref="LayoutErrorCodes.TableBreak"/>).</summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="available">The height it had on the page.</param>
+    public static Error TableBreak(Box table, double available) =>
+        new Error(
+                LayoutErrorCodes.TableBreak,
+                $"{Describe(table)} has separated borders and breaks in {Room(available)} where this version does not draw the break: "
+                + "a cell over several rows across it, content sliced in a cell, a row cut beside a cell aligned at the middle or bottom "
+                + "under the profile's CutRowAlignment RestAlignedInItsPart, "
+                + "box-decoration-break: clone, or a part past the page end. Give the table the room on one page, or draw it with collapsed borders.")
+            .With(ErrorMetadataKeys.Node, table.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
+            .WithSource(table.Source);
+
+    /// <summary>A table caption that does not fit where it is drawn, with the table's first row below it or below the
+    /// table's last row (<see cref="LayoutErrorCodes.TableBreak"/>; <see cref="TableCaption"/>).</summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="caption">The caption.</param>
+    /// <param name="available">The height the table had on the page.</param>
+    /// <param name="where">Where the caption is drawn.</param>
+    public static Error CaptionBreak(Box table, Box caption, double available, string where) =>
+        new Error(
+                LayoutErrorCodes.TableBreak,
+                $"{Describe(table)} has a caption that does not fit {where} in {Room(available)}: a table whose caption and first or last row "
+                + "do not fit on one page together is not drawn in this version. Give the table the room, for example with a page break before it, or move the caption's text out of the table.")
+            .With(ErrorMetadataKeys.Node, caption.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
+            .WithSource(table.Source);
+
+    /// <summary>A table with a height of its own, of a row or of a cell where a page break cuts a cell over several rows
+    /// (<see cref="LayoutErrorCodes.TableBreak"/>; <see cref="TableHeights"/>).</summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="available">The height it had on the page.</param>
+    public static Error HeightBreak(Box table, double available) =>
+        new Error(
+                LayoutErrorCodes.TableBreak,
+                $"{Describe(table)} has a height on the table, a row or a cell, and the page end in {Room(available)} cuts a cell over several rows: "
+                + "such a break is not drawn in this version. Give that row the room on one page, for example with a page break before "
+                + "the table, or leave the heights out.")
+            .With(ErrorMetadataKeys.Node, table.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
+            .WithSource(table.Source);
+
     /// <summary>A header or footer area's content that does not fit in the area: an area never breaks.</summary>
     /// <param name="content">The area's content.</param>
     /// <param name="height">The area's height: its fixed height, or the page area's.</param>
@@ -123,6 +177,15 @@ internal static class LayoutErrors
 
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";
+
+    /// <summary>An inline group with a box of its own (<see cref="InlineGroup.Box"/>) that this version does not draw where it
+    /// stands, at the group's source.</summary>
+    public static Error InlineBox(InlineGroup group, string message) =>
+        new Error(DocumentErrorCodes.Input.Unsupported.InlineBox, $"The inline box made at {group.Source} is not drawn in this version: {message}.")
+            .With(ErrorMetadataKeys.Node, group.Id.ToString())
+            .With(ErrorMetadataKeys.Value, group.Box?.ToString() ?? "none")
+            .With(ErrorMetadataKeys.Property, "box")
+            .WithSource(group.Source);
 
     public static Error InvalidContent(Box box, string message) =>
         new Error(LayoutErrorCodes.InvalidContent, $"{Describe(box)} cannot be laid out: {message}")

@@ -1,0 +1,10 @@
+table 155.262 205.453 t
+td 40.770 18.234 one-cell
+td 36.480 18.234 text 1
+td 42.012 18.234 more 1
+td 40.770 132.984 long-cell
+td 36.480 132.984 short-cell
+td 42.012 132.984 mid-cell
+td 40.770 18.234 three-cell
+td 36.480 18.234 text 3
+td 42.012 18.234 more 3

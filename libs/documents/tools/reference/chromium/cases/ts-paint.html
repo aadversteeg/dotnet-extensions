@@ -1,0 +1,9 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Separated borders: the table's background under its border, padding and spacing; each cell paints its own border and background; a cell without a border takes no room for it; a 6 pt border widens its column and heightens its row alone. -->
+<style>@page { size: 300pt 240pt; margin: 12pt; } body { font-size: 10.5pt; } table { border-collapse: separate; border-spacing: 6pt; border: 3pt solid #ff0000; padding: 3pt; background: #ffff00; } td { border: 1.5pt solid #0000ff; } td.c { background: #ff00ff; }</style></head><body>
+<table id="t">
+<tr><td id="one-cell" style="border-width:0">one</td><td class="c">two</td></tr>
+<tr><td id="three-cell" style="border-width:6pt">three</td><td>four</td></tr>
+</table>
+<p>after</p>
+</body></html>

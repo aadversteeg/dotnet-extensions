@@ -32,6 +32,8 @@ namespace Ave.Extensions.Documents.Render.Raster;
 /// the page by font size / units per em with y flipped, placed at its exact position (run origin plus the glyph's offset),
 /// and filled with the non-zero rule (TrueType's). One fill per glyph, as PDF viewers draw them: where two glyphs overlap,
 /// the second is painted over the first.</para>
+/// <para><b>Filled paths.</b> Each contour is a closed subpath of the same lines and cubic curves, mapped to pixels by the
+/// same scale, and filled with the item's rule (non-zero or even-odd) through the same exact coverage as a rectangle.</para>
 /// <para><b>Images.</b> The image's pixels (decoded once per render call, however often the image is drawn: JPEG by the
 /// image layer's decoder) are mapped onto the item's rectangle, row 0 at the top, as PDF maps an image's unit square
 /// (ISO 32000-1 §8.9.4), and drawn with the canvas's exact box filter.</para>
@@ -59,9 +61,11 @@ internal static class PagePainter
             var drawn = item switch
             {
                 FillRectangle fill => Rectangle(canvas, fill, scale, clip),
+                FillPath path => FilledPath(canvas, path, scale, clip),
                 GlyphRun run => Glyphs(canvas, run, scale, clip),
                 DrawImage image => Image(canvas, image, scale, clip, images),
-                StructureStart or StructureEnd or ArtifactStart or ArtifactEnd => Result<Unit, Error>.Success(Unit.Value),
+                // Markers, and a link's area, draw nothing: a page as pixels has no structure and nothing to click.
+                StructureStart or StructureEnd or ArtifactStart or ArtifactEnd or LinkArea or Anchor => Result<Unit, Error>.Success(Unit.Value),
                 _ => throw new InvalidOperationException($"The raster back-end cannot draw a {item.GetType().Name} yet."),
             };
 
@@ -113,6 +117,35 @@ internal static class PagePainter
     {
         var area = fill.Area;
         return canvas.Fill(Path.Rectangle(area.Origin.X, area.Origin.Y, area.Size.Width, area.Size.Height), Affine.Scale(scale, scale), FillRule.NonZero, fill.Color, clip);
+    }
+
+    /// <summary>A filled path: its contours as closed subpaths of lines and cubic curves, in page coordinates scaled to
+    /// pixels, filled by the item's rule (the same two rules as PDF's <c>f</c> and <c>f*</c>, ISO 32000-1 §8.5.3.3) with
+    /// the canvas's exact coverage. The canvas charges the fill's flattened edges against its work limits
+    /// (<see cref="Canvas.MaxFillWork"/>) and refuses a fill beyond them.</summary>
+    private static Result<Unit, Error> FilledPath(Canvas canvas, FillPath fill, double scale, PixelBox clip)
+    {
+        var builder = new PathBuilder();
+        foreach (var contour in fill.Contours)
+        {
+            var subpath = builder.MoveTo(contour.Start.X, contour.Start.Y);
+            foreach (var segment in contour.Segments)
+            {
+                if (segment is PathCubic cubic)
+                {
+                    subpath.CubicTo(cubic.Control1.X, cubic.Control1.Y, cubic.Control2.X, cubic.Control2.Y, cubic.End.X, cubic.End.Y);
+                }
+                else
+                {
+                    subpath.LineTo(segment.End.X, segment.End.Y);
+                }
+            }
+
+            subpath.Close();
+        }
+
+        var rule = fill.Rule == PathFillRule.EvenOdd ? FillRule.EvenOdd : FillRule.NonZero;
+        return canvas.Fill(builder.ToPath(), Affine.Scale(scale, scale), rule, fill.Color, clip);
     }
 
     private static Result<Unit, Error> Glyphs(Canvas canvas, GlyphRun run, double scale, PixelBox clip)

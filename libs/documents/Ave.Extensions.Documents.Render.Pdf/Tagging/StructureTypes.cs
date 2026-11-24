@@ -19,8 +19,8 @@ internal static class StructureTypes
 
     /// <summary>
     /// The attributes of an element (§14.7.5, Table 323, <c>/A</c>: "a single attribute object or array of attribute
-    /// objects"): its table attributes (<see cref="TableAttributes"/>) and its layout attributes
-    /// (<see cref="LayoutAttributes"/>). Null when it has none, the object itself when it has one, an array otherwise.
+    /// objects"): its table attributes (<see cref="TableAttributes"/>), its list attributes (<see cref="ListAttributes"/>)
+    /// and its layout attributes (<see cref="LayoutAttributes"/>). Null when it has none, the object itself when it has one, an array otherwise.
     /// </summary>
     /// <param name="role">The role.</param>
     /// <param name="span">The cell's span.</param>
@@ -28,7 +28,7 @@ internal static class StructureTypes
     /// <returns>The value of <c>/A</c>, or null.</returns>
     public static PdfObject? Attributes(SemanticRole role, CellSpan span, UserSpaceBox? box)
     {
-        PdfDictionary[] owners = [.. new[] { TableAttributes(role, span), LayoutAttributes(box) }.OfType<PdfDictionary>()];
+        PdfDictionary[] owners = [.. new[] { TableAttributes(role, span), ListAttributes(role), LayoutAttributes(box) }.OfType<PdfDictionary>()];
         return owners.Length switch
         {
             0 => null,
@@ -36,6 +36,16 @@ internal static class StructureTypes
             _ => new PdfArray([.. owners]),
         };
     }
+
+    /// <summary>
+    /// The attribute object of a list (§14.8.5.5, Table 347, owner <c>/List</c>): its <c>/ListNumbering</c>, how its items are
+    /// numbered or marked (<c>None</c>, <c>Disc</c>, <c>Circle</c>, <c>Square</c>, <c>Decimal</c>, <c>UpperRoman</c>,
+    /// <c>LowerRoman</c>, <c>UpperAlpha</c>, <c>LowerAlpha</c>), written for every list, <c>None</c> included, so a reader
+    /// need not rely on the attribute's default. Null for anything that is not a list.
+    /// </summary>
+    private static PdfDictionary? ListAttributes(SemanticRole role) => role is SemanticRole.ListRole list
+        ? PdfDictionary.Of(("O", new PdfName("List")), ("ListNumbering", new PdfName(list.Numbering.ToString())))
+        : null;
 
     /// <summary>
     /// The layout attribute object (§14.8.5.4, owner <c>/Layout</c>) with the element's <c>/BBox</c>: left, bottom,
@@ -49,8 +59,8 @@ internal static class StructureTypes
 
     /// <summary>
     /// The attribute object of a table cell (§14.8.5.7, Table 349, owner <c>/Table</c>): a header cell's
-    /// <c>/Scope /Column</c> — in this engine header cells come only from header rows, so each heads the column(s) it
-    /// spans (PDF/UA: veraPDF rule 7.5-1, "TH shall have a Scope attribute"); and <c>/ColSpan</c> and <c>/RowSpan</c>
+    /// <c>/Scope</c>, what it heads: <c>/Column</c>, <c>/Row</c> or <c>/Both</c>, from its role (PDF/UA: veraPDF rule
+    /// 7.5-1, "TH shall have a Scope attribute"); and <c>/ColSpan</c> and <c>/RowSpan</c>
     /// when the cell covers more than one column or row, which is how a reader rebuilds the table's grid (rules
     /// 7.2-41 and 7.2-42). Null for anything that needs no attributes.
     /// </summary>
@@ -59,16 +69,16 @@ internal static class StructureTypes
     /// <returns>The attribute dictionary, or null.</returns>
     private static PdfDictionary? TableAttributes(SemanticRole role, CellSpan span)
     {
-        var isHeader = role == SemanticRole.TableHeaderCell;
-        if (!isHeader && role != SemanticRole.TableCell)
+        var header = role as SemanticRole.TableHeaderCellRole;
+        if (header is null && role != SemanticRole.TableCell)
         {
             return null;
         }
 
-        return isHeader || span != CellSpan.Single
+        return header is not null || span != CellSpan.Single
             ? PdfDictionary.Of(
                 ("O", new PdfName("Table")),
-                ("Scope", isHeader ? new PdfName("Column") : null),
+                ("Scope", header is null ? null : new PdfName(header.Scope.ToString())),
                 ("ColSpan", span.Columns > 1 ? new PdfInteger(span.Columns) : null),
                 ("RowSpan", span.Rows > 1 ? new PdfInteger(span.Rows) : null))
             : null;

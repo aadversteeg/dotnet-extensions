@@ -1,0 +1,14 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0 0 6pt; }
+.b::before { content: "Sized head"; display: block; width: 120pt; height: 30pt; padding: 3pt; background: #e0e8f0; border: 0.75pt solid #336699; }
+.b::after { content: "Half foot"; display: block; width: 50%; min-height: 20pt; background-color: #f0e0e0; }
+</style></head><body>
+<!-- A ::before and an ::after of display: block with a width and a height, a percent width and a minimum height. -->
+<p class="b" id="boxed">Body of the box</p>
+<p id="after">After the box</p>
+</body></html>

@@ -40,6 +40,7 @@ public static class Elements
     /// <param name="author">The author, or null.</param>
     /// <param name="language">The document's language as a language tag such as <c>nl-NL</c> or <c>en</c>, or null.
     /// Screen readers use it to choose a voice; PDF/UA requires it.</param>
+    /// <param name="description">What the document is about, or null: the PDF's subject and its XMP description.</param>
     /// <param name="callerFile">Filled in by the compiler.</param>
     /// <param name="callerLine">Filled in by the compiler.</param>
     /// <returns>The document.</returns>
@@ -49,9 +50,10 @@ public static class Elements
         string? title = null,
         string? author = null,
         string? language = null,
+        string? description = null,
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int callerLine = 0) =>
-        new(body, page ?? PageSetup.A4, Style.Empty, title, author, new SourceLocation(callerFile, callerLine)) { Language = language };
+        new(body, page ?? PageSetup.A4, Style.Empty, title, author, new SourceLocation(callerFile, callerLine)) { Language = language, Description = description };
 
     /// <summary>
     /// A file to embed in a document with <see cref="Fluent.Document.Attach"/>. The bytes are copied. Set its
@@ -82,6 +84,55 @@ public static class Elements
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int callerLine = 0) =>
         new(children, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>A bulleted list: each item with a bullet beside its first line, drawn as a shape sized from the item's font
+    /// (a disc; in a list inside another list a circle, deeper a square; <see cref="ListElement.Bullet"/> sets one). The list
+    /// is indented by 30 pt unless a left padding is set, and the bullets sit in that indent.</summary>
+    /// <param name="items">The items, made with <see cref="ListItem(ValueList{Element}, string, int)"/>; at least one.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The list.</returns>
+    public static ListElement BulletedList(
+        ValueList<ListItemElement> items,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(items, IsNumbered: false, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>A numbered list: each item with its number, "1. ", "2. " …, beside its first line, right-aligned to the
+    /// item's start; <see cref="ListElement.Start"/> sets the first number. The list is indented by 30 pt unless a left
+    /// padding is set.</summary>
+    /// <param name="items">The items, made with <see cref="ListItem(ValueList{Element}, string, int)"/>; at least one.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The list.</returns>
+    public static ListElement NumberedList(
+        ValueList<ListItemElement> items,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(items, IsNumbered: true, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>An item of a list, of any elements: paragraphs, blocks, images, tables, and lists, which nest one level
+    /// deeper. Its text formatting is inherited by its content and gives its bullet or number its font, size and colour.</summary>
+    /// <param name="content">The item's elements, top to bottom.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The item.</returns>
+    public static ListItemElement ListItem(
+        ValueList<Element> content,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(content, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>An item of a list that is one paragraph of plain text.</summary>
+    /// <param name="text">The text. Runs of spaces, tabs and line breaks show as one space.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The item.</returns>
+    public static ListItemElement ListItem(
+        string text,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        ListItem([Paragraph(text, callerFile, callerLine)], callerFile, callerLine);
 
     /// <summary>A paragraph of plain text in one format.</summary>
     /// <param name="text">The text. Runs of spaces, tabs and line breaks show as one space.</param>
@@ -333,6 +384,55 @@ public static class Elements
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int callerLine = 0) =>
         new(new ImageFile(file), null, null, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine));
+
+    /// <summary>
+    /// A link to a URI around text, as a span of a paragraph: <c>Paragraph([Text("See "), Link("https://example.com", "our
+    /// site"), Text(".")])</c>. A reader of the PDF opens the URI when the text is clicked; the engine never fetches it. The
+    /// URI is written as it is given and must be an absolute URI of the schemes http, https, mailto or tel, in printable
+    /// ASCII (percent-encode other characters), at most 32 767 characters long; anything else, among them
+    /// <c>javascript:</c>, <c>file:</c>, <c>data:</c> and a relative URI, is refused when the document is translated
+    /// (<c>Documents.Input.Invalid.Link</c>, with the scheme and the reason). The link's description, which a screen reader
+    /// reads and PDF/UA requires, is its text, or the URI when the text is blank. Format the span as any text span
+    /// (<c>Link(uri, "here").Bold()</c>); a link takes no underline or colour unless you set them. A link inside a page
+    /// header or footer is drawn without being a link.
+    /// </summary>
+    /// <param name="uri">The URI, for example <c>https://example.com/a</c> or <c>mailto:info@example.com</c>.</param>
+    /// <param name="text">The text that is the link.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The span.</returns>
+    public static Span Link(
+        string uri,
+        string text,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(text, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine)) { Link = LinkTarget.Uri(uri) };
+
+    /// <summary>The longest anchor name (<see cref="ParagraphElement.Anchor"/>, <see cref="LinkTo"/>): 1 024
+    /// characters. A name is a label in code and is never written into the file; the bound keeps the work of comparing
+    /// names in step with the document.</summary>
+    public const int MaxAnchorLength = 1_024;
+
+    /// <summary>
+    /// A link inside the document, as a span of a paragraph: <c>LinkTo("results", "see the results")</c> leads to the
+    /// paragraph or heading made with <c>.Anchor("results")</c>, wherever it is in the body (before or after the link). In
+    /// the PDF the link's destination is the page where that paragraph starts and the top of its box; the reader's
+    /// horizontal position and zoom are left as they are. A name that no paragraph has is refused when the document is
+    /// translated (<c>Documents.Input.Invalid.Link</c>), and so is a link to an anchor inside a page header or footer, or
+    /// from one. The link's description is its text, or the name when the text is blank. Format the span as any text
+    /// span.
+    /// </summary>
+    /// <param name="anchor">The anchor's name.</param>
+    /// <param name="text">The text that is the link.</param>
+    /// <param name="callerFile">Filled in by the compiler.</param>
+    /// <param name="callerLine">Filled in by the compiler.</param>
+    /// <returns>The span.</returns>
+    public static Span LinkTo(
+        string anchor,
+        string text,
+        [CallerFilePath] string callerFile = "",
+        [CallerLineNumber] int callerLine = 0) =>
+        new(text, Style.Empty, Style.Empty, new SourceLocation(callerFile, callerLine)) { LinkAnchor = anchor };
 
     /// <summary>
     /// An image in a line of text, as a span of a paragraph (an atomic inline, CSS Display 3, Appendix A, as HTML's <c>img</c> in

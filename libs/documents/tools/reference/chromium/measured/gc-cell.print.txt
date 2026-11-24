@@ -1,0 +1,8 @@
+page 1 300.000 300.000
+word 1 12.000 32.034 22.500 10.500 Cell: #000000 Lato-Regular
+word 1 34.723 52.079 22.500 10.500 one #000000 Lato-Regular
+word 1 150.000 170.034 22.500 10.500 Cell: #000000 Lato-Regular
+word 1 172.723 190.615 22.500 10.500 two #000000 Lato-Regular
+word 1 12.000 33.667 35.250 10.500 after #000000 Lato-Regular
+word 1 36.134 51.301 35.250 10.500 the #000000 Lato-Regular
+word 1 53.989 76.874 35.250 10.500 table #000000 Lato-Regular

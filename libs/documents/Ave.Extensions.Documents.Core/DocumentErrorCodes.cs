@@ -61,10 +61,26 @@ public static class DocumentErrorCodes
             /// Property.</summary>
             public static readonly ErrorCode WhiteSpace = _ / "WhiteSpace";
 
+            /// <summary>A font feature tag a run switches on that is not one the model has (<see cref="OptionalFontFeatures.Tags"/>).
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode FontFeature = _ / "FontFeature";
+
+            /// <summary>A <c>letter-spacing</c> or <c>word-spacing</c> that is not a finite length of at most the front-end's
+            /// longest length either way (CSS Text 3 §7.2, CSS Text 4 §7.1 allow negative values). Metadata: Value,
+            /// Property.</summary>
+            public static readonly ErrorCode Spacing = _ / "Spacing";
+
+            /// <summary>A baseline shift that is not a finite length of at most the front-end's longest length either way
+            /// (CSS Inline 3 §4, <c>vertical-align</c> raises or lowers a box). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BaselineShift = _ / "BaselineShift";
+
             /// <summary>A text decoration with a line its enum does not have, a decorating font that is not valid (as
             /// <see cref="FontFamily"/>, <see cref="FontSize"/> and <see cref="FontWeight"/> say for a run's own font), or a run
             /// with more decorations than <c>ModelLimits.MaxDecorations</c>. Metadata: Value, Property.</summary>
             public static readonly ErrorCode TextDecoration = _ / "TextDecoration";
+
+            /// <summary>A border side with a style its enum does not have. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
 
             /// <summary>An <c>orphans</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3: "Only
             /// positive integers are allowed"). Metadata: Value, Property.</summary>
@@ -92,10 +108,13 @@ public static class DocumentErrorCodes
             /// and Value, Property, SourceFile, SourceLine when the front-end found it.</summary>
             public static readonly ErrorCode Text = _ / "Text";
 
-            /// <summary>Metadata text — the title, the author, an attachment's file name or description — with a
-            /// character XML 1.0 does not allow (§2.2, production [2] Char: a C0 control character other than tab, line
-            /// feed and carriage return, U+FFFE, U+FFFF or an unpaired surrogate). The XMP metadata is XML, so such
-            /// text cannot be written. Metadata: Property, Offset.</summary>
+            /// <summary>Metadata text that THE RULE FOR A DOCUMENT'S METADATA TEXT (<see cref="MetadataTexts"/>) does not
+            /// accept: a title, an author or a description with a control character other than tab, line feed and carriage
+            /// return or a character XML 1.0 does not allow, an author or a description longer than
+            /// <see cref="MetadataTexts.MaxLength"/>; or an attachment's file name or description with a character XML 1.0
+            /// does not allow (§2.2, production [2] Char: a C0 control character other than tab, line feed and carriage
+            /// return, U+FFFE, U+FFFF or an unpaired surrogate). The XMP metadata is XML, so such text cannot be written.
+            /// Metadata: Property, Offset (for a character).</summary>
             public static readonly ErrorCode MetadataText = _ / "MetadataText";
 
             /// <summary>Elements nested deeper than the front-end allows (<c>InputLimits.MaxNestingDepth</c> in
@@ -120,6 +139,14 @@ public static class DocumentErrorCodes
             /// place, or a box with a place in a row outside one. Metadata: Value, Property.</summary>
             public static readonly ErrorCode MarginBoxes = _ / "MarginBoxes";
 
+            /// <summary>A list that is not valid (ISO 32000-1 §14.8.4.3.3): a list whose children are not all list items, or
+            /// more than <c>ModelLimits.MaxListItems</c> of them; an item outside a list, or not laid out as a list item, or
+            /// with other children than an optional label and then its body; a label or a marker symbol outside one; a
+            /// label longer than <c>ModelLimits.MaxLabelLength</c>; lists nested more than <c>ModelLimits.MaxListDepth</c>
+            /// deep; in the code front-end, a start number on a bulleted list, a bullet on a numbered list, or numbers past
+            /// the range of a 32-bit integer. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode List = _ / "List";
+
             /// <summary>An image size that is not a positive finite length. Metadata: Value, Property.</summary>
             public static readonly ErrorCode ImageSize = _ / "ImageSize";
 
@@ -134,6 +161,16 @@ public static class DocumentErrorCodes
 
             /// <summary>An image that is both given alternative text and marked decorative. Metadata: Value.</summary>
             public static readonly ErrorCode ImageDescription = _ / "ImageDescription";
+
+            /// <summary>A link whose target is not accepted (<see cref="LinkUris"/>): not an absolute URI of printable ASCII,
+            /// of a scheme other than <c>http</c>, <c>https</c>, <c>mailto</c> and <c>tel</c>, or longer than
+            /// <see cref="LinkUris.MaxLength"/>; or a link without a description. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode Link = _ / "Link";
+
+            /// <summary>An inline group (a link or a span) that is not valid: one outside the lines of an inline box, one
+            /// with a role other than a link or a span, a link inside a link, or a link or span role on a box.
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode InlineGroup = _ / "InlineGroup";
         }
 
         /// <summary>A value the input language allows but this version of the engine does not implement yet.</summary>
@@ -159,6 +196,16 @@ public static class DocumentErrorCodes
             /// boxes, whose columns are sized by the intrinsic widths of their content (a sized box's share in them is not
             /// built). Metadata: Value, Property.</summary>
             public static readonly ErrorCode Size = _ / "Size";
+
+            /// <summary>An inset or outset border side where this version does not draw it: on a table or a part of a
+            /// table, whose lines are drawn solid by the table's layout, or on a box with inset and outset sides together
+            /// (not measured). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
+
+            /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: around an
+            /// image that lies inside a link too, broken over two lines at a soft hyphen, alone with
+            /// a vertical edge only, or reaching above the page area of a later page. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode InlineBox = _ / "InlineBox";
         }
     }
 }

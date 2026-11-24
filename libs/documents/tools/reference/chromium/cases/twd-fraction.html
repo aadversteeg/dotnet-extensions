@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Lengths that are not a whole number of 1/64 px: a, automatic, table 200.1pt; b, fixed, separated, table 150.3pt, cell 50.3pt; c, automatic, cell 50.3pt. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a" style="width: 200.1pt">
+<tr><td id="one-a">one</td><td>text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s f" style="width: 150.3pt">
+<tr><td id="one-b" style="width: 50.3pt">one</td><td>text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c">
+<tr><td id="one-c" style="width: 50.3pt">one</td><td>text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>

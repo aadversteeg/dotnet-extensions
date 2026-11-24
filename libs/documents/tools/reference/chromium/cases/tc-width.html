@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A caption over tables of different widths: a, width auto; b, width 100%; c, width 200pt; d, width 100%, separated. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; } .b { caption-side: bottom; }</style></head><body>
+<table id="a">
+<caption id="caption-a">Caption</caption>
+<tr><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" style="width: 100%">
+<caption id="caption-b">Caption</caption>
+<tr><td id="one-b">one</td><td>two</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" style="width: 200pt">
+<caption id="caption-c">Caption</caption>
+<tr><td id="one-c">one</td><td>two</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s" style="width: 100%">
+<caption id="caption-d">Caption</caption>
+<tr><td id="one-d">one</td><td>two</td></tr>
+</table>
+<p>after</p>
+</body></html>

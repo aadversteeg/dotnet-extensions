@@ -1,0 +1,6 @@
+1 103.500 12.000 112.500 24.750 uri https://example.com/
+1 32.250 90.000 48.750 102.750 uri https://example.com/
+1 84.000 108.750 96.000 121.500 uri https://example.com/
+1 96.000 108.750 105.000 121.500 uri https://example.com/
+1 66.750 127.500 81.000 140.250 uri https://example.com/
+1 84.750 146.250 90.750 159.000 uri https://example.com/

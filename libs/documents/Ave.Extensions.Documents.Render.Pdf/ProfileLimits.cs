@@ -136,7 +136,7 @@ internal static class ProfileLimits
     private static IEnumerable<(string Property, string Text, SourceLocation? Source)> WrittenTexts(PageDocument document)
     {
         var metadata = document.Metadata;
-        var fields = new (string Property, string? Text)[] { ("title", metadata.Title), ("author", metadata.Author), ("language", metadata.Language) }
+        var fields = new (string Property, string? Text)[] { ("title", metadata.Title), ("author", metadata.Author), ("description", metadata.Description), ("language", metadata.Language) }
             .Where(field => field.Text is not null)
             .Select(field => (field.Property, field.Text!, (SourceLocation?)null));
         var attachments = metadata.Attachments.SelectMany(attachment => new (string, string?)[] { ("attachment file name", attachment.FileName), ("attachment description", attachment.Description) }
@@ -147,12 +147,16 @@ internal static class ProfileLimits
             .Where(start => start.Role is SemanticRole.FigureRole { AlternativeText: not null })
             .DistinctBy(start => start.Node)
             .Select(start => ("alternative text", ((SemanticRole.FigureRole)start.Role).AlternativeText!, (SourceLocation?)start.Source));
+        var links = starts
+            .Where(start => start.Role is SemanticRole.LinkRole)
+            .DistinctBy(start => start.Node)
+            .Select(start => ("link description", ((SemanticRole.LinkRole)start.Role).Description, (SourceLocation?)start.Source));
         // A glyph's text becomes a string only as replacement text (/ActualText). Text of n UTF-16 units takes at most
         // 2n + 2 bytes, so only a text longer than that bound can pass the limit; the rest need not be encoded.
         var glyphTexts = Pages(document).SelectMany(page => page.Glyphs)
             .Where(glyph => 2 * glyph.Text.Length + 2 > MaxStringBytes)
             .Select(glyph => ("text of a glyph", glyph.Text, (SourceLocation?)null));
-        return fields.Concat(attachments).Concat(alternatives).Concat(glyphTexts);
+        return fields.Concat(attachments).Concat(alternatives).Concat(links).Concat(glyphTexts);
     }
 
     /// <summary>Every value from the input that the writer turns into a PDF name, with the bytes it adds.</summary>

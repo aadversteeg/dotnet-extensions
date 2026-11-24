@@ -26,6 +26,36 @@ public static class ModelLimits
     public const int MaxDecorations = 16;
 
     /// <summary>
+    /// The most items one list may have (<see cref="SemanticRole.List"/>): 10 000. Each item's label is shaped and measured
+    /// on its own, so the work for one list grows with its number of items; a front-end numbers the items in one pass, and
+    /// the limit keeps every number a front-end computes far inside a 32-bit integer from any start. More is
+    /// <c>Documents.Input.Invalid.List</c>.
+    /// </summary>
+    public const int MaxListItems = 10_000;
+
+    /// <summary>
+    /// How deep lists may nest, one inside an item of another: 16 levels. Each level adds an indent and a label laid out
+    /// outside its item; the general nesting limit (<see cref="MaxNestingDepth"/>, where a list, its item and the item's
+    /// body are three levels) would allow 21. Deeper is <c>Documents.Input.Invalid.List</c>.
+    /// </summary>
+    public const int MaxListDepth = 16;
+
+    /// <summary>
+    /// The longest text a list label may hold, all its runs together: 64 UTF-16 code units. The longest label a counter style
+    /// of CSS gives a 32-bit number in is 16 ("mmmdccclxxxviii." with its space 17, case <c>li-counter-styles</c>); a label is
+    /// shaped once per item and laid out on one line, so its length bounds that work. Longer is
+    /// <c>Documents.Input.Invalid.List</c>.
+    /// </summary>
+    public const int MaxLabelLength = 64;
+
+    /// <summary>
+    /// The most nodes of one document that links lead to (<see cref="LinkTarget.Node"/>): 65 536. Layout records the place
+    /// of each such node and the PDF back-end looks each one up for every link to it, so the bound keeps that work from
+    /// growing with the input without limit; it is far more targets than a document has headings and sections.
+    /// </summary>
+    public const int MaxLinkTargets = 65_536;
+
+    /// <summary>
     /// The longest length a document may hold: 14 400 pt (200 inches), the largest page side ISO 32000-1 names (Annex C,
     /// the limit on page size). It holds for a page side, a page margin, a margin, a padding, a border width, a font
     /// size, a fixed column width, a line height given as a length, an image's width and height and a header or footer
@@ -34,4 +64,8 @@ public static class ModelLimits
     /// range a PDF can hold.
     /// </summary>
     public static Length MaxLength { get; } = Length.FromPoints(14_400);
+
+    /// <summary>The largest percentage a width can be given as (a table's or a column's): 100 times the width it is of,
+    /// so a percentage stays as bounded as a length of <see cref="MaxLength"/> on a page that size.</summary>
+    public const double MaxPercent = 10_000;
 }

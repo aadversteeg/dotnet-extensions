@@ -48,7 +48,7 @@ public sealed record ElementDeclarations(ValueList<Declaration> StyleAttribute, 
 /// together at <see cref="CssInputLimits.MaxSubstitutionWork"/>. A limit that is reached ends the cascade: that
 /// <see cref="Compute"/> and every later one return the limit's error, never a partly computed style.</para>
 /// </remarks>
-public sealed class StyleComputer
+public sealed partial class StyleComputer
 {
     private readonly CascadeIndex _index;
     private readonly ValueContext _values;
@@ -61,6 +61,12 @@ public sealed class StyleComputer
     /// to many elements once.</summary>
     private readonly HashSet<PreparedDeclaration> _reported = [];
     private readonly HashSet<(PreparedDeclaration, ErrorCode)> _reportedAt = [];
+
+    /// <summary>The keys of <see cref="_reportedAt"/> in the order they were added: what <see cref="Rollback"/> takes back.</summary>
+    private readonly List<(PreparedDeclaration, ErrorCode)> _reportedOrder = [];
+
+    /// <summary>The declarations <see cref="Applied"/> reported, in order: what <see cref="Rollback"/> takes back.</summary>
+    private readonly List<PreparedDeclaration> _appliedOrder = [];
 
     /// <summary>The user-agent declarations refused, by element: each element they refuse is reported, so a front-end
     /// can name the element (an author's declaration is reported once).</summary>
@@ -440,6 +446,7 @@ public sealed class StyleComputer
         {
             if (_reported.Add(notice.Declaration))
             {
+                _appliedOrder.Add(notice.Declaration);
                 _diagnostics.Add(notice.Diagnostic);
             }
         }
@@ -1120,6 +1127,12 @@ public sealed class StyleComputer
     private CssValue? Computed(PropertyDefinition property, CssValue specified, ComputeContext context, PreparedDeclaration declaration)
     {
         var computed = property.Compute(specified, context);
+        if (computed.Value is CssCounterChanges changes)
+        {
+            // Where a change that leaves 32 bits is refused when the counters are counted.
+            return changes with { SourceName = declaration.SourceName, Position = declaration.Source.Position };
+        }
+
         if (computed.Value is { } value)
         {
             return value;
@@ -1133,8 +1146,31 @@ public sealed class StyleComputer
     {
         if (_reportedAt.Add((declaration, code)))
         {
+            _reportedOrder.Add((declaration, code));
             _diagnostics.Add(DeclarationPreparer.Diagnostic(code, message, declaration));
         }
+    }
+
+    /// <summary>The place to take diagnostics back to with <see cref="Rollback"/>.</summary>
+    private (int Diagnostics, int Reported, int Applied) ReportMark() => (_diagnostics.Count, _reportedOrder.Count, _appliedOrder.Count);
+
+    /// <summary>Takes back what <see cref="Report"/> and <see cref="Applied"/> found since a mark: for a box that is not
+    /// generated after all. Only the cascade of a pseudo-element takes back, and it adds diagnostics by these two only.</summary>
+    private void Rollback((int Diagnostics, int Reported, int Applied) mark)
+    {
+        for (var i = mark.Reported; i < _reportedOrder.Count; i++)
+        {
+            _reportedAt.Remove(_reportedOrder[i]);
+        }
+
+        for (var i = mark.Applied; i < _appliedOrder.Count; i++)
+        {
+            _reported.Remove(_appliedOrder[i]);
+        }
+
+        _reportedOrder.RemoveRange(mark.Reported, _reportedOrder.Count - mark.Reported);
+        _appliedOrder.RemoveRange(mark.Applied, _appliedOrder.Count - mark.Applied);
+        _diagnostics.TruncateTo(mark.Diagnostics);
     }
 
     /// <summary>Compares (declaration, element) keys by identity.</summary>

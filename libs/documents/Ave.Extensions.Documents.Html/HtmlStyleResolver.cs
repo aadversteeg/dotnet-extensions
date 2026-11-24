@@ -273,6 +273,11 @@ public static class HtmlStyleResolver
             }
 
             open.Push(top);
+            if (!Generated(top, computer, "before") || !Marker(top, computer))
+            {
+                return null;
+            }
+
             while (true)
             {
                 var current = open.Peek();
@@ -288,6 +293,11 @@ public static class HtmlStyleResolver
                             }
 
                             open.Push(child);
+                            if (!Generated(child, computer, "before") || !Marker(child, computer))
+                            {
+                                return null;
+                            }
+
                             break;
                         case HtmlText text:
                             current.Children.Add(new StyledText(text, current.Style));
@@ -297,8 +307,13 @@ public static class HtmlStyleResolver
                     continue;
                 }
 
+                if (!Generated(current, computer, "after"))
+                {
+                    return null;
+                }
+
                 open.Pop();
-                var styled = new StyledElement(html, current.Style, current.Language, [.. current.Children]);
+                var styled = new StyledElement(html, current.Style, current.Language, [.. current.Children]) { Marker = current.Marker };
                 if (open.Count == 0)
                 {
                     return styled;
@@ -358,7 +373,88 @@ public static class HtmlStyleResolver
             hidden |= style[Css.Properties.PropertyRegistry.Display] is Css.Values.CssKeyword { Name: "none" };
             var refused = RefuseElement(element, hidden);
             NameTheElement(computer, mark, html, refused || (hidden && html.Namespace == ElementNamespace.Html && FormControls.Contains(html.LocalName)));
-            return new Open(element, style, Language(element) ?? inheritedLanguage, hidden);
+            return new Open(element, style, Language(element) ?? inheritedLanguage, hidden) { Refused = refused };
+        }
+
+        /// <summary>The elements whose <c>::before</c> and <c>::after</c> draw nothing in Chromium 159, also with
+        /// content (measured: case <c>gc-nothing</c>): nothing is generated and nothing is reported.</summary>
+        private static readonly HashSet<string> NoGeneratedContent = new(StringComparer.Ordinal) { "img", "br" };
+
+        /// <summary>Why an element cannot hold generated text, or null when it can: Chromium makes anonymous boxes for
+        /// it in a table and its parts (Chromium 159, measured: <c>tr::before</c> becomes a cell before the row's
+        /// first one), a list's children are its items here, and the other void elements are not measured.</summary>
+        private static string? RefusedHost(HtmlElement html) => html.LocalName switch
+        {
+            "table" or "thead" or "tbody" or "tfoot" or "tr" => "Chromium draws it in an anonymous table cell, which is not drawn here; put the text in a cell",
+            "ul" or "ol" or "menu" or "dir" => "the children of a list are its items here; put the text in an li",
+            "area" or "base" or "col" or "colgroup" or "embed" or "hr" or "input" or "link" or "meta" or "source" or "track" or "wbr" => "generated text on this element is not measured; put the text in the HTML",
+            _ => null,
+        };
+
+        /// <summary>
+        /// Adds the text an element's <c>::before</c> (first, before its children) or <c>::after</c> (last) generates as
+        /// an inline child: an element of the styled tree with the pseudo-element's style and one text, in the same
+        /// inline formatting context as the element's own text (CSS Pseudo 4 §4.1: the pseudo-elements are children of the
+        /// originating element), so white space collapses across the join and no break opportunity is added there
+        /// (measured: cases <c>gc-string-space</c>, <c>gc-string-nobreak</c>). Nothing for a hidden or refused element, an
+        /// element outside the HTML namespace, or <c>img</c> and <c>br</c>. False at a limit.
+        /// </summary>
+        private bool Generated(Open element, StyleComputer computer, string pseudoElement)
+        {
+            var html = element.Element.Element;
+            if (element.Hidden || element.Refused || html.Namespace != ElementNamespace.Html || NoGeneratedContent.Contains(html.LocalName))
+            {
+                return true;
+            }
+
+            var generated = computer.ComputePseudoElement(element.Element, pseudoElement, RefusedHost(html));
+            if (generated.IsFailure)
+            {
+                Keep(generated.Error);
+                Limit ??= generated.Error;
+                return false;
+            }
+
+            if (generated.Value is not { } content)
+            {
+                return true;
+            }
+
+            var text = new HtmlText(content.Text, content.Position);
+            var box = new HtmlElement(ElementNamespace.Html, "::" + pseudoElement, [], [text], null, content.Position);
+            var node = new StyledElement(box, content.Style, element.Language, [new StyledText(text, content.Style)]) { Generated = content };
+            if (pseudoElement == "before")
+            {
+                element.Children.Insert(0, node);
+            }
+            else
+            {
+                element.Children.Add(node);
+            }
+
+            return true;
+        }
+
+        /// <summary>The style of a list item's <c>::marker</c> (CSS Lists 3 §3.1), kept on the item; nothing for an element
+        /// that is not a list item, a hidden or refused one, or one outside the HTML namespace. False at a limit.</summary>
+        private bool Marker(Open element, StyleComputer computer)
+        {
+            if (element.Hidden || element.Refused || element.Element.Element.Namespace != ElementNamespace.Html
+                || element.Style[Css.Properties.PropertyRegistry.Display] is not Css.Values.CssKeyword { Name: "list-item" })
+            {
+                return true;
+            }
+
+            var marker = computer.ComputeMarker(element.Element);
+            if (marker.IsFailure)
+            {
+                Keep(marker.Error);
+                Limit ??= marker.Error;
+                return false;
+            }
+
+            element.Marker = marker.Value;
+            return true;
         }
 
         /// <summary>An element whose children are being styled: its style, language, whether it is hidden, the styled
@@ -372,6 +468,12 @@ public static class HtmlStyleResolver
             public string? Language { get; } = language;
 
             public bool Hidden { get; } = hidden;
+
+            /// <summary>Whether the element itself is refused: it generates no text.</summary>
+            public bool Refused { get; init; }
+
+            /// <summary>The style of its <c>::marker</c>, or null.</summary>
+            public MarkerStyle? Marker { get; set; }
 
             public List<StyledNode> Children { get; } = [];
 

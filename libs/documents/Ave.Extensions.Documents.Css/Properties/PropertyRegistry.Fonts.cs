@@ -17,6 +17,12 @@ public static partial class PropertyRegistry
         "ui-rounded", "math", "emoji", "fangsong", "generic(fangsong)", "generic(kai)", "generic(khmer-mul)", "generic(nastaliq)",
     ];
 
+    /// <summary>Whether a name, written without quotes, is a generic font family keyword of CSS Fonts 4 §2.1 (ASCII case
+    /// insensitive).</summary>
+    /// <param name="name">The name.</param>
+    /// <returns>Whether it is one.</returns>
+    public static bool IsGenericFamily(string name) => name is not null && GenericFamilies.Contains(InfraAscii.ToLower(name));
+
     /// <summary>The absolute-size keywords of CSS Fonts 4 §2.5 with their size at medium = 16px, in pixels.</summary>
     private static readonly Dictionary<string, double> AbsoluteSizes = new(StringComparer.Ordinal)
     {
@@ -70,6 +76,16 @@ public static partial class PropertyRegistry
 
         // normal prints as auto: Chromium 159 kerns with both (measured: cases h-kerning-auto, h-kerning-normal and
         // h-kerning-none of tools/reference/chromium), and the engine always applies the font's kerning.
+        yield return new PropertyDefinition(
+            "font-variant-numeric", inherited: true, new CssKeyword("normal"), "all elements and text",
+            "normal | [ lining-nums | oldstyle-nums ] || [ proportional-nums | tabular-nums ] || ordinal", PropertySupport.Supported,
+            "CSS Fonts 4 §6.7", ParseFontVariantNumeric, AsSpecified);
+
+        yield return new PropertyDefinition(
+            "font-feature-settings", inherited: true, new CssKeyword("normal"), "all elements and text",
+            "normal | <feature-tag-value># (the tags \"lnum\", \"onum\", \"pnum\", \"tnum\" and \"ordn\", each with 0, 1, on or off)", PropertySupport.Supported,
+            "CSS Fonts 4 §7.1", ParseFontFeatureSettings, AsSpecified);
+
         yield return Keywords("font-kerning", inherited: true, "auto", ["auto", "normal"], ["none"], "all elements and text",
             "CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured)");
 
@@ -359,4 +375,99 @@ public static partial class PropertyRegistry
         CalcFunction function => function.Arguments.Select(Mixes).Aggregate((false, false), (all, one) => (all.Item1 || one.Length, all.Item2 || one.Percentage)),
         _ => (false, false),
     };
+
+    /// <summary>The groups of font-variant-numeric (CSS Fonts 4 §6.7), each given at most once and one value per group;
+    /// the last three groups the engine does not draw: fractions need contextual lookups the shaper does not apply (Lato's
+    /// 'frac'), and no font of the measured cases has a slashed zero.</summary>
+    private static readonly string[][] NumericGroups =
+    [
+        ["lining-nums", "oldstyle-nums"], ["proportional-nums", "tabular-nums"], ["ordinal"],
+        ["diagonal-fractions", "stacked-fractions"], ["slashed-zero"],
+    ];
+
+    /// <summary>font-variant-numeric: <c>normal</c>, or keywords of different groups (<see cref="NumericGroups"/>) in any
+    /// order, kept as written; a fraction value or slashed-zero is refused.</summary>
+    private static ParsedValue ParseFontVariantNumeric(ValueReader reader)
+    {
+        if (reader.Count == 1 && reader.Keyword("normal") is not null)
+        {
+            return ParsedValue.Of(new CssKeyword("normal"));
+        }
+
+        var keywords = new List<string>();
+        while (!reader.AtEnd)
+        {
+            var keyword = reader.Keyword([.. NumericGroups.SelectMany(group => group)]);
+            if (keyword is null || keywords.Exists(other => Array.FindIndex(NumericGroups, group => group.Contains(other)) == Array.FindIndex(NumericGroups, group => group.Contains(keyword))))
+            {
+                return ParsedValue.Invalid("not a value of font-variant-numeric");
+            }
+
+            keywords.Add(keyword);
+        }
+
+        if (keywords.Find(keyword => Array.FindIndex(NumericGroups, group => group.Contains(keyword)) >= 3) is { } refused)
+        {
+            return ParsedValue.Refused($"'font-variant-numeric: {refused}' is not supported: {(refused == "slashed-zero" ? "no measured font has a slashed zero" : "fractions need contextual substitutions, which the shaper does not apply")}");
+        }
+
+        return ParsedValue.Of(keywords.Count == 1 ? new CssKeyword(keywords[0]) : new CssList([.. keywords.Select(keyword => (CssValue)new CssKeyword(keyword))], CommaSeparated: false));
+    }
+
+    /// <summary>
+    /// font-feature-settings (CSS Fonts 4 §7.1): <c>normal</c>, or a comma-separated list of a tag (a string of four
+    /// characters) and an optional value (an integer of 0 or more, <c>on</c> = 1, <c>off</c> = 0; 1 when left out), each
+    /// item as the pair of the tag and its value. Drawn: the figure and ordinal tags with 0 or 1; another tag or value is
+    /// refused (an alternate's index, a feature the shaper does not apply).
+    /// </summary>
+    private static ParsedValue ParseFontFeatureSettings(ValueReader reader)
+    {
+        if (reader.Count == 1 && reader.Keyword("normal") is not null)
+        {
+            return ParsedValue.Of(new CssKeyword("normal"));
+        }
+
+        var items = new List<CssValue>();
+        while (true)
+        {
+            if (reader.AtEnd || reader.Next() is not CssToken { Kind: CssTokenKind.String } tag || tag.Text.Length != 4 || !tag.Text.All(c => c is >= ' ' and <= '~'))
+            {
+                return ParsedValue.Invalid("not a value of font-feature-settings: a feature tag is a string of four ASCII characters");
+            }
+
+            double value = 1;
+            if (reader.Keyword("on", "off") is { } state)
+            {
+                value = state == "on" ? 1 : 0;
+            }
+            else if (reader.Peek is CssToken { Kind: CssTokenKind.Number } number)
+            {
+                reader.Next();
+                if (number.Number < 0 || number.Number != Math.Floor(number.Number))
+                {
+                    return ParsedValue.Invalid("not a value of font-feature-settings: a feature value is an integer of 0 or more");
+                }
+
+                value = number.Number;
+            }
+
+            if (!OptionalFontFeatures.Tags.Contains(tag.Text) || value > 1)
+            {
+                return ParsedValue.Refused($"'font-feature-settings: \"{CssSerializer.Shortened(tag.Text)}\" {value.ToString(System.Globalization.CultureInfo.InvariantCulture)}' is not supported: the engine switches lnum, onum, pnum, tnum and ordn on or off");
+            }
+
+            items.Add(new CssList([new CssString(tag.Text), new CssNumber(value, IsInteger: true)], CommaSeparated: false));
+            if (reader.AtEnd)
+            {
+                break;
+            }
+
+            if (reader.Next() is not CssToken { Kind: CssTokenKind.Comma } || reader.AtEnd)
+            {
+                return ParsedValue.Invalid("not a value of font-feature-settings");
+            }
+        }
+
+        return ParsedValue.Of(new CssList([.. items], CommaSeparated: true));
+    }
 }

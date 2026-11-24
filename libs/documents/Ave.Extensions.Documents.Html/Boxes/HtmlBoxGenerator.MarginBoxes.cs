@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Cascade;
+using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html.Parsing;
@@ -133,11 +134,33 @@ public static partial class HtmlBoxGenerator
             var source = Source(box.Position) with { Column = box.Position.Column };
             var runs = new List<Node>();
             var text = TextStyleOf(stand);
+            if (box.Style[PropertyRegistry.Find("text-transform")!] is CssKeyword { Name: not "none" and var transform })
+            {
+                // The page context inherits text-transform from the root element (CSS Paged Media 3 §4.2); Chromium's
+                // margin boxes with a transform are not measured, so the content is refused rather than drawn otherwise.
+                Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"'text-transform: {transform}' reaches the page-margin box from the root element and is not drawn there in this version: set it on the elements inside the root element instead.")
+                    .With(ErrorMetadataKeys.Value, transform).With(ErrorMetadataKeys.Property, "text-transform")
+                    .WithSource(_sourceName, box.Position));
+            }
+
+            foreach (var name in new[] { "letter-spacing", "word-spacing" })
+            {
+                if (SpacingOf(box.Style[PropertyRegistry.Find(name)!]) != Length.Zero)
+                {
+                    // Accepted on @page and margin boxes by the page-context cascade; Chromium's margin boxes with spacing are
+                    // not measured, so the content is refused rather than drawn otherwise.
+                    Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"'{name}' on a page-margin box is not drawn in this version.")
+                        .With(ErrorMetadataKeys.Value, SpacingText(SpacingOf(box.Style[PropertyRegistry.Find(name)!]))).With(ErrorMetadataKeys.Property, name)
+                        .WithSource(_sourceName, box.Position));
+                }
+            }
+
             foreach (var item in box.Content.Items)
             {
                 switch (item)
                 {
                     case CssContentString value when text is not null:
+                        RefuseMissingGlyphs(value.Value, stand, _ => box.Position);
                         runs.Add(new TextRun(NewId(), Characters(new HtmlText(value.Value, box.Position)), text, source));
                         break;
                     case CssContentCounter counter when text is not null:

@@ -32,6 +32,16 @@ public static class LayoutErrorCodes
     /// space the table has. Metadata: Node, Value (needed and available width), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode ColumnsDoNotFit = _ / "ColumnsDoNotFit";
 
+    /// <summary>A table in the separated borders model (<c>BoxStyle.BorderModel</c> <c>Separate</c>, CSS
+    /// <c>border-collapse: separate</c>) that breaks where no measured case shows how Chromium prints it: a cell over several
+    /// rows across the break, content sliced in a cell, a cut row beside a cell aligned at the middle or bottom under
+    /// <c>CutRowAlignment.RestAlignedInItsPart</c>,
+    /// <c>box-decoration-break: clone</c>, or a page of the table past the page end; and a table of either border model
+    /// whose caption does not fit on the page with the first row below it, or below the last row, or with a height on the
+    /// table, a row or a cell that does not fit whole on its page. Metadata: Node, Value (the
+    /// room it had, in points), SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode TableBreak = _ / "TableBreak";
+
     /// <summary>Computed content (the page count) that does not settle: every layout pass gives a different
     /// number of pages, up to the pass limit. Metadata: Node, Value (the page counts per pass), SourceFile,
     /// SourceLine of the first page-count reference.</summary>
@@ -44,6 +54,12 @@ public static class LayoutErrorCodes
     /// Metadata: Node, Property (<c>width</c> or <c>height</c>), Value (needed and available, in points), SourceFile,
     /// SourceLine of the box.</summary>
     public static readonly ErrorCode MarginBoxOverflow = _ / "MarginBoxOverflow";
+
+    /// <summary>A list item's label that would start left of the sheet's left edge (<c>ListItemLayout</c>): a label wider
+    /// than the room left of its item, which Chromium 159 draws past the sheet and cuts (case <c>li-types</c>: "MCMXCIX. "
+    /// loses its first glyphs; case <c>li-marker-sheet</c>). The engine refuses it. Metadata: Node (the item), Value (the
+    /// label's left edge on the sheet, in points), SourceFile, SourceLine of the item.</summary>
+    public static readonly ErrorCode MarkerOutsideSheet = _ / "MarkerOutsideSheet";
 
     /// <summary>A break token a layout algorithm cannot have returned for the box it is given: a token of another
     /// algorithm's kind, or a position the box does not have (a child, line, row or cell outside it, a height shown that is

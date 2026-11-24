@@ -44,8 +44,9 @@ public class NormalizationReferenceTests
 
     /// <summary>
     /// The exceptions <c>docs/architecture.md</c> lists ("Text") that the family's fonts can show, each against HarfBuzz:
-    /// a cluster with a variation selector is normalized, where HarfBuzz leaves it alone; and the fallbacks for a missing
-    /// space and for U+2011 NON-BREAKING HYPHEN, which HarfBuzz makes, are not made: the text is refused.
+    /// a cluster with a variation selector is normalized, where HarfBuzz leaves it alone; and the fallback for a missing
+    /// space, which HarfBuzz makes, is not made: the text is refused. The fallback for U+2011 NON-BREAKING HYPHEN is made
+    /// as HarfBuzz makes it, with the glyph of U+2010.
     /// </summary>
     [Fact]
     public void A_cluster_with_a_variation_selector_is_normalized_where_HarfBuzz_leaves_it_alone()
@@ -60,11 +61,21 @@ public class NormalizationReferenceTests
         theirs[0].Glyph.Should().Be(0, "HarfBuzz leaves the cluster alone, and the font has no glyph for U+01D5");
     }
 
+    [Fact]
+    public void A_missing_non_breaking_hyphen_is_drawn_with_the_glyph_HarfBuzz_takes()
+    {
+        var ours = Shaper.Shape("a\u2011b", TestFonts.Regular, TestFonts.Regular.Metrics.UnitsPerEm);
+        var theirs = HarfBuzzReference.Instance.Shape(TestFonts.Bytes("Lato-Regular.ttf"), "a\u2011b", "Latn", HarfBuzzCorpusTests.FeaturesNotImplemented);
+
+        ours.IsSuccess.Should().BeTrue(ours.IsFailure ? ours.Error.ToString() : string.Empty);
+        ((int)ours.Value[1].Glyph.Value).Should().Be(theirs[1].Glyph);
+        ((int)ours.Value[1].Glyph.Value).Should().Be(The("Lato-Regular.ttf", "\u2010")[0]);
+    }
+
     [Theory]
-    [InlineData("Lato-Regular.ttf", "\u2011", "-")]
     [InlineData("Lato-Regular.ttf", "\u3000", " ")]
     [InlineData("TheanoDidot-Regular.ttf", "\u205F", " ")]
-    public void A_missing_space_or_non_breaking_hyphen_is_refused_where_HarfBuzz_falls_back(string file, string missing, string fallback)
+    public void A_missing_space_is_refused_where_HarfBuzz_falls_back(string file, string missing, string fallback)
     {
         var font = Font(file);
         var ours = Shaper.Shape($"a{missing}b", font, font.Metrics.UnitsPerEm);
@@ -72,7 +83,7 @@ public class NormalizationReferenceTests
 
         ours.IsFailure.Should().BeTrue();
         ours.Error.Code.Should().Be(FontErrorCodes.GlyphMissing);
-        theirs[1].Glyph.Should().Be(The(file, fallback)[0], "HarfBuzz draws the font's ordinary space or hyphen");
+        theirs[1].Glyph.Should().Be(The(file, fallback)[0], "HarfBuzz draws the font's ordinary space");
     }
 
     private static int[] The(string file, string text) =>

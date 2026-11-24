@@ -1,0 +1,9 @@
+page 1 300.000 300.000
+word 1 12.000 31.393 22.500 10.500 Text #000000 Lato-Regular
+word 1 33.861 54.252 22.500 10.500 with #000000 Lato-Regular
+word 1 12.000 34.543 35.250 10.500 Span #000000 Lato-Regular
+word 1 37.231 61.891 35.250 10.500 block #000000 Lato-Regular
+word 1 12.000 35.604 48.000 10.500 inner #000000 Lato-Regular
+word 1 38.071 59.581 48.000 10.500 span #000000 Lato-Regular
+word 1 62.278 83.945 48.000 10.500 after #000000 Lato-Regular
+word 1 86.412 92.701 48.000 10.500 it #000000 Lato-Regular

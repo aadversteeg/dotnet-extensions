@@ -51,11 +51,24 @@ public static partial class HtmlBoxGenerator
             }
 
             var refused = false;
+            if (frame.InBox && frame.InLink)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.InlineBox, "An <img> inside a link and inside an element with a background, border, padding or margin of its own is not drawn in this version; put the image outside that element or outside the link.",
+                    "img", element.Element.Position, "display");
+                refused = true;
+            }
+
             if (Value(element, "vertical-align") is { } align and not CssKeyword { Name: "baseline" })
             {
                 Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'vertical-align: {align}' on an <img> inside a line of text is not drawn in this version: it sits on the baseline.",
                     align.ToString()!, element.Element.Position, "vertical-align");
                 refused = true;
+            }
+
+            if (ShiftOf(frame.Element) != Length.Zero)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Element, $"An <img> inside the raised or lowered <{frame.Element.Element.LocalName}> is not drawn in this version: it sits on the line's baseline.",
+                    "img", element.Element.Position);
             }
 
             foreach (var name in new[] { "break-before", "break-after", "break-inside" })

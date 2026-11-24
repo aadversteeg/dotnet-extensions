@@ -17,7 +17,7 @@ word 1 12.000 54.825 244.500 19.995 gạọụ #000000 Lato-Regular
 word 1 59.931 85.432 244.500 19.995 gyj #000000 Lato-Regular
 word 1 12.000 76.260 278.250 30.000 gạọụ #000000 Lato-Regular
 word 1 83.925 122.190 278.250 30.000 gyj #000000 Lato-Regular
-word 1 12.000 54.417 302.250 19.995 gạọụ #000000 TheanoDidot-Regular
+word 1 12.000 53.489 302.250 19.995 gạọụ #000000 TheanoDidot-Regular
 word 1 59.579 86.557 302.250 19.995 gyj #000000 TheanoDidot-Regular
 word 1 12.000 55.464 334.500 19.995 gạọụ #000000 Lato-Bold
 word 1 60.321 86.501 334.500 19.995 gyj #000000 Lato-Bold

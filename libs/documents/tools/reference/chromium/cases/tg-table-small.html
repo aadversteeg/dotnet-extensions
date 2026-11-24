@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A height on the table, less than its rows: a, height 20pt, collapsed; b, the same, separated; c, a table of height 0. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }</style></head><body>
+<table id="a" style="height: 20pt">
+<tr><td id="one-a">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+<tr><td>five</td><td>six words that wrap here and again</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s" style="height: 20pt">
+<tr><td id="one-b">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+<tr><td>five</td><td>six words that wrap here and again</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" style="height: 0">
+<tr><td id="one-c">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+<tr><td>five</td><td>six words that wrap here and again</td></tr>
+</table>
+<p>after</p>
+</body></html>

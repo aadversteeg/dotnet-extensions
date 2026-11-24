@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Heights that are not whole sixty-fourths of a pixel: a, a row of 33.33pt; b, a cell of 21.37pt; c, a table of 100.1pt over two rows, separated. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<tr style="height: 33.33pt"><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b">
+<tr><td id="one-b" style="height: 21.37pt">one</td><td>two</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="s" style="height: 100.1pt">
+<tr><td id="one-c">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>after</p>
+</body></html>

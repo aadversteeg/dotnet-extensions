@@ -113,10 +113,11 @@ public class PageModelContractTests
         PdfRenderer.Render(document, With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
     }
 
-    /// <summary>A table whose kids are the given row groups and rows, each holding one row of one cell.</summary>
+    /// <summary>A table whose kids are the given captions, row groups and rows, each group holding one row of one cell.</summary>
     private static PageDocument TableOf(params SemanticRole[] kids)
     {
-        IEnumerable<DrawItem> Kid(SemanticRole role, int node) => role == SemanticRole.TableRow
+        IEnumerable<DrawItem> Kid(SemanticRole role, int node) => role == SemanticRole.Caption ? [Start(node, role), Run("c"), End(node)]
+            : role == SemanticRole.TableRow
             ? [Start(node, role), Start(node + 1, SemanticRole.TableCell), Run("x"), End(node + 1), End(node)]
             : [Start(node, role), Start(node + 1, SemanticRole.TableRow), Start(node + 2, SemanticRole.TableCell), Run("x"), End(node + 2), End(node + 1), End(node)];
         return Tagged([Start(1, SemanticRole.Table), .. kids.SelectMany((role, index) => Kid(role, 10 * (index + 1))), End(1)]);
@@ -163,6 +164,27 @@ public class PageModelContractTests
     public void A_table_of_rows_and_row_groups_together_is_refused(string profile) =>
         Refused(TableOf(SemanticRole.TableRow, SemanticRole.TableBody), profile).Code
             .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_table_with_two_captions_is_refused(string profile) =>
+        // veraPDF rule 7.2-39: a table holds one Caption at most.
+        Refused(TableOf(SemanticRole.Caption, SemanticRole.TableBody, SemanticRole.Caption), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Theory]
+    [MemberData(nameof(Profiles))]
+    public void A_caption_between_the_row_groups_is_refused(string profile) =>
+        // ISO 32000-1 Table 337 and veraPDF rule 7.2-16: the caption is the table's first or last kid.
+        Refused(TableOf(SemanticRole.TableHead, SemanticRole.Caption, SemanticRole.TableBody), profile).Code
+            .Should().Be(PdfRenderErrorCodes.Write.InvalidPageModel);
+
+    [Fact]
+    public void A_caption_first_or_last_is_accepted()
+    {
+        PdfRenderer.Render(TableOf(SemanticRole.Caption, SemanticRole.TableHead, SemanticRole.TableBody), With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
+        PdfRenderer.Render(TableOf(SemanticRole.TableRow, SemanticRole.TableRow, SemanticRole.Caption), With(PdfProfile.PdfA3a.AndPdfUa1())).IsSuccess.Should().BeTrue();
+    }
 
     [Fact]
     public void A_head_bodies_and_a_table_of_rows_are_accepted()

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Ave.Extensions.Documents.Core;
 
 namespace Ave.Extensions.Documents.Html.Parsing.TreeBuilding;
@@ -112,7 +113,10 @@ internal sealed class TreeFreezer
 
     private HtmlNode Leaf(MutableNode node) => node switch
     {
-        MutableText text => new HtmlText(text.Data.ToString(), _position(text.Start)),
+        MutableText text => new HtmlText(text.Data.ToString(), _position(text.Start))
+        {
+            Anchors = text.Jumps.Count == 0 ? [] : [.. text.Jumps.Select(jump => new HtmlValueAnchor(jump.Offset, _position(jump.Source), Contiguous: true))],
+        },
         MutableComment comment => new HtmlComment(comment.Data, _position(comment.Start)),
         MutableProcessingInstruction instruction => new HtmlProcessingInstruction(instruction.Target, instruction.Data, _position(instruction.Start)),
         MutableDocumentType doctype => new HtmlDocumentType(doctype.Name, doctype.PublicId, doctype.SystemId, _position(doctype.Start)),

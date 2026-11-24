@@ -1,0 +1,23 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Italic.ttf); font-weight: 400; font-style: italic; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0 0 6pt; }
+#kern::before { content: "Kern A" "V"; }
+#attr::before { content: "Attr " attr(data-a) "V"; }
+#count { counter-reset: k 1; }
+#count::before { content: "Count " counter(k, upper-alpha) "V"; }
+#liga::before { content: "Liga f" "i"; }
+#space::before { content: "Space " " between"; }
+#many::before { content: "M" "a" "n" "y" " " "s" "m" "a" "l" "l" " " "i" "t" "e" "m" "s"; }
+</style></head><body>
+<p id="kern">A tail</p>
+<p id="attr" data-a="A">A tail</p>
+<p id="count">A tail</p>
+<p id="liga">fi end</p>
+<p id="space"> end</p>
+<p id="many"> in one line of text</p>
+</body></html>

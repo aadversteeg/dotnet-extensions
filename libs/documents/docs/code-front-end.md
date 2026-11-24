@@ -107,29 +107,75 @@ default, `null` for transparent). A page number the document does not have is `D
 
 | Function | Makes |
 | --- | --- |
-| `Document(body, page:, title:, author:, language:)` | the document; `page` defaults to A4 without margins; `language` is a tag such as `nl-NL` |
+| `Document(body, page:, title:, author:, language:, description:)` | the document; `page` defaults to A4 without margins; `language` is a tag such as `nl-NL`; `description` says what the document is about (the PDF's subject and XMP description) |
 | `Block(children)` | a box that stacks its children vertically |
 | `Paragraph(text)`, `Paragraph([spans])` | a paragraph of one or several spans |
 | `Heading(level, text)` | a heading, level 1–6: bold and sized like HTML's h1–h6 |
 | `Text(text)`, `Bold(text)` | a span inside a paragraph (`Bold(text)` is `Text(text).Bold()`) |
+| `Link(uri, text)` | a link to a URI around text, used as a span: `Paragraph([Text("See "), Link("https://example.com", "our site"), Text(".")])`; see [Links](#links) |
+| `.Language(tag)` on a paragraph, heading or span | the language of its text where it differs from the document's, a tag such as `fr` or `en-GB` (BCP 47 syntax, at most 64 characters); a tagged PDF writes it on the element; a span becomes a `Span` element |
+| `LinkTo(anchor, text)` | a link inside the document to the paragraph or heading made with `.Anchor(anchor)`, used as a span: `Paragraph([Text("See "), LinkTo("results", "the results")])`; see [Links](#links) |
 | `LineBreak()` | a forced line break inside a paragraph (as HTML's `br`; U+2028), used as a span: `Paragraph([Text("a"), LineBreak(), Text("b")])` |
 | `PageBreak()` | starts the next element of the same list on a new page |
 | `Table(columns, rows)` | a table; `columns` made with `Columns(…)`, `rows` a list of the three below |
 | `Columns(2.5.Cm(), Fill(1), Auto)` | the column sizes: a length is fixed, `Fill(weight)` takes a share of the width left over (CSS Grid `fr`), `Auto` is as wide as the content needs |
-| `HeaderRow([cells])` | a header row: repeated at the top of every page the table continues on, when the header rows are at most a quarter of the page area (as Chromium) |
+| `HeaderRow([cells])` | a header row: repeated at the top of every page the table continues on, when the header rows are at most a quarter of the page area (as Chromium); its cells head their columns, and there are no row headers in code |
 | `TableRow([cells])` | a body row; it may break between the lines of its cells unless kept together |
 | `RowGroup([rows])` | rows that belong together (a row span ends at the end of its group) |
 | `Cell(text)`, `Cell([elements])` | a table cell |
 | `Row([elements])` | elements side by side, one column each (equal shares unless `.Columns(…)` is set) |
+| `BulletedList([items])` | a list with a bullet beside each item's first line: a disc, in a list inside another list a circle, deeper a square; `.Bullet(ListBullet.Square)` sets one, `ListBullet.None` gives no label. Indented 30 pt (a left padding) unless a padding is set |
+| `NumberedList([items])` | a list numbered "1. ", "2. " …, each number right-aligned to its item's start; `.Start(5)` sets the first number (zero and negative numbers too) |
+| `ListItem([elements])`, `ListItem(text)` | an item of a list; its content may hold any elements, a list included, which nests one level deeper. Its font, size and colour are its label's |
 | `Image(bytes)` | a PNG or JPEG image from the bytes of the file; `.Alt("what it shows")` or `.Decorative()` |
 | `Attachment(name, bytes, mediaType)` | a file to embed with `document.Attach(…)`; `.WithRelationship(…)`, `.WithDescription(…)`, `.WithModificationDate(…)` |
 | `PageNumber()`, `PageCount()` | spans that show the page number and the number of pages |
 
 Children are collection expressions: `[a, b, .. items.Select(Line)]`.
 
+A list is items, each of any elements; a list in an item nests:
+
+```csharp
+NumberedList(
+[
+    ListItem("Unpack the box."),
+    ListItem([Paragraph("Connect the cables:"), BulletedList([ListItem("power"), ListItem("network")])]),
+    ListItem("Switch it on."),
+]).Start(1)
+```
+
+The labels are placed as Chromium places a list's outside markers (CSS Lists 3 §3): beside the first line of the item,
+on its baseline, in the item's font. A bullet is a shape whose size and place follow the font's ascent (at 10.5 pt Lato
+a disc of 3.75 pt, 12 pt left of the item); a number is right-aligned so that "1. ", its space included, ends where
+the item's content starts. A label that would start left of the sheet is `Documents.Layout.MarkerOutsideSheet`: give the
+list more left padding. A list has 1 to 10 000 items; lists nest at most 16 deep (`Documents.Input.Invalid.List`).
+
 The page is a value too: `PageSetup.A4.Margin(1.Cm()).Header(header).Footer(footer)`; `Page(width, height)` makes
 another size. Header and footer take their height from the page area (from their content, or a fixed height as the
 second argument); `.FirstPageHeader(…)` and `.FirstPageFooter(…)` replace them on page 1 (`Block([])` for none).
+
+## Links
+
+`Link(uri, text)` is a span whose text is a link: clicked in a PDF reader, it opens the URI. One span is one link; format
+it as any text span (`Link(uri, "here").Bold().Underline()`); it takes no colour or underline unless you set them.
+
+- **The URI** is written into the PDF exactly as you give it. It must be an absolute URI of the schemes `http`, `https`,
+  `mailto` or `tel` (the scheme in any case), in printable ASCII (percent-encode other characters, no spaces), at most
+  32 767 characters. Anything else is refused when the document is translated, at the line of the `Link` call, with
+  `Documents.Input.Invalid.Link` and a message that names the scheme and the four accepted ones: among them
+  `javascript:`, `file:`, `data:`, a URI with a leading space or a control character, and a relative URI such as
+  `terms.html`. The engine never fetches or opens a URI.
+- **The description** a screen reader reads, and PDF/UA requires on every link, is the link's text with its white
+  space collapsed, or the URI when the text is blank. It is written in every profile.
+- **In the PDF** each line part of the link is one link annotation, so a link over two lines or over a page break
+  has an area on each line; in a tagged file one `Link` element holds the text and a reference to each annotation.
+- **In a page header or footer** a link is drawn as text without being a link (everything there is an artifact).
+- **Inside the document:** `.Anchor(name)` on a paragraph or heading makes it a place, and `LinkTo(name, text)` anywhere
+  in the body, before or after it, leads there: in the PDF the destination is the page where the paragraph starts and the
+  top of its box, the reader's horizontal position and zoom unchanged. A name is 1 to 1 024 characters
+  (`Elements.MaxAnchorLength`), unique, and never written into the file. Refused with `Documents.Input.Invalid.Link`: a
+  name no paragraph has (at the link), a name given twice (at the second anchor), an anchor or a `LinkTo` in a page header
+  or footer. The description is the link's text, else the name.
 
 ## Modifiers
 

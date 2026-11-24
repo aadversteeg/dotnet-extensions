@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A height on a row: a, height 40pt, collapsed; b, the same, separated; c, height 6pt, less than the content; d, height 40pt with cells aligned middle and bottom; e, height 40.1pt. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<tr style="height: 40pt"><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s">
+<tr style="height: 40pt"><td id="one-b">one</td><td>two</td></tr>
+</table>
+<p>next 2</p>
+<table id="c">
+<tr style="height: 6pt"><td id="one-c">one</td><td>two</td></tr>
+</table>
+<p>next 3</p>
+<table id="d">
+<tr style="height: 40pt"><td id="one-d" style="vertical-align: middle">one</td><td style="vertical-align: bottom">two</td></tr>
+</table>
+<p>next 4</p>
+<table id="e">
+<tr style="height: 40.1pt"><td id="one-e">one</td><td>two</td></tr>
+</table>
+<p>after</p>
+</body></html>

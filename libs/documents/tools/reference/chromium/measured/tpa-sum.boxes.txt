@@ -1,0 +1,12 @@
+table 276.000 18.234 a
+td 165.141 17.484 one-a
+td 110.109 17.484 text with more words
+table 276.000 42.984 b
+td 156.598 30.984 one-b
+td 104.402 30.984 text with more words
+table 276.000 18.234 c
+td 75.457 17.484 extraordinarily-c
+td 199.793 17.484 text with more words
+table 276.000 30.234 d
+td 76.207 18.234 extraordinarily-d
+td 184.793 18.234 text with more words

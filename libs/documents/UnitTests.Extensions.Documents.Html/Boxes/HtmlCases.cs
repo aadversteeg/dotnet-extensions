@@ -11,6 +11,7 @@ using Ave.Extensions.Documents.Html.Parsing;
 using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -24,8 +25,9 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// words with their colour and face, painted rectangles with their colour, images), its filled rectangles read back by a
 /// second script (<c>&lt;case&gt;.lines.txt</c>), the lines it clips around the glyphs' ink (<c>&lt;case&gt;.ink.txt</c>,
 /// <see cref="Clips"/>: both files hold such a line whole), its words read back by poppler (<c>&lt;case&gt;.words.txt</c>), and the
-/// sizes of the boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>). Each comparison below names its file and its
-/// bound.
+/// sizes of the boxes measured in the page (<c>&lt;case&gt;.boxes.txt</c>), and its link annotations
+/// (<c>&lt;case&gt;.links.txt</c>, <see cref="LinkDifference"/>; a case without the file has none). Each comparison below
+/// names its file and its bound.
 /// </summary>
 internal static class HtmlCases
 {
@@ -71,6 +73,7 @@ internal static class HtmlCases
         ["h-page-a4-zero-justify"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["h-page-a4-zero-lines"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["sr-same-font"] = "A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run",
+        ["mx-gen-link"] = "A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest",
         ["sr-zwnj"] = "A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it",
         ["a4-continued-cell-pad-bottom-30-under-header"] = "A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header",
         ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank",
@@ -86,10 +89,20 @@ internal static class HtmlCases
         ["a4-header-row-image-row"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
         ["a4-header-image-row-image"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
         ["a4-header-two-image-rows"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-beside-lines"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-228-beside-fit"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-228-beside-line"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-228-beside-two-pages"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-228-background-beside"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-row-image-228-beside-line"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-nested-image-228"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
         ["a4-image-nested-table"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
         ["a4-image-rowspan"] = "An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells",
         ["a4-line-beside-lines"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
+        ["twd-table-narrow"] = "A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["fr-f4-padding-page-start"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
+        ["a2-row-end-pad-past"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
+        ["a2-row-end-pad-past-after"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
         ["ii-hyphen"] = "A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case",
         ["ii-joiners"] = "A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners",
@@ -97,6 +110,13 @@ internal static class HtmlCases
         ["ws-image-border"] = "Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
         ["ws-soft"] = "A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them",
         ["sk-misc"] = "An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen",
+        ["fr-row-later-page-padding-overflows-two-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
+        ["fr-row-later-page-padding-overflows-two-cells-pad-6"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
+        ["fr-row-later-page-padding-overflows-three-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
+        ["fr-continued-pad-past-taller-than-page"] = "What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding",
+        ["lk-header-row"] = "A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page",
+        ["ib-link-span-inside"] = "A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it",
+        ["ib-break-justify"] = "Where_an_inline_box_ends_on_a_justified_line_Chromium_may_shrink_the_page_and_justify_it_a_pixel_wider",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -115,8 +135,13 @@ internal static class HtmlCases
     /// container: case <c>tw-pref</c>, a table that needs 157.805 pt in a box of 150 pt), or a box with a height whose
     /// content goes on past a page break after the height ended (<see cref="LayoutErrorCodes.OverflowAcrossPages"/>, at the
     /// box's source line, where Chromium prints that content on the next page: cases <c>sz-height-overflow-page</c>,
-    /// <c>sz-height-forced</c>). Any other error, also
-    /// another code under the same parent, is a failure of the case.</summary>
+    /// <c>sz-height-forced</c>), or a list item's label that would start left of the sheet
+    /// (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>, at the item's source line, where Chromium cuts the label at the
+    /// sheet's edge or leaves it out), or a table with separated borders that would break over pages
+    /// (<see cref="LayoutErrorCodes.TableBreak"/>: the room it had, at the table's source line), or an inline box layout
+    /// does not draw where it stands (<see cref="DocumentErrorCodes.Input.Unsupported.InlineBox"/>, at the line and column
+    /// of the element that made it; the front-end's own <see cref="HtmlStyleErrorCodes.Unsupported.InlineBox"/> is in the
+    /// list as one of its codes). Any other error, also another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
         CssErrorCodes.Unsupported.Property.ToString(),
@@ -140,11 +165,22 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        HtmlStyleErrorCodes.Unsupported.List.ToString(),
+        FontErrorCodes.GlyphMissing.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Link.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Language.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Metadata.ToString(),
+        HtmlStyleErrorCodes.Unsupported.InlineBox.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Counter.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
+        CssErrorCodes.Unsupported.GeneratedContent.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
         LayoutErrorCodes.ColumnsDoNotFit.ToString(),
         LayoutErrorCodes.OverflowAcrossPages.ToString(),
+        LayoutErrorCodes.MarkerOutsideSheet.ToString(),
+        LayoutErrorCodes.TableBreak.ToString(),
+        DocumentErrorCodes.Input.Unsupported.InlineBox.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -210,7 +246,7 @@ internal static class HtmlCases
         var baseUrl = new Uri(Path.GetFullPath(Path.Combine(folder.Html, name + ".html"))).AbsoluteUri;
         return Parsed(folder, name)
             .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }));
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy, MissingCharacters = Shaper.MissingCharacters }));
     }
 
     /// <summary>
@@ -258,7 +294,8 @@ internal static class HtmlCases
         var difference = missed ?? Difference(engine, chromium, LineTops(boxes.Value))
             ?? RectangleDifference(engine, chromium, lines)
             ?? PopplerDifference(pages.Value, engine, Rows(folder, name, "words"), LineTops(boxes.Value))
-            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"));
+            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"))
+            ?? LinkDifference(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points);
         return (difference, Listed.TryGetValue(name, out var listed)) switch
         {
             (null, false) => "equal",
@@ -333,13 +370,136 @@ internal static class HtmlCases
         return cut;
     }
 
+    /// <summary>A link annotation of a print, or a link area of the engine's pages: its page, its rectangle in points with
+    /// the origin at the top left of the page, and its target as <c>links.txt</c> writes it (<c>uri &lt;URI&gt;</c>, or
+    /// <c>dest &lt;page&gt; &lt;top&gt;</c> for a link inside the document: the destination's page and its top from the top of
+    /// that page; for the engine the place of the target's anchor, <see cref="Anchor"/>).</summary>
+    internal sealed record PrintedLink(int Page, double X0, double Y0, double X1, double Y1, string Target);
+
+    /// <summary>The link annotations of Chromium's print, from <c>&lt;case&gt;.links.txt</c> (README of
+    /// <c>tools/reference/chromium</c>, read back by <c>links.py</c>: <c>page x0 y0 x1 y1 kind target</c>, page by page in
+    /// the order of each page's <c>/Annots</c>); none for a case without the file, whose print has no annotation.</summary>
+    internal static List<PrintedLink> Links(CaseFolder folder, string name)
+    {
+        var path = Measured(folder, name) + ".links.txt";
+        return File.Exists(path)
+            ? [.. File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ', 7))
+                .Select(parts => new PrintedLink(int.Parse(parts[0], CultureInfo.InvariantCulture), Number(parts[1]), Number(parts[2]), Number(parts[3]), Number(parts[4]), $"{parts[5]} {parts[6]}"))]
+            : [];
+    }
+
+    /// <summary>The engine's link areas (<see cref="LinkArea"/>), page by page in drawing order, each with the target of its
+    /// link (the <see cref="SemanticRole.LinkRole"/> of the structure bracket it lies in, <see cref="StructureStart"/>).</summary>
+    internal static List<PrintedLink> Links(PageDocument pages)
+    {
+        var targets = new Dictionary<NodeId, string>();
+        var links = new List<PrintedLink>();
+        var anchors = pages.Pages.SelectMany((page, index) => page.Items.OfType<Anchor>().Select(anchor => (anchor.Node, Place: $"dest {index + 1} {Of(anchor.At.Y)}")))
+            .ToDictionary(anchor => anchor.Node, anchor => anchor.Place);
+        foreach (var (page, number) in pages.Pages.Select((page, index) => (page, index + 1)))
+        {
+            foreach (var item in page.Items)
+            {
+                switch (item)
+                {
+                    case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.UriTarget uri } } start:
+                        targets[start.Node] = $"uri {uri.Value}";
+                        break;
+                    case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget node } } start:
+                        targets[start.Node] = anchors.TryGetValue(node.Value, out var place) ? place : $"dest none {node.Value}";
+                        break;
+                    case LinkArea area:
+                        var rect = area.Area;
+                        links.Add(new PrintedLink(number, rect.Origin.X, rect.Origin.Y, rect.Origin.X + rect.Size.Width, rect.Origin.Y + rect.Size.Height, targets[area.Link]));
+                        break;
+                }
+            }
+        }
+
+        return links;
+    }
+
+    /// <summary>One CSS pixel in points: how far an edge of a link area may be from Chromium's. Chromium writes each edge of
+    /// a link's rectangle at a whole CSS pixel (measured, case <c>lk-one-line</c>: the word "link" from 45.703 to 61.894 pt
+    /// gets the rectangle 45.75 to 62.25 pt), the engine at its exact place (ISO 32000-1 §12.5.2: <c>/Rect</c> is any rectangle), so
+    /// an edge may differ by up to half a pixel each way of the rounding; the bound is one pixel.</summary>
+    public const double LinkBound = 0.75;
+
+    /// <summary>
+    /// One CSS pixel in points: how far the top of a link's destination may be from Chromium's, once Chromium's offset is
+    /// taken out. Chromium writes a destination at the target's place in the coordinates of the page area, one page margin
+    /// above and left of where the target stands on the page (measured: case <c>lk-later-heading</c>, a heading at the top
+    /// of page 2's page area, 18 pt from the page's top, gets the top 0), and at a whole CSS pixel (case <c>lk-cell</c>: the
+    /// target's content area starts 37.875 pt from the page's top, Chromium's top is 37.5 pt with the margin added back);
+    /// the engine writes the exact place. So the top Chromium gives, plus the page's top margin, may be up to one pixel above
+    /// the engine's.
+    /// </summary>
+    public const double DestinationBound = 0.75;
+
+    /// <summary>
+    /// The first difference between the engine's link areas and the link annotations of Chromium's print
+    /// (<c>links.txt</c>), or null: the same number of rectangles, in the same order, each on the same page, every edge within
+    /// <see cref="LinkBound"/>, and the same target: a URI compared whole, a destination on the same page with its top
+    /// within <see cref="DestinationBound"/> of Chromium's plus <paramref name="marginTop"/>.
+    /// </summary>
+    /// <param name="pages">The engine's pages.</param>
+    /// <param name="chromium">Chromium's links.</param>
+    /// <param name="marginTop">The page's top margin, in points: Chromium's offset of every destination's top.</param>
+    public static string? LinkDifference(PageDocument pages, IReadOnlyList<PrintedLink> chromium, double marginTop = 0)
+    {
+        var engine = Links(pages);
+        for (var index = 0; index < Math.Max(engine.Count, chromium.Count); index++)
+        {
+            if (index >= engine.Count)
+            {
+                var missing = chromium[index];
+                return $"link {index + 1}: Chromium's rectangle on page {missing.Page} at ({Of(missing.X0)}, {Of(missing.Y0)}) to {missing.Target} has none in the engine, which has {engine.Count} (links.txt)";
+            }
+
+            var ours = engine[index];
+            if (index >= chromium.Count)
+            {
+                return $"link {index + 1}: the engine's rectangle on page {ours.Page} at ({Of(ours.X0)}, {Of(ours.Y0)}) to {ours.Target} is not in Chromium's print, which has {chromium.Count} (links.txt)";
+            }
+
+            var theirs = chromium[index];
+            var at = $"link {index + 1} on page {ours.Page}";
+            var found = (ours.Page != theirs.Page ? $"link {index + 1} is on page {ours.Page}, Chromium's on page {theirs.Page}" : null)
+                ?? Edge(at, "x0", ours.X0, theirs.X0) ?? Edge(at, "y0", ours.Y0, theirs.Y0) ?? Edge(at, "x1", ours.X1, theirs.X1) ?? Edge(at, "y1", ours.Y1, theirs.Y1)
+                ?? TargetDifference(at, ours.Target, theirs.Target, marginTop);
+            if (found is not null)
+            {
+                return found + " (links.txt)";
+            }
+        }
+
+        return null;
+
+        static string? Edge(string at, string what, double ours, double theirs) =>
+            Math.Abs(ours - theirs) > LinkBound + 1e-9 ? $"{at}: {what} {Of(ours)}, Chromium {Of(theirs)}" : null;
+    }
+
+    private static string? TargetDifference(string at, string ours, string theirs, double marginTop)
+    {
+        if (ours.Split(' ') is ["dest", var page, var top] && theirs.Split(' ') is ["dest", var theirPage, var theirTop])
+        {
+            var chromiumTop = Number(theirTop) + marginTop;
+            return page != theirPage ? $"{at} leads to page {page}, Chromium's to page {theirPage}"
+                : !double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var engineTop) || Math.Abs(engineTop - chromiumTop) > DestinationBound + 1e-9
+                    ? $"{at} leads to the top {top} of page {page}, Chromium's to {Of(chromiumTop)} (its {theirTop} plus the top margin {Of(marginTop)})"
+                    : null;
+        }
+
+        return ours != theirs ? $"{at} leads to {ours}, Chromium's to {theirs}" : null;
+    }
+
     /// <summary>
     /// The status of a case whose path ended in an error: <c>refused code what at position</c> where the first part is a
     /// refusal (<see cref="Refusals"/>) that says where in the source it is, otherwise <c>failed</c>. The position of the
     /// front-end's refusals is a line and a column; layout's is the line of the box, the only place a box keeps
     /// (<see cref="SourceLocation"/>).
     /// </summary>
-    private static string Refusal(Error error)
+    internal static string Refusal(Error error)
     {
         var first = error.Parts().First();
         var metadata = first.Metadata;
@@ -356,7 +516,7 @@ internal static class HtmlCases
         return (line, column) switch
         {
             ({ }, { }) => $"refused {first.Code} {what} at {line}:{column}",
-            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages => $"refused {first.Code} {what} at {line}",
+            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages || first.Code == LayoutErrorCodes.MarkerOutsideSheet || first.Code == LayoutErrorCodes.TableBreak => $"refused {first.Code} {what} at {line}",
             _ => $"failed {first.Code} {what}: a refusal without its line and column",
         };
     }
@@ -377,7 +537,8 @@ internal static class HtmlCases
     /// colour and face (<see cref="PrintedWord.Colour"/>, <see cref="PrintedWord.Face"/>: the PostScript name, which names
     /// the font file and with it the weight and the style); the same area painted in each colour by the rectangles,
     /// filled or stroked (<see cref="PaintedDifference"/>); the same image areas in drawing order, each edge after
-    /// <see cref="WholePixel"/> within <see cref="Bound"/>.
+    /// <see cref="WholePixel"/> within <see cref="Bound"/>; the same areas painted by paths that are not rectangles
+    /// (<see cref="PathDifference"/>).
     /// </summary>
     public static string? Difference(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null)
     {
@@ -412,7 +573,11 @@ internal static class HtmlCases
                 }
             }
 
-            if ((PaintedDifference(ours, ours.Rectangles, theirs.Rectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images)) is { } area)
+            var shapes = ShapesOfRectangles(ours, theirs);
+            var (ourRectangles, theirRectangles) = (Outside(ours.Rectangles, shapes, ours: true), Outside(theirs.Rectangles, shapes, ours: false));
+            var (ourPaths, theirPaths) = (ours with { Paths = [.. ours.Paths.Where(path => !shapes.Exists(shape => shape.InOurs && ReferenceEquals(shape.Path, path)))] },
+                theirs with { Paths = [.. theirs.Paths.Where(path => !shapes.Exists(shape => !shape.InOurs && ReferenceEquals(shape.Path, path)))] });
+            if ((PaintedDifference(ours, ourRectangles, theirRectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images) ?? PathDifference(ourPaths, theirPaths)) is { } area)
             {
                 return area + " (print.txt)";
             }
@@ -437,14 +602,82 @@ internal static class HtmlCases
         static PrintedBox Colourless(PrintedBox box) => box with { Colour = null, Stroked = false };
         foreach (var (page, print) in engine.Pages.Zip(chromium.Pages))
         {
-            var filled = measured.Where(box => box.Page == page.Number).Concat(print.Rectangles.Where(box => box.Stroked).Select(Colourless));
-            if (PaintedDifference(page, [.. page.Rectangles.Select(Colourless)], [.. filled]) is { } found)
+            // A shape one side paints with rectangles and the other with a path (ShapesOfRectangles) is compared in its
+            // path's box by print.txt; lines.txt holds no colour, so Chromium's rectangles there are cut whatever colour.
+            var shapes = ShapesOfRectangles(page, print);
+            var filled = Outside(measured.Where(box => box.Page == page.Number).Concat(print.Rectangles.Where(box => box.Stroked).Select(Colourless)), shapes, ours: false);
+            if (PaintedDifference(page, [.. Outside(page.Rectangles, shapes, ours: true).Select(Colourless)], [.. filled]) is { } found)
             {
                 return found + " (lines.txt)";
             }
         }
 
         return null;
+    }
+
+    /// <summary>A path of one side whose area the other side paints with rectangles of its colour (<see cref="ShapesOfRectangles"/>).</summary>
+    /// <param name="Path">The path; its box of whole pixels is where the rectangles were compared with it.</param>
+    /// <param name="InOurs">Whether the path is the engine's (the rectangles Chromium's), else Chromium's.</param>
+    private sealed record ShapeOfRectangles(PrintedPath Path, bool InOurs);
+
+    /// <summary>
+    /// The paths of a page that the other side paints with rectangles instead: a path that no path of the other side paints
+    /// the same (<see cref="PrintedPath.Paints"/>), and whose rows are the rows the other side's rectangles of its colour
+    /// give its box (<see cref="PathSampler.Rows"/>: the same sample points; a rectangle's part outside the box not
+    /// counted). Case <c>bs-solid-one-colour</c>: Chromium fills a border of one colour and unequal widths as one shape, the
+    /// border box with the padding box cut out of it, where the engine fills four rectangles of the same pixels. Such a
+    /// path is compared with those rectangles only, in its box: the path leaves the comparison of paths, and the
+    /// rectangles of its colour on the other side are cut to what lies outside the box (<see cref="Outside"/>) for the
+    /// comparison of rectangles, so each pixel is compared once, in one of the two. A path against a path and rectangles
+    /// against rectangles are compared as before.
+    /// </summary>
+    private static List<ShapeOfRectangles> ShapesOfRectangles(PrintedPage ours, PrintedPage theirs)
+    {
+        static bool Overlaps(PrintedBox box, PrintedPath path) => box.X0 < path.X1 && path.X0 < box.X1 && box.Y0 < path.Y1 && path.Y0 < box.Y1;
+        IEnumerable<ShapeOfRectangles> Of(PrintedPage side, PrintedPage other, bool inOurs) =>
+            side.Paths.Where(path => !other.Paths.Any(path.Paints))
+                .Where(path => PathSampler.Rows([.. other.Rectangles.Where(box => box.Colour == path.Colour && Overlaps(box, path))], path).SequenceEqual(path.Rows))
+                .Select(path => new ShapeOfRectangles(path, inOurs));
+        return [.. Of(ours, theirs, inOurs: true), .. Of(theirs, ours, inOurs: false)];
+    }
+
+    /// <summary>Rectangles of one side without their parts inside the boxes of the paths the other side's shapes were
+    /// compared with (<see cref="ShapesOfRectangles"/>): a rectangle of the path's colour (any colour where the rectangle has
+    /// none, as in <c>lines.txt</c>) that reaches into a box is cut to its parts above, below, left and right of it.</summary>
+    private static List<PrintedBox> Outside(IEnumerable<PrintedBox> boxes, List<ShapeOfRectangles> shapes, bool ours)
+    {
+        var kept = boxes.ToList();
+        foreach (var shape in shapes.Where(shape => shape.InOurs != ours))
+        {
+            var path = shape.Path;
+            kept = [.. kept.SelectMany(box => box.Colour is not null && box.Colour != path.Colour || box.X1 <= path.X0 || path.X1 <= box.X0 || box.Y1 <= path.Y0 || path.Y1 <= box.Y0
+                ? [box]
+                : new[]
+                {
+                    box with { Y1 = Math.Min(box.Y1, path.Y0) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y1) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y0), Y1 = Math.Min(box.Y1, path.Y1), X1 = Math.Min(box.X1, path.X0) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y0), Y1 = Math.Min(box.Y1, path.Y1), X0 = Math.Max(box.X0, path.X1) },
+                }.Where(piece => piece.X0 < piece.X1 && piece.Y0 < piece.Y1))];
+        }
+
+        return kept;
+    }
+
+    /// <summary>The first difference between the areas the paths that are not rectangles (curves: a list marker's disc or
+    /// circle) paint on a page (<see cref="PrintedPath"/>): the same number, and each in drawing order the same box of
+    /// whole pixels, colour and painted share per pixel. Both sides are sampled by one rule: the engine's filled paths by
+    /// <see cref="PathSampler"/>, Chromium's curves by <c>paths.py</c>.</summary>
+    private static string? PathDifference(PrintedPage ours, PrintedPage theirs)
+    {
+        if (ours.Paths.Length != theirs.Paths.Length)
+        {
+            return $"page {ours.Number} has {ours.Paths.Length} painted paths, Chromium {theirs.Paths.Length}";
+        }
+
+        return ours.Paths.Zip(theirs.Paths).Where(pair => !pair.First.Paints(pair.Second)).Select(pair =>
+            $"page {ours.Number} path at ({Of(pair.First.X0)}, {Of(pair.First.Y0)}) paints {string.Join('/', pair.First.Rows)} {pair.First.Colour}, " +
+            $"Chromium at ({Of(pair.Second.X0)}, {Of(pair.Second.Y0)}) {string.Join('/', pair.Second.Rows)} {pair.Second.Colour}").FirstOrDefault();
     }
 
     /// <summary>
@@ -599,7 +832,7 @@ internal static class HtmlCases
         var parsed = HtmlParser.Parse(html, new HtmlParseOptions("text.html"));
         var boxes = parsed
             .OnSuccessBind(document => HtmlStyleResolver.Resolve(document, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl }));
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, MissingCharacters = Shaper.MissingCharacters }));
         return boxes.IsFailure
             ? Refusal(boxes.Error)
             : BoxDifference(parsed.Value.Document, boxes.Value, [.. rows.Where(row => row.Length > 0).Select(row => row.Split(' '))]);
@@ -666,7 +899,7 @@ internal static class HtmlCases
 
         var line = cell.Position.Line;
         var place = cells.Where(other => other.Position.Line == line).ToList().IndexOf(cell);
-        var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role == SemanticRole.TableHeaderCell)).ElementAtOrDefault(place);
+        var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role is SemanticRole.TableHeaderCellRole)).ElementAtOrDefault(place);
         return box is null ? (null, $"{at} has no cell box on any page") : (box, null);
     }
 
@@ -694,7 +927,7 @@ internal static class HtmlCases
         var (element, role) = (named[0], RoleOf(named[0]));
         var line = element.Position.Line;
         var peers = elements.Where(other => other.Position.Line == line && RoleOf(other) == role && !MakesNoBox(other)).ToList();
-        var candidates = Boxes(root).Where(box => box.Source.Line == line && box.Role == role).ToList();
+        var candidates = Boxes(root).Where(box => box.Source.Line == line && (box.Role == role || (box.Role is SemanticRole.TableHeaderCellRole && role is SemanticRole.TableHeaderCellRole))).ToList();
         return candidates.Count == peers.Count
             ? (candidates[peers.IndexOf(element)], null)
             : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role");
@@ -703,11 +936,12 @@ internal static class HtmlCases
     /// <summary>An element the HTML front-end never makes a box for: a column, a column group, a line break.</summary>
     private static bool MakesNoBox(HtmlElement element) => element.Namespace == ElementNamespace.Html && element.LocalName is "col" or "colgroup" or "br";
 
-    /// <summary>The role the HTML front-end gives the box of an element by its tag, for <see cref="IdBox"/>: a table, a
-    /// table cell, a paragraph, a heading, a row group or a row; any other element a generic box.</summary>
+    /// <summary>The role the HTML front-end gives the box of an element by its tag, for <see cref="IdBox"/>: a table, its
+    /// caption, a table cell, a paragraph, a heading, a row group or a row; any other element a generic box.</summary>
     private static SemanticRole RoleOf(HtmlElement element) => element.Namespace != ElementNamespace.Html ? SemanticRole.Generic : element.LocalName switch
     {
         "table" => SemanticRole.Table,
+        "caption" => SemanticRole.Caption,
         "td" => SemanticRole.TableCell,
         "th" => SemanticRole.TableHeaderCell,
         "p" => SemanticRole.Paragraph,
@@ -982,7 +1216,8 @@ internal static class HtmlCases
     /// <summary>
     /// The engine's words as PyMuPDF finds them in Chromium's PDF (<c>positions.py</c>, <c>print.txt</c>): two runs of
     /// glyphs on one baseline at the same font size, in the same face and colour, with no white space between
-    /// (<see cref="PrintedPage.WordGap"/>: text on both sides of an inline element's edge, kerned or not), are one word;
+    /// (<see cref="PrintedPage.PyMuPdfWordGap"/>: text on both sides of an inline element's edge, kerned or not, or the
+    /// words of two cells side by side close enough), are one word;
     /// PyMuPDF starts a new span, and <c>positions.py</c> a new word, where the font, the size or the colour changes.
     /// Poppler's words (<c>words.txt</c>) join across a change of face or colour too: <see cref="PrintedPage.JoinedWords"/>.
     /// </summary>
@@ -991,10 +1226,10 @@ internal static class HtmlCases
         var joined = new List<PrintedWord>();
         foreach (var word in words)
         {
-            if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.WordGap
-                && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour)
+            if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.PyMuPdfWordGap * word.FontSize
+                && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour && word.IsDrawnRightAfter(last))
             {
-                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text };
+                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn };
                 continue;
             }
 

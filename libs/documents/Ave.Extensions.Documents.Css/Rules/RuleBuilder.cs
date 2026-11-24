@@ -149,7 +149,7 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
         {
             if (finding.Support == SelectorSupport.Unsupported)
             {
-                Report(CssErrorCodes.Unsupported.Selector, $"The selector '{CssSerializer.Shortened(finding.Name)}' is not supported.", finding.Position);
+                Report(CssErrorCodes.Unsupported.Selector, $"The selector '{CssSerializer.Shortened(finding.Name)}' is not supported{Advice(finding.Name)}.", finding.Position);
             }
             else
             {
@@ -159,6 +159,15 @@ internal sealed class RuleBuilder(string sourceName, DiagnosticCollector diagnos
 
         return new StyleRule(selectors, rule.Declarations, Children(rule.ChildRules), rule.Position);
     }
+
+    /// <summary>What to write instead of a pseudo-element the engine does not draw, for the refusal's message; empty for
+    /// the others.</summary>
+    private static string Advice(string name) => name.TrimStart(':') switch
+    {
+        "first-line" => ": put the first line's text in a span and style the span",
+        "first-letter" => ": put the first letter in a span and style the span",
+        _ => string.Empty,
+    };
 
     private ValueList<CssRule> Children(ValueList<SyntaxRule> rules)
     {

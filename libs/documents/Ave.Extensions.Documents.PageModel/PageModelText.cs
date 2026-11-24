@@ -28,6 +28,7 @@ public static class PageModelText
         var header = "document"
             + (metadata.Title is { } title ? $" title={QuotedText.Quote(title)}" : string.Empty)
             + (metadata.Author is { } author ? $" author={QuotedText.Quote(author)}" : string.Empty)
+            + (metadata.Description is { } description ? $" description={QuotedText.Quote(description)}" : string.Empty)
             + (metadata.Language is { } language ? $" language={language}" : string.Empty);
         IEnumerable<string> lines =
         [
@@ -46,16 +47,29 @@ public static class PageModelText
     private static string ItemLine(DrawItem item) => item switch
     {
         FillRectangle fill => $"fill {fill.Area} {fill.Color}",
+        FillPath path => FilledPathLine(path),
         DrawImage image => $"image {image.Area} {image.Image.Describe()} id={image.Image.Id}",
         GlyphRun run => GlyphRunLine(run),
-        StructureStart start => $"start {start.Node} {start.Role}" + (start.Span == CellSpan.Single ? string.Empty : $" span={start.Span}"),
+        StructureStart start => $"start {start.Node} {start.Role}" + (start.Span == CellSpan.Single ? string.Empty : $" span={start.Span}") + (start.Language is { } language ? $" lang={language}" : string.Empty),
         StructureEnd end => $"end {end.Node}",
         ArtifactStart artifact => $"artifact {artifact.Kind}",
         ArtifactEnd => "end artifact",
         ClipStart clip => $"clip {clip.Area}",
         ClipEnd => "end clip",
+        LinkArea link => $"link-area {link.Link} {link.Area}",
+        Anchor anchor => $"anchor {anchor.Node} {anchor.At}",
         _ => $"unknown {item.GetType().Name}",
     };
+
+    /// <summary>A filled path: its rule and colour, then each contour as <c>M</c> and its start, each segment as <c>L</c>
+    /// and its end or <c>C</c> and its two control points and end, and <c>Z</c> where the contour closes.</summary>
+    private static string FilledPathLine(FillPath path) =>
+        $"path {path.Rule} {path.Color} " + string.Join(" ", path.Contours.Select(contour =>
+            $"M {contour.Start} " + string.Concat(contour.Segments.Select(segment => segment switch
+            {
+                PathCubic cubic => $"C {cubic.Control1} {cubic.Control2} {cubic.End} ",
+                _ => $"L {segment.End} ",
+            })) + "Z"));
 
     private static string GlyphRunLine(GlyphRun run)
     {

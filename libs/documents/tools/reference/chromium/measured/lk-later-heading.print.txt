@@ -1,0 +1,25 @@
+page 1 300.000 120.000
+word 1 18.000 62.651 28.500 10.500 Contents: #000000 Lato-Regular
+word 1 65.339 80.506 28.500 10.500 the #000000 Lato-Regular
+word 1 83.203 113.543 28.500 10.500 results #0000ee Lato-Regular
+word 1 116.231 130.600 28.500 10.500 are #000000 Lato-Regular
+word 1 133.288 145.101 28.500 10.500 on #000000 Lato-Regular
+word 1 147.789 162.956 28.500 10.500 the #000000 Lato-Regular
+word 1 165.644 185.977 28.500 10.500 next #000000 Lato-Regular
+word 1 188.660 213.161 28.500 10.500 page. #000000 Lato-Regular
+word 1 18.000 43.798 47.250 10.500 Some #000000 Lato-Regular
+word 1 46.486 64.699 47.250 10.500 text #000000 Lato-Regular
+word 1 67.381 107.654 47.250 10.500 between #000000 Lato-Regular
+word 1 110.342 125.509 47.250 10.500 the #000000 Lato-Regular
+word 1 128.197 168.233 47.250 10.500 contents #000000 Lato-Regular
+word 1 170.921 187.879 47.250 10.500 and #000000 Lato-Regular
+word 1 190.567 205.734 47.250 10.500 the #000000 Lato-Regular
+word 1 208.422 241.240 47.250 10.500 results. #000000 Lato-Regular
+rect 1 83.203 29.250 113.543 30.000 #0000ee
+page 2 300.000 120.000
+word 2 18.000 62.881 31.500 13.995 Results #000000 Lato-Bold
+word 2 18.000 35.514 51.000 10.500 The #000000 Lato-Regular
+word 2 38.202 68.542 51.000 10.500 results #000000 Lato-Regular
+word 2 71.230 99.774 51.000 10.500 follow #000000 Lato-Regular
+word 2 102.241 117.408 51.000 10.500 the #000000 Lato-Regular
+word 2 120.096 158.915 51.000 10.500 heading. #000000 Lato-Regular

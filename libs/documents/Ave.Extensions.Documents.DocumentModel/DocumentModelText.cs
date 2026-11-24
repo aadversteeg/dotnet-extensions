@@ -29,7 +29,7 @@ public static class DocumentModelText
     {
         IEnumerable<string> lines =
         [
-            "document" + Attribute("title", document.Metadata.Title) + Attribute("author", document.Metadata.Author),
+            "document" + Attribute("title", document.Metadata.Title) + Attribute("author", document.Metadata.Author) + Attribute("description", document.Metadata.Description),
             $"page size={InvariantNumber.Format(document.Page.Width.Points)}x{InvariantNumber.Format(document.Page.Height.Points)}"
                 + $" margin={document.Page.Margins}",
             .. document.Profile is { } profile && profile != LayoutProfile.Default
@@ -62,6 +62,8 @@ public static class DocumentModelText
             TextRun text => [indent + $"text {text.Id} {QuotedText.Quote(text.Text)} {StyleText(text.Style)} @{text.Source}"],
             CounterRun counter => [indent + $"counter {counter.Id} {CounterName(counter.Counter)} {StyleText(counter.Style)} @{counter.Source}"],
             ImageNode image => [indent + ImageLine(image)],
+            MarkerSymbol symbol => [indent + $"marker {symbol.Id} {symbol.Shape.ToString().ToLowerInvariant()} {StyleText(symbol.Style)} @{symbol.Source}"],
+            InlineGroup group => [indent + $"group {group.Id} {group.Role?.ToString() ?? "none"}{Attribute("lang", group.Language)}{(group.Box is { } box ? $" box({box})" : string.Empty)} {StyleText(group.Style)} @{group.Source}", .. group.Children.SelectMany(child => NodeLines(child, depth + 1))],
             _ => [indent + $"unknown {node.GetType().Name} {node.Id} @{node.Source}"],
         };
     }
@@ -79,6 +81,7 @@ public static class DocumentModelText
                 TableDisplay.HeaderGroup => "table-header-group",
                 TableDisplay.RowGroup => "table-row-group",
                 TableDisplay.Row => "table-row",
+                TableDisplay.Caption => "table-caption",
                 _ => box.Layout.ToString(),
             },
             box.Role.ToString(),
@@ -98,6 +101,10 @@ public static class DocumentModelText
             style.Columns.Count > 0 ? $"columns={string.Join(",", style.Columns)}" : null,
             style.Width != initial.Width ? $"width={style.Width.ToString().ToLowerInvariant()}" : null,
             style.Span != initial.Span ? $"span={style.Span}" : null,
+            style.BorderModel != initial.BorderModel ? $"border-collapse={style.BorderModel.ToString().ToLowerInvariant()}" : null,
+            style.BorderSpacing != initial.BorderSpacing ? $"border-spacing={style.BorderSpacing}" : null,
+            style.CaptionSide != initial.CaptionSide ? $"caption-side={style.CaptionSide.ToString().ToLowerInvariant()}" : null,
+            style.TableHeight is { } tableHeight ? $"height={tableHeight}" : null,
             $"@{box.Source}",
         ];
         return string.Join(" ", parts.OfType<string>());

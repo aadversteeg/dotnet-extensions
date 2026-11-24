@@ -218,7 +218,7 @@ assemblies by `UnitTests.Extensions.Documents.Architecture`.
                                          templates and the page-count fixpoint; painter          ← uses Typesetting
         │
         ▼
- Ave.Extensions.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, images,
+ Ave.Extensions.Documents.PageModel      page model: per page a display list (glyph runs, rectangles, paths, images,
                                          structure markers)
         │  render
         ▼
@@ -229,7 +229,7 @@ assemblies by `UnitTests.Extensions.Documents.Architecture`.
         ▼
  PDF bytes
 
- Ave.Extensions.Documents.Render.Raster  page model → pixels (beside Render.Pdf): glyph outlines, rectangles, images
+ Ave.Extensions.Documents.Render.Raster  page model → pixels (beside Render.Pdf): glyph outlines, rectangles, paths, images
                                          ← uses Graphics
 
  Ave.Extensions.Documents.Typesetting    white-space collapsing, Unicode line breaking (UAX #14), OpenType shaping,
@@ -360,7 +360,7 @@ its sample squares, as the PDF defines it, where some viewers smooth it. At most
 than the font's advances, by a share that depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small
 sizes; none at 9, 10.5 and 12 pt), so a line that fits in Chromium by less than that share of its text width can
 break one word earlier in the engine, which keeps the font's exact advances (`tools/reference/chromium/README.md`,
-"Where Chromium is not exact"). Tagging limits (no row headers, lists, captions, links or per-element language) and
+"Where Chromium is not exact"). Tagging limits (row headers from HTML only, no Headers/IDs, a Caption only for a table; links to a URI and inside the document, from the code front-end and from HTML's `a href`; a language per element only where it is a well-formed tag) and
 the PDF/UA checks a person must make are in `docs/pdf-profiles-and-accessibility.md`; all limits together are in
 `docs/architecture.md`.
 

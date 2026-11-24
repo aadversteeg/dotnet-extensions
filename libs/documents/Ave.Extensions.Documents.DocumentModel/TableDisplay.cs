@@ -19,4 +19,8 @@ public enum TableDisplay
 
     /// <summary>A row inside a row group (<c>table-row</c>); its children are the cells.</summary>
     Row,
+
+    /// <summary>The table's caption (<c>table-caption</c>, CSS 2.1 §17.4): at most one, the table's first child, laid out
+    /// by the table as a block as wide as the table, above its grid or below it (<see cref="BoxStyle.CaptionSide"/>).</summary>
+    Caption,
 }

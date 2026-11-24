@@ -40,6 +40,39 @@ public sealed record CssContentString(string Value) : CssContentItem
     public override string ToString() => new CssString(Value).ToString();
 }
 
+/// <summary><c>attr(name)</c> in the <c>content</c> of <c>::before</c> or <c>::after</c> (CSS Values 5, its
+/// string form): the value of the originating element's attribute of that name, the empty string when it has none
+/// (Chromium 159, measured: case <c>gc-attr</c>).</summary>
+/// <param name="Name">The attribute's name as written.</param>
+public sealed record CssContentAttribute(string Name) : CssContentItem
+{
+    /// <summary>Formats as CSS.</summary>
+    public override string ToString() => $"attr({Name})";
+}
+
+/// <summary><c>counter(name)</c> or <c>counter(name, style)</c> in the <c>content</c> of <c>::before</c> or <c>::after</c>
+/// (CSS Lists 3 §4.7): the innermost counter of that name where the pseudo-element is, in one of the 12 styles of
+/// <c>list-style-type</c>.</summary>
+/// <param name="Name">The counter's name, compared as written.</param>
+/// <param name="Style">The counter style; <c>decimal</c> when none is written.</param>
+public sealed record CssContentNamedCounter(string Name, string Style) : CssContentItem
+{
+    /// <summary>Formats as CSS.</summary>
+    public override string ToString() => Style == "decimal" ? $"counter({Name})" : $"counter({Name}, {Style})";
+}
+
+/// <summary><c>counters(name, string)</c> or <c>counters(name, string, style)</c> in the <c>content</c> of <c>::before</c>
+/// or <c>::after</c> (CSS Lists 3 §4.7): every counter of that name where the pseudo-element is, outermost first, each
+/// in the style, joined by the string.</summary>
+/// <param name="Name">The counter's name, compared as written.</param>
+/// <param name="Separator">The string between two levels.</param>
+/// <param name="Style">The counter style; <c>decimal</c> when none is written.</param>
+public sealed record CssContentNamedCounters(string Name, string Separator, string Style) : CssContentItem
+{
+    /// <summary>Formats as CSS.</summary>
+    public override string ToString() => $"counters({Name}, {new CssString(Separator)}{(Style == "decimal" ? string.Empty : ", " + Style)})";
+}
+
 /// <summary>The page-based counters (CSS Paged Media 3 §6.1).</summary>
 public enum PageCounterName
 {
@@ -111,7 +144,8 @@ internal static class ContentValue
                 case FunctionValue function when function.IsNamed("counter"):
                     if (Counter(function) is not { } counter)
                     {
-                        return (null, $"'{CssSerializer.Shortened([function])}' is not drawn: only counter(page) and counter(pages), in decimal, are");
+                        // Chromium 159, measured: a document's counter read in @top-right prints 0 on every page.
+                        return (null, $"'{CssSerializer.Shortened([function])}' is not drawn: only counter(page) and counter(pages), in decimal, are; a browser prints 0 for a document's counter here");
                     }
 
                     items.Add(counter);
@@ -124,12 +158,151 @@ internal static class ContentValue
 
                     items.Add(image);
                     break;
+                case FunctionValue function when function.IsNamed("string") || function.IsNamed("element"):
+                    return (null, $"'{CssSerializer.Shortened([function])}' is not drawn{Cascade.DeclarationPreparer.RunningHeaders}");
                 default:
                     return (null, $"'{CssSerializer.Shortened([value])}' is not drawn: only strings, counter(page), counter(pages), url() and image-set() are");
             }
         }
 
         return (new CssContentList(null, [.. items]), null);
+    }
+
+    /// <summary>
+    /// The value of <c>content</c> on <c>::before</c> or <c>::after</c> (CSS Generated Content 3 §1): <c>none</c>,
+    /// <c>normal</c>, or at most <see cref="CssInputLimits.MaxGeneratedContentItems"/> strings, <c>attr(name)</c>,
+    /// <c>counter()</c> and <c>counters()</c> items (<see cref="NamedCounter"/>). The rest of the grammar is refused with
+    /// what to write instead: the page counters (Chromium 159 prints 0 for them outside the page-margin boxes, measured),
+    /// quotes, images, <c>attr()</c> with a type or a fallback, and the alternative text after <c>/</c>.
+    /// </summary>
+    /// <param name="values">The declaration's value.</param>
+    /// <returns>The value, or null and the reason.</returns>
+    public static (CssContentList? Value, string? Refused) ParseGenerated(IReadOnlyList<ComponentValue> values)
+    {
+        var significant = Significant(values);
+        if (significant is [CssToken { Kind: CssTokenKind.Ident } keyword] && (keyword.IsIdent("none") || keyword.IsIdent("normal")))
+        {
+            return (keyword.IsIdent("none") ? CssContentList.None : CssContentList.Normal, null);
+        }
+
+        if (significant.Count == 0)
+        {
+            return (null, "the value is empty");
+        }
+
+        if (significant.Count > CssInputLimits.MaxGeneratedContentItems)
+        {
+            return (null, $"it has {significant.Count} items, and at most {CssInputLimits.MaxGeneratedContentItems} are drawn; join the strings");
+        }
+
+        var items = new List<CssContentItem>(significant.Count);
+        foreach (var value in significant)
+        {
+            switch (value)
+            {
+                case CssToken { Kind: CssTokenKind.String } text:
+                    items.Add(new CssContentString(text.Text));
+                    break;
+                case FunctionValue function when function.IsNamed("attr"):
+                    if (Significant(function.Values) is not [CssToken { Kind: CssTokenKind.Ident } name])
+                    {
+                        return (null, $"'{CssSerializer.Shortened([function])}' is not drawn: attr() with a type or a fallback is not; write attr(name) alone");
+                    }
+
+                    items.Add(new CssContentAttribute(name.Text));
+                    break;
+                case FunctionValue function when (function.IsNamed("counter") || function.IsNamed("counters")) && IsPageCounter(function):
+                    return (null, $"'{CssSerializer.Shortened([function])}' is not drawn: page numbers exist only in page-margin boxes; a browser prints 0 here");
+                case FunctionValue function when function.IsNamed("counter") || function.IsNamed("counters"):
+                    var (counter, why) = NamedCounter(function);
+                    if (counter is null)
+                    {
+                        return (null, $"'{CssSerializer.Shortened([function])}' is not drawn: {why}");
+                    }
+
+                    items.Add(counter);
+                    break;
+                case CssToken { Kind: CssTokenKind.Ident } quote when quote.IsIdent("open-quote") || quote.IsIdent("close-quote") || quote.IsIdent("no-open-quote") || quote.IsIdent("no-close-quote"):
+                    return (null, $"'{quote.Text}' is not drawn yet: write the quotation marks as strings");
+                case CssToken { Kind: CssTokenKind.Url }:
+                case FunctionValue { Name: var image } when IsImage(image):
+                    return (null, $"'{CssSerializer.Shortened([value])}' is not drawn yet: images in generated content are not; put an img in the HTML");
+                case CssToken delim when delim.IsDelim('/'):
+                    return (null, "the alternative text after '/' is not drawn yet: remove it; the generated text is read as it is");
+                default:
+                    return (null, $"'{CssSerializer.Shortened([value])}' is not drawn: only strings, attr(name), counter() and counters() are");
+            }
+        }
+
+        return (new CssContentList(null, [.. items]), null);
+
+        static bool IsPageCounter(FunctionValue function) =>
+            Significant(function.Values) is [CssToken { Kind: CssTokenKind.Ident } name, ..] && name.Text is "page" or "pages";
+
+        static bool IsImage(string name) => InfraAscii.ToLower(name) is "url" or "image-set" or "-webkit-image-set" or "image" or "cross-fade" or "element"
+            or "linear-gradient" or "radial-gradient" or "conic-gradient" or "repeating-linear-gradient" or "repeating-radial-gradient" or "repeating-conic-gradient";
+    }
+
+    /// <summary>
+    /// <c>counter(name)</c>, <c>counter(name, style)</c>, <c>counters(name, string)</c> or <c>counters(name, string,
+    /// style)</c> (CSS Lists 3 §4.7), the style one of the 12 of <c>list-style-type</c>; or null and what to write instead:
+    /// a name that is not one, a string or <c>symbols()</c> as the style, a style defined by <c>@counter-style</c>.
+    /// </summary>
+    private static (CssContentItem? Counter, string? Why) NamedCounter(FunctionValue function)
+    {
+        var plural = function.IsNamed("counters");
+        var arguments = Significant(function.Values);
+        var parts = new List<List<ComponentValue>> { new() };
+        foreach (var argument in arguments)
+        {
+            if (argument is CssToken { Kind: CssTokenKind.Comma })
+            {
+                parts.Add([]);
+            }
+            else
+            {
+                parts[^1].Add(argument);
+            }
+        }
+
+        var usage = plural ? "write counters(name, \"string\") or counters(name, \"string\", style)" : "write counter(name) or counter(name, style)";
+        if (parts.Count is < 1 or > 3 || parts.Exists(part => part.Count != 1) || (plural ? parts.Count < 2 : parts.Count > 2)
+            || parts[0][0] is not CssToken { Kind: CssTokenKind.Ident } name || InfraAscii.ToLower(name.Text) == "none")
+        {
+            return (null, $"it is not a valid {(plural ? "counters()" : "counter()")}; {usage}");
+        }
+
+        string? separator = null;
+        if (plural)
+        {
+            if (parts[1][0] is not CssToken { Kind: CssTokenKind.String } joiner)
+            {
+                return (null, $"it is not a valid counters(); {usage}");
+            }
+
+            separator = joiner.Text;
+        }
+
+        var style = "decimal";
+        if (parts.Count == (plural ? 3 : 2))
+        {
+            switch (parts[^1][0])
+            {
+                case CssToken { Kind: CssTokenKind.Ident } named when System.Array.IndexOf(Properties.PropertyRegistry.SupportedListStyles, InfraAscii.ToLower(named.Text)) >= 0:
+                    style = InfraAscii.ToLower(named.Text);
+                    break;
+                case CssToken { Kind: CssTokenKind.Ident } named:
+                    return (null, $"the counter style '{CssSerializer.Shortened(named.Text)}' is not drawn yet: @counter-style is not; use one of the 12 styles of list-style-type");
+                case FunctionValue symbols when symbols.IsNamed("symbols"):
+                    return (null, "symbols() is not drawn yet: use one of the 12 styles of list-style-type");
+                case CssToken { Kind: CssTokenKind.String }:
+                    return (null, "a string as the counter style is not drawn yet: write the string next to the counter, or use one of the 12 styles of list-style-type");
+                default:
+                    return (null, $"it is not a valid {(plural ? "counters()" : "counter()")}; {usage}");
+            }
+        }
+
+        return plural ? (new CssContentNamedCounters(name.Text, separator!, style), null) : (new CssContentNamedCounter(name.Text, style), null);
     }
 
     /// <summary>The URL of <c>url("…")</c> (a function with one string), or null.</summary>
