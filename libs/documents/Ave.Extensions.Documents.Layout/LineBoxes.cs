@@ -210,6 +210,7 @@ internal static class LineBoxes
         var below = extents.Max(extent => extent.Below);
         var children = ImmutableArray.CreateBuilder<PlacedFragment>(pieces.Length);
         var groups = new LineGroups(above, rounding);
+        var cuts = ImmutableArray.CreateBuilder<TextDecorations.Cut>();
         var x = offset;
         foreach (var (segment, item, extent) in pieces)
         {
@@ -249,6 +250,11 @@ internal static class LineBoxes
                 }
 
                 children.InsertRange(children.Count - 1, lines.Value.Before);
+                if (ink.SkipInk == TextDecorationSkipInk.Auto && decorated.Decorations.Any(resolved => resolved.Decoration.Line != TextDecorationLine.LineThrough))
+                {
+                    cuts.Add(new TextDecorations.Cut(children.Count - 1, lines.Value.Before.Count, decorated.Decorations, x, segment, above - extent.Shift, extent.Ascent, rounding, ink));
+                }
+
                 children.AddRange(lines.Value.After);
             }
 
@@ -265,7 +271,7 @@ internal static class LineBoxes
             return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(hyphenated.Groups.Last(group => group.Node.Box is not null).Node, "it breaks over two lines at a soft hyphen, which this version does not draw; leave out the soft hyphen or keep the word on one line"));
         }
 
-        return Result<LineFragment, Error>.Success(new LineFragment(new Size(x, above + below), children.ToImmutable()) { Baseline = above, Groups = parts });
+        return Result<LineFragment, Error>.Success(new LineFragment(new Size(x, above + below), children.ToImmutable()) { Baseline = above, Groups = parts, InkCuts = cuts.ToImmutable() });
     }
 
     /// <summary>

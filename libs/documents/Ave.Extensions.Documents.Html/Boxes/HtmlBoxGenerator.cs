@@ -77,6 +77,7 @@ public static partial class HtmlBoxGenerator
         SliceRestEnd = SliceRestEnd.AtLineCentre,
         InlineBoxSnapping = InlineBoxSnapping.WholePixels,
         MarkerSnapping = MarkerSnapping.WholePixels,
+        InkGapBand = InkGapBand.AtUnroundedLine,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>

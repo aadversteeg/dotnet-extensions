@@ -18,7 +18,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// ("In order to ignore intersects less than 0.5px, inflate by -0.5", Blink <c>TextPainter::ClipDecorationLine</c>,
 /// core/paint/text_painter.cc). Under <see cref="DocumentModel.FontMetricRounding.WholePixels"/> the top is the snapped top the line is
 /// painted at, while T stays unrounded where the painted height is floored (Chromium's print: a 24 pt underline painted
-/// 46.5–48.75 pt is cut by clips 46.125–49.275 pt, so its band is 46.875–48.9 pt).</para>
+/// 46.5–48.75 pt is cut by clips 46.125–49.275 pt, so its band is 46.875–48.9 pt). The band lies where the line is drawn below the text when the line is built; under
+/// <see cref="DocumentModel.InkGapBand.AtUnroundedLine"/> the gaps are cut again once the line's place on the page is known,
+/// with the band at the line's unrounded place (<see cref="InlineBoxPixels"/>, THE RULE FOR THE GAPS ON THE PAGE).</para>
 /// <para>One glyph's gap: the leftmost and the rightmost x of its outline inside the band (Blink <c>Font::GetTextIntercepts</c>,
 /// platform/fonts/font.cc; Skia <c>SkTextBlob::getIntercepts</c>, <c>SkGlyph::ensureIntercepts</c> and
 /// <c>calculate_path_gap</c>, src/core/SkGlyph.cpp): for every segment of the outline whose points reach the band, the points

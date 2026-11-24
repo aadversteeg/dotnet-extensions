@@ -180,15 +180,24 @@ public static class Paginator
                 return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.InlineBox(above, "it starts a later page and reaches above its page area, where Chromium paints it on both pages; give it no vertical padding or border, or keep its line off the page start"));
             }
 
-            // Inline boxes and bullets go on whole pixels of the page only here, where every line's place on the page is known.
-            var boxes = environment.Profile.InlineBoxSnapping == InlineBoxSnapping.WholePixels;
-            var bullets = environment.Profile.MarkerSnapping == MarkerSnapping.WholePixels;
-            PlacedFragment OnPage(PlacedFragment fragment, Point by) => boxes || bullets ? InlineBoxPixels.Snap(Moved(fragment, by), boxes, bullets) : Moved(fragment, by);
+            // Inline boxes and bullets go on whole pixels of the page, and gaps around the ink are cut at each line's place on
+            // the page, only here, where every line's place on the page is known.
+            var policies = InlineBoxPixels.Policies.Of(environment.Profile);
+            Result<PlacedFragment, Error> OnPage(PlacedFragment fragment, Point by) =>
+                policies.None ? Result<PlacedFragment, Error>.Success(Moved(fragment, by)) : InlineBoxPixels.Snap(Moved(fragment, by), policies);
+            Result<PlacedFragment, Error>? onPageBody = OnPage(placement.Fragment, body);
+            Result<PlacedFragment, Error>? onPageHeader = header.Fragment is { } headerFragment ? OnPage(headerFragment, origin) : null;
+            Result<PlacedFragment, Error>? onPageFooter = footer.Fragment is { } footerFragment ? OnPage(footerFragment, origin + new Point(0, areaHeight - footer.Height)) : null;
+            if (new[] { onPageBody, onPageHeader, onPageFooter }.FirstOrDefault(result => result is { IsFailure: true }) is { } failed)
+            {
+                return Result<ValueList<PageFragment>, Error>.Failure(failed.Error);
+            }
+
             pages.Add(new PageFragment(
                 pageSize,
-                OnPage(placement.Fragment, body),
-                header.Fragment is { } headerFragment ? OnPage(headerFragment, origin) : null,
-                footer.Fragment is { } footerFragment ? OnPage(footerFragment, origin + new Point(0, areaHeight - footer.Height)) : null,
+                onPageBody.Value.Value,
+                onPageHeader?.Value,
+                onPageFooter?.Value,
                 environment.Profile.BodyClip == BodyClip.BodyArea ? clip : null));
             token = placement.Continuation;
         }

@@ -14,7 +14,7 @@ public sealed record LayoutProfile
     /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
     /// <see cref="CellsBesideSlices.GoOn"/>, <see cref="RepeatedHeaderRows.AboveEverySlice"/>,
     /// <see cref="SliceRestEnd.InsideCell"/>, <see cref="CutRowAlignment.RestAlignedInItsPart"/>,
-    /// <see cref="InlineBoxSnapping.Exact"/> and <see cref="MarkerSnapping.Exact"/>.</summary>
+    /// <see cref="InlineBoxSnapping.Exact"/>, <see cref="MarkerSnapping.Exact"/> and <see cref="InkGapBand.AtText"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -69,6 +69,34 @@ public sealed record LayoutProfile
     /// <summary>Whether a list item's bullet is drawn where it lies or on whole pixels of the page
     /// (<see cref="DocumentModel.MarkerSnapping"/>).</summary>
     public MarkerSnapping MarkerSnapping { get; init; } = MarkerSnapping.Exact;
+
+    /// <summary>Where the band lies that an underline's or an overline's gaps around the glyphs' ink are cut with, relative
+    /// to the text (<see cref="DocumentModel.InkGapBand"/>).</summary>
+    public InkGapBand InkGapBand { get; init; } = InkGapBand.AtText;
+}
+
+/// <summary>
+/// Where the band lies, relative to the glyphs, that the gaps of an underline or an overline around the glyphs' ink are
+/// cut with (<c>text-decoration-skip-ink: auto</c>, THE RULE FOR THE GAPS AROUND A GLYPH'S INK). The line itself is
+/// painted at the same place under both values; only its gaps move.
+/// </summary>
+public enum InkGapBand
+{
+    /// <summary>The band lies where the line is drawn below the text.</summary>
+    AtText,
+
+    /// <summary>
+    /// As Chromium prints it: Chromium draws a line's text from the line's top rounded to the nearest whole pixel of the page
+    /// (a half pixel down), and paints the decoration from there, but cuts the gaps with the band at the line's own,
+    /// unrounded place. So the band lies above the text by as much as the line's top was rounded down, and below it by as
+    /// much as it was rounded up: on a line whose top lies 0.25 px past a whole pixel the band is 0.25 px lower relative to
+    /// the glyphs, on one 0.75 px past it 0.25 px higher, on one 0.5 px past it 0.5 px higher. Measured against Chromium's
+    /// print (<c>tools/reference/chromium</c>): underlines and links at 10.5 and 12 pt on lines whose top lies 0, 0.25,
+    /// 0.5 and 0.75 px past a whole pixel (case <c>dw-gap-fraction</c>); in a table cell with padding in points, after a
+    /// margin in points, and on a second page after a line height in points (<c>dw-gap-places</c>); a link around generated
+    /// text on a line whose top lies 0.656 px past a whole pixel, where the band lies 0.344 px higher (<c>tt-groups</c>).
+    /// </summary>
+    AtUnroundedLine,
 }
 
 /// <summary>

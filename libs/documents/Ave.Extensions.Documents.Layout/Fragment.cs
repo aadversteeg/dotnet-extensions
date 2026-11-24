@@ -65,6 +65,11 @@ public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children)
     /// <see cref="Children"/>: outer groups before the groups inside them, in document order; two ranges are disjoint or
     /// one holds the other. Empty when the line lies in no group.</summary>
     public ValueList<LineGroupPart> Groups { get; init; } = [];
+
+    /// <summary>The decorated pieces of the line whose underlines or overlines leave gaps around the ink, to cut again once
+    /// the line's place on the page is known (<see cref="DocumentModel.InkGapBand.AtUnroundedLine"/>,
+    /// <see cref="InlineBoxPixels"/>); empty when there are none.</summary>
+    internal ValueList<TextDecorations.Cut> InkCuts { get; init; } = [];
 }
 
 /// <summary>

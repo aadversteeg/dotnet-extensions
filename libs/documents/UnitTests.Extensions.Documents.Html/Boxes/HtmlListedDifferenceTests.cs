@@ -185,26 +185,44 @@ public class HtmlListedDifferenceTests
 
     /// <summary>
     /// A link around generated text (case <c>mx-gen-link</c>: <c>a::before { content: "see " }</c> and
-    /// <c>a::after { content: " more" }</c>): Chromium's print writes two link annotations for each link, one around the
-    /// generated text and one around the element's own (33.75 to 52.5 pt and 52.5 to 74.25 pt for "see page"), where the
-    /// engine writes one area for the link's part on the line, from its first piece to its last (THE RULE FOR A LINK'S
-    /// AREA). A link area is not printed, so the print is the same, and each is a valid link annotation (ISO 32000-1
-    /// §12.5.6.5); the engine's area is the union of Chromium's two, edge for edge: the number of rectangles is the whole
-    /// difference.
+    /// <c>a::after { content: " more" }</c>; case <c>tt-groups</c>: <c>a::before { content: "xy" }</c> on a line whose top
+    /// lies between pixels): Chromium's print writes two link annotations for each such link, one around the generated text
+    /// and one around the element's own (33.75 to 52.5 pt and 52.5 to 74.25 pt for "see page"; 84 to 96 pt and 96 to 105 pt
+    /// for "xyef"), where the engine writes one area for the link's part on the line, from its first piece to its last (THE
+    /// RULE FOR A LINK'S AREA). A link area is not printed, so the print is the same, and each is a valid link annotation
+    /// (ISO 32000-1 §12.5.6.5); the engine's area is the union of Chromium's two, edge for edge: the number of rectangles is
+    /// the whole difference. Everything compared before the links is equal: the first difference is a link's.
     /// </summary>
-    [Fact]
-    public void A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest()
+    /// <param name="name">The case.</param>
+    /// <param name="written">How many link rectangles Chromium writes.</param>
+    /// <param name="areas">How many link areas the engine writes: one for each pair of Chromium's and each other link.</param>
+    [Theory]
+    [InlineData("mx-gen-link", 4, 2)]
+    [InlineData("tt-groups", 6, 5)]
+    public void A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest(string name, int written, int areas)
     {
-        HtmlCases.Difference(Engine("mx-gen-link"), HtmlCases.ChromiumPrint("mx-gen-link")).Should().BeNull("the print is equal, its underlines cut around the ink");
-        var boxes = HtmlCases.Boxes("mx-gen-link").Value;
+        HtmlCases.Status(name).Should().StartWith("different link ", "the print is equal, its underlines cut around the ink, and so are its words and boxes");
+        var boxes = HtmlCases.Boxes(name).Value;
         var pages = DocumentLayout.Run(boxes.Document, boxes.Fonts).Value;
-        var chromium = HtmlCases.Links(HtmlCases.Cases, "mx-gen-link");
+        var chromium = HtmlCases.Links(HtmlCases.Cases, name);
 
-        chromium.Should().HaveCount(4);
-        HtmlCases.Links(pages).Should().HaveCount(2);
-        chromium.Chunk(2).Should().OnlyContain(pair => pair[0].X1 == pair[1].X0 && pair[0].Y0 == pair[1].Y0 && pair[0].Y1 == pair[1].Y1 && pair[0].Target == pair[1].Target,
-            "Chromium's two rectangles of a link touch, on one line, to one target");
-        var unions = chromium.Chunk(2).Select(pair => pair[0] with { X1 = pair[1].X1 }).ToList();
+        chromium.Should().HaveCount(written);
+        HtmlCases.Links(pages).Should().HaveCount(areas);
+
+        // Chromium's two rectangles of a link touch, on one line, to one target.
+        var unions = new List<HtmlCases.PrintedLink>();
+        foreach (var link in chromium)
+        {
+            if (unions.Count > 0 && unions[^1] is var last && last.Page == link.Page && last.X1 == link.X0 && last.Y0 == link.Y0 && last.Y1 == link.Y1 && last.Target == link.Target)
+            {
+                unions[^1] = last with { X1 = link.X1 };
+                continue;
+            }
+
+            unions.Add(link);
+        }
+
+        unions.Should().HaveCount(areas);
         HtmlCases.LinkDifference(pages, unions, boxes.Document.Page.Margins.Top.Points).Should().BeNull();
     }
 

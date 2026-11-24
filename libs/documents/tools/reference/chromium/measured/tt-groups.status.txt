@@ -1,1 +1,1 @@
-tt-groups open page 1 painted area: the pixel at (90.75, 120): Chromium paints it and the engine does not; the engine paints 84 px #0000ee, Chromium 85 px (print.txt)
+tt-groups listed A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest: link 3 on page 1: x1 104.859, Chromium 96 (links.txt)

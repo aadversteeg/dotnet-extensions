@@ -211,4 +211,41 @@ public class TextDecorationMappingTests
         Runs(Doc($"<p>{five}</p>", "span { text-decoration: underline overline line-through }")).Select(run => run.Style.Decorations.Count)
             .Should().Equal([15, ModelLimits.MaxDecorations], "a text with exactly as many lines as the model holds is drawn");
     }
+
+    /// <summary>
+    /// Case <c>dw-gap-fraction</c>: underlines and links over descenders on lines whose top lies 0, 0.25, 0.5 and 0.75 px past
+    /// a whole pixel of the page. Chromium draws the text from the line's rounded top and cuts the gaps with the band at the
+    /// unrounded one; under <see cref="InkGapBand.AtUnroundedLine"/> every piece of every line ends where Chromium's does
+    /// (within its single-precision 0.005 pt), under <see cref="InkGapBand.AtText"/> only those of the lines whose top lies
+    /// on a whole pixel. The line itself is painted at the same place under both.
+    /// </summary>
+    [Theory]
+    [InlineData(InkGapBand.AtUnroundedLine)]
+    [InlineData(InkGapBand.AtText)]
+    public void The_gaps_of_an_underline_are_cut_with_the_band_at_its_line_s_unrounded_place_on_the_page(InkGapBand band)
+    {
+        var boxes = HtmlCases.Boxes("dw-gap-fraction").Value;
+        boxes.Document.Profile.InkGapBand.Should().Be(InkGapBand.AtUnroundedLine);
+        var pages = Ave.Extensions.Documents.Layout.DocumentLayout.Run(boxes.Document with { Profile = boxes.Document.Profile with { InkGapBand = band } }, boxes.Fonts).Value;
+        var engine = Lines(PrintedPages.Engine(pages).Pages[0].Rectangles);
+        var chromium = Lines(HtmlCases.ChromiumPrint("dw-gap-fraction").Pages[0].Rectangles);
+
+        engine.Keys.Should().Equal(chromium.Keys, "each line is painted where Chromium paints it");
+        var equal = engine.Keys.Where(top => engine[top].Count == chromium[top].Count
+            && engine[top].Zip(chromium[top]).All(pair => Math.Abs(pair.First.X0 - pair.Second.X0) < 0.005 && Math.Abs(pair.First.X1 - pair.Second.X1) < 0.005)).ToList();
+        if (band == InkGapBand.AtUnroundedLine)
+        {
+            equal.Should().Equal(engine.Keys);
+            return;
+        }
+
+        // The lines whose top lies on a whole pixel: the first of the 10.5 pt underlines, of the links and of the 12 pt lines.
+        equal.Should().Equal(23.25, 75, 128.25);
+
+        // The pieces of the underlines and links, line by line from the top: a line is the rectangles one pixel high on one row.
+        static SortedDictionary<double, List<PrintedBox>> Lines(IEnumerable<PrintedBox> boxes) => new(boxes
+            .Where(box => box.Y1 - box.Y0 < 0.8 && box.X1 - box.X0 < 280)
+            .GroupBy(box => ChromiumLayout.WholePixel(box.Y0))
+            .ToDictionary(row => row.Key, row => row.OrderBy(box => box.X0).ToList()));
+    }
 }
