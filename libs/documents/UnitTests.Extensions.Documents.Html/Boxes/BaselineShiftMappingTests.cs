@@ -43,6 +43,13 @@ public class BaselineShiftMappingTests
                     }
 
                     break;
+                case InlineGroup group:
+                    foreach (var child in group.Children)
+                    {
+                        pending.Push(child);
+                    }
+
+                    break;
             }
         }
 

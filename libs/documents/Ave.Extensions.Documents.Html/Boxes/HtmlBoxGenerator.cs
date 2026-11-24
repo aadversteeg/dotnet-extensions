@@ -771,6 +771,8 @@ public static partial class HtmlBoxGenerator
                 case StyledElement element when Display(element) == "inline":
                     if (Check(element, isBlock: false) && !Deeper(frame.Depth, element.Element.Position))
                     {
+                        // The shift is opened first, so the text of a link or a span group is shifted as its element is.
+                        OpenShift(element, frame.Element);
                         if (StartLink(stack, frame, element) || StartSpan(stack, frame, element))
                         {
                             break;
@@ -779,7 +781,6 @@ public static partial class HtmlBoxGenerator
                         // CSS 2.1 §10.8.1: every inline box, also one without a glyph, has a line height that counts
                         // for the line box ("empty inline elements ... still have margins, padding, borders and a line
                         // height"); the model has no inline box, so an empty run in the element's style carries it.
-                        OpenShift(element, frame.Element);
                         if (TextStyleOf(element) is { } own)
                         {
                             frame.Target.Add(new TextRun(NewId(), string.Empty, own, Source(element.Element.Position)));
