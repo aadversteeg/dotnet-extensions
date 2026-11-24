@@ -75,6 +75,8 @@ public class TableCaptionTests
     [Theory]
     // tc-break-first a: the caption fits at the page end, the first row below it does not.
     [InlineData("<p style=\"padding-top: 140pt\">first</p><table><caption>Caption</caption><tr><td>one</td><td>two</td></tr></table>")]
+    // The caption fits, and the first row below it breaks inside its first cell.
+    [InlineData("<p style=\"padding-top: 100pt\">first</p><table><caption>Caption</caption><tr><td>a<br>b<br>c<br>d<br>e<br>f<br>g<br>h<br>i<br>j</td><td>two</td></tr></table>")]
     // The caption below the last row that does not fit below it on the page.
     [InlineData("<p style=\"padding-top: 140pt\">first</p><table style=\"caption-side: bottom\"><caption>Caption</caption><tr><td>one</td><td>two</td></tr></table>")]
     public void A_caption_that_does_not_fit_with_its_first_or_last_row_is_refused_at_the_table(string body)
