@@ -11,16 +11,15 @@ namespace Ave.Extensions.Documents.Layout;
 /// The background and the border of a box with rounded corners (<see cref="BoxStyle.BorderRadius"/>, CSS Backgrounds 3
 /// §5), as Chromium 159 prints them (cases <c>br-*</c>).
 /// <para>THE RULE FOR A ROUNDED CORNER: a quarter of an ellipse whose radii are the corner's used radii (§5.5, below),
-/// cut into <see cref="PartsPerQuarter"/> parts of equal angle; each part is the quadratic curve from its start to its
+/// cut into parts of equal angle (<see cref="PartsPerQuarter"/>); each part is the quadratic curve from its start to its
 /// end on the ellipse, with its control point where the tangents at the two ends cross, written as the cubic curve of the
 /// same shape (each cubic control point two thirds of the way from its end to the quadratic's). Chromium's print holds
-/// this construction with 2 parts at the 0.5 px centre line of a 1 px ring, 4 at 3 and 4 px, 8 at 5.5 to 20 px and 16 at
-/// 22 px and more (cases <c>br-bg-*</c>, <c>br-border-*</c>; the count is its own choice of how close a curve must be, and
-/// where 8 turns into 16 between 20 and 22 px is not fixed by the cases); more parts paint the same pixels, and the comparison of painted
-/// area finds no digit different with 16 parts at every radius measured: 3, 6, 8 and 20 px (<c>br-bg-radii</c>), the
-/// clamped 22 px and 12 px and an unclamped 30 px (<c>br-bg-clamp</c>), a circle of 30 px and ellipses of 75 × 20 and 45 × 12 px
-/// (<c>br-bg-percent</c>), four different corners (<c>br-bg-corners</c>) and the rings of <c>br-border-1px</c> and
-/// <c>br-border-3px</c>. The usual four cubic curves of a circle paint other pixels on the larger ellipses.</para>
+/// this construction with 2 parts at the 0.5 px centre line of a 1 px ring and at 1 px, 4 at 2 to 5 px, 8 at 5.5 to 20 px
+/// and 16 from 25 px (cases <c>br-bg-*</c>, <c>br-border-*</c>, <c>bri-*</c>; the count is its own choice of how close a
+/// curve must be, and between 20 and 25 px it is not fixed by the cases: 16 parts at 22 px, 8 at 24 px). The engine writes
+/// Chromium's count; with 16 parts at every radius a pill of 11 px on an inline-block paints four samples one digit
+/// lighter (<c>bri-iblk-fraction</c>), so the count is part of the shape. The usual four cubic curves of a circle paint
+/// other pixels on the larger ellipses.</para>
 /// <para>THE RULE FOR THE USED RADII (§5.5): a corner's radius across is its length plus its percentage of the border
 /// box's width, its radius down its length plus its percentage of the height; where the two radii along a side add up
 /// to more than the side, every radius of the box is scaled by one factor, the smallest of side ÷ sum over the four
@@ -38,13 +37,22 @@ namespace Ave.Extensions.Documents.Layout;
 /// its top or bottom has square corners there, its cut edge straight along the break (<c>br-break</c>). A rounded box
 /// with a border that a break cuts is refused (<see cref="CutBorders"/>). The content is not clipped by the corners: text
 /// that reaches into one is drawn (<c>br-text-corner</c>).</para>
-/// <para>Bounded work: a rounded rectangle is one contour of at most 4 × <see cref="PartsPerQuarter"/> curves and 4
-/// lines (68 segments), a ring two (136), far inside the page model's limit of segments per path.</para>
+/// <para>Bounded work: a rounded rectangle is one contour of at most 4 × 16 curves and 4 lines (68 segments), a ring two
+/// (136), far inside the page model's limit of segments per path.</para>
 /// </summary>
 internal static class RoundedBox
 {
-    /// <summary>The parts of equal angle a quarter ellipse is cut into (THE RULE FOR A ROUNDED CORNER).</summary>
-    internal const int PartsPerQuarter = 16;
+    /// <summary>The parts of equal angle a quarter ellipse is cut into, by its larger radius in CSS pixels: 2 up to 1 px, 4
+    /// up to 5 px, 8 up to 20 px, 16 above (THE RULE FOR A ROUNDED CORNER).</summary>
+    /// <param name="radius">The larger of the corner's two radii, in points.</param>
+    /// <returns>The number of parts.</returns>
+    internal static int PartsPerQuarter(double radius) => (radius / CssPixels.Points) switch
+    {
+        <= 1 => 2,
+        <= 5 => 4,
+        <= 20 => 8,
+        _ => 16,
+    };
 
     /// <summary>The used radii of the four corners, across and down, in points, top left, top right, bottom right, bottom
     /// left: a corner that a page break cuts is square, the others resolved and scaled by one factor (THE RULE FOR THE
@@ -54,14 +62,16 @@ internal static class RoundedBox
     /// <param name="height">The border box's height.</param>
     /// <param name="cutTop">True when a page break cuts the top edge.</param>
     /// <param name="cutBottom">True when a page break cuts the bottom edge.</param>
+    /// <param name="cutLeft">True when a line break cuts the left edge (an inline box's part that does not hold its start).</param>
+    /// <param name="cutRight">True when a line break cuts the right edge (a part that does not hold the box's end).</param>
     /// <returns>The four corners' radii.</returns>
-    internal static (double X, double Y)[] UsedRadii(BorderRadius radius, double width, double height, bool cutTop, bool cutBottom)
+    internal static (double X, double Y)[] UsedRadii(BorderRadius radius, double width, double height, bool cutTop, bool cutBottom, bool cutLeft = false, bool cutRight = false)
     {
         (double X, double Y) Resolve(CornerRadius corner, bool cut) =>
             cut ? (0, 0) : (corner.Length.Points + corner.Percent / 100 * width, corner.Length.Points + corner.Percent / 100 * height);
         (double X, double Y)[] corners =
         [
-            Resolve(radius.TopLeft, cutTop), Resolve(radius.TopRight, cutTop), Resolve(radius.BottomRight, cutBottom), Resolve(radius.BottomLeft, cutBottom),
+            Resolve(radius.TopLeft, cutTop || cutLeft), Resolve(radius.TopRight, cutTop || cutRight), Resolve(radius.BottomRight, cutBottom || cutRight), Resolve(radius.BottomLeft, cutBottom || cutLeft),
         ];
         static double Share(double side, double sum) => sum > side ? side / sum : 1;
         var factor = Math.Min(
@@ -115,9 +125,39 @@ internal static class RoundedBox
         yield return new FillPath([Contour(area, radii), Contour(inner, innerRadii)], PathFillRule.EvenOdd, side.Color);
     }
 
+    /// <summary>The background and the border of one part of a rounded inline box, in its border box on the page (THE RULE FOR
+    /// A ROUNDED INLINE BOX): the background as one fill to the border box's outer edge, then the border as one ring; the
+    /// left corners rounded only on the part that holds the box's start, the right ones only on the part that holds its end,
+    /// a part between them square, as a rectangle.</summary>
+    /// <param name="box">The inline box.</param>
+    /// <param name="area">The part's border box on the page.</param>
+    /// <param name="holdsStart">True when the part holds the box's start edge.</param>
+    /// <param name="holdsEnd">True when the part holds the box's end edge.</param>
+    /// <returns>The fills.</returns>
+    internal static IEnumerable<DrawItem> InlinePart(InlineBoxStyle box, Rect area, bool holdsStart, bool holdsEnd)
+    {
+        var (x0, y0) = (CssPixels.Round(area.Origin.X), CssPixels.Round(area.Origin.Y));
+        var (x1, y1) = (CssPixels.Round(area.Origin.X + area.Size.Width), CssPixels.Round(area.Origin.Y + area.Size.Height));
+        var snapped = new Rect(new Point(x0, y0), new Size(x1 - x0, y1 - y0));
+        var radii = UsedRadii(box.BorderRadius, snapped.Size.Width, snapped.Size.Height, false, false, !holdsStart, !holdsEnd);
+        var square = Array.TrueForAll(radii, corner => corner.X == 0 || corner.Y == 0);
+        if (box.Background is { } color)
+        {
+            yield return square ? new FillRectangle(snapped, color) : new FillPath([Contour(snapped, radii)], PathFillRule.NonZero, color);
+        }
+
+        // A part with a border holds both edges: a rounded inline box with a border over two lines is refused (CutBorders).
+        if (box.Border.Top.IsVisible && holdsStart && holdsEnd)
+        {
+            var (inner, innerRadii) = Inset(snapped, radii, box.Border.Top.Width.Points);
+            yield return new FillPath([Contour(snapped, radii), Contour(inner, innerRadii)], PathFillRule.EvenOdd, box.Border.Top.Color);
+        }
+    }
+
     /// <summary>The first fragment of a rounded box with a border that a page break cuts, as an error
-    /// (<see cref="LayoutErrorCodes.RoundedBorderBreak"/>), or null. Chromium 159 draws such a border's sides as rectangles
-    /// under clipping paths, which the page model has not. One walk over every page's body and areas with an explicit
+    /// (<see cref="LayoutErrorCodes.RoundedBorderBreak"/>), or the first part of a rounded inline box with a border that a
+    /// line break cuts (<see cref="LayoutErrorCodes.RoundedBorderLineBreak"/>), or null. Chromium 159 draws such a border's
+    /// sides as rectangles under clipping paths, which the page model has not (cases <c>br-break</c>, <c>bri-broken</c>). One walk over every page's body and areas with an explicit
     /// stack, linear in the number of fragments.</summary>
     /// <param name="pages">The fragment tree.</param>
     /// <returns>The error, or null.</returns>
@@ -141,6 +181,17 @@ internal static class RoundedBox
             if (fragment is BoxFragment { Box.Style.BorderRadius.IsZero: false, Box.Style.Border.Top.IsVisible: true } cut && (cut.ContinuesBefore || cut.ContinuesAfter))
             {
                 return LayoutErrors.RoundedBorderBreak(cut.Box);
+            }
+
+            if (fragment is LineFragment { Groups: var groups })
+            {
+                foreach (var part in groups)
+                {
+                    if (part is { Group.Box: { BorderRadius.IsZero: false, Border.Top.IsVisible: true } } && !(part.HoldsStart && part.HoldsEnd))
+                    {
+                        return LayoutErrors.RoundedBorderLineBreak(part.Group);
+                    }
+                }
             }
 
             var children = fragment switch
@@ -183,7 +234,7 @@ internal static class RoundedBox
         var (x1, y1) = (x0 + area.Size.Width, y0 + area.Size.Height);
         (double X, double Y) Corner(int index) => radii[index].X > 0 && radii[index].Y > 0 ? radii[index] : (0, 0);
         var (topLeft, topRight, bottomRight, bottomLeft) = (Corner(0), Corner(1), Corner(2), Corner(3));
-        var segments = new List<PathSegment>(4 * PartsPerQuarter + 4);
+        var segments = new List<PathSegment>((4 * 16) + 4);
         segments.Add(new PathLine(new Point(x1 - topRight.X, y0)));
         Quarter(segments, x1 - topRight.X, y0 + topRight.Y, topRight, -90);
         segments.Add(new PathLine(new Point(x1, y1 - bottomRight.Y)));
@@ -205,12 +256,13 @@ internal static class RoundedBox
             return;
         }
 
-        var step = Math.PI / 2 / PartsPerQuarter;
+        var parts = PartsPerQuarter(Math.Max(radius.X, radius.Y));
+        var step = Math.PI / 2 / parts;
         var reach = 1 / Math.Cos(step / 2);
         Point At(double angle, double scale) => new(cx + radius.X * scale * Math.Cos(angle), cy + radius.Y * scale * Math.Sin(angle));
         var start = from * Math.PI / 180;
         var previous = At(start, 1);
-        for (var part = 1; part <= PartsPerQuarter; part++)
+        for (var part = 1; part <= parts; part++)
         {
             var end = At(start + part * step, 1);
             var control = At(start + (part - 0.5) * step, reach);

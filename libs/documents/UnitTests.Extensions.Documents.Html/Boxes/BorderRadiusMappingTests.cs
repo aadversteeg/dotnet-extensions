@@ -43,11 +43,11 @@ public class BorderRadiusMappingTests
     }
 
     [Theory]
-    [InlineData("<p>a <span style=\"border-radius: 3px; background: #ff0000\">b</span> c</p>", "an inline element")]
-    [InlineData("<p>a <span style=\"display: inline-block; border-radius: 3px\">b</span> c</p>", "an inline-block")]
-    [InlineData("<table><tr><td style=\"border-radius: 3px\">b</td></tr></table>", "a table or a part of a table")]
-    [InlineData("<table style=\"border-collapse: separate; border-radius: 3px\"><tr><td>b</td></tr></table>", "a table or a part of a table")]
-    [InlineData("<ul><li style=\"border-radius: 3px\">b</li></ul>", "a list item")]
+    [InlineData("<table><tr style=\"border-radius: 3px\"><td>b</td></tr></table>", "a row, a row group, a column or a caption")]
+    [InlineData("<table><caption style=\"border-radius: 3px\">c</caption><tr><td>b</td></tr></table>", "a row, a row group, a column or a caption")]
+    [InlineData("<table style=\"border-collapse: collapse; border-radius: 3px; background: #ff0000\"><tr><td>b</td></tr></table>", "the collapsed border model with a background")]
+    [InlineData("<p>a <span style=\"border-radius: 3px; border: 1px solid #000000; border-left-width: 2px\">b</span> c</p>", "different widths")]
+    [InlineData("<p>a <span style=\"display: inline-block; border-radius: 3px; overflow: hidden\">b</span> c</p>", "overflow other than visible")]
     [InlineData("<img alt=\"b\" width=\"10\" height=\"10\" style=\"display: block; border-radius: 3px\" src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==\">", "an image")]
     [InlineData("<div style=\"border-radius: 3px; overflow: hidden\">b<p>c</p></div>", "overflow other than visible")]
     [InlineData("<div style=\"border-radius: 3px; border: 1px solid #000000; border-left-width: 2px\">b</div>", "different widths")]
@@ -64,8 +64,8 @@ public class BorderRadiusMappingTests
     }
 
     [Theory]
-    [InlineData("<p>a <span style=\"display: inline-block; border-radius: 0 3px 3px 3px; background: #ff0000\">b</span> c</p>")]
-    [InlineData("<ul><li style=\"border-radius: 3px 0 6px; background: #ff0000\">b</li></ul>")]
+    [InlineData("<p>a <span style=\"border-radius: 0 3px 3px 3px; background: #ff0000; border: 1px solid #000000; border-top-color: #ff0000\">b</span> c</p>")]
+    [InlineData("<table><tr style=\"border-radius: 3px 0 6px; background: #ff0000\"><td>b</td></tr></table>")]
     public void Under_the_warning_policy_a_refused_radius_leaves_every_corner_square_and_the_document_is_drawn(string body)
     {
         var boxes = Boxes(Doc(body), UnsupportedPolicy.Warn);
@@ -76,7 +76,7 @@ public class BorderRadiusMappingTests
         while (pending.Count > 0)
         {
             var node = pending.Pop();
-            (node is Box box ? box.Style.BorderRadius : BorderRadius.None).IsZero.Should().BeTrue();
+            (node switch { Box box => box.Style.BorderRadius, InlineGroup { Box: { } own } => own.BorderRadius, _ => BorderRadius.None }).IsZero.Should().BeTrue();
             foreach (var child in node switch { Box parent => parent.Children, InlineGroup group => group.Children, _ => [] })
             {
                 pending.Push(child);
@@ -84,6 +84,57 @@ public class BorderRadiusMappingTests
         }
 
         DocumentLayout.Run(boxes.Value.Document, boxes.Value.Fonts).IsSuccess.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("<p>a <span style=\"display: inline-block; border-radius: 3px; background: #ff0000\">b</span> c</p>")]
+    [InlineData("<ul><li style=\"border-radius: 3px; background: #ff0000\">b</li></ul>")]
+    [InlineData("<table style=\"border-collapse: separate\"><tr><td style=\"border-radius: 3px; background: #ff0000\">b</td></tr></table>")]
+    [InlineData("<table style=\"border-collapse: separate; border: 1px solid #000000; border-radius: 3px\"><tr><td>b</td></tr></table>")]
+    [InlineData("<table style=\"border-collapse: collapse\"><tr><td style=\"border-radius: 3px; background: #ff0000\">b</td></tr></table>")]
+    public void An_inline_block_a_list_item_a_table_and_a_cell_take_their_corners(string body)
+    {
+        var boxes = Boxes(Doc(body));
+        boxes.IsSuccess.Should().BeTrue(boxes.IsFailure ? boxes.Error.ToString() : string.Empty);
+
+        Rounded(boxes.Value.Document.Root).Should().ContainSingle().Which.Should().Be(BorderRadius.All(new CornerRadius(2.25.Pt())));
+        DocumentLayout.Run(boxes.Value.Document, boxes.Value.Fonts).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void An_inline_box_takes_its_corners_and_a_collapsed_table_keeps_square_ones()
+    {
+        var inline = Boxes(Doc("<p>a <span style=\"border-radius: 999px; background: #ff0000; padding: 2px 6px\">b</span> c</p>"));
+        inline.IsSuccess.Should().BeTrue(inline.IsFailure ? inline.Error.ToString() : string.Empty);
+        Rounded(inline.Value.Document.Root).Should().ContainSingle().Which.Should().Be(BorderRadius.All(new CornerRadius(749.25.Pt())));
+
+        // bri-collapse: Chromium ignores the radius of a table in the collapsed border model.
+        var collapsed = Boxes(Doc("<table style=\"border-collapse: collapse; border: 2px solid #000000; border-radius: 10px\"><tr><td>b</td></tr></table>"));
+        collapsed.IsSuccess.Should().BeTrue(collapsed.IsFailure ? collapsed.Error.ToString() : string.Empty);
+        Rounded(collapsed.Value.Document.Root).Should().BeEmpty();
+    }
+
+    /// <summary>The corners of every box and inline box of a tree that has any.</summary>
+    private static List<BorderRadius> Rounded(Node root)
+    {
+        var found = new List<BorderRadius>();
+        var pending = new Stack<Node>([root]);
+        while (pending.Count > 0)
+        {
+            var node = pending.Pop();
+            var radius = node switch { Box box => box.Style.BorderRadius, InlineGroup { Box: { } own } => own.BorderRadius, _ => BorderRadius.None };
+            if (!radius.IsZero)
+            {
+                found.Add(radius);
+            }
+
+            foreach (var child in node switch { Box parent => parent.Children, InlineGroup group => group.Children, _ => [] })
+            {
+                pending.Push(child);
+            }
+        }
+
+        return found;
     }
 
     [Fact]

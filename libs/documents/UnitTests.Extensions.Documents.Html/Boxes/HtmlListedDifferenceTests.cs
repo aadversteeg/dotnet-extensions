@@ -973,4 +973,22 @@ public class HtmlListedDifferenceTests
         HtmlCases.Difference(engine, new PrintedPages([moved])).Should().BeNull("the order of the bullet is the whole difference");
         HtmlCases.Difference(engine, chromium).Should().StartWith("page 1 path at (30, 70.5) paints 2cfc2/cfffc/fffff/cfffc/2cfc2 #000000, Chromium at (42, 62.25) ");
     }
+
+    /// <summary>
+    /// The same order with rounded list items (case <c>bri-list</c>): Chromium paints the three rounded backgrounds (and the
+    /// second item's ring) before any of the three discs, the engine each disc before its own item's background, inside the
+    /// label's structure element. The pixels are the same: Chromium's print with each disc moved to where the engine paints it
+    /// is the engine's.
+    /// </summary>
+    [Fact]
+    public void A_list_bullet_is_painted_before_its_rounded_item_where_Chromium_paints_it_after_every_item()
+    {
+        var (engine, chromium) = (Engine("bri-list"), Chromium("bri-list"));
+        var theirs = chromium.Pages.Single();
+        theirs.Paths.Select(path => path.Colour).Should().Equal("#f0e0a0", "#f0e0a0", "#c03020", "#f0e0a0", "#000000", "#000000", "#000000");
+
+        var moved = theirs with { Paths = [theirs.Paths[0], theirs.Paths[4], theirs.Paths[1], theirs.Paths[2], theirs.Paths[5], theirs.Paths[3], theirs.Paths[6]] };
+        HtmlCases.Difference(engine, new PrintedPages([moved])).Should().BeNull("the order of the bullets is the whole difference");
+        HtmlCases.Difference(engine, chromium).Should().StartWith("page 1 path at (18, 40.5) paints 2cfc2/cfffc/fffff/cfffc/2cfc2 #000000, Chromium at (30, 54) ");
+    }
 }

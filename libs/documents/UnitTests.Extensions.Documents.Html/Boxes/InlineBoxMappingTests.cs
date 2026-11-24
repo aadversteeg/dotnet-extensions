@@ -111,7 +111,7 @@ public class InlineBoxMappingTests
     [InlineData("background-color: rgba(255, 0, 0, 0.5)", "background-color")]
     [InlineData("padding: 0 10%", "padding-right")]
     [InlineData("margin: 0 5%", "margin-right")]
-    [InlineData("background-color: #ff0000; border-radius: 3pt", "border-top-left-radius")]
+    [InlineData("background-color: #ff0000; border-radius: 3pt; border: 1pt solid #000000; border-left-color: #ff0000", "border-top-left-radius")]
     public void An_inline_box_value_that_is_not_drawn_is_refused_at_the_start_tag(string style, string property)
     {
         Refusals($"<p>Plain <span style=\"{style}\">box</span> text.</p>")

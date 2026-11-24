@@ -103,6 +103,7 @@ internal static class HtmlCases
         LayoutErrorCodes.OverflowAcrossPages.ToString(),
         LayoutErrorCodes.MarkerOutsideSheet.ToString(),
         LayoutErrorCodes.TableBreak.ToString(),
+        LayoutErrorCodes.RoundedBorderLineBreak.ToString(),
         DocumentErrorCodes.Input.Unsupported.InlineBox.ToString(),
     };
 

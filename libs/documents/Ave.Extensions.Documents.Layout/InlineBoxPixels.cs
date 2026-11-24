@@ -30,14 +30,27 @@ namespace Ave.Extensions.Documents.Layout;
 /// (in the line's own pixels: 120.3125; case <c>ib-origin-margin</c>); the same in a table cell with padding in points
 /// (<c>ib-origin-cell</c>); on the second page, whose page area starts at 13 px again, a line whose top lies at 37.56 px
 /// draws the text of a box 1.453 px taller than its font from the box's top at 36 px, not at 37 (<c>ib-origin-page</c>).
+/// <para>THE RULE FOR A LINE INSIDE AN INLINE-BLOCK: Chromium draws the text of every line from that line's own top rounded
+/// to the nearest whole pixel of the page, a line inside an inline-block as well, so the text inside an inline-block whose
+/// line top lies at another fraction of a pixel than the top of the line around it is drawn up to a pixel above or below
+/// that line's text (measured with vertical padding of 0.1 to 7.56 px on an inline-block in paragraphs at fractional
+/// places: the inner text always on a whole pixel, the line's text at the line's rounded top plus the padding; case
+/// <c>bri-iblk</c>: 1 mm of padding puts the badge's text 0.23 px below the line's, 2 mm and a 2 px border 0.55 px above
+/// it). The engine draws a line's text at its exact place (the comparison rounds each line's top), so a line inside an
+/// inline-block is moved by its own rounding less the rounding of the line around it, and its text then lies where
+/// Chromium draws it relative to the line around it.</para>
 /// </remarks>
 internal static class InlineBoxPixels
 {
     /// <summary>One fragment on the way down: its place on the page, the children it holds, how many of them are done, and
     /// the children rebuilt so far.</summary>
-    private sealed class Frame(PlacedFragment placed, Point origin, IReadOnlyList<PlacedFragment> children)
+    private sealed class Frame(PlacedFragment placed, Point origin, IReadOnlyList<PlacedFragment> children, double? lineRounding = null)
     {
         public PlacedFragment Placed { get; } = placed;
+
+        /// <summary>For a fragment inside a line (an inline-block and what it holds): how far the nearest line around it
+        /// moves when its top is put on the nearest whole pixel of the page, in points; null outside every line.</summary>
+        public double? LineRounding { get; } = lineRounding;
 
         public Point Origin { get; } = origin;
 
@@ -91,6 +104,16 @@ internal static class InlineBoxPixels
                 var at = frame.Origin + child.Offset;
                 if (child.Fragment is LineFragment line)
                 {
+                    // THE RULE FOR A LINE INSIDE AN INLINE-BLOCK (below): the line moves by the difference of its own rounding
+                    // and the rounding of the line around it.
+                    var shift = policies.Boxes && frame.LineRounding is { } around ? CssPixels.Round(at.Y) - at.Y - around : 0;
+                    if (shift != 0)
+                    {
+                        child = child with { Offset = child.Offset + new Point(0, shift) };
+                        at += new Point(0, shift);
+                        frame.Changed = true;
+                    }
+
                     var rebuilt = Line(line, at, policies);
                     if (rebuilt.IsFailure)
                     {
@@ -102,7 +125,7 @@ internal static class InlineBoxPixels
                     if (snapped.Children.Any(piece => piece.Fragment is BoxFragment))
                     {
                         // An inline-block on the line holds lines and bullets of its own, which go on the page's pixels too.
-                        pending.Push(new Frame(placedLine, at, snapped.Children) { Changed = !ReferenceEquals(snapped, line) });
+                        pending.Push(new Frame(placedLine, at, snapped.Children, CssPixels.Round(at.Y) - at.Y) { Changed = !ReferenceEquals(snapped, line) || shift != 0 });
                         continue;
                     }
 
@@ -119,7 +142,7 @@ internal static class InlineBoxPixels
                 }
                 else if (ChildrenOf(child.Fragment) is { Count: > 0 } children)
                 {
-                    pending.Push(new Frame(child, at, children));
+                    pending.Push(new Frame(child, at, children, frame.LineRounding));
                 }
                 else
                 {

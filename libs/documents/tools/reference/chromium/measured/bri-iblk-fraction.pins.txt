@@ -1,0 +1,4 @@
+bri-iblk-fraction.boxes.txt 1
+bri-iblk-fraction.lines.txt 0
+bri-iblk-fraction.print.txt 24
+bri-iblk-fraction.words.txt 16

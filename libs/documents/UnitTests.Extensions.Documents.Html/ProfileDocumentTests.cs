@@ -97,6 +97,17 @@ public class ProfileDocumentTests
         Line("`overflow: hidden` is accepted on a block box with no children and a border, padding or height that is not 0 at its");
         Line("top or bottom, where it clips nothing.");
         Line();
+        Line("`border-radius` and its longhands: one length or percentage per corner on a block box, an inline box, an inline-block,");
+        Line("a list item, a table and a table cell, with a background, a solid border of one width and one colour, or both. A");
+        Line("block box, an inline-block, a list item, a cell and a table in the separate border model fill the background to the");
+        Line("middle of the border; an inline box fills it to the border's outer edge, as Chromium does (cases `br-*`, `bri-*`).");
+        Line("An inline box broken over lines has its left corners on its first line and its right ones on its last; with a border");
+        Line("it is refused at layout. In the collapsed border model the table's own radius has no effect, as in Chromium: its");
+        Line("corners stay square and nothing is refused (case `bri-collapse`); a cell there keeps its rounded background, and its");
+        Line("lines stay square. A collapsed table with a radius and a background is refused (not measured). Refused: elliptical");
+        Line("corners, a radius on an image, a row, a row group, a column or a caption, with `overflow` other than `visible`, and");
+        Line("beside border sides of different widths, colours or styles.");
+        Line();
         Line("`width` on a table part: a table is drawn at `auto`, a length or a percentage of its container (its border box; never");
         Line("narrower than its content needs, and refused where wider than its container); a cell (`td`, `th`) takes a length, of");
         Line("its content box, which its column takes: the widest in the automatic layout, the first row's in the fixed layout,");

@@ -1063,7 +1063,7 @@ public static partial class HtmlBoxGenerator
         private InlineBoxStyle? InlineBoxOf(StyledElement element)
         {
             var box = BoxStyleOf(element);
-            var inline = new InlineBoxStyle(box.Margin.Left, box.Margin.Right, box.Padding, box.Border, box.Background);
+            var inline = new InlineBoxStyle(box.Margin.Left, box.Margin.Right, box.Padding, box.Border, box.Background) { BorderRadius = box.BorderRadius };
             return inline.Background is not null || inline.Start > 0 || inline.End > 0
                 || box.Padding.Vertical.Points > 0 || box.Border.Top.IsVisible || box.Border.Bottom.IsVisible
                 ? inline
@@ -1086,8 +1086,10 @@ public static partial class HtmlBoxGenerator
                     }
                     : BorderSide.None;
             // A corner radius as computed: a length or a percentage of the border box, resolved by layout (RoundedBox). One
-            // refused corner carries the refusal of all four (BoxProperties), so then the box keeps square corners.
-            var squared = new[] { "top-left", "top-right", "bottom-right", "bottom-left" }.Any(corner => Value(element, $"border-{corner}-radius") is null);
+            // refused corner carries the refusal of all four (BoxProperties), so then the box keeps square corners. A table
+            // in the collapsed border model keeps them too: Chromium 159 ignores its radius (case bri-collapse).
+            var squared = new[] { "top-left", "top-right", "bottom-right", "bottom-left" }.Any(corner => Value(element, $"border-{corner}-radius") is null)
+                || (Value(element, "display") is CssKeyword { Name: "table" } && Value(element, "border-collapse") is CssKeyword { Name: "collapse" });
             CornerRadius Radius(string corner) => squared ? CornerRadius.Zero : Value(element, $"border-{corner}-radius") switch
             {
                 CssLength length => new CornerRadius(length.Value),

@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Outside markers of list items with left padding, a left border and a left margin: bullets and numbers keep their place from the item's border box, only the margin moves them. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } ul, ol { margin: 0 0 6pt 0; padding-left: 30px; } li { margin-bottom: 4px; background: #f0e0a0; }</style></head><body>
+<ul>
+<li>None</li>
+<li style="padding-left:3px">Small padding</li>
+<li style="padding-left:10px">Wide padding</li>
+<li style="padding-left:7.3px">Fraction of a pixel</li>
+<li style="border-left:5px solid #000000; padding-left:4px">Border and padding</li>
+<li style="margin-left:5px">Margin moves it</li></ul>
+<ol>
+<li style="padding-left:6px">First number</li>
+<li style="border-left:2px solid #000000">Second number</li>
+<li style="padding-left:7.3px">Third number</li></ol>
+</body></html>

@@ -50,6 +50,16 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Node, box.Id.ToString())
             .WithSource(box.Source);
 
+    /// <summary>An inline box with rounded corners and a border that a line break cuts
+    /// (<see cref="LayoutErrorCodes.RoundedBorderLineBreak"/>).</summary>
+    /// <param name="group">The inline box's group.</param>
+    public static Error RoundedBorderLineBreak(InlineGroup group) =>
+        new Error(
+                LayoutErrorCodes.RoundedBorderLineBreak,
+                "An inline box with rounded corners and a border is broken over two or more lines; such a border is not drawn in this version. Keep the text of the box on one line (white-space: nowrap), or leave out its border or its radius.")
+            .With(ErrorMetadataKeys.Node, group.Id.ToString())
+            .WithSource(group.Source);
+
     /// <summary>A list item's label that would start left of the sheet (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>).</summary>
     /// <param name="label">The label; its source is the item's.</param>
     /// <param name="left">The label's left edge on the sheet, in points (negative).</param>

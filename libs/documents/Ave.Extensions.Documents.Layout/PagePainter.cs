@@ -325,9 +325,10 @@ public static class PagePainter
     /// <summary>The background and then the border sides of an inline box's part, in its border box <paramref name="area"/>
     /// (THE RULE FOR PAINTING AN INLINE BOX): the sides as a box's (<see cref="Border(BoxFragment, Point)"/>), the left one
     /// only on the part that holds the start edge and the right one only on the part that holds the end edge (THE RULE FOR AN
-    /// INLINE BOX OVER LINES).</summary>
-    private static IEnumerable<DrawItem> InlineBox(InlineBoxStyle box, LineGroupPart part, Rect area) =>
-        [.. box.Background is { } color ? [new FillRectangle(area, color)] : Array.Empty<DrawItem>(),
+    /// INLINE BOX OVER LINES); with rounded corners as <see cref="RoundedBox.InlinePart"/>.</summary>
+    private static IEnumerable<DrawItem> InlineBox(InlineBoxStyle box, LineGroupPart part, Rect area) => !box.BorderRadius.IsZero
+        ? RoundedBox.InlinePart(box, area, part.HoldsStart, part.HoldsEnd)
+        : [.. box.Background is { } color ? [new FillRectangle(area, color)] : Array.Empty<DrawItem>(),
             .. Sides(box.Border with { Left = part.HoldsStart ? box.Border.Left : BorderSide.None, Right = part.HoldsEnd ? box.Border.Right : BorderSide.None }, area.Origin, area.Size)];
 
     private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, Sheet sheet, Anchors anchors) =>

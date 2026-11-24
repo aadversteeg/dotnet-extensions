@@ -127,6 +127,10 @@ public sealed record InlineGroup(NodeId Id, SemanticRole? Role, TextStyle Style,
 /// <param name="Background">The background colour of the border box, or null for none.</param>
 public sealed record InlineBoxStyle(Length MarginLeft, Length MarginRight, Edges Padding, Border Border, Color? Background)
 {
+    /// <summary>The rounded corners of the border box (CSS Backgrounds 3 §5); none by default. A box broken over lines has
+    /// them only on its first part's left side and its last part's right side (case <c>bri-broken</c>).</summary>
+    public BorderRadius BorderRadius { get; init; } = BorderRadius.None;
+
     /// <summary>The room the box takes before its first character: left margin, border and padding, in points.</summary>
     public double Start => MarginLeft.Points + Border.Left.Width.Points + Padding.Left.Points;
 
@@ -136,7 +140,7 @@ public sealed record InlineBoxStyle(Length MarginLeft, Length MarginRight, Edges
     /// <summary>Formats as <c>margin left,right padding … border … background …</c>.</summary>
     /// <returns>The text form.</returns>
     public override string ToString() =>
-        $"margin {InvariantNumber.Format(MarginLeft.Points)},{InvariantNumber.Format(MarginRight.Points)} padding {Padding} border {Border} background {Background?.ToString() ?? "none"}";
+        $"margin {InvariantNumber.Format(MarginLeft.Points)},{InvariantNumber.Format(MarginRight.Points)} padding {Padding} border {Border} background {Background?.ToString() ?? "none"}{(BorderRadius.IsZero ? string.Empty : $" radius {BorderRadius}")}";
 }
 
 /// <summary>The page-based counters (CSS Paged Media 3 §6.1).</summary>

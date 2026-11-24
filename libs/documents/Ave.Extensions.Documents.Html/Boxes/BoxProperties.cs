@@ -100,14 +100,15 @@ internal static class BoxProperties
                 _ => "a colour with an alpha other than 0 or 1 is not drawn",
             });
 
-        // CSS Backgrounds 3 §5: rounded corners on a block box with a background and a border of one solid line, as Chromium
-        // 159 prints them (Layout's RoundedBox, cases br-*). The first corner that is not 0 carries the refusal, so a
+        // CSS Backgrounds 3 §5: rounded corners on a block box, an inline box, an inline-block, a list item, a table or a
+        // cell with a background and a border of one solid line, as Chromium 159 prints them (Layout's RoundedBox, cases
+        // br-* and bri-*). The first corner that is not 0 carries the refusal, so a
         // border-radius the engine does not draw is one error.
         string[] corners = ["top-left", "top-right", "bottom-right", "bottom-left"];
         for (var index = 0; index < corners.Length; index++)
         {
             var before = corners[..index];
-            yield return new($"border-{corners[index]}-radius", "a length or a percentage on a block box with a border of one width, one colour and solid on all four sides, or none, and overflow visible; 0 everywhere",
+            yield return new($"border-{corners[index]}-radius", "a length or a percentage on a block box, an inline box, an inline-block, a list item, a table or a table cell with a border of one width, one colour and solid on all four sides, or none, and overflow visible; 0 everywhere",
                 (value, facts) => IsZero(value) || before.Any(corner => !IsZero(facts.Style, $"border-{corner}-radius")) ? null : RadiusRefusal(facts));
         }
 
@@ -299,25 +300,27 @@ internal static class BoxProperties
         yield return new("list-style-position", "outside, the only value the style sheet accepts", (_, _) => null);
     }
 
-    /// <summary>Why rounded corners are not drawn on this element, or null where they are: a block box (display: block)
-    /// that is no image, whose overflow is visible, and whose visible border sides are all four solid, of one width and
-    /// one colour.</summary>
+    /// <summary>Why rounded corners are not drawn on this element, or null where they are: a block box, an inline box, an
+    /// inline-block, a list item, a table or a table cell (display: block, inline, inline-block, list-item, table,
+    /// table-cell) that is no image, whose overflow is visible, and whose visible border sides are all four solid, of one
+    /// width and one colour. A table in the collapsed border model keeps square corners (Chromium 159 ignores its radius,
+    /// case <c>bri-collapse</c>), so one with a background, where that was not measured, is refused.</summary>
     private static string? RadiusRefusal(ElementFacts facts)
     {
         var display = facts.Style[PropertyRegistry.Display] is CssKeyword keyword ? keyword.Name : string.Empty;
         var where = display switch
         {
             _ when facts.IsReplaced => "an image",
-            _ when TableProperties.IsPart(facts) => "a table or a part of a table",
-            "inline" => "an inline element",
-            "inline-block" => "an inline-block",
-            "list-item" => "a list item",
-            "block" => null,
+            "table" when !TableProperties.IsSeparated(facts) && Alpha(facts.Style[PropertyRegistry.Find("background-color")!]) > 0 =>
+                "a table in the collapsed border model with a background",
+            "table" or "table-cell" => null,
+            _ when TableProperties.IsPart(facts) => "a row, a row group, a column or a caption of a table",
+            "inline" or "inline-block" or "list-item" or "block" => null,
             _ => $"a box of display: {display}",
         };
         if (where is not null)
         {
-            return $"rounded corners (border-radius) on {where} are not drawn yet; leave the radius out";
+            return $"rounded corners (border-radius) on {where} are not drawn in this version; leave the radius out";
         }
 
         if (!IsKeyword(facts.Style[PropertyRegistry.Find("overflow-x")!], "visible") || !IsKeyword(facts.Style[PropertyRegistry.Find("overflow-y")!], "visible"))
