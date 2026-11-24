@@ -169,7 +169,7 @@ public class GeneratedContentTests
     [InlineData("p::before { content: \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" \"a\" }", "it has 17 items, and at most 16 are drawn")]
     [InlineData("p::before { content: var(--x) }", "write the value")]
     [InlineData("p::before { content: revert }", "write the value")]
-    [InlineData("p::before { content: \"x\";\n  display: block }", "a block pseudo-element comes in a later version")]
+    [InlineData("p::before { content: \"x\";\n  display: list-item }", "only inline and block generated content is")]
     [InlineData("p::before { content: \"x\";\n  padding-left: 6pt }", "it needs inline boxes")]
     [InlineData("p::before { content: \"x\";\n  background: #ccc }", "it needs inline boxes")]
     [InlineData("p::before { content: \"x\";\n  border: 1px solid }", "it needs inline boxes")]

@@ -687,9 +687,15 @@ Generated Content 3 §1). A rule whose selector ends in `::before` or `::after` 
 element the selector matches without it, never the element itself; its declarations are cascaded as an element's
 (origin, layer, specificity counting the pseudo-element, order), inheriting from the element's computed style. A
 `content` of strings and `attr(name)` (the attribute's value, empty when it has none; case `gc-attr`) makes an inline
-box of that style with one text, the first or the last child of the element: in the same inline formatting context, so
-white space collapses across the join (case `gc-string-space`), the join is no break opportunity (`gc-string-nobreak`),
-and text decorations apply as to an inline element. Its runs are `TextRun.Generated`, at the line of the `content`
+box of that style, the first or the last child of the element, with one text per item of the `content` (Chromium rounds
+the width of each item up to its layout unit on its own: cases `gc-counter-styles`, `gc-items-kern`): in the same inline
+formatting context, so white space collapses across the items and the join (cases `gc-string-space`, `gc-items-kern`),
+the items are shaped together (kerning and ligatures across them), the join is no break opportunity
+(`gc-string-nobreak`, `gc-items-break`), and text decorations apply as to an inline element. With `display: block` it
+is a block box instead, the first or the last child box of the element, whose own text then lies in anonymous boxes
+around it (cases `gc-block-anonymous`, `gc-block-break`): its margins collapse as any child's, and it has its padding,
+border, background and alignment (`gc-block-margins`, `gc-block-box`); it is tagged as a `Div` of the element, as the
+anonymous boxes are, and one without text (`content: ""` with a border, a rule under a heading) is an artifact. Its runs are `TextRun.Generated`, at the line of the `content`
 declaration; tagged as real text of the element, in reading order (Chromium's text layer has them so). Nothing is made,
 and nothing is said, for `content: normal`, `none`, no `content`, a CSS-wide keyword or `display: none`, nor on `img`
 and `br` (case `gc-nothing`: Chromium draws nothing there either), so `*, *::before, *::after { box-sizing: border-box }`
@@ -697,9 +703,10 @@ costs nothing, and a pseudo-element of `display: none` reports nothing of what i
 (`Documents.Css.Unsupported.GeneratedContent`), and the text left out: `counter(page)` and `counter(pages)` (a browser
 prints 0 outside the page-margin boxes), a counter style other than the 12 of `list-style-type` (`@counter-style`,
 `symbols()`, a string), the quote keywords, `url()` and the other images, `attr()` with a type or a fallback, the
-alternative text after `/`, `var()` and `revert`; `display` other than `inline` and `none`; a margin, padding, border or
-background (they need inline boxes), a position or a float that differs from what an inline child of the element has
-without it; the pseudo-elements of `table`, its row groups and rows (Chromium draws them in an anonymous cell), of a
+alternative text after `/`, `var()` and `revert`; `display` other than `inline`, `block` and `none`; a block one on an
+element that is not a block (Chromium breaks an inline element's lines around it: case `gc-block-span`); on an inline
+one a margin, padding, border or background (they need inline boxes); a position or a float that differs from what an
+inline child of the element has without it; the pseudo-elements of `table`, its row groups and rows (Chromium draws them in an anonymous cell), of a
 list element (its children are its items here) and of the other void elements. `::marker`, `::first-line` and
 `::first-letter` stay refused at their selector. Text past the limits below is refused, never cut. The `content` of
 page-margin boxes keeps its own grammar (`ContentValue.Parse`): a document's counter is refused there (Chromium 159

@@ -53,11 +53,13 @@ public sealed partial class StyleComputer
     /// an element's (origin and importance, layer, specificity counting the pseudo-element, order; CSS Cascade 5 §6.1),
     /// inheriting from the element's computed style. Nothing is generated, and nothing is reported, for
     /// <c>content: normal</c> or <c>none</c>, a CSS-wide keyword, no <c>content</c> at all (CSS Pseudo 4 §4.1; Chromium
-    /// 159, measured: case <c>gc-nothing</c>), or <c>display: none</c>. Refused at its declaration, and not generated: a
-    /// <c>content</c> item other than strings and <c>attr(name)</c> (<see cref="ContentValue.ParseGenerated"/>), more
-    /// text than <see cref="CssInputLimits.MaxGeneratedTextLength"/>, an element that cannot hold it
-    /// (<paramref name="refusedHost"/>), a <c>display</c> other than inline, and a box property, position or float
-    /// that differs from what an inline child of the element has without it.
+    /// 159, measured: case <c>gc-nothing</c>), or <c>display: none</c>. A <c>display: block</c> one is a block box of its
+    /// own, with its margins, padding, borders and background (measured: cases <c>gc-block-*</c>). Refused at its
+    /// declaration, and not generated: a <c>content</c> item other than strings and <c>attr(name)</c>
+    /// (<see cref="ContentValue.ParseGenerated"/>), more text than <see cref="CssInputLimits.MaxGeneratedTextLength"/>, an
+    /// element that cannot hold it (<paramref name="refusedHost"/>), a <c>display</c> other than inline and block, a block
+    /// one on an element that is not a block, and on an inline one a box property, position or float that differs from
+    /// what an inline child of the element has without it.
     /// </summary>
     /// <param name="element">The originating element; its style must have been computed by this computer first.</param>
     /// <param name="pseudoElement"><c>before</c> or <c>after</c>.</param>
@@ -171,9 +173,11 @@ public sealed partial class StyleComputer
             return Result<GeneratedContent?, Error>.Failure(plain.Error);
         }
 
+        // A block pseudo-element is a block box: its margins, padding, borders and background are a block's (CSS 2.1 §8).
+        var isBlock = display is CssKeyword { Name: "block" };
         foreach (var property in BoxLonghands)
         {
-            if (style[property].Equals(plain.Value[property]))
+            if (style[property].Equals(plain.Value[property]) || (isBlock && property.Name is not ("position" or "float")))
             {
                 continue;
             }
@@ -187,10 +191,19 @@ public sealed partial class StyleComputer
         }
 
         // A position or a float makes the box a block (CSS 2.1 §9.7): that refusal says it already.
-        if (drawn && display is not CssKeyword { Name: "inline" })
+        if (drawn && display is not CssKeyword { Name: "inline" or "block" })
         {
             Report(DeclaredBy(candidates, PropertyRegistry.Display) ?? declaration, CssErrorCodes.Unsupported.GeneratedContent,
-                $"'display: {display}' on ::{pseudoElement} is not drawn yet: only inline generated text is, a block pseudo-element comes in a later version; the generated text is left out.");
+                $"'display: {display}' on ::{pseudoElement} is not drawn yet: only inline and block generated content is; the generated text is left out.");
+            drawn = false;
+        }
+
+        // Chromium 159 breaks the inline element around a block inside it: its text before the block ends a line, the
+        // block takes the next line, and the rest of its text starts the line after (measured: case gc-block-span).
+        if (drawn && isBlock && parent[PropertyRegistry.Display] is var host && host is not CssKeyword { Name: "block" })
+        {
+            Report(DeclaredBy(candidates, PropertyRegistry.Display) ?? declaration, CssErrorCodes.Unsupported.GeneratedContent,
+                $"'display: block' on ::{pseudoElement} of <{element.LocalName}> (display: {host}) is not drawn: a block pseudo-element is drawn on a block element only, and a browser breaks an inline element's lines around it; make the pseudo-element inline, or put it on a block element. The generated text is left out.");
             drawn = false;
         }
 

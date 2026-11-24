@@ -1320,6 +1320,26 @@ public class MeasuredReferenceFilesTests
         ["gc-attr.lines.txt"] = 0,
         ["gc-attr.print.txt"] = 7,
         ["gc-attr.words.txt"] = 6,
+        ["gc-block-anonymous.boxes.txt"] = 3,
+        ["gc-block-anonymous.lines.txt"] = 0,
+        ["gc-block-anonymous.print.txt"] = 20,
+        ["gc-block-anonymous.words.txt"] = 19,
+        ["gc-block-box.boxes.txt"] = 3,
+        ["gc-block-box.lines.txt"] = 4,
+        ["gc-block-box.print.txt"] = 29,
+        ["gc-block-box.words.txt"] = 20,
+        ["gc-block-break.boxes.txt"] = 5,
+        ["gc-block-break.lines.txt"] = 0,
+        ["gc-block-break.print.txt"] = 20,
+        ["gc-block-break.words.txt"] = 17,
+        ["gc-block-margins.boxes.txt"] = 5,
+        ["gc-block-margins.lines.txt"] = 2,
+        ["gc-block-margins.print.txt"] = 21,
+        ["gc-block-margins.words.txt"] = 18,
+        ["gc-block-span.boxes.txt"] = 1,
+        ["gc-block-span.lines.txt"] = 0,
+        ["gc-block-span.print.txt"] = 9,
+        ["gc-block-span.words.txt"] = 8,
         ["gc-cell.boxes.txt"] = 4,
         ["gc-cell.lines.txt"] = 0,
         ["gc-cell.print.txt"] = 8,
@@ -2425,7 +2445,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(595);
+        cases.Should().HaveCount(600);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

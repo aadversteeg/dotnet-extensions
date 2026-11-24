@@ -323,6 +323,11 @@ fr-row-later-padding-under-header equal
 fr-row-later-page-padding-overflows equal
 fr-row-later-page-padding-overflows-two-cells open page 2 reads 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6', Chromium 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7' (print.txt)
 gc-attr equal
+gc-block-anonymous equal
+gc-block-box equal
+gc-block-break equal
+gc-block-margins equal
+gc-block-span refused Documents.Css.Unsupported.GeneratedContent display: block at 9:37
 gc-cell equal
 gc-counter-bound refused Documents.Html.Unsupported.Counter counter-increment: n at 9:44
 gc-counter-headings equal

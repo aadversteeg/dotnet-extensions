@@ -666,17 +666,25 @@ public static partial class HtmlBoxGenerator
             {
                 FrameKind.Item => Item(block, layout, children, style),
                 FrameKind.List => ListBox(block, children, style),
-                _ => TablePartBox(block, new Box(block.Id, RoleOf(element), layout, style, children, Source(element.Element.Position))),
+                _ => TablePartBox(block, new Box(block.Id, RoleOf(element, children), layout, style, children, Source(element.Element.Position))),
             };
             return (box, forcedAfter);
         }
 
-        private SemanticRole RoleOf(StyledElement element)
+        /// <summary>The role of an element's box. A block <c>::before</c> or <c>::after</c> is a generic box, as the
+        /// anonymous box around its element's own text is, and its text is the element's; one without text, drawn only
+        /// for its border or background (<c>content: ""</c>, a rule under a heading), is decoration: an artifact.</summary>
+        private SemanticRole RoleOf(StyledElement element, ValueList<Node> children)
         {
             var html = element.Element;
             if (ReferenceEquals(element, styled.Root))
             {
                 return SemanticRole.Document;
+            }
+
+            if (element.Generated is not null)
+            {
+                return children.IsEmpty ? SemanticRole.Decorative : SemanticRole.Generic;
             }
 
             return html.Namespace != ElementNamespace.Html ? SemanticRole.Generic : html.LocalName switch
