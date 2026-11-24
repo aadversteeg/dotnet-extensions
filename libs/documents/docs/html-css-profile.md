@@ -47,7 +47,7 @@ names nothing.
 | `counter-increment` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.3 |
 | `counter-reset` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.2 |
 | `counter-set` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.4 |
-| `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
+| `display` | no | `inline` | `block \| inline \| inline-block \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
 | `empty-cells` | yes | `show` | `show \| hide` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
 | `font-feature-settings` | yes | `normal` | `normal \| <feature-tag-value># (the tags "lnum", "onum", "pnum", "tnum" and "ordn", each with 0, 1, on or off)` | CSS Fonts 4 §7.1 |

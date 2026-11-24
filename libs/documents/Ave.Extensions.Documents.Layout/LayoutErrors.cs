@@ -187,6 +187,15 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Property, "box")
             .WithSource(group.Source);
 
+    /// <summary>An inline-block taller than the page area that its line starts: Chromium moves the line to the page's top and
+    /// slices the box over the pages, which is not drawn in this version (case <c>iblk-align</c>, its last paragraph).</summary>
+    public static Error InlineBlockTallerThanPage(Box box, double height, double room) =>
+        new Error(DocumentErrorCodes.Input.Unsupported.InlineBox, $"The inline-block made at {box.Source} is {InvariantNumber.Format(height)}pt tall with its line, and a page has {Room(room)}: an inline-block taller than a page is not drawn in this version. Make it a block, or give it less content.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(height))
+            .With(ErrorMetadataKeys.Property, "height")
+            .WithSource(box.Source);
+
     public static Error InvalidContent(Box box, string message) =>
         new Error(LayoutErrorCodes.InvalidContent, $"{Describe(box)} cannot be laid out: {message}")
             .With(ErrorMetadataKeys.Node, box.Id.ToString())

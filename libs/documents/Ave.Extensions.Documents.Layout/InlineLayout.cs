@@ -46,11 +46,12 @@ public static class InlineLayout
         var start = (InlineBreakToken?)incoming ?? new InlineBreakToken(0);
 
         // A first line taller than the page area that starts the page is sliced when the profile says so (MonolithicSlices).
-        var slices = MonolithicSlices.Apply(environment, SlicedBox.ContentIsAtPageStart(box.Style, space, incoming));
+        var atPageStart = SlicedBox.ContentIsAtPageStart(box.Style, space, incoming);
+        var slices = MonolithicSlices.Apply(environment, atPageStart);
         return ShapeRuns(environment, box).OnSuccessBind(shaped => WithDecorationFonts(environment, shaped)).OnSuccessBind(items => StrutOf(environment, box).OnSuccessBind(strut =>
             SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
                 LaidOut(environment, items, width).OnSuccessBind(runs =>
-                    StackLines(runs, strut, box, start, slices, environment.Profile.FontMetricRounding, environment.Profile.FontSizeRounding, environment.Profile.LengthRounding, width, height, breakAt switch
+                    StackLines(runs, strut, box, start, slices, atPageStart, environment.Profile.FontMetricRounding, environment.Profile.FontSizeRounding, environment.Profile.LengthRounding, width, height, breakAt switch
                     {
                         null => null,
                         InlineEarlyBreak line => line,
@@ -121,9 +122,17 @@ public static class InlineLayout
     /// max-content width (<c>Most</c>), each plus its horizontal margins: one measurement of each atomic inline.</summary>
     private static Result<(IReadOnlyList<LineBoxes.Item> Least, IReadOnlyList<LineBoxes.Item> Most), Error> Measured(LayoutEnvironment environment, IReadOnlyList<LineBoxes.Item> items) =>
         items.TraverseAll(item => item is LineBoxes.AtomicInline atomic
-                ? environment.Measure(atomic.Box).OnSuccessMap(widths => (Least: (LineBoxes.Item)(atomic with { Width = widths.MinContent + atomic.Margins }), Most: (LineBoxes.Item)(atomic with { Width = widths.MaxContent + atomic.Margins })))
+                ? environment.Measure(atomic.Box).OnSuccessMap(widths => (Least: (LineBoxes.Item)(atomic with { Width = Sized(environment, atomic, widths.MinContent) + atomic.Margins }), Most: (LineBoxes.Item)(atomic with { Width = Sized(environment, atomic, widths.MaxContent) + atomic.Margins })))
                 : Result<(LineBoxes.Item Least, LineBoxes.Item Most), Error>.Success((item, item)))
             .OnSuccessMap(pairs => ((IReadOnlyList<LineBoxes.Item>)[.. pairs.Select(pair => pair.Least)], (IReadOnlyList<LineBoxes.Item>)[.. pairs.Select(pair => pair.Most)]));
+
+    /// <summary>The width of an atomic inline's border box when its width would be <paramref name="auto"/> at width
+    /// <c>auto</c>: an image's own (its algorithm gives its used width); an inline-block's from its block sizes, a length
+    /// <c>width</c>, then <c>max-width</c> and <c>min-width</c>, for the box <c>box-sizing</c> names (CSS 2.1 §10.3.9 and
+    /// §10.4, as a block box's, <see cref="InFlowChild.Horizontal"/>; case <c>iblk-sizes</c>). A percentage is refused before
+    /// layout (<see cref="ModelCheck"/>), so the container's width plays no part.</summary>
+    private static double Sized(LayoutEnvironment environment, LineBoxes.AtomicInline atomic, double auto) =>
+        atomic.Box.Layout == LayoutAlgorithmId.Image ? auto : InFlowChild.Horizontal(atomic.Box.Style, 0, environment.Profile.LengthRounding, auto).Width;
 
     /// <summary>
     /// The paragraph's items with every atomic inline laid out by its own algorithm (<see cref="LayoutEnvironment.Layout"/>)
@@ -139,7 +148,7 @@ public static class InlineLayout
         items.TraverseAll(item => item is LineBoxes.AtomicInline atomic
                 ? environment.Measure(atomic.Box).OnSuccessBind(widths => environment.Layout(
                     atomic.Box,
-                    new ConstraintSpace(Math.Min(Math.Max(widths.MinContent, contentWidth - atomic.Margins), widths.MaxContent), double.PositiveInfinity, IsAtPageStart: true),
+                    new ConstraintSpace(Sized(environment, atomic, Math.Min(Math.Max(widths.MinContent, contentWidth - atomic.Margins), widths.MaxContent)), double.PositiveInfinity, IsAtPageStart: true),
                     null))
                     .OnSuccessBind(result => result is LayoutResult.Placed { Continuation: null } placed
                         ? Result<LineBoxes.Item, Error>.Success(atomic with { Fragment = placed.Fragment, Width = placed.Fragment.Size.Width + atomic.Margins })
@@ -339,8 +348,9 @@ public static class InlineLayout
     /// together, each with the location of the run that caused it.
     /// </summary>
     /// <remarks>
-    /// THE RULE FOR AN ATOMIC INLINE AMONG THE RUNS: a child box laid out by <see cref="LayoutAlgorithmId.Image"/> is an
-    /// atomic inline (CSS Display 3, Appendix A: "An inline-level box that is replaced (such as an image) or that establishes
+    /// THE RULE FOR AN ATOMIC INLINE AMONG THE RUNS: a child box laid out by <see cref="LayoutAlgorithmId.Image"/> (an
+    /// image), <see cref="LayoutAlgorithmId.Flow"/> or <see cref="LayoutAlgorithmId.Inline"/> (an inline-block, which holds
+    /// its own block formatting context, CSS 2.1 §9.2.4) is an atomic inline (CSS Display 3, Appendix A: "An inline-level box that is replaced (such as an image) or that establishes
     /// a new formatting context (such as an inline-block or inline-table) and cannot split across lines"), one item of the
     /// line (<see cref="LineBoxes.AtomicInline"/>).
     /// For white-space collapsing it is the object replacement character U+FFFC, as in Chromium's inline text (Blink
@@ -352,12 +362,12 @@ public static class InlineLayout
     private static Result<IReadOnlyList<LineBoxes.Item>, Error> ShapeRuns(LayoutEnvironment environment, Box box)
     {
         var leaves = Leaves(box);
-        if (leaves.Select(leaf => leaf.Node).FirstOrDefault(child => child is not (TextRun or CounterRun) && !(child is Box image && image.Layout == LayoutAlgorithmId.Image)) is { } other)
+        if (leaves.Select(leaf => leaf.Node).FirstOrDefault(child => child is not (TextRun or CounterRun) && !(child is Box atomic && IsAtomicLayout(atomic.Layout))) is { } other)
         {
             return Result<IReadOnlyList<LineBoxes.Item>, Error>.Failure(
                 LayoutErrors.InvalidContent(box, other is Box
-                    ? "a box among the text runs must be an image (an atomic inline laid out by the image algorithm); other boxes belong in a flow box."
-                    : "inline layout needs text runs and images as children."));
+                    ? "a box among the text runs must be an atomic inline: an image (the image algorithm) or an inline-block (the flow or inline algorithm); other boxes belong in a flow box."
+                    : "inline layout needs text runs and atomic inlines as children."));
         }
 
         var entries = Entries(box);
@@ -474,6 +484,11 @@ public static class InlineLayout
 
         return Result<Dictionary<NodeId, TrueTypeFont>, Error>.Success(fonts);
     }
+
+    /// <summary>True for the algorithms of a box that can be an atomic inline among the runs: an image, and an inline-block
+    /// holding blocks (flow) or lines (inline).</summary>
+    private static bool IsAtomicLayout(LayoutAlgorithmId layout) =>
+        layout == LayoutAlgorithmId.Image || layout == LayoutAlgorithmId.Flow || layout == LayoutAlgorithmId.Inline;
 
     /// <summary>An atomic inline's text for white-space collapsing: the object replacement character U+FFFC.</summary>
     private static readonly string ObjectReplacement = ShapedGlyph.ObjectReplacementCharacter.ToString();
@@ -678,7 +693,7 @@ public static class InlineLayout
     /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
     /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, FontMetricRounding rounding, FontSizeRounding sizes, LengthRounding lengths, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
+        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, bool atPageStart, FontMetricRounding rounding, FontSizeRounding sizes, LengthRounding lengths, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
         var style = box.Style;
         var firstLine = start.LineIndex;
@@ -708,8 +723,17 @@ public static class InlineLayout
 
             var line = built.Value;
             var shown = index == firstLine ? start.Shown : 0;
+            // A line taller than the page that starts it is sliced over pages, or does not fit, only for an image: one with an
+            // inline-block is refused (case iblk-align, the last paragraph).
+            if (shown == 0 && placed.Count == 0 && atPageStart && !Fitting.Fits(line.Size.Height, contentHeight)
+                && lines[index].Segments.Select(segment => runs[segment.Run]).OfType<LineBoxes.AtomicInline>().FirstOrDefault(atomic => atomic.Box.Layout != LayoutAlgorithmId.Image) is { } tall)
+            {
+                return Result<Maybe<SlicedBox.Content>, Error>.Failure(LayoutErrors.InlineBlockTallerThanPage(tall.Box, line.Size.Height, contentHeight));
+            }
+
             if (shown > 0 || (placed.Count == 0 && slices && !Fitting.Fits(line.Size.Height, contentHeight)))
             {
+
                 var sliceCount = index == firstLine ? start.Slices : 0;
                 var next = MonolithicSlices.Next(box, start, line, shown, sliceCount, contentHeight);
                 if (next.IsFailure || next.Value.HasNoValue)

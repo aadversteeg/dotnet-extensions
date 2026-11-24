@@ -785,7 +785,13 @@ or does not decode is refused (`Rendering`), and so is a width and a height in a
 Chromium stretches the image to and the image algorithm does not (`Value`, case `hi-stretch`). An `img` inside a line of text (`display: inline`) is the same image box
 among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
 in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
-break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: `abbr` with a title by its dotted underline (in style resolution). `sub` and
+break property other than `auto` on it are refused at its start tag, and so is `display: inline-block` on it. An element
+with `display: inline-block` is a box among the runs too, made as a block box is made (its content a block formatting context:
+blocks in flow, or its own lines), an atomic inline whose last line's baseline sits on the line's baseline and whose width is
+its shrink-to-fit width, limited by its `width`, `min-width` and `max-width` (cases `iblk-*`); refused at its start tag:
+`vertical-align` other than `baseline`, sizes in percent, break properties, one inside a link, an inline box, raised or
+underlined text, a table inside one, and one inside two others (`MaxInlineBlockNesting`); refused at layout: one taller than a
+page. The others are refused through their values: `abbr` with a title by its dotted underline (in style resolution). `sub` and
 `sup` are drawn with `vertical-align` and `font-size: smaller` (the parent's size divided by 1.2; cases `va-elements`,
 `va-sizes`); the HTML Standard's `line-height: normal` for them is left out of the user-agent style sheet, as Chromium 159 does
 not apply it (case `va-decorated`). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than

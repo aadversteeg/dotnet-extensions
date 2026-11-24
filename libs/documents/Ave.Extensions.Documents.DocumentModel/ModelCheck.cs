@@ -351,8 +351,9 @@ public static class ModelCheck
     }
 
     /// <summary>
-    /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3, Appendix A), which this version accepts only when
-    /// laid out by <see cref="LayoutAlgorithmId.Image"/> (an image in a line of text), and only with the initial page break
+    /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3, Appendix A), which this version accepts when
+    /// laid out by <see cref="LayoutAlgorithmId.Image"/> (an image in a line of text) or by <see cref="LayoutAlgorithmId.Flow"/>
+    /// or <see cref="LayoutAlgorithmId.Inline"/> (an inline-block, CSS 2.1 §9.2.4, whose widths are lengths), and only with the initial page break
     /// properties: <c>break-before</c>, <c>break-after</c> and <c>break-inside</c> apply to block-level boxes (CSS
     /// Fragmentation 3 §3.1, §3.2), and an atomic inline never breaks, so a value there could only be lost. The child box
     /// is one nesting level deeper, as any child box.
@@ -362,10 +363,17 @@ public static class ModelCheck
         var initial = BoxStyle.Initial;
         foreach (var child in children)
         {
-            if (child is Box other && other.Layout != LayoutAlgorithmId.Image)
+            if (child is Box other && other.Layout != LayoutAlgorithmId.Image && other.Layout != LayoutAlgorithmId.Flow && other.Layout != LayoutAlgorithmId.Inline)
             {
-                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "A box among the text runs of an inline box must be laid out by the image algorithm (an image in a line); other boxes are not supported in a line.",
+                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "A box among the text runs of an inline box must be laid out by the image algorithm (an image in a line) or by the flow or inline algorithm (an inline-block); other boxes are not supported in a line.",
                     other.Layout.ToString(), "layout", other);
+            }
+
+            if (child is Box sized && sized.Layout != LayoutAlgorithmId.Image
+                && (sized.Style.SpecifiedWidth is SizeValue.Percentage || sized.Style.MinWidth is SizeValue.Percentage || sized.Style.MaxWidth is SizeValue.Percentage))
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An inline-block's width, min-width or max-width is a length in this version: a percentage of the line is not measured.",
+                    $"{sized.Style.SpecifiedWidth}/{sized.Style.MinWidth}/{sized.Style.MaxWidth}", "width", sized);
             }
 
             if (child is Box box && (box.Style.BreakBefore != initial.BreakBefore || box.Style.BreakAfter != initial.BreakAfter || box.Style.BreakInside != initial.BreakInside))

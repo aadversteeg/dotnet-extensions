@@ -108,10 +108,13 @@ internal static class InFlowChild
     /// <param name="containerWidth">The width of the container's content area.</param>
     /// <param name="rounding">The profile's length rounding.</param>
     /// <returns>The border box's width and the left edge of the border box.</returns>
-    internal static (double Width, double Left) Horizontal(BoxStyle style, double containerWidth, LengthRounding rounding)
+    /// <param name="auto">The border box's width at width <c>auto</c> where it is not the container's width less the margins:
+    /// an inline-block's shrink-to-fit width (CSS 2.1 §10.3.9), which <c>max-width</c> and <c>min-width</c> then limit as
+    /// any width; null in block flow.</param>
+    internal static (double Width, double Left) Horizontal(BoxStyle style, double containerWidth, LengthRounding rounding, double? auto = null)
     {
         var margin = style.Margin;
-        var available = containerWidth - margin.Horizontal.Points;
+        var available = auto ?? containerWidth - margin.Horizontal.Points;
         if (style.SpecifiedWidth is null && style.MinWidth is null && style.MaxWidth is null)
         {
             return (available, margin.Left.Points);

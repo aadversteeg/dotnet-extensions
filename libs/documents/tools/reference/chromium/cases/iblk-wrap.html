@@ -1,0 +1,17 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0; }
+@page { size: 300pt 400pt; margin: 12pt; }
+</style></head><body>
+<!-- Inline-blocks whose text wraps inside them: at a given width, with text-align inside, shrunk to the line when their text is longer than it, wider than the line, and one that does not fit at a line's end. -->
+<p>Wrapped <span style="display: inline-block; width: 60pt; padding: 3pt; background-color: #ff80ff">one two three four</span> after.</p>
+<p>Centred <span style="display: inline-block; width: 80pt; text-align: center; background-color: #80ffff">Middle of the box with text</span> end.</p>
+<p>Right <span style="display: inline-block; width: 70pt; text-align: right; background-color: #ffff80">Ends on the right side</span> end.</p>
+<p>Shrunk <span style="display: inline-block; padding: 0 3pt; background-color: #80ff80">Long text that is longer than the whole line so that it has to wrap inside its box</span> end.</p>
+<p style="width: 120pt">Wide <span style="display: inline-block; width: 150pt; background-color: #ff8080">wide box</span> end.</p>
+<p>Filling the line with words until <span style="display: inline-block; width: 60pt; background-color: #8080ff">Moved box</span> after.</p>
+<p>Last line of text.</p>
+</body></html>

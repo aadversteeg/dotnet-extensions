@@ -14,14 +14,14 @@ public static partial class PropertyRegistry
     /// <summary>The display values of CSS Display 3 §2 and CSS 2.1 the engine supports.</summary>
     private static readonly string[] SupportedDisplay =
     [
-        "block", "inline", "list-item", "none", "table", "table-row-group", "table-header-group", "table-footer-group",
+        "block", "inline", "inline-block", "list-item", "none", "table", "table-row-group", "table-header-group", "table-footer-group",
         "table-row", "table-cell", "table-column-group", "table-column", "table-caption",
     ];
 
     /// <summary>The display values CSS defines that are refused (CSS Display 3 §2, CSS Flexbox 1, CSS Grid 1, CSS Ruby 1).</summary>
     private static readonly string[] RefusedDisplay =
     [
-        "inline-block", "inline-table", "flex", "inline-flex", "grid", "inline-grid", "contents", "flow-root", "run-in",
+        "inline-table", "flex", "inline-flex", "grid", "inline-grid", "contents", "flow-root", "run-in",
         "ruby", "ruby-base", "ruby-text", "ruby-base-container", "ruby-text-container", "math", "inline-list-item",
         "flow", "-webkit-box", "-webkit-inline-box", "block-math", "inline-math",
     ];
@@ -270,7 +270,7 @@ public static partial class PropertyRegistry
     }
 
     /// <summary>The computed display (CSS Display 3 §2.7): the root element is blockified (inline and the internal table
-    /// values become block; list-item stays).</summary>
+    /// values become block, inline-block too; list-item stays).</summary>
     private static ComputedResult ComputeDisplay(CssValue value, ComputeContext context)
     {
         if (!context.IsRoot || value is not CssKeyword keyword)
@@ -280,7 +280,7 @@ public static partial class PropertyRegistry
 
         return keyword.Name switch
         {
-            "inline" or "table-row-group" or "table-header-group" or "table-footer-group" or "table-row" or "table-cell"
+            "inline" or "inline-block" or "table-row-group" or "table-header-group" or "table-footer-group" or "table-row" or "table-cell"
                 or "table-column-group" or "table-column" or "table-caption" => new CssKeyword("block"),
             _ => value,
         };

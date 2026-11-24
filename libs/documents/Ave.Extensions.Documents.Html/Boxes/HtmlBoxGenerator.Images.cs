@@ -41,7 +41,7 @@ public static partial class HtmlBoxGenerator
         /// decorations of the text around it. Refused, with
         /// the value and the start tag: another <c>vertical-align</c> (not built), and a <c>break-before</c>,
         /// <c>break-after</c> or <c>break-inside</c> other than <c>auto</c> (they apply to block-level boxes only, CSS
-        /// Fragmentation 3 §3.1, and an atomic inline never breaks). <c>display: inline-block</c> is refused by its value.
+        /// Fragmentation 3 §3.1, and an atomic inline never breaks), and <c>display: inline-block</c> (not measured on an image).
         /// </summary>
         private void InlineImage(InlineFrame frame, StyledElement element)
         {
@@ -62,6 +62,13 @@ public static partial class HtmlBoxGenerator
             {
                 Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'vertical-align: {align}' on an <img> inside a line of text is not drawn in this version: it sits on the baseline.",
                     align.ToString()!, element.Element.Position, "vertical-align");
+                refused = true;
+            }
+
+            if (Value(element, "display") is CssKeyword { Name: "inline-block" } display)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, "'display: inline-block' on an <img> is not drawn in this version: an image in a line of text is drawn at display: inline, which places it the same way in CSS; use that.",
+                    display.ToString()!, element.Element.Position, "display");
                 refused = true;
             }
 

@@ -146,6 +146,10 @@ public static partial class HtmlBoxGenerator
 
         /// <summary>The lists around the box, its own included.</summary>
         public int Lists { get; init; }
+
+        /// <summary>For the frame of an inline-block: the inline content its box goes into, as an atomic inline among the runs
+        /// (THE RULE FOR AN INLINE-BLOCK IN HTML), and the element whose content that is; null for a block-level box.</summary>
+        public (List<Node> Target, StyledElement Parent)? Atomic { get; set; }
     }
 
     private enum FrameKind
@@ -248,10 +252,11 @@ public static partial class HtmlBoxGenerator
             Refusals.Add((property is null ? error : error.With(ErrorMetadataKeys.Property, property)).WithSource(_sourceName, position));
         }
 
-        /// <summary>The display of a rendered element: block, inline or none; a refused type counts as block.</summary>
+        /// <summary>The display of a rendered element: block, inline, inline-block or none; a refused type counts as block.</summary>
         private static string Display(StyledElement element) => element.Style[PropertyRegistry.Display] switch
         {
             CssKeyword { Name: "inline" } => "inline",
+            CssKeyword { Name: "inline-block" } => "inline-block",
             CssKeyword { Name: "none" } => "none",
             _ => "block",
         };
@@ -490,8 +495,13 @@ public static partial class HtmlBoxGenerator
                         break;
                     case BlockFrame block when block.Next >= block.Element.Children.Count:
                         stack.Pop();
-                        var (box, forcedAfter) = Finish(block, stack.Count > 0 ? ((BlockFrame)stack.Peek()).Element : null);
-                        if (stack.Count == 0)
+                        var (box, forcedAfter) = Finish(block, block.Atomic?.Parent ?? (stack.Count > 0 ? ((BlockFrame)stack.Peek()).Element : null));
+                        if (block.Atomic is { } atomic)
+                        {
+                            // Layout refuses an inline-block at its source (one taller than a page), so it carries its column.
+                            atomic.Target.Add(box with { Source = box.Source with { Column = block.Element.Element.Position.Column } });
+                        }
+                        else if (stack.Count == 0)
                         {
                             // A forced break after the last box of the document has no page to start: Chromium prints no
                             // empty page after it (measured, cases h-break-after-last, h-break-after-last-nested).
@@ -583,6 +593,14 @@ public static partial class HtmlBoxGenerator
             if (!bareItem)
             {
                 CloseImplied(block);
+            }
+
+            if (node is StyledElement table && PartOf(table) == TablePart.Table && stack.OfType<BlockFrame>().Any(open => open.Atomic is not null))
+            {
+                // THE RULE FOR AN INLINE-BLOCK IN HTML: a table inside one is not measured.
+                Refuse(HtmlStyleErrorCodes.Unsupported.InlineBox, $"A <{table.Element.LocalName}> inside an inline-block is not drawn in this version; put the table outside the inline-block, or make the inline-block a block.",
+                    table.Element.LocalName, table.Element.Position, "display");
+                return;
             }
 
             if (RefusedInList(block, node) || TableChild(stack, block, node))
@@ -919,6 +937,9 @@ public static partial class HtmlBoxGenerator
                     break;
                 case StyledElement element when IsHtml(element, "img"):
                     InlineImage(frame, element);
+                    break;
+                case StyledElement element when Display(element) == "inline-block":
+                    InlineBlock(stack, frame, element);
                     break;
                 case StyledElement element when Display(element) == "inline":
                     if (Check(element, isBlock: false) && !Deeper(frame.Depth, element.Element.Position))

@@ -1,0 +1,23 @@
+page 1 300.000 300.000
+word 1 12.000 41.589 22.500 10.500 Above #000000 Lato-Regular
+word 1 44.277 59.444 22.500 10.500 the #000000 Lato-Regular
+word 1 62.132 100.551 22.500 10.500 margins. #000000 Lato-Regular
+word 1 12.000 24.043 41.250 10.500 All #000000 Lato-Regular
+word 1 35.742 56.852 41.250 10.500 Four #000000 Lato-Regular
+word 1 68.547 94.062 41.250 10.500 sides. #000000 Lato-Regular
+word 1 12.000 28.763 67.500 10.500 Top #000000 Lato-Regular
+word 1 31.453 53.230 67.500 10.500 High #000000 Lato-Regular
+word 1 55.926 77.740 67.500 10.500 only. #000000 Lato-Regular
+word 1 12.000 46.309 80.250 10.500 Bottom #000000 Lato-Regular
+word 1 48.996 68.132 80.250 10.500 Low #000000 Lato-Regular
+word 1 70.821 92.634 80.250 10.500 only. #000000 Lato-Regular
+word 1 12.000 29.692 100.500 10.500 Left #000000 Lato-Regular
+word 1 44.672 78.613 100.500 10.500 Pushed #000000 Lato-Regular
+word 1 81.309 103.123 100.500 10.500 only. #000000 Lato-Regular
+word 1 12.000 40.859 113.250 10.500 Below #000000 Lato-Regular
+word 1 43.327 58.494 113.250 10.500 the #000000 Lato-Regular
+word 1 61.182 99.601 113.250 10.500 margins. #000000 Lato-Regular
+rect 1 36.000 30.750 57.000 43.500 #a0e0a0
+rect 1 31.500 57.000 53.250 69.750 #a0e0a0
+rect 1 48.750 69.750 68.250 82.500 #a0e0a0
+rect 1 45.000 90.000 78.750 102.750 #a0e0a0

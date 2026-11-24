@@ -14,7 +14,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// page is laid out: layout builds a line before it knows where the line lies on its page (a paragraph in a table cell is
 /// placed only after the cell is laid out), so it keeps each box and each bullet exact (<see cref="LineGroupPart.Box"/>,
 /// <see cref="ListItemLayout"/>) and cuts the gaps as if the line's top were on a whole pixel, and this pass, which walks
-/// the page with every fragment's place on it, rounds them and cuts again where the line's top is not.
+/// the page with every fragment's place on it, rounds them and cuts again where the line's top is not. It walks into the
+/// inline-blocks on a line as into any box, so their lines and bullets are put on the page's pixels as well (case
+/// <c>iblk-inside</c>: a list inside an inline-block has its bullets on whole pixels).
 /// </summary>
 /// <remarks>
 /// THE RULE FOR AN INLINE BOX ON WHOLE PIXELS: each edge of the box's border box lies on the nearest whole pixel of the page,
@@ -96,8 +98,16 @@ internal static class InlineBoxPixels
                     }
 
                     var snapped = rebuilt.Value;
+                    var placedLine = ReferenceEquals(snapped, line) ? child : child with { Fragment = snapped };
+                    if (snapped.Children.Any(piece => piece.Fragment is BoxFragment))
+                    {
+                        // An inline-block on the line holds lines and bullets of its own, which go on the page's pixels too.
+                        pending.Push(new Frame(placedLine, at, snapped.Children) { Changed = !ReferenceEquals(snapped, line) });
+                        continue;
+                    }
+
                     frame.Changed |= !ReferenceEquals(snapped, line);
-                    frame.Done.Add(ReferenceEquals(snapped, line) ? child : child with { Fragment = snapped });
+                    frame.Done.Add(placedLine);
                 }
                 else if (policies.Bullets && child.Fragment is BoxFragment { Box.Role: SemanticRole.ListLabelRole, Children: [{ Fragment: MarkerFragment }] })
                 {
@@ -125,6 +135,7 @@ internal static class InlineBoxPixels
                 Fragment = frame.Placed.Fragment switch
                 {
                     BoxFragment box => box with { Children = [.. frame.Done] },
+                    LineFragment line => line with { Children = [.. frame.Done] },
                     SliceFragment slice => slice with { Content = frame.Done[0] },
                     var other => other,
                 },

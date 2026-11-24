@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0; }
+@page { size: 300pt 500pt; margin: 12pt; }
+.k { display: inline-block; padding: 1.5pt; background-color: #e0e0e0; vertical-align: baseline; }
+ul { margin: 0; padding-left: 15pt; }
+table { border-collapse: collapse; }
+td { border: 0.75pt solid #000000; padding: 1.5pt 3pt; }
+.g::before { content: "Made "; }
+</style></head><body>
+<!-- What an inline-block holds: a list, an image, another inline-block, a styled span, a link and generated text. -->
+<div>List <span class="k"><ul><li>First item</li><li>Second item</li></ul></span> end.</div>
+<p>Image <span class="k">Pic <img src="figure.png" alt="figure" style="width: 8.4pt; height: 12pt"></span> end.</p>
+<p>Nested <span class="k">Outer <span class="k" style="background-color: #ffc0c0">Inner</span> box</span> end.</p>
+<p>Styled <span class="k">Some <span style="background-color: #ffff00; padding: 0 3pt">marked</span> text</span> end.</p>
+<p>Link <span class="k"><a href="https://example.com/">Go there</a> now</span> end.</p>
+<p>Made <span class="k g">by hand</span> end.</p>
+<p>Last line of text.</p>
+</body></html>

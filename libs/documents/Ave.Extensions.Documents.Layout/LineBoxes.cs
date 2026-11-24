@@ -48,6 +48,46 @@ internal static class LineBoxes
     {
         /// <summary>Its horizontal margins, in points.</summary>
         public double Margins => Box.Style.Margin.Horizontal.Points;
+
+        /// <summary>
+        /// Where its baseline lies below the top of its border box, in points, or null when it has none and its bottom margin
+        /// edge sits on the line's baseline instead (CSS 2.1 §10.8.1, <c>vertical-align: baseline</c>). An image has none. A
+        /// box laid out by another algorithm (an inline-block) has the baseline of its LAST line box (CSS 2.1 §10.8.1, the
+        /// baseline of an inline-block; one with an <c>overflow</c> other than visible is refused by the front-end), found in its fragment through every block
+        /// box and list item inside it, in normal flow: not inside a table, an image or another atomic inline, which have
+        /// formatting contexts of their own; one without such a line has none (cases <c>iblk-badge</c>, <c>iblk-wrap</c>: the
+        /// last of two and three lines; <c>iblk-inside</c>: the last item of a list counts, and a box holding only a table
+        /// sits with its bottom margin edge on the baseline, the table's text above it; <c>iblk-swatch</c>: an empty one).
+        /// The walk has its own stack, so a fragment tree of any depth costs no call frames.
+        /// </summary>
+        public double? Baseline => Box.Layout == LayoutAlgorithmId.Image || Fragment is null ? null : LastBaseline(Fragment);
+
+        private static double? LastBaseline(BoxFragment fragment)
+        {
+            double? last = null;
+            var pending = new Stack<(Fragment Fragment, double Top)>();
+            pending.Push((fragment, 0));
+            while (pending.Count > 0)
+            {
+                var (current, top) = pending.Pop();
+                switch (current)
+                {
+                    case LineFragment line:
+                        // The lines are met in document order, so the last one met is the last line.
+                        last = top + line.Baseline;
+                        break;
+                    case BoxFragment box when box.Box.Layout == LayoutAlgorithmId.Flow || box.Box.Layout == LayoutAlgorithmId.Inline || box.Box.Layout == LayoutAlgorithmId.ListItem:
+                        for (var index = box.Children.Count - 1; index >= 0; index--)
+                        {
+                            pending.Push((box.Children[index].Fragment, top + box.Children[index].Offset.Y));
+                        }
+
+                        break;
+                }
+            }
+
+            return last;
+        }
     }
 
     /// <summary>
@@ -116,10 +156,16 @@ internal static class LineBoxes
         public static InlineExtent OfRun(ShapedRun run, FontMetricRounding rounding) =>
             Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight, rounding) with { Shift = run.Run.Style.BaselineShift.Points };
 
-        /// <summary>The extent of an atomic inline's margin box: all of it above the baseline (<see cref="Build"/>, THE RULE
-        /// FOR AN ATOMIC INLINE ON THE LINE).</summary>
-        public static InlineExtent OfMarginBox(AtomicInline atomic) =>
-            new(atomic.Box.Style.Margin.Vertical.Points + (atomic.Fragment?.Size.Height ?? 0), 0, 0, 0);
+        /// <summary>The extent of an atomic inline's margin box: above the baseline its top margin and its border box down to
+        /// its baseline, below it the rest and its bottom margin; all of it above the baseline when it has no baseline
+        /// (<see cref="AtomicInline.Baseline"/>; <see cref="Build"/>, THE RULE FOR AN ATOMIC INLINE ON THE LINE).</summary>
+        public static InlineExtent OfMarginBox(AtomicInline atomic)
+        {
+            var (margin, height) = (atomic.Box.Style.Margin, atomic.Fragment?.Size.Height ?? 0);
+            return atomic.Baseline is { } baseline
+                ? new(margin.Top.Points + baseline, height - baseline + margin.Bottom.Points, 0, 0)
+                : new(margin.Vertical.Points + height, 0, 0, 0);
+        }
     }
 
     /// <summary>
@@ -139,7 +185,11 @@ internal static class LineBoxes
     /// with the parent's baseline"), as Chromium synthesizes the baseline of an image off its margin box's bottom edge (Blink
     /// <c>LogicalBoxFragment::BaselineMetrics</c>, core/layout/logical_box_fragment.cc). So it makes the line taller when it
     /// is taller than the strut's part above the baseline, never below it; its margins count above, below and beside it
-    /// (case <c>ii-baseline</c>).</para>
+    /// (case <c>ii-baseline</c>). An inline-block with a line inside has its last line's baseline on the line's baseline
+    /// instead (<see cref="AtomicInline.Baseline"/>): its top margin and its border box down to that baseline count above
+    /// the line's baseline, the rest of its border box and its bottom margin below it (case <c>iblk-badge</c>: a box of
+    /// 29 px with 2 px border and 4 px padding around a 17 px line reaches 20 px above and 9 px below; the next line follows
+    /// its bottom; <c>iblk-margin</c>: its vertical margins count on both sides).</para>
     /// <para>THE RULE FOR A SHIFTED RUN ON THE LINE: a run with a <see cref="TextStyle.BaselineShift"/> s has its own baseline s
     /// above the line's baseline (CSS 2.1 §10.8.1, <c>vertical-align</c>: the box is raised or lowered), and its inline box,
     /// the same extent as unshifted (its ascent and descent, and under a line height other than <c>normal</c> its
@@ -234,7 +284,7 @@ internal static class LineBoxes
             children.Add(item switch
             {
                 AtomicInline { Fragment: { } fragment } atomic => new PlacedFragment(
-                    new Point(x + atomic.Box.Style.Margin.Left.Points, above - atomic.Box.Style.Margin.Bottom.Points - fragment.Size.Height), fragment),
+                    new Point(x + atomic.Box.Style.Margin.Left.Points, above - (extent!.Above - atomic.Box.Style.Margin.Top.Points)), fragment),
                 ShapedRun run => new PlacedFragment(
                     new Point(x, above - extent!.Shift - extent.Ascent), new TextFragment(run.Run, run.Font, extent.Ascent, segment.Glyphs, new Size(segment.Width, extent.Ascent + extent.Descent))),
                 _ => throw new InvalidOperationException("An atomic inline is placed on a line only once it is laid out."),

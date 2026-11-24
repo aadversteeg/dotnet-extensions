@@ -1,0 +1,5 @@
+iblk-inside.boxes.txt 1
+iblk-inside.lines.txt 9
+iblk-inside.links.txt 1
+iblk-inside.print.txt 46
+iblk-inside.words.txt 33

@@ -253,7 +253,7 @@ public class LineBreakAndImageTests
     [Theory]
     [InlineData("vertical-align:middle", "vertical-align", "middle", false)]
     [InlineData("vertical-align:top", "vertical-align", "top", false)]
-    [InlineData("display:inline-block", "display", "inline-block", true)]
+    [InlineData("display:inline-block", "display", "inline-block", false)]
     [InlineData("break-before:page", "break-before", "page", false)]
     [InlineData("break-after:avoid", "break-after", "avoid", false)]
     [InlineData("break-inside:avoid", "break-inside", "avoid", false)]

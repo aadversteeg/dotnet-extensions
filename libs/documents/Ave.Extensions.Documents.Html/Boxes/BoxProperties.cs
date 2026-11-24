@@ -187,8 +187,8 @@ internal static class BoxProperties
             facts.IsReplaced && IsKeyword(value, "border-box") && HasInsets(facts.Style) ? "border-box on an image with padding or a border is not drawn in this version" : null);
 
         // CSS Display 3 §2.
-        yield return new("display", "block, inline, none, list-item (CSS Lists 3 §2; HtmlBoxGenerator.Lists.cs), table and its parts",
-            (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" or "list-item" } ? null : TableProperties.Display(value));
+        yield return new("display", "block, inline, inline-block (HtmlBoxGenerator, THE RULE FOR AN INLINE-BLOCK IN HTML), none, list-item (CSS Lists 3 §2; HtmlBoxGenerator.Lists.cs), table and its parts",
+            (value, _) => value is CssKeyword { Name: "block" or "inline" or "inline-block" or "none" or "list-item" } ? null : TableProperties.Display(value));
 
         // CSS Color 4 §3.1: the colour of the element's own text; a border in currentcolor is checked in its row.
         yield return new("color", "a colour of alpha 1; any colour on an element without text of its own",
