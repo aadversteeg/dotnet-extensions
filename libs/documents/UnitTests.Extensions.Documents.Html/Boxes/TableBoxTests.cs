@@ -572,11 +572,10 @@ public class TableBoxTests
     /// <summary>Under <c>empty-cells: hide</c> no case measures whether a cell of only elements that are not displayed, or of
     /// white space that is preserved, is empty: both are refused at the cell.</summary>
     [Theory]
-    [InlineData("<span style=\"display:none\">a</span>")]
-    [InlineData("<span style=\"white-space:pre\"></span>   ")]
-    public void Under_empty_cells_hide_a_cell_not_measured_is_refused(string content)
+    [InlineData("<td><span style=\"display:none\">a</span></td>")]
+    [InlineData("<td style=\"white-space:pre\">   </td>")]
+    public void Under_empty_cells_hide_a_cell_not_measured_is_refused(string cell)
     {
-        var cell = content.StartsWith("<span style=\"white-space", StringComparison.Ordinal) ? "<td style=\"white-space:pre\">   </td>" : $"<td>{content}</td>";
         var error = FirstRefusal($"<table><tr>{cell}</tr></table>", Collapsed + Hide);
 
         (error.Code, error.Metadata![ErrorMetadataKeys.Property]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "empty-cells"));
