@@ -1,0 +1,19 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0 0 6pt; }
+table { border-collapse: collapse; border-spacing: 0; width: 100%; table-layout: fixed; counter-reset: row; margin-bottom: 6pt; }
+tr { counter-increment: row; }
+td { padding: 2pt 4pt; border: 0.75pt solid #000; vertical-align: top; }
+td.n::before { content: "Row " counter(row) ": "; color: #666666; }
+td.s::before { content: "Note "; font-weight: 700; }
+td.s::after { content: " (end)"; }
+</style></head><body>
+<!-- Generated text, a string and a counter, in a table whose row and cell have heights. -->
+<table><tr style="height: 36pt"><td class="n" id="Row">alpha</td><td class="s" id="Note">beta</td></tr>
+<tr><td class="n" style="height: 28pt">gamma</td><td class="s">delta</td></tr></table>
+<p id="after">After the table</p>
+</body></html>

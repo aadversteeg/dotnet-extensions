@@ -1,0 +1,19 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@page { size: 300pt 300pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0 0 6pt; }
+ul { margin: 0 0 6pt; padding-left: 18pt; }
+table { border-collapse: collapse; border-spacing: 0; width: 100%; table-layout: fixed; margin-bottom: 6pt; }
+td { padding: 2pt 4pt; border: 0.75pt solid #000; vertical-align: top; }
+td.h::before { content: "Cell head"; display: block; border-bottom: 0.75pt solid #336699; color: #003366; }
+li.h::before { content: "Item head"; display: block; background: #e0e8f0; }
+li.h::after { content: "Item foot"; display: block; text-align: right; }
+</style></head><body>
+<!-- A ::before and an ::after of display: block in a table cell and in a list item. -->
+<table><tr><td class="h" id="Cell">body one</td><td>two</td></tr></table>
+<ul><li class="h" id="Item">body of the item</li><li>second</li></ul>
+<p id="after">After</p>
+</body></html>

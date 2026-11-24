@@ -128,6 +128,21 @@ public class MissingGlyphTests
     }
 
     [Fact]
+    public void Generated_text_and_the_element_s_own_text_are_each_refused_at_their_own_place()
+    {
+        // mx-gen-missing: Lato has no Ɑ (U+2C6D) and no ✔ (U+2714); the ::before refuses at its content declaration, the
+        // element's text at the character.
+        var html = Document("<p class=\"g\">own \u2714 text</p>", "body { font-family: Lato } .g::before { content: \"Mark \\2C6D: \" }");
+
+        var refusals = Refusals(html);
+
+        refusals.Select(refusal => (refusal.Code, refusal.Metadata![ErrorMetadataKeys.CodePoint])).Should().Equal((FontErrorCodes.GlyphMissing, "U+2C6D"), (FontErrorCodes.GlyphMissing, "U+2714"));
+        refusals.Select(Place).Should().Equal(
+            ((object?)PlaceOf(html, "content").Line, (object?)PlaceOf(html, "content").Column),
+            ((object?)PlaceOf(html, "\u2714 text").Line, (object?)PlaceOf(html, "\u2714 text").Column));
+    }
+
+    [Fact]
     public void A_document_is_refused_for_at_most_the_bound_of_characters_in_source_order()
     {
         // 80 distinct CJK characters Lato does not have.

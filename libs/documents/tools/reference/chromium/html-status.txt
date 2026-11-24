@@ -566,11 +566,15 @@ mf4-line-0 equal
 mf4-line-075 equal
 mf4-line-150 equal
 mf4-line-225 equal
+mx-box-link-cut equal
 mx-caption-percent equal
+mx-gen-block-hosts refused Documents.Css.Unsupported.GeneratedContent display: block at 11:38
 mx-gen-block-size equal
 mx-gen-caption equal
 mx-gen-family equal
+mx-gen-heights equal
 mx-gen-link listed A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest: link 1 on page 1: x1 74.156, Chromium 52.5 (links.txt)
+mx-gen-missing refused Documents.Font.GlyphMissing U+2C6D at 7:15
 mx-gen-spacing equal
 mx-height-separated equal
 mx-link-gen refused Documents.Html.Unsupported.Value content: from  at 3:183

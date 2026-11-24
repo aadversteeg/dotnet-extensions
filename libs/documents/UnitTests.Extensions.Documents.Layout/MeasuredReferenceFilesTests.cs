@@ -18,7 +18,7 @@ public class MeasuredReferenceFilesTests
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = ["dw-half", "ib-link-button", "ib-link-button-break", "ib-link-cell", "ib-link-inside-span", "ib-link-span-inside", "ib-link-states", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "mx-gen-link", "mx-link-gen", "mx-list-cell", "tt-groups", "va-decorated", "va-link", "va-sub"];
+    private static readonly string[] LinkCases = ["dw-half", "ib-link-button", "ib-link-button-break", "ib-link-cell", "ib-link-inside-span", "ib-link-span-inside", "ib-link-states", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "mx-box-link-cut", "mx-gen-link", "mx-link-gen", "mx-list-cell", "tt-groups", "va-decorated", "va-link", "va-sub"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -2323,10 +2323,19 @@ public class MeasuredReferenceFilesTests
         ["mf4-line-225.lines.txt"] = 106,
         ["mf4-line-225.print.txt"] = 169,
         ["mf4-line-225.words.txt"] = 60,
+        ["mx-box-link-cut.boxes.txt"] = 2,
+        ["mx-box-link-cut.lines.txt"] = 16,
+        ["mx-box-link-cut.links.txt"] = 4,
+        ["mx-box-link-cut.print.txt"] = 46,
+        ["mx-box-link-cut.words.txt"] = 28,
         ["mx-caption-percent.boxes.txt"] = 6,
         ["mx-caption-percent.lines.txt"] = 17,
         ["mx-caption-percent.print.txt"] = 35,
         ["mx-caption-percent.words.txt"] = 17,
+        ["mx-gen-block-hosts.boxes.txt"] = 4,
+        ["mx-gen-block-hosts.lines.txt"] = 9,
+        ["mx-gen-block-hosts.print.txt"] = 27,
+        ["mx-gen-block-hosts.words.txt"] = 15,
         ["mx-gen-block-size.boxes.txt"] = 2,
         ["mx-gen-block-size.lines.txt"] = 2,
         ["mx-gen-block-size.print.txt"] = 18,
@@ -2339,12 +2348,20 @@ public class MeasuredReferenceFilesTests
         ["mx-gen-family.lines.txt"] = 0,
         ["mx-gen-family.print.txt"] = 8,
         ["mx-gen-family.words.txt"] = 7,
+        ["mx-gen-heights.boxes.txt"] = 5,
+        ["mx-gen-heights.lines.txt"] = 12,
+        ["mx-gen-heights.print.txt"] = 28,
+        ["mx-gen-heights.words.txt"] = 15,
         ["mx-gen-link.boxes.txt"] = 1,
         ["mx-gen-link.ink.txt"] = 10,
         ["mx-gen-link.lines.txt"] = 4,
         ["mx-gen-link.links.txt"] = 4,
         ["mx-gen-link.print.txt"] = 17,
         ["mx-gen-link.words.txt"] = 12,
+        ["mx-gen-missing.boxes.txt"] = 2,
+        ["mx-gen-missing.lines.txt"] = 0,
+        ["mx-gen-missing.print.txt"] = 8,
+        ["mx-gen-missing.words.txt"] = 6,
         ["mx-gen-spacing.boxes.txt"] = 1,
         ["mx-gen-spacing.lines.txt"] = 0,
         ["mx-gen-spacing.print.txt"] = 17,
@@ -3366,7 +3383,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(820);
+        cases.Should().HaveCount(824);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

@@ -21,11 +21,14 @@ public partial class MeasuredFaceTests
     /// box uses, which Chromium has not loaded when it prints the margin boxes (listed,
     /// <see cref="HtmlListedDifferenceTests.A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face"/>);
     /// the hyphens U+2010 and U+2011 that Theano Didot has no glyph for, which Chromium takes from a font of the system
-    /// (refused, <see cref="MissingGlyphTests.A_hyphen_a_face_cannot_draw_is_refused"/>).</summary>
-    private static readonly IReadOnlyDictionary<string, string> Fallback = new Dictionary<string, string>(StringComparer.Ordinal)
+    /// (refused, <see cref="MissingGlyphTests.A_hyphen_a_face_cannot_draw_is_refused"/>); the Ɑ (U+2C6D) of generated text
+    /// and the ✔ (U+2714) of the element's own text that Lato has no glyph for (refused,
+    /// <see cref="MissingGlyphTests.Generated_text_and_the_element_s_own_text_are_each_refused_at_their_own_place"/>).</summary>
+    private static readonly IReadOnlyDictionary<string, string[]> Fallback = new Dictionary<string, string[]>(StringComparer.Ordinal)
     {
-        ["gm-nbhyphen-theano"] = "LiberationSerif",
-        ["pm-family-unused"] = "LiberationSerif-Bold",
+        ["gm-nbhyphen-theano"] = ["LiberationSerif"],
+        ["mx-gen-missing"] = ["FreeSans", "LiberationSerif"],
+        ["pm-family-unused"] = ["LiberationSerif-Bold"],
     };
 
     [Fact]
@@ -51,7 +54,7 @@ public partial class MeasuredFaceTests
     {
         var loaded = Loaded(name);
         return print.Pages.SelectMany(page => page.Words).Select(word => word.Face!).Distinct(StringComparer.Ordinal)
-            .Where(face => !loaded.Contains(face) && !(Fallback.TryGetValue(name, out var fallback) && fallback == face))
+            .Where(face => !loaded.Contains(face) && !(Fallback.TryGetValue(name, out var fallback) && fallback.Contains(face, StringComparer.Ordinal)))
             .Select(face => $"{name}: {face} (the case loads {string.Join(", ", loaded.Order(StringComparer.Ordinal))})");
     }
 

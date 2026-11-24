@@ -1,0 +1,9 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- An inline box and a link in a table cell that a page break cuts, at 10.5 pt: a box and a link on each page, and a link over the break. -->
+<style>@page { size: 200pt 150pt; margin: 12pt; } body { font-size: 10.5pt; } p { margin: 0 0 6pt 0; } .y { background-color: #ffd700; padding: 1pt 2pt; }</style></head><body>
+<p>First paragraph</p>
+<p>Second paragraph</p>
+<p>Third paragraph</p>
+<table><tr><td id="Line">Line one <span class="y">box</span><br>Line two <a href="https://example.com/two">link</a><br>Line three<br>Line four<br>Line <a href="https://example.com/over">five<br>six</a> end<br>Line seven <span class="y">box</span><br>Line eight <a href="https://example.com/eight">link</a></td><td>two</td></tr></table>
+<p>After</p>
+</body></html>
