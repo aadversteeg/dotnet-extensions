@@ -46,12 +46,12 @@ internal static class BoxProperties
         "font-feature-settings", "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
         "font-variant-alternates", "font-variant-caps", "font-variant-east-asian", "font-variant-emoji",
         "font-variant-ligatures", "font-variant-numeric", "font-variant-position", "font-variation-settings", "hyphens",
-        "image-rendering", "isolation", "left", "letter-spacing", "line-break", "list-style-image", "max-height",
+        "image-rendering", "isolation", "left", "line-break", "list-style-image", "max-height",
         "min-height", "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
         "quotes", "right", "row-gap", "tab-size", "text-align-last", "text-decoration-thickness", "text-indent",
         "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-underline-offset",
         "text-underline-position", "text-wrap-style", "top",
-        "transform", "visibility", "word-break", "word-spacing", "writing-mode", "z-index",
+        "transform", "visibility", "word-break", "writing-mode", "z-index",
     ];
 
     private static readonly string[] Sides = ["top", "right", "bottom", "left"];
@@ -189,6 +189,11 @@ internal static class BoxProperties
                 ? null : "a decoration colour with an alpha other than 1 is not drawn");
         yield return new("text-decoration-style", "solid, the only value the style sheet accepts", (_, _) => null);
         yield return new("text-decoration-skip-ink", "auto, none", (_, _) => null);
+        // CSS Text 3 §7.2, CSS Text 4 §7.1: a computed length, added in layout (TextStyle.LetterSpacing, WordSpacing).
+        yield return new("letter-spacing", "normal, a length (a mark or an invisible character in letter-spaced text is refused at its text)",
+            (value, _) => value is CssKeyword { Name: "normal" } or CssLength ? null : "only normal and a length are drawn");
+        yield return new("word-spacing", "normal, a length",
+            (value, _) => value is CssLength or CssPercentage { Value: 0 } ? null : "only normal and a length are drawn");
         yield return new("text-transform", "none, uppercase, lowercase, capitalize, mapped in each text (a character the transform does not map is refused at its text)", (_, _) => null);
 
         // CSS Fragmentation 3 §3.1, §3.2, §5.4; break properties apply to block-level boxes only.

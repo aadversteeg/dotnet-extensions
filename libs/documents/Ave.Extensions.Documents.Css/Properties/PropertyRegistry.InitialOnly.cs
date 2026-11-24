@@ -69,17 +69,6 @@ public static partial class PropertyRegistry
 
         // Text.
         yield return InitialZero("text-indent", true, "0", "block containers", "CSS Text 3 §8.1");
-        yield return InitialZero("letter-spacing", true, "normal", "inline boxes and text", "CSS Text 3 §7.2");
-        // word-spacing: normal computes to zero (CSS Text 4 §7.1; Chromium writes 0px).
-        yield return new PropertyDefinition(
-            "word-spacing", inherited: true, Zero, "text", "normal | 0", PropertySupport.InitialOnly, "CSS Text 4 §7.1",
-            reader => reader.Count == 1 && reader.Keyword("normal") is not null
-                ? ParsedValue.Of(Zero)
-                : reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "word-spacing") is { Value: CssLength { Points: 0 } or CssPercentage { Value: 0 } } zero
-                    // Chromium 159 keeps 0% as 0% (measured); 0 and 0px are 0px.
-                    ? ParsedValue.Of(zero.Value is CssPercentage ? new CssPercentage(0) : Zero)
-                    : ParsedValue.Refused("'word-spacing' is supported only at its initial value, normal"),
-            AsSpecified);
         yield return InitialKeyword("text-overflow", false, "clip", ["ellipsis"], true, "block containers", "CSS Overflow 3 §5.1");
         yield return InitialKeyword("text-align-last", true, "auto", ["start", "end", "left", "right", "center", "justify", "match-parent"], false, "block containers", "CSS Text 3 §6.2");
         yield return InitialKeyword("text-justify", true, "auto", ["none", "inter-word", "inter-character", "distribute"], false, "text", "CSS Text 3 §6.4");

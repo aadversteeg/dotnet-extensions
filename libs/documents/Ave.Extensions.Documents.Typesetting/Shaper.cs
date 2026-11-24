@@ -62,7 +62,7 @@ public static class Shaper
     /// combined into <see cref="ErrorCodes.Aggregate"/>), or <see cref="DocumentErrorCodes.Input.Invalid.Text"/>
     /// for text that is not valid UTF-16.</returns>
     public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, double fontSize) =>
-        Shape(text, font, ShapingSize.Exact(fontSize), shared: null);
+        Shape(text, font, ShapingSize.Exact(fontSize), shared: null, ShapingFeatures.Default);
 
     /// <summary>
     /// As <see cref="Shape(string, TrueTypeFont, double)"/>, with the font's own advances scaled at
@@ -76,11 +76,21 @@ public static class Shaper
     /// <param name="size">The two sizes, in points.</param>
     /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
     public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, ShapingSize size) =>
-        Shape(text, font, size, shared: null);
+        Shape(text, font, size, shared: null, ShapingFeatures.Default);
+
+    /// <summary>As <see cref="Shape(string, TrueTypeFont, ShapingSize)"/>, with the switchable GSUB features of
+    /// <paramref name="features"/>.</summary>
+    /// <param name="text">The text, already white-space collapsed.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="size">The two sizes, in points.</param>
+    /// <param name="features">The features applied.</param>
+    /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
+    public static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, ShapingSize size, ShapingFeatures features) =>
+        Shape(text, font, size, shared: null, features ?? ShapingFeatures.Default);
 
     /// <summary>As <see cref="Shape(string, TrueTypeFont, ShapingSize)"/>, under <paramref name="shared"/> when it is given (the
     /// pieces of one paragraph, <see cref="LineShapingBudget"/>), else under a budget of the text's own.</summary>
-    internal static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, ShapingSize size, ShapingBudget? shared) =>
+    internal static Result<ImmutableArray<ShapedGlyph>, Error> Shape(string text, TrueTypeFont font, ShapingSize size, ShapingBudget? shared, ShapingFeatures features) =>
         Characters(text).OnSuccessBind(characters =>
         {
             // Each piece is normalized for the font before its characters become glyphs (Unicode.Normalization), as
@@ -90,7 +100,7 @@ public static class Shaper
                 .TraverseAll(piece => Normalization.ForFont([.. characters.Skip(piece.Start).Take(piece.Length)], codePoint => font.GlyphFor(new Rune(codePoint)).HasValue)
                     .TraverseAll(normalized => InitialGlyph(normalized.Character, normalized.Text, font))
                     .OnSuccessMap(glyphs => (piece.Tag, Glyphs: glyphs.ToImmutableArray())))
-                .OnSuccessBind(shaped => ShapePieces([.. shaped], font, size, shared));
+                .OnSuccessBind(shaped => ShapePieces([.. shaped], font, size, shared, features));
         });
 
     /// <summary>
@@ -111,7 +121,7 @@ public static class Shaper
     /// <param name="budget">The budget of the piece's paragraph, as the line breaker hands it to its <see cref="LineShaper"/>.</param>
     /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
     public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, double fontSize, bool showsHyphen, LineShapingBudget budget) =>
-        LinePiece(text, font, ShapingSize.Exact(fontSize), showsHyphen, budget?.Shaping);
+        LinePiece(text, font, ShapingSize.Exact(fontSize), showsHyphen, budget?.Shaping, ShapingFeatures.Default);
 
     /// <summary>As <see cref="ShapeLinePiece(string, TrueTypeFont, double, bool, LineShapingBudget)"/>, at the two sizes of
     /// <see cref="Shape(string, TrueTypeFont, ShapingSize)"/>; the hyphen's advance is at <see cref="ShapingSize.Advances"/>.</summary>
@@ -122,10 +132,22 @@ public static class Shaper
     /// <param name="budget">The budget of the piece's paragraph.</param>
     /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
     public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, ShapingSize size, bool showsHyphen, LineShapingBudget budget) =>
-        LinePiece(text, font, size, showsHyphen, budget?.Shaping);
+        LinePiece(text, font, size, showsHyphen, budget?.Shaping, ShapingFeatures.Default);
 
-    private static Result<ValueList<ShapedGlyph>, Error> LinePiece(string text, TrueTypeFont font, ShapingSize size, bool showsHyphen, ShapingBudget? shared) =>
-        Shape(text, font, size, shared).OnSuccessMap(glyphs =>
+    /// <summary>As <see cref="ShapeLinePiece(string, TrueTypeFont, ShapingSize, bool, LineShapingBudget)"/>, with the
+    /// switchable GSUB features of <paramref name="features"/>, which a piece shares with the run it is part of.</summary>
+    /// <param name="text">The piece of text, already white-space collapsed.</param>
+    /// <param name="font">The run's font.</param>
+    /// <param name="size">The run's two sizes, in points.</param>
+    /// <param name="showsHyphen">True when the piece ends with a soft hyphen at which its line breaks.</param>
+    /// <param name="budget">The budget of the piece's paragraph.</param>
+    /// <param name="features">The features applied.</param>
+    /// <returns>The glyphs, or an error as from <see cref="Shape(string, TrueTypeFont, double)"/>.</returns>
+    public static Result<ValueList<ShapedGlyph>, Error> ShapeLinePiece(string text, TrueTypeFont font, ShapingSize size, bool showsHyphen, LineShapingBudget budget, ShapingFeatures features) =>
+        LinePiece(text, font, size, showsHyphen, budget?.Shaping, features ?? ShapingFeatures.Default);
+
+    private static Result<ValueList<ShapedGlyph>, Error> LinePiece(string text, TrueTypeFont font, ShapingSize size, bool showsHyphen, ShapingBudget? shared, ShapingFeatures features) =>
+        Shape(text, font, size, shared, features).OnSuccessMap(glyphs =>
             showsHyphen && glyphs.Length > 0 && glyphs[^1].Text == SoftHyphen && glyphs[^1].BreakHyphen is { } hyphen
                 ? (ValueList<ShapedGlyph>)[.. glyphs.Take(glyphs.Length - 1), hyphen]
                 : [.. glyphs]);
@@ -183,11 +205,11 @@ public static class Shaper
     /// when it is given, else one made for the text. Once a limit is reached the later pieces stop at their first step,
     /// and the text gets the one error of that limit.</summary>
     private static Result<ImmutableArray<ShapedGlyph>, Error> ShapePieces(
-        ImmutableArray<(string Tag, ImmutableArray<GlyphItem> Glyphs)> shaping, TrueTypeFont font, ShapingSize size, ShapingBudget? shared)
+        ImmutableArray<(string Tag, ImmutableArray<GlyphItem> Glyphs)> shaping, TrueTypeFont font, ShapingSize size, ShapingBudget? shared, ShapingFeatures features)
     {
         var hyphen = Hyphen(font, size);
         var budget = shared ?? new ShapingBudget(shaping.Sum(piece => piece.Glyphs.Length));
-        var pieces = shaping.Select(piece => ShapeRun(piece.Glyphs, piece.Tag, font, budget)).ToList();
+        var pieces = shaping.Select(piece => ShapeRun(piece.Glyphs, piece.Tag, font, budget, features)).ToList();
         return budget.Exceeded is { } limit
             ? Result<ImmutableArray<ShapedGlyph>, Error>.Failure(LimitReached(font, budget, limit))
             : Result<ImmutableArray<ShapedGlyph>, Error>.Success([.. pieces.SelectMany(piece => InPoints(piece!.Value, font, size)).Select(placed => new ShapedGlyph(
@@ -268,11 +290,11 @@ public static class Shaper
     /// resulting glyph; then the old 'kern' table if GPOS has no kerning, and the GPOS lookups. Each step spends from the
     /// text's <paramref name="budget"/>; null when one reaches a limit.
     /// </summary>
-    private static ImmutableArray<GlyphItem>? ShapeRun(ImmutableArray<GlyphItem> glyphs, string script, TrueTypeFont font, ShapingBudget budget)
+    private static ImmutableArray<GlyphItem>? ShapeRun(ImmutableArray<GlyphItem> glyphs, string script, TrueTypeFont font, ShapingBudget budget, ShapingFeatures features)
     {
         var layout = font.Layout;
         var filter = new GlyphFilter(layout.Definitions);
-        if (GlyphSubstitution.Apply(glyphs, layout.Substitutions.LookupsFor(script, SubstitutionFeatures), filter, budget) is not { } substituted)
+        if (GlyphSubstitution.Apply(glyphs, layout.Substitutions.LookupsFor(script, features.Substitutions), filter, budget) is not { } substituted)
         {
             return null;
         }

@@ -257,7 +257,7 @@ public static class ModelCheck
     }
 
     /// <summary>Text values: a family name that is not blank, a positive font size of at most
-    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000, a white-space value of its enum, valid decorations (<see cref="Decorations"/>), and a line height that is not negative, finite and at most
+    /// <see cref="ModelLimits.MaxLength"/>, a weight of 1–1000, a white-space value of its enum, valid decorations (<see cref="Decorations"/>), letter and word spacing finite and at most that long either way, and a line height that is not negative, finite and at most
     /// that long (as a number: at most that many times the font size).</summary>
     private static Error? Text(TextStyle style, Node node)
     {
@@ -294,6 +294,14 @@ public static class ModelCheck
         if (Decorations(style, node) is { } decoration)
         {
             return decoration;
+        }
+
+        foreach (var (spacing, name) in new[] { (style.LetterSpacing, "letter-spacing"), (style.WordSpacing, "word-spacing") })
+        {
+            if (!(double.IsFinite(spacing.Points) && System.Math.Abs(spacing.Points) <= ModelLimits.MaxLength.Points))
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Spacing, $"The {name} must be a finite length of at most {ModelLimits.MaxLength} either way.", spacing.ToString(), name, node);
+            }
         }
 
         var lineHeight = style.LineHeight switch

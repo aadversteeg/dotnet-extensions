@@ -97,8 +97,8 @@ public class ProfileDocumentTests
         Line("the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,");
         Line("which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and");
         Line("on any other element stage 4 applies the ratio or refuses it. A zero length where the initial value is a keyword or");
-        Line("a percentage is the same value and accepted too: `letter-spacing: 0` (computed normal), `background-position-x: 0`");
-        Line("and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other value is refused.");
+        Line("a percentage is the same value and accepted too: `background-position-x: 0` and `background-position-y: 0`");
+        Line("(computed 0px, as Chromium keeps it). Any other value is refused.");
         Line();
         Line("| Property | Initial | Accepted | Defined in |");
         Line("| --- | --- | --- | --- |");

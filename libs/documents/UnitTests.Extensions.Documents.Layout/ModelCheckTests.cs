@@ -54,6 +54,18 @@ public class ModelCheckTests
     }
 
     [Theory]
+    [InlineData(double.NaN, 0)]
+    [InlineData(double.PositiveInfinity, 0)]
+    [InlineData(0, -14_400.5)]
+    [InlineData(0, 14_400.5)]
+    public void A_letter_or_word_spacing_that_is_not_finite_or_beyond_the_limit_either_way_is_refused(double letter, double word)
+    {
+        var error = Refused(WithText(Text() with { LetterSpacing = letter.Pt(), WordSpacing = word.Pt() }));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Spacing);
+    }
+
+    [Theory]
     [InlineData(-0.5)]
     [InlineData(double.NaN)]
     [InlineData(14_400.5)]

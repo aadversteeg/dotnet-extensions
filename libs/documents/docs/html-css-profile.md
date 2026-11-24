@@ -55,6 +55,7 @@ names nothing.
 | `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
 | `font-weight` | yes | `400` | `normal \| bold \| bolder \| lighter \| <number [1,1000]>` | CSS Fonts 4 §2.2 |
 | `height` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
+| `letter-spacing` | yes | `normal` | `normal \| <length>` | CSS Text 3 §7.2 |
 | `line-height` | yes | `normal` | `normal \| <number [0,∞]> \| <length-percentage [0,∞]>` | CSS Inline 3 §5.1; CSS 2.1 §10.8.1 |
 | `list-style-position` | yes | `outside` | `outside` | CSS Lists 3 §3.5 |
 | `list-style-type` | yes | `disc` | `disc \| circle \| square \| decimal \| decimal-leading-zero \| lower-roman \| upper-roman \| lower-alpha \| upper-alpha \| lower-latin \| upper-latin \| none` | CSS Lists 3 §3.3; CSS Counter Styles 3 §6 |
@@ -88,6 +89,7 @@ names nothing.
 | `white-space-collapse` | yes | `collapse` | `collapse \| preserve \| preserve-breaks \| break-spaces` | CSS Text 4 §3.1 |
 | `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
+| `word-spacing` | yes | `0pt` | `normal \| <length>` | CSS Text 4 §7.1 |
 
 `overflow-x` and `overflow-y`: `hidden` on one axis while the other stays `visible` is refused, since Chromium
 computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
@@ -105,8 +107,8 @@ What the layout always does: a declaration that sets one of these to its initial
 the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,
 which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and
 on any other element stage 4 applies the ratio or refuses it. A zero length where the initial value is a keyword or
-a percentage is the same value and accepted too: `letter-spacing: 0` (computed normal), `background-position-x: 0`
-and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other value is refused.
+a percentage is the same value and accepted too: `background-position-x: 0` and `background-position-y: 0`
+(computed 0px, as Chromium keeps it). Any other value is refused.
 
 | Property | Initial | Accepted | Defined in |
 | --- | --- | --- | --- |
@@ -157,7 +159,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `image-rendering` | `auto` | `auto` | CSS Images 3 §5.3 |
 | `isolation` | `auto` | `auto` | Compositing 1 §3.3 |
 | `left` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
-| `letter-spacing` | `normal` | `normal` | CSS Text 3 §7.2 |
 | `line-break` | `auto` | `auto` | CSS Text 3 §5.3 |
 | `list-style-image` | `none` | `none` | CSS Lists 3 §3.4 |
 | `max-height` | `none` | `none` | CSS Sizing 3 §3.2 |
@@ -187,7 +188,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `transform` | `none` | `none` | CSS Transforms 1 §5 |
 | `visibility` | `visible` | `visible` | CSS Display 3 §4 |
 | `word-break` | `normal` | `normal` | CSS Text 3 §5.2 |
-| `word-spacing` | `0pt` | `normal \| 0` | CSS Text 4 §7.1 |
 | `writing-mode` | `horizontal-tb` | `horizontal-tb` | CSS Writing Modes 4 §3.1 |
 | `z-index` | `auto` | `auto` | CSS 2.1 §9.9.1 |
 

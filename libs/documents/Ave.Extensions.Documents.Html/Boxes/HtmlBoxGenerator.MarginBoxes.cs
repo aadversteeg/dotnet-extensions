@@ -143,6 +143,18 @@ public static partial class HtmlBoxGenerator
                     .WithSource(_sourceName, box.Position));
             }
 
+            foreach (var name in new[] { "letter-spacing", "word-spacing" })
+            {
+                if (SpacingOf(box.Style[PropertyRegistry.Find(name)!]) != Length.Zero)
+                {
+                    // Accepted on @page and margin boxes by the page-context cascade; Chromium's margin boxes with spacing are
+                    // not measured, so the content is refused rather than drawn otherwise.
+                    Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"'{name}' on a page-margin box is not drawn in this version.")
+                        .With(ErrorMetadataKeys.Value, SpacingText(SpacingOf(box.Style[PropertyRegistry.Find(name)!]))).With(ErrorMetadataKeys.Property, name)
+                        .WithSource(_sourceName, box.Position));
+                }
+            }
+
             foreach (var item in box.Content.Items)
             {
                 switch (item)

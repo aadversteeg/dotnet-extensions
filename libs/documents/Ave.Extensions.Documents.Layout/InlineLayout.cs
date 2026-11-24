@@ -161,7 +161,9 @@ public static class InlineLayout
     private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, BoxStyle paragraph, FontSizeRounding sizes, LengthRounding lengths) =>
         GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs, paragraph), width, (run, text, showsHyphen, budget) => runs[run] switch
             {
-                LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, ShapingSizeOf(sizes, shaped.Run.Style.FontSize.Points), showsHyphen, budget).MapError(error => error.WithSource(shaped.Run.Source)),
+                LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, ShapingSizeOf(sizes, shaped.Run.Style.FontSize.Points), showsHyphen, budget, FeaturesOf(shaped.Run.Style))
+                    .OnSuccessMap(glyphs => (ValueList<ShapedGlyph>)[.. Spaced(glyphs, shaped.Run.Style)])
+                    .MapError(error => error.WithSource(shaped.Run.Source)),
                 var atomic => Result<ValueList<ShapedGlyph>, Error>.Success(LineBoxes.GlyphsOf(atomic)),
             },
             LineEndAtSpace(runs, paragraph.TextAlign),
@@ -333,7 +335,47 @@ public static class InlineLayout
     /// <summary>True when two runs' text is set in the same font at the same size (<see cref="ShapingGroups"/>).</summary>
     private static bool SameFont(TextStyle one, TextStyle other) =>
         string.Equals(one.FontFamily, other.FontFamily, StringComparison.Ordinal)
-        && one.FontSize == other.FontSize && one.FontWeight == other.FontWeight && one.FontStyle == other.FontStyle;
+        && one.FontSize == other.FontSize && one.FontWeight == other.FontWeight && one.FontStyle == other.FontStyle
+        && one.LetterSpacing == other.LetterSpacing && one.WordSpacing == other.WordSpacing;
+
+    /// <summary>The switchable features a run is shaped with: no ligatures where its letter spacing is not zero
+    /// (<see cref="ShapingFeatures.Ligatures"/>).</summary>
+    private static ShapingFeatures FeaturesOf(TextStyle style) =>
+        style.LetterSpacing == Length.Zero ? ShapingFeatures.Default : NoLigatures;
+
+    private static readonly ShapingFeatures NoLigatures = new(Ligatures: false);
+
+    /// <summary>
+    /// THE RULE FOR LETTER AND WORD SPACING (CSS Text 3 §7.2, CSS Text 4 §7.1), as Chromium 159 prints it: the run's
+    /// <see cref="TextStyle.LetterSpacing"/> is added to the advance of each glyph that ends a typographic character unit
+    /// (the glyph before a glyph with text of its own, and the run's or the piece's last glyph, so also after the last
+    /// letter of a line and of an element), spaces included; its <see cref="TextStyle.WordSpacing"/> to each space U+0020
+    /// and no-break space U+00A0. Nothing is rounded per glyph (case <c>ls-values</c>: 46 spacings of 0.37pt move the
+    /// last word 17.02pt); a text item's width, spacing included, is rounded as any (<see cref="LengthRounding"/>). A
+    /// line-break glyph gets none. Marks and invisible characters in letter-spaced text are refused before layout (the
+    /// front-end's rule), so a unit is one glyph or a glyph and the glyphs without text that a substitution made after it.
+    /// Cases <c>ls-letters</c>, <c>ls-align</c>, <c>ls-word-spacing</c>.
+    /// </summary>
+    private static IEnumerable<ShapedGlyph> Spaced(IReadOnlyList<ShapedGlyph> glyphs, TextStyle style)
+    {
+        var (letter, word) = (style.LetterSpacing.Points, style.WordSpacing.Points);
+        if (letter == 0 && word == 0)
+        {
+            return glyphs;
+        }
+
+        return glyphs.Select((glyph, index) =>
+        {
+            if (glyph.IsLineBreak || glyph.IsAtomicInline)
+            {
+                return glyph;
+            }
+
+            var endsUnit = index == glyphs.Count - 1 || glyphs[index + 1].Text.Length > 0;
+            var added = (endsUnit ? letter : 0) + (glyph.Text is " " or "\u00A0" ? word : 0);
+            return added == 0 ? glyph : glyph with { Advance = glyph.Advance + added };
+        });
+    }
 
     /// <summary>
     /// Shapes the runs of one group (<see cref="ShapingGroups"/>) as one text, in the font and size of its first run with
@@ -358,15 +400,15 @@ public static class InlineLayout
 
         var (font, size) = (shaping.Font.Value, shaping.Run.Style.FontSize.Points);
         Result<IEnumerable<LineBoxes.ShapedRun>, Error> Alone(GroupMember member) =>
-            Shaper.Shape(member.Text, member.Font.Value, ShapingSizeOf(sizes, member.Run.Style.FontSize.Points))
-                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, member.Font.Value, glyphs)])
+            Shaper.Shape(member.Text, member.Font.Value, ShapingSizeOf(sizes, member.Run.Style.FontSize.Points), FeaturesOf(member.Run.Style))
+                .OnSuccessMap(glyphs => (IEnumerable<LineBoxes.ShapedRun>)[new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. Spaced(glyphs, member.Run.Style)])])
                 .MapError(error => error.WithSource(member.Run.Source));
         if (group.Count == 1)
         {
             return Alone(group[0]);
         }
 
-        var shaped = Shaper.Shape(string.Concat(group.Select(member => member.Text)), font, ShapingSizeOf(sizes, size));
+        var shaped = Shaper.Shape(string.Concat(group.Select(member => member.Text)), font, ShapingSizeOf(sizes, size), FeaturesOf(shaping.Run.Style));
         if (shaped.IsFailure)
         {
             var alone = group.TraverseAll(Alone);
@@ -388,7 +430,7 @@ public static class InlineLayout
                 next++;
             }
 
-            runs.Add(new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. glyphs.Skip(start).Take(next - start)]));
+            runs.Add(new LineBoxes.ShapedRun(member.Run, member.Font.Value, [.. Spaced(glyphs.Skip(start).Take(next - start).ToList(), member.Run.Style)]));
         }
 
         return Result<IEnumerable<LineBoxes.ShapedRun>, Error>.Success(runs);

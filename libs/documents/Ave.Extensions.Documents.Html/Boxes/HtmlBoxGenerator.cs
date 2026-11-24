@@ -451,6 +451,34 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>
+        /// Refuses a letter-spaced text (<c>letter-spacing</c> other than zero) that holds a character whose spacing is not
+        /// measured: a combining mark (Unicode general category M, which Chromium spaces with its base, as one typographic
+        /// character unit) or a format character (category Cf, such as the soft hyphen and the zero width joiners, which may
+        /// get none), at the first such character with its offset. The text is drawn as written under
+        /// <see cref="UnsupportedPolicy.Warn"/>, spaced after each glyph.
+        /// </summary>
+        private void RefuseUnspacedCharacter(StyledText text)
+        {
+            if (SpacingOf(text.Style[PropertyRegistry.Find("letter-spacing")!]) == Length.Zero)
+            {
+                return;
+            }
+
+            var data = text.Text.Data;
+            for (var offset = 0; offset < data.Length; offset++)
+            {
+                if (char.GetUnicodeCategory(data[offset]) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark
+                    or UnicodeCategory.EnclosingMark or UnicodeCategory.Format)
+                {
+                    Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"A mark or a format character (U+{(int)data[offset]:X4}) in letter-spaced text is not drawn in this version: its letter spacing is not measured.")
+                        .With(ErrorMetadataKeys.Value, SpacingText(SpacingOf(text.Style[PropertyRegistry.Find("letter-spacing")!]))).With(ErrorMetadataKeys.Property, "letter-spacing").With(ErrorMetadataKeys.Offset, offset)
+                        .WithSource(_sourceName, text.Text.Position));
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
         /// A text with its <c>text-transform</c> applied (<see cref="TextTransforms"/>), in the language of the element it
         /// lies in. Capitalize looks at the character before the text: the last character of the text before it in the same
         /// inline content, past inline elements without text; a space after an image or at the start (Chromium looks back
@@ -508,6 +536,7 @@ public static partial class HtmlBoxGenerator
                     }
 
                     var preservedTab = RefusePreservedTab(text);
+                    RefuseUnspacedCharacter(text);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
                         var data = Transformed(text, frame, Characters(text.Text));
@@ -694,12 +723,21 @@ public static partial class HtmlBoxGenerator
                     LineHeight = LineHeightOf(element.Style[PropertyRegistry.LineHeight], size),
                     WhiteSpaceCollapse = CollapseOf(element.Style),
                     TextWrapMode = WrapOf(element.Style),
+                    LetterSpacing = SpacingOf(Value(element, "letter-spacing")),
+                    WordSpacing = SpacingOf(Value(element, "word-spacing")),
                 };
             }
 
             _text[element] = style;
             return style;
         }
+
+        /// <summary>A computed letter-spacing or word-spacing as the model's length: zero for normal and 0%. Not put on
+        /// the layout unit: Chromium adds the length as it is (case <c>ls-values</c>: 0.37pt after each of 46 characters
+        /// moves the last word 17.02pt).</summary>
+        private static Length SpacingOf(CssValue? value) => value is CssLength length ? length.Value : Length.Zero;
+
+        private static string SpacingText(Length spacing) => spacing.Points.ToString("0.###", CultureInfo.InvariantCulture) + "pt";
 
         /// <summary>
         /// A margin or padding in Chromium's layout unit of 1/64 CSS px: 25.313pt is laid out as 33.75 px, 25.3125pt

@@ -56,6 +56,19 @@ public static partial class PropertyRegistry
         // Inherited; the value of the text decides, not that of the decorating box.
         yield return Keywords("text-decoration-skip-ink", inherited: true, "auto", ["auto", "none"], ["all"], "all elements", "CSS Text Decoration 4 §2.10.4");
 
+        // letter-spacing: normal is zero (CSS Text 3 §7.2); Chromium writes normal for a zero length, so 0 is kept as normal.
+        yield return new PropertyDefinition(
+            "letter-spacing", inherited: true, new CssKeyword("normal"), "inline boxes and text", "normal | <length>", PropertySupport.Supported,
+            "CSS Text 3 §7.2",
+            reader => ParseSpacing(reader, "letter-spacing", new CssKeyword("normal")),
+            ComputeSpacing);
+
+        // word-spacing: normal computes to zero (CSS Text 4 §7.1; Chromium writes 0px).
+        yield return new PropertyDefinition(
+            "word-spacing", inherited: true, Zero, "text", "normal | <length>", PropertySupport.Supported, "CSS Text 4 §7.1",
+            reader => ParseSpacing(reader, "word-spacing", Zero),
+            ComputeSpacing);
+
         yield return new PropertyDefinition(
             "text-transform", inherited: true, new CssKeyword("none"), "text", "none | capitalize | uppercase | lowercase", PropertySupport.Supported,
             "CSS Text 3 §2.1",
@@ -117,6 +130,41 @@ public static partial class PropertyRegistry
 
         return ParsedValue.Of(lines.Count == 1 ? lines[0] : new CssList([.. lines], CommaSeparated: false));
     }
+
+    /// <summary>
+    /// letter-spacing (CSS Text 3 §7.2) and word-spacing (CSS Text 4 §7.1): <c>normal</c> or a length, negative too, which
+    /// stays relative (<c>em</c>) until it is computed. A zero length is the initial value (<paramref name="zero"/>); so is
+    /// <c>0%</c> of word-spacing, which Chromium 159 keeps as <c>0%</c> (measured). Another percentage, which CSS Text 4
+    /// allows, is refused: it is not measured.
+    /// </summary>
+    private static ParsedValue ParseSpacing(ValueReader reader, string name, CssValue zero)
+    {
+        if (reader.Count == 1 && reader.Keyword("normal") is not null)
+        {
+            return ParsedValue.Of(zero);
+        }
+
+        if (reader.Count != 1 || reader.Length(percentages: true, nonNegative: false, name) is not { } parsed)
+        {
+            return ParsedValue.Invalid($"not a value of {name}");
+        }
+
+        return parsed.Value switch
+        {
+            null => parsed,
+            CssLength { Points: 0 } => ParsedValue.Of(zero),
+            CssPercentage { Value: 0 } when name == "word-spacing" => ParsedValue.Of(new CssPercentage(0)),
+            CssPercentage { Value: 0 } => ParsedValue.Of(zero),
+            CssPercentage => ParsedValue.Refused($"a percentage in '{name}' is not supported: give a length"),
+            CssLength or CssDimension or CssCalc => parsed,
+            _ => ParsedValue.Refused($"'{name}' is supported as normal or a length"),
+        };
+    }
+
+    /// <summary>The computed letter-spacing or word-spacing: the keyword or the percentage as it is, a length absolute
+    /// (an em of the element's own font size).</summary>
+    private static ComputedResult ComputeSpacing(CssValue value, ComputeContext context) =>
+        value is CssKeyword or CssPercentage ? value : context.LengthPercentage(value);
 
     /// <summary>The case transforms of text-transform the engine draws (CSS Text 3 §2.1).</summary>
     private static readonly string[] CaseTransforms = ["capitalize", "uppercase", "lowercase"];

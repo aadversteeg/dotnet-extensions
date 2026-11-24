@@ -53,4 +53,21 @@ public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight Fo
     /// in. A line-through is never cut.
     /// </summary>
     public TextDecorationSkipInk DecorationSkipInk { get; init; } = TextDecorationSkipInk.Auto;
+
+    /// <summary>
+    /// The space added after each typographic character unit of the run (CSS Text 3 §7.2, <c>letter-spacing</c>, inherited,
+    /// as a computed length); zero, the initial value <c>normal</c>, unless set. Added after every character, a space too,
+    /// also after the last one of a line and of the run, so it counts for where the line ends, its alignment and whether
+    /// a word fits; a mark goes with the character before it. Kerning stays; ligatures are not formed where it is not
+    /// zero. May be negative. As Chromium 159 prints it (cases <c>ls-letters</c>, <c>ls-values</c>, <c>ls-align</c>).
+    /// </summary>
+    public Length LetterSpacing { get; init; }
+
+    /// <summary>
+    /// The space added to each word-separator character of the run (CSS Text 4 §7.1, <c>word-spacing</c>, inherited, as a
+    /// computed length): the space U+0020 and the no-break space U+00A0, not the other spaces; zero unless set. A space that
+    /// white-space collapsing removes takes it with it. May be negative. As Chromium 159 prints it (case
+    /// <c>ls-word-spacing</c>).
+    /// </summary>
+    public Length WordSpacing { get; init; }
 }
