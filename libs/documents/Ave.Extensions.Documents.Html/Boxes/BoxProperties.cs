@@ -204,10 +204,12 @@ internal static class BoxProperties
         yield return new("font-weight", "every value, matched exactly", (_, _) => null);
         yield return new("font-style", "normal, italic", (_, _) => null);
         yield return new("font-kerning", "auto, normal (both kern, measured)", (value, _) => IsKeyword(value, "auto") || IsKeyword(value, "normal") ? null : "only kerned text is drawn");
-        foreach (var name in new[] { "font-synthesis-weight", "font-synthesis-style", "font-synthesis-small-caps" })
+        foreach (var name in new[] { "font-synthesis-weight", "font-synthesis-style" })
         {
-            yield return new(name, "both values: the engine never synthesises, and a missing face is refused", (_, _) => null);
+            yield return new(name, "both values: none takes the nearest face plainly where the family has no face of the weight or style (FontMatcher); auto refuses it, as the engine never synthesises", (_, _) => null);
         }
+
+        yield return new("font-synthesis-small-caps", "both values: the engine never synthesises, and a missing face is refused", (_, _) => null);
 
         // CSS Inline 3 §5.1, CSS Text 3 §6.1, CSS Fragmentation 3 §3.3: inherited, read for every box with lines.
         yield return new("line-height", "every value", (_, _) => null);

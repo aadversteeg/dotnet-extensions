@@ -347,6 +347,15 @@ fr-row-later-page-padding-overflows equal
 fr-row-later-page-padding-overflows-three-cells listed Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again: page 3 'z' baseline 26.25 (laid out at 25.875), Chromium 44.25 (print.txt)
 fr-row-later-page-padding-overflows-two-cells listed Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again: page 3 'z' baseline 27 (laid out at 26.625), Chromium 39 (print.txt)
 fr-row-later-page-padding-overflows-two-cells-pad-6 listed Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again: page 3 'z' baseline 26.25 (laid out at 25.875), Chromium 32.25 (print.txt)
+fs-none-regular-bold equal
+fs-none-regular-only equal
+gf-initial-body equal
+gf-initial-keywords equal
+gf-initial-margin-box equal
+gf-list-generic equal
+gm-nbhyphen-lato equal
+gm-nbhyphen-theano refused Documents.Font.GlyphMissing U+2011 at 9:14
+gm-spaces-roboto refused Documents.Font.GlyphMissing U+00A0 at 9:11
 h-break-after-last equal
 h-break-after-last-nested equal
 h-char-cr equal

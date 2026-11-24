@@ -1420,6 +1420,42 @@ public class MeasuredReferenceFilesTests
         ["h-break-after-last-nested.lines.txt"] = 0,
         ["h-break-after-last-nested.print.txt"] = 3,
         ["h-break-after-last-nested.words.txt"] = 2,
+        ["gf-initial-body.boxes.txt"] = 1,
+        ["gf-initial-body.lines.txt"] = 0,
+        ["gf-initial-body.print.txt"] = 29,
+        ["gf-initial-body.words.txt"] = 28,
+        ["gf-initial-keywords.boxes.txt"] = 1,
+        ["gf-initial-keywords.lines.txt"] = 0,
+        ["gf-initial-keywords.print.txt"] = 22,
+        ["gf-initial-keywords.words.txt"] = 21,
+        ["gf-initial-margin-box.boxes.txt"] = 1,
+        ["gf-initial-margin-box.lines.txt"] = 0,
+        ["gf-initial-margin-box.print.txt"] = 5,
+        ["gf-initial-margin-box.words.txt"] = 4,
+        ["gf-list-generic.boxes.txt"] = 1,
+        ["gf-list-generic.lines.txt"] = 0,
+        ["gf-list-generic.print.txt"] = 18,
+        ["fs-none-regular-bold.boxes.txt"] = 1,
+        ["fs-none-regular-bold.lines.txt"] = 0,
+        ["fs-none-regular-bold.print.txt"] = 17,
+        ["fs-none-regular-bold.words.txt"] = 16,
+        ["fs-none-regular-only.boxes.txt"] = 1,
+        ["fs-none-regular-only.lines.txt"] = 0,
+        ["fs-none-regular-only.print.txt"] = 18,
+        ["fs-none-regular-only.words.txt"] = 17,
+        ["gf-list-generic.words.txt"] = 17,
+        ["gm-nbhyphen-lato.boxes.txt"] = 1,
+        ["gm-nbhyphen-lato.lines.txt"] = 0,
+        ["gm-nbhyphen-lato.print.txt"] = 13,
+        ["gm-nbhyphen-lato.words.txt"] = 12,
+        ["gm-nbhyphen-theano.boxes.txt"] = 1,
+        ["gm-nbhyphen-theano.lines.txt"] = 0,
+        ["gm-nbhyphen-theano.print.txt"] = 15,
+        ["gm-nbhyphen-theano.words.txt"] = 6,
+        ["gm-spaces-roboto.boxes.txt"] = 1,
+        ["gm-spaces-roboto.lines.txt"] = 0,
+        ["gm-spaces-roboto.print.txt"] = 21,
+        ["gm-spaces-roboto.words.txt"] = 20,
         ["h-break-after-last.boxes.txt"] = 1,
         ["h-break-after-last.lines.txt"] = 0,
         ["h-break-after-last.print.txt"] = 3,
@@ -2897,9 +2933,10 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(713);
-        cases.Should().HaveCount(713);
-        cases.Should().HaveCount(713);
+        cases.Should().HaveCount(722);
+        cases.Should().HaveCount(722);
+        cases.Should().HaveCount(722);
+        cases.Should().HaveCount(722);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

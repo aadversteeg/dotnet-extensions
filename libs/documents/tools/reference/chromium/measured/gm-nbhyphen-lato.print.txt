@@ -1,0 +1,13 @@
+page 1 300.000 240.000
+word 1 12.000 73.427 24.000 12.000 well‑known #000000 Lato-Regular
+word 1 76.499 95.879 24.000 12.000 and #000000 Lato-Regular
+word 1 98.705 160.132 24.000 12.000 well‐known #000000 Lato-Regular
+word 1 163.204 182.584 24.000 12.000 and #000000 Lato-Regular
+word 1 185.410 246.837 24.000 12.000 well-known #000000 Lato-Regular
+word 1 12.000 39.381 51.750 19.995 x‑y #000000 Lato-Regular
+word 1 43.997 76.027 51.750 19.995 z‐w #000000 Lato-Regular
+word 1 12.000 94.073 74.250 12.000 aaaa‑bbbbbbbb #000000 Lato-Regular
+word 1 12.000 23.358 88.500 12.000 cc #000000 Lato-Regular
+word 1 12.000 40.320 108.750 12.000 aaaa‐ #000000 Lato-Regular
+word 1 12.000 65.759 123.000 12.000 bbbbbbbb #000000 Lato-Regular
+word 1 12.000 23.358 137.250 12.000 cc #000000 Lato-Regular

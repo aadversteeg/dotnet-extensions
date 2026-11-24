@@ -402,6 +402,7 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | nesting of arrays and structures in one XMP property | 64 levels | `Pdf/Xmp/XmpPacket.cs` | `Documents.Pdf.Write.NestedTooDeep` |
 | a length in the front-end | 14 400 pt | `Fluent/InputLimits.cs` | the property's `Documents.Input.Invalid.*` code |
 | an HTML document | 2^24 UTF-16 code units (bytes are checked against the same number); nesting 512 elements, the depth at which Chromium stops nesting; 2^18 elements and 2^20 nodes made, the elements the parser opens again or clones included; selectedcontent clones 4 nodes and characters per input character, at least 65 536; 10 000 diagnostics kept | `Html.Parsing/HtmlInputLimits.cs`, `Html.Parsing/TreeBuilding/TreeBuilder.Select.cs` | `Documents.Html.TooLarge`, `TooDeep` (the parse fails); `Documents.TooManyDiagnostics` (the last diagnostic) |
+| characters without a glyph one HTML document is refused for | 64, each pair of face and character once, in source order | `Html/Boxes/HtmlBoxGenerator.cs` (`MaxMissingGlyphs`) | `Documents.Font.GlyphMissing`, in both modes; the characters past the limit are not reported |
 | a style sheet | 2^24 UTF-16 code units; as bytes, 3 × 2^24 before decoding (UTF-8 takes at most 3 bytes per code unit), then 2^24 code units; nesting of blocks, functions and rules 64 | `Css/CssInputLimits.cs` | `Documents.Css.TooLarge`, `TooDeep` (the reading fails; a style resolution fails with it) |
 | nesting of selectors (pseudo-class arguments and nested style rules together) | 32 levels below the top one (a style rule and 32 nested in it) | `Css/CssInputLimits.cs` | `Documents.Css.TooDeep` (the style resolution fails) |
 | work of one cascade | 2^26 units: a matching fact computed, a simple selector tested, 64 characters compared, a sibling counted, a rule or declaration collected, a candidate looked at, a comparison of a sort, a var() reference followed | `Css/CssInputLimits.cs` (`MaxCascadeWork`) | `Documents.Css.TooLarge` (the style resolution fails) |
@@ -626,7 +627,7 @@ Where each rule lives:
 | block, inline and none; anonymous block boxes (CSS 2.1 §9.2.1.1); white space between blocks makes no box (§9.2.2.1); roles (h1–h6, p); the walk with an explicit stack; ids in pre-order; the nesting limit | `Html/Boxes/HtmlBoxGenerator.cs` |
 | white-space collapsing across inline element boundaries (CSS Text 3 §4.1.1) | inline layout (`Typesetting/WhiteSpaceCollapsing.cs`), for both front-ends: box generation hands the text on as written, and each inline element starts with an empty run in its style, which carries its line height (CSS 2.1 §10.8.1) |
 | which computed values are drawn, and every refusal | `Html/Boxes/BoxProperties.cs`, one row per registry longhand |
-| font matching: `@font-face` (TrueType, through the resolver, loaded when first needed), then the caller's fonts; first family with a face; exact weight and style | `Html/Boxes/FontMatcher.cs` |
+| font matching: `@font-face` (TrueType, through the resolver, loaded when first needed), then the caller's fonts; first family with a face; exact weight and style. A generic family is the family the caller maps it to (`GenericFamilies`: `Standard`, `Serif`, `SansSerif`, `Monospace`), looked up as a written name; one the caller does not map is refused, as is a list that runs out. The initial value is the registry's one value, which `initial`, `inherit`, `unset` and `revert` pass on as it is: the name "Times New Roman" (an `@font-face` rule or a caller's font of it), then `Standard`; a written "Times New Roman" is a name like any other. Equal to Chromium is measured for the written-out family (cases `gf-*`); that a mapping prints exactly as the written-out family is shown page model by page model (`GenericFamilyTests`) | `Html/Boxes/FontMatcher.cs`, `Html/Boxes/GenericFamilies.cs` |
 | `@page`: size and margins of rules without a selector, Chromium's rounding of the page | `Html/Boxes/PageRules.cs` |
 | line height in Chromium's layout unit (a length rounded to 1/64 px, a number times the font size floored to it) | `HtmlBoxGenerator.LineHeightOf` |
 | `font-variant-numeric`, `font-feature-settings`: the feature tags of a text | `HtmlBoxGenerator.FeaturesOf`; the tags in `Core/OptionalFontFeatures.cs` |
@@ -1465,8 +1466,11 @@ Each is documented next to its code as well.
   ones (`hb-unicode.hh`, `_hb_modified_combining_class`: Hebrew, Arabic shadda, Telugu, Thai, Tibetan), so marks of
   those scripts can come in another order; after a reorder that then composes, the clusters (which glyph carries which
   characters) differ while glyphs and positions agree; Unicode variation sequences (cmap format 14) are not read, the
-  default glyph is drawn; the fallbacks for a missing space and for U+2011 are not made (the text is refused with
-  `GlyphMissing`) (`Typesetting/Unicode/Normalization.cs`). The variation selector and the two fallbacks are pinned
+  default glyph is drawn; the fallback for a missing space is not made (the text is refused with `GlyphMissing`;
+  Chromium draws such a space from a font of the system, case `gm-spaces-roboto`), while U+2011 in a font without it is
+  drawn with the font's U+2010 glyph, as HarfBuzz does and Chromium prints (case `gm-nbhyphen-lato`; a font without
+  U+2010 too has it refused, case `gm-nbhyphen-theano`) (`Typesetting/Unicode/Normalization.cs`, `Typesetting/Shaper.cs`
+  `StandIn`). The variation selector and the two fallbacks are pinned
   against HarfBuzz (`NormalizationReferenceTests`); the enclosing mark, the combining classes, the clusters after a
   reorder and the variation sequences need a font the family's tests do not have, and are not pinned. A zero width joiner between a base and a mark: the shaper
   skips it and attaches the mark; HarfBuzz applies `mark` with manual joiners and leaves the mark unattached. In the
@@ -1492,9 +1496,12 @@ Each is documented next to its code as well.
   return to be shown as visible glyphs; for U+000B, U+000C and U+0085 the two rules conflict, and the engine follows
   §5.5.) A
   soft hyphen (U+00AD) shows a hyphen only where the line breaks. Default-ignorable characters, such as U+2060 WORD
-  JOINER and the zero-width space, take no space and need no glyph. A character the font has no glyph for is the
-  error `GlyphMissing`; there is no fallback font and no substitute character: U+2011 NON-BREAKING HYPHEN, which Lato
-  lacks, is refused where HarfBuzz would draw the ordinary hyphen. A hyphen before a letter that follows a space or an
+  JOINER and the zero-width space, take no space and need no glyph (`Shaper.NeedsNoGlyph`). A character the font has
+  no glyph for is the error `GlyphMissing`; there is no fallback font and no substitute character, except U+2011
+  NON-BREAKING HYPHEN, drawn with the font's U+2010 glyph where the font has that one (above). The HTML front-end
+  refuses every such character of a document before layout, each pair of face and character once, at the character's
+  line and column (a page-margin box's: its `content` declaration), up to the limit in "Bounded work"; the message names
+  the face, the `font-family` list and a later family of that list that has the character. A hyphen before a letter that follows a space or an
   image in the line keeps the letter on its line (UAX #14 LB20a: "( sot | BK | CR | LF | NL | SP | ZW | CB | GL ) ( HY |
   HH ) × ( AL | HL )"); Chromium breaks after such a hyphen all the same (case `ii-hyphen`,
   `InlineImageTests.A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it`).

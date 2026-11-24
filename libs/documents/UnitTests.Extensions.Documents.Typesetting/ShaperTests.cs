@@ -50,14 +50,40 @@ public class ShaperTests
     }
 
     [Fact]
-    public void A_non_breaking_hyphen_the_font_lacks_is_a_missing_glyph_not_a_hyphen()
+    public void A_non_breaking_hyphen_the_font_lacks_is_drawn_with_its_hyphen_U_2010()
     {
-        // A documented limit (docs/architecture.md, Known limits, Text): Lato maps U+2010 and U+002D but not U+2011
-        // (fontTools getBestCmap), and the shaper does not substitute another hyphen for it.
-        var error = Shaper.Shape("a" + (char)0x2011 + "b", TestFonts.Regular, 10).Error;
+        // Lato maps U+2010 and U+002D but not U+2011 (fontTools getBestCmap): the glyph of U+2010 stands in, with its
+        // advance, and the text stays U+2011 (case gm-nbhyphen-lato).
+        var shaped = Shaper.Shape("a\u2011b", TestFonts.Regular, 10);
+        var hyphen = Shaper.Shape("a\u2010b", TestFonts.Regular, 10).Value[1];
+
+        shaped.IsSuccess.Should().BeTrue(shaped.IsFailure ? shaped.Error.ToString() : string.Empty);
+        shaped.Value[1].Glyph.Should().Be(hyphen.Glyph);
+        shaped.Value[1].Advance.Should().Be(hyphen.Advance);
+        shaped.Value[1].Text.Should().Be("\u2011");
+        Shaper.MissingCharacters("a\u2011b", TestFonts.Regular).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_non_breaking_hyphen_is_missing_in_a_font_without_U_2010()
+    {
+        // Theano Didot has U+002D only; Chromium takes U+2011 from a font of the system there (case gm-nbhyphen-theano).
+        var error = Shaper.Shape("a\u2011b", TestFonts.TheanoDidot, 10).Error;
 
         error.Code.Should().Be(FontErrorCodes.GlyphMissing);
         error.Metadata![ErrorMetadataKeys.CodePoint].Should().Be("U+2011");
+        Shaper.MissingCharacters("a\u2011b", TestFonts.TheanoDidot).Should().Equal((1, new System.Text.Rune(0x2011)));
+    }
+
+    [Fact]
+    public void The_missing_characters_are_those_shaping_refuses_with_their_offsets()
+    {
+        // A precomposed character the font lacks whose parts it has is not missing (Theano Didot has no U+01D5 but has
+        // U+00DC and U+0304); a surrogate pair is one character; characters that need no glyph are never missing.
+        TestFonts.TheanoDidot.GlyphFor(new System.Text.Rune(0x01D5)).HasValue.Should().BeFalse();
+        Shaper.MissingCharacters("\u01D5", TestFonts.TheanoDidot).Should().BeEmpty();
+        Shaper.MissingCharacters("a\U0001F600b\u00AD\u200B\u2060\u6F22", TestFonts.Regular)
+            .Should().Equal((1, new System.Text.Rune(0x1F600)), (7, new System.Text.Rune(0x6F22)));
     }
 
     [Fact]

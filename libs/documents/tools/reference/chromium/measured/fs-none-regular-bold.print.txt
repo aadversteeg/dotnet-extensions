@@ -1,0 +1,17 @@
+page 1 300.000 300.000
+word 1 12.000 40.182 24.000 12.000 alpha #000000 Lato-Regular
+word 1 43.254 67.847 24.000 12.000 italic #000000 Lato-Regular
+word 1 12.000 42.198 44.250 12.000 bravo #000000 Lato-Bold
+word 1 45.108 68.609 44.250 12.000 bold #000000 Lato-Bold
+word 1 71.519 96.935 44.250 12.000 italic #000000 Lato-Bold
+word 1 12.000 47.556 64.500 12.000 charlie #000000 Lato-Bold
+word 1 50.472 98.753 64.500 12.000 semibold #000000 Lato-Bold
+word 1 12.000 38.154 84.750 12.000 delta #000000 Lato-Regular
+word 1 41.226 83.597 84.750 12.000 medium #000000 Lato-Regular
+word 1 12.000 37.860 105.000 12.000 echo #000000 Lato-Bold
+word 1 40.770 68.309 105.000 12.000 extra #000000 Lato-Bold
+word 1 71.219 94.721 105.000 12.000 bold #000000 Lato-Bold
+word 1 12.000 47.946 125.250 12.000 foxtrot #000000 Lato-Regular
+word 1 51.011 73.883 125.250 12.000 light #000000 Lato-Regular
+word 1 12.000 39.210 149.250 15.997 golf #000000 Lato-Bold
+word 1 42.784 80.224 149.250 15.997 black #000000 Lato-Bold

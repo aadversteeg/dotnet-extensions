@@ -729,14 +729,7 @@ internal sealed partial class TreeBuilder
             parent.Insert(text, before);
         }
 
-        if (c > 0xFFFF)
-        {
-            text.Data.Append(char.ConvertFromUtf32(c));
-        }
-        else
-        {
-            text.Data.Append((char)c);
-        }
+        text.Append(c, source);
     }
 
     /// <summary>"Insert a comment", at the appropriate place or at the place given.</summary>

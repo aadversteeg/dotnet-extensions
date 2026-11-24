@@ -1,0 +1,5 @@
+page 1 400.080 300.000
+word 1 49.992 68.991 33.000 9.997 Golf #008000 TheanoDidot-Regular
+word 1 50.250 71.415 75.000 7.995 Alpha #ff0000 TheanoDidot-Regular
+word 1 50.250 70.608 93.750 7.995 Bravo #ff0000 Lato-Regular
+word 1 326.848 350.989 273.000 9.997 Hotel #008000 TheanoDidot-Regular

@@ -197,14 +197,89 @@ public static class Shaper
         var properties = UnicodeProperties.Of(character.Value);
         var traits = properties.Traits;
         var isLineBreak = IsMandatoryBreak(character);
-        if ((traits & CharacterTraits.DefaultIgnorable) != 0 || isLineBreak)
+        if (NeedsNoGlyph(character))
         {
             return Result<GlyphItem, Error>.Success(new GlyphItem(new GlyphId(0), text, GlyphClass.Base) { IsDefaultIgnorable = true, IsLineBreak = isLineBreak });
         }
 
         var isNonspacingMark = (traits & CharacterTraits.NonspacingMark) != 0;
-        return font.RequireGlyph(character)
+        return (StandIn(character, font) is { } standIn ? Result<GlyphId, Error>.Success(standIn) : font.RequireGlyph(character))
             .OnSuccessMap(glyph => new GlyphItem(glyph, text, filter.ClassOf(glyph, isNonspacingMark)));
+    }
+
+    /// <summary>
+    /// The glyph of another character a font draws a character with when it has none of its own: the no-break hyphen
+    /// U+2011 with the hyphen U+2010, as Chromium 159 prints it (measured: case <c>gm-nbhyphen-lato</c>, Lato at 12 and
+    /// 20 pt, the advance of U+2010's glyph, no line break at it, the text read back as U+2011). A face without U+2010
+    /// has no stand-in: Chromium takes both from a font of the system there (case <c>gm-nbhyphen-theano</c>), so the
+    /// character is missing. Nothing stands in for a space (case <c>gm-spaces-roboto</c>: a face without the spaces, and
+    /// without U+0020, has them drawn from a font of the system). Null when nothing stands in.
+    /// </summary>
+    private static GlyphId? StandIn(Rune character, TrueTypeFont font) =>
+        character.Value == 0x2011 && !font.GlyphFor(character).HasValue && font.GlyphFor(new Rune(0x2010)) is { HasValue: true } hyphen
+            ? hyphen.Value
+            : null;
+
+    /// <summary>
+    /// Whether a character is never missing from a font, whatever its 'cmap' holds: a default-ignorable character
+    /// (Default_Ignorable_Code_Point, DerivedCoreProperties.txt; among them the soft hyphen U+00AD, the zero width space
+    /// U+200B, the joiners U+200C and U+200D, the word joiner U+2060, U+FEFF and the variation selectors), which is not
+    /// displayed, and a mandatory line break (UAX #14 classes BK, CR, LF and NL), which ends a line. A soft hyphen at
+    /// which a line breaks is drawn as the font's hyphen, or not at all (<see cref="ShapeLinePiece(string, TrueTypeFont, double, bool, LineShapingBudget)"/>).
+    /// </summary>
+    /// <param name="character">The character.</param>
+    /// <returns>True when it needs no glyph.</returns>
+    public static bool NeedsNoGlyph(Rune character) =>
+        (UnicodeProperties.Of(character.Value).Traits & CharacterTraits.DefaultIgnorable) != 0 || IsMandatoryBreak(character);
+
+    /// <summary>
+    /// The characters of a text that <see cref="Shape(string, TrueTypeFont, double)"/> refuses in a font, in text order,
+    /// each with the offset (in UTF-16 code units) of the cluster it belongs to: the same pieces, the same normalization
+    /// for the font (a character the font lacks that decomposes into characters it has is not missing) and the same
+    /// characters that need no glyph (<see cref="NeedsNoGlyph"/>). Text that is not valid UTF-16 has none here; shaping
+    /// refuses it on its own. The work is in proportion to the text's length.
+    /// </summary>
+    /// <param name="text">The text, already white-space collapsed.</param>
+    /// <param name="font">The font.</param>
+    /// <returns>The offset and the character of each one missing.</returns>
+    public static ImmutableArray<(int Offset, Rune Character)> MissingCharacters(string text, TrueTypeFont font)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(font);
+        var characters = Characters(text);
+        if (characters.IsFailure)
+        {
+            return [];
+        }
+
+        var runes = characters.Value;
+        var offsets = new int[runes.Length + 1];
+        for (var i = 0; i < runes.Length; i++)
+        {
+            offsets[i + 1] = offsets[i] + runes[i].Utf16SequenceLength;
+        }
+
+        var missing = ImmutableArray.CreateBuilder<(int, Rune)>();
+        foreach (var piece in ScriptRuns(runes).SelectMany(run => SplitAfterLineBreaks(runes, run)))
+        {
+            var offset = offsets[piece.Start];
+            var cluster = offset;
+            foreach (var normalized in Normalization.ForFont([.. runes.Skip(piece.Start).Take(piece.Length)], codePoint => font.GlyphFor(new Rune(codePoint)).HasValue))
+            {
+                if (normalized.Text.Length > 0)
+                {
+                    cluster = offset;
+                    offset += normalized.Text.Length;
+                }
+
+                if (!NeedsNoGlyph(normalized.Character) && !font.GlyphFor(normalized.Character).HasValue && StandIn(normalized.Character, font) is null)
+                {
+                    missing.Add((cluster, normalized.Character));
+                }
+            }
+        }
+
+        return missing.ToImmutable();
     }
 
     /// <summary>Shapes each piece of the text (a script run, cut after every forced line break) on its own, under ONE

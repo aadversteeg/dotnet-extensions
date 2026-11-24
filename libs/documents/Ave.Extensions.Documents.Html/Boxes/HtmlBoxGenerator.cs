@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Html.Parsing;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
@@ -47,6 +49,10 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// </remarks>
 public static partial class HtmlBoxGenerator
 {
+    /// <summary>The most characters without a glyph one document is refused for, each pair of face and character once:
+    /// the rest are not reported.</summary>
+    public const int MaxMissingGlyphs = 64;
+
     /// <summary>The elements whose rendering no property says, which box generation does not draw.</summary>
     internal static readonly IReadOnlyDictionary<string, string> RefusedRenderings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -80,6 +86,12 @@ public static partial class HtmlBoxGenerator
     {
         ArgumentNullException.ThrowIfNull(styled);
         ArgumentNullException.ThrowIfNull(options);
+        var problems = (options.GenericFamilies ?? GenericFamilies.None).Problems().ToList();
+        if (problems.Count > 0)
+        {
+            return Result<HtmlBoxes, Error>.Failure(Combined(problems));
+        }
+
         var run = new Run(styled, options);
         var document = run.Generate();
         if (run.Failures.Count > 0)
@@ -155,6 +167,8 @@ public static partial class HtmlBoxGenerator
         private readonly Dictionary<StyledElement, HashSet<string>> _refused = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<StyledElement, TextStyle?> _text = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<StyledElement, TextStyle?> _decorated = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<StyledElement, TrueTypeFont> _faces = new(ReferenceEqualityComparer.Instance);
+        private readonly HashSet<(TrueTypeFont Face, int CodePoint)> _missingGlyphs = [];
         private int _nextId;
         private bool _tooDeep;
 
@@ -217,7 +231,7 @@ public static partial class HtmlBoxGenerator
         {
             var data = text.Data;
             var first = -1;
-            for (var i = 0; i < data.Length && first < 0; i += Length(data, i))
+            for (var i = 0; i < data.Length && first < 0; i += UnitsAt(data, i))
             {
                 first = IsDrawn(data, i) ? -1 : i;
             }
@@ -232,7 +246,7 @@ public static partial class HtmlBoxGenerator
             var count = 0;
             for (var i = first; i < data.Length;)
             {
-                var length = Length(data, i);
+                var length = UnitsAt(data, i);
                 if (IsDrawn(data, i))
                 {
                     kept.Append(data, i, length);
@@ -245,27 +259,102 @@ public static partial class HtmlBoxGenerator
                 i += length;
             }
 
-            var codePoint = Length(data, first) == 2 ? char.ConvertToUtf32(data[first], data[first + 1]) : data[first];
+            var codePoint = UnitsAt(data, first) == 2 ? char.ConvertToUtf32(data[first], data[first + 1]) : data[first];
             var others = count == 1 ? string.Empty : $" ({count.ToString(CultureInfo.InvariantCulture)} such characters in this text)";
             var error = new Error(HtmlStyleErrorCodes.Unsupported.Character, $"The character U+{codePoint:X4} is not drawn in this version{others}: only text, tab, line feed and carriage return are.")
                 .With(ErrorMetadataKeys.Value, $"U+{codePoint:X4}").With(ErrorMetadataKeys.Offset, first).With(ErrorMetadataKeys.Count, count);
             Refusals.Add(error.WithSource(_sourceName, text.Position));
             return kept.ToString();
+        }
 
-            // A surrogate pair is one character; a lone surrogate is one code unit.
-            static int Length(string data, int i) => char.IsHighSurrogate(data[i]) && i + 1 < data.Length && char.IsLowSurrogate(data[i + 1]) ? 2 : 1;
+        /// <summary>The code units of the character at an index: a surrogate pair is one character; a lone surrogate is
+        /// one code unit.</summary>
+        private static int UnitsAt(string data, int i) => char.IsHighSurrogate(data[i]) && i + 1 < data.Length && char.IsLowSurrogate(data[i + 1]) ? 2 : 1;
 
-            static bool IsDrawn(string data, int i)
+        /// <summary>Whether the character at an index is one <see cref="Characters"/> keeps.</summary>
+        private static bool IsDrawn(string data, int i)
+        {
+            var unit = data[i];
+            if (UnitsAt(data, i) == 2)
             {
-                var unit = data[i];
-                if (Length(data, i) == 2)
+                return (char.ConvertToUtf32(unit, data[i + 1]) & 0xFFFE) != 0xFFFE;
+            }
+
+            return !char.IsSurrogate(unit)
+                && (unit is '\t' or '\n' or '\r' || !(char.IsControl(unit) || unit is '\u2028' or '\u2029' || unit is >= '\uFDD0' and <= '\uFDEF' || (unit & 0xFFFE) == 0xFFFE));
+        }
+
+        /// <summary>
+        /// Refuses, in both modes, each character of a text that the face of its element has no glyph for: the engine
+        /// takes no glyph from another font and draws no box for a missing one. Each pair of face and character is
+        /// refused once, at its first place in the order the text is met (the source order of the document's text), up
+        /// to <see cref="MaxMissingGlyphs"/> in a document. What is never missing: the characters that need no glyph
+        /// (<c>Shaper.NeedsNoGlyph</c>), the white space that collapses under the text's <c>white-space-collapse</c> (it is
+        /// drawn as a space or not at all), a preserved tab (refused on its own and drawn as a space,
+        /// <see cref="RefusePreservedTab"/>), and the characters <see cref="Characters"/> refuses on their own. The rest is
+        /// the shaper's own rule (<see cref="HtmlBoxOptions.MissingCharacters"/>), so a text this lets through is shaped.
+        /// Without that option nothing is checked here.
+        /// </summary>
+        /// <param name="data">The text as written (before white space collapses).</param>
+        /// <param name="element">The element whose face draws it.</param>
+        /// <param name="place">The place of an offset in <paramref name="data"/>: the character's own place for text from
+        /// the document, the declaration for generated text.</param>
+        private void RefuseMissingGlyphs(string data, StyledElement element, Func<int, TextPosition> place)
+        {
+            if (options.MissingCharacters is not { } missingCharacters || _missingGlyphs.Count >= MaxMissingGlyphs || !_faces.TryGetValue(element, out var face))
+            {
+                return;
+            }
+
+            var mode = CollapseOf(element.Style);
+            var checkedText = new StringBuilder(data.Length);
+            for (var i = 0; i < data.Length;)
+            {
+                var length = UnitsAt(data, i);
+                if (!IsDrawn(data, i) || CollapsesUnder(data[i], mode) || data[i] == '\t')
                 {
-                    return (char.ConvertToUtf32(unit, data[i + 1]) & 0xFFFE) != 0xFFFE;
+                    // A character that needs no glyph keeps every offset where it is.
+                    checkedText.Append('\u200B', length);
+                }
+                else
+                {
+                    checkedText.Append(data, i, length);
                 }
 
-                return !char.IsSurrogate(unit)
-                    && (unit is '\t' or '\n' or '\r' || !(char.IsControl(unit) || unit is '\u2028' or '\u2029' || unit is >= '\uFDD0' and <= '\uFDEF' || (unit & 0xFFFE) == 0xFFFE));
+                i += length;
             }
+
+            foreach (var (offset, character) in missingCharacters(checkedText.ToString(), face))
+            {
+                if (_missingGlyphs.Count >= MaxMissingGlyphs)
+                {
+                    return;
+                }
+
+                // The font raises the error; a character the face has after all (a caller's rule) is not refused.
+                if (face.RequireGlyph(character) is { IsFailure: true } raised && _missingGlyphs.Add((face, character.Value)))
+                {
+                    var later = Fonts.Describe(element.Style, face, other => missingCharacters(character.ToString(), other).IsEmpty);
+                    Failures.Add(MissingGlyph(raised.Error, face, character, later).WithSource(_sourceName, place(offset)));
+                }
+            }
+        }
+
+        /// <summary>The refusal of a character a face has no glyph for: the font's own error (its code, face, character
+        /// and code point, <see cref="TrueTypeFont.RequireGlyph"/>), with a message that names the character, its code
+        /// point, the face, the family list in effect and what to do; and the later family of that list that has it, when
+        /// one does.</summary>
+        private static Error MissingGlyph(Error raised, TrueTypeFont face, Rune character, (string Families, string? Later) list)
+        {
+            var (families, later) = list;
+            var codePoint = $"U+{character.Value:X4}";
+            var hint = later is null
+                ? string.Empty
+                : $" The family '{later}' of the list has it: set '{later}' on an element around the character.";
+            return new Error(raised.Code,
+                    $"The character '{character}' ({codePoint}) has no glyph in the face '{face.Names.PostScriptName}' that {families} gives here, and the engine takes no glyph from another font: put the character in an element whose font has it, or use an image.{hint}",
+                    raised.Metadata)
+                .With(ErrorMetadataKeys.Value, codePoint);
         }
 
         /// <summary>
@@ -613,6 +702,7 @@ public static partial class HtmlBoxGenerator
                     RefuseUnspacedCharacter(text);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
+                        RefuseMissingGlyphs(text.Text.Data, frame.Element, text.Text.PositionOf);
                         var data = Transformed(text, frame, Characters(text.Text));
                         frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, Source(text.Text.Position)));
                     }
@@ -890,6 +980,7 @@ public static partial class HtmlBoxGenerator
             }
             else
             {
+                _faces[element] = face.Value;
                 var size = element.Style[PropertyRegistry.FontSize] is CssLength length ? length.Value : Length.FromPoints(PropertyRegistry.InitialFontSizePoints);
                 var color = Value(element, "color") is { } value && ColorOf(value) is { } drawn ? drawn : new Color(0, 0, 0);
                 style = new TextStyle(face.Value.Names.Family, size, new FontWeight(face.Value.Metrics.WeightClass), color,

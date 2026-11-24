@@ -71,6 +71,7 @@ public class LimitsTableTests
         ["points of one glyph outline, components included"] = ("65 536", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxPoints", 65_536)]),
         ["component references one glyph outline visits"] = ("65 536", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxComponents", 65_536)]),
         ["nesting of composite glyphs"] = ("64 levels", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxDepth", 64)]),
+        ["characters without a glyph one HTML document is refused for"] = ("64, each pair of face and character once, in source order", [C("Html", "Html.Boxes.HtmlBoxGenerator", "MaxMissingGlyphs", 64)]),
     };
 
     /// <summary>Per row, the "Where" and "Error" cells: where the limit is enforced and what reaching it gives.</summary>
@@ -106,6 +107,7 @@ public class LimitsTableTests
         ["component references one glyph outline visits"] = ("`Fonts/Tables/GlyphOutlineDecoder.cs`", "`Documents.Font.Parse.InvalidValue`"),
         ["nesting of composite glyphs"] = ("`Fonts/Tables/GlyphOutlineDecoder.cs`", "`Documents.Font.Parse.InvalidValue`"),
         ["segments of one filled path, its contours together, for both back-ends"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel`"),
+        ["characters without a glyph one HTML document is refused for"] = ("`Html/Boxes/HtmlBoxGenerator.cs` (`MaxMissingGlyphs`)", "`Documents.Font.GlyphMissing`, in both modes; the characters past the limit are not reported"),
         ["clips open one inside the other on a page, for both back-ends"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel`"),
         ["slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`)"] = ("`Layout/MonolithicSlices.cs`", "`Documents.Layout.TooManySlices`"),
         ["slices of one document, all pieces together (`MonolithicOverflow.Slice`)"] = ("`Layout/MonolithicSlices.cs`, `Layout/Paginator.cs`", "`Documents.Layout.TooManySlices` (the message names the limit for one document)"),

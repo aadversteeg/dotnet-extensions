@@ -52,8 +52,8 @@ names nothing.
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |
 | `font-style` | yes | `normal` | `normal \| italic` | CSS Fonts 4 §2.4 |
 | `font-synthesis-small-caps` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
-| `font-synthesis-style` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
-| `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
+| `font-synthesis-style` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: under none the nearest face is taken plainly, under auto a missing face is an error) |
+| `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: under none the nearest face is taken plainly, under auto a missing face is an error) |
 | `font-variant-numeric` | yes | `normal` | `normal \| [ lining-nums \| oldstyle-nums ] \|\| [ proportional-nums \| tabular-nums ] \|\| ordinal` | CSS Fonts 4 §6.7 |
 | `font-weight` | yes | `400` | `normal \| bold \| bolder \| lighter \| <number [1,1000]>` | CSS Fonts 4 §2.2 |
 | `height` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
@@ -516,6 +516,81 @@ place: the corner and side boxes, other page selectors, `width` and `height` on 
 margins of `@page :first`, and content wider than its box (`Documents.Layout.MarginBoxOverflow`), which
 Chromium draws over its neighbours. Content taller than its box is drawn as Chromium draws it: from the top of
 the box whatever its vertical alignment, unclipped, under the body; the box keeps its height.
+
+## Fonts
+
+There are no system fonts. A family name the document writes is taken from its `@font-face` rules (the first TrueType
+source, through the caller's resolver), then from the caller's fonts (`HtmlRenderOptions.Fonts`). The first family of a
+`font-family` list that has any face is the family of the text, and it must have the computed weight and style
+exactly: no synthesis, no fallback per character. Where a browser would synthesise bold or italic, the face is
+refused ("… Give the face, or write font-synthesis: none to print in the nearest face."). Under
+`font-synthesis-weight: none` a face of another weight is taken, under `font-synthesis-style: none` one of another
+style, plainly, the nearest by CSS Fonts 4 §5.2 (the style first, then the weight: from 400 to 500 the heavier ones up
+to 500, then the lighter, then those above 500; below 400 the lighter first; above 500 the heavier first), as Chromium
+159 prints it (cases `fs-none-regular-only`, `fs-none-regular-bold`: 600 and 800 take a 700 face, 500 and 300 a 400
+face, italic the upright face).
+
+A browser takes a font of the system for a generic family. Here the caller maps them in
+`HtmlRenderOptions.GenericFamilies`, and a mapped name is looked up as a written name is (`@font-face` rules first):
+
+- `Standard`: the initial value of `font-family`, and `cursive`, `fantasy`, `math`, `emoji`, `fangsong` and the `ui-*`
+  keywords, which Chromium 159 prints in its standard font (measured);
+- `Serif`: `serif`; when it is not set, `serif` takes `Standard`;
+- `SansSerif`: `sans-serif` and `system-ui`;
+- `Monospace`: `monospace` (the keyword still gives text in `monospace` alone its own sizes, 13px at `medium`).
+
+The initial value is the name "Times New Roman", as Chromium computes it: an `@font-face` rule or a caller's font of
+that family is taken first, then `Standard`. `initial`, `inherit`, `unset` and `revert` keep the initial value; a
+"Times New Roman" written in the document is a family name like any other. A generic family never takes an
+`@font-face` rule of its own name, as in Chromium.
+
+Refused in both modes, also with warnings only (`Documents.Html.Unsupported.Font`, at the element's start tag; for a
+page-margin box at its `content` declaration):
+
+- a generic family the options do not map, where the list reaches it, also when a later family is supplied:
+  "'font-family: sans-serif' needs a family for the generic family 'sans-serif': set GenericFamilies.SansSerif in the
+  options (a browser would take a font of the system; there are no system fonts)."
+- a mapped name no face answers: "The family 'Inter' that GenericFamilies.SansSerif maps 'sans-serif' to has no face:
+  give it in a @font-face rule or in the fonts of the options."
+- the initial value with neither a "Times New Roman" face nor `Standard`: "'font-family' is not set here, and its
+  initial value needs a family: set GenericFamilies.Standard in the options, or give 'Times New Roman' in a @font-face
+  rule or in the fonts of the options (…)."
+- a list that runs out: "No family of 'font-family: Inter, Roboto' is supplied: give one in a @font-face rule or in
+  the fonts of the options, or end the list with a generic family the options map (there are no system fonts)."
+
+The mapped names are checked once, as input (`Documents.Html.InvalidOptions`): not empty, no control character, at
+most 32,767 characters (the longest family name of a TrueType font), and not a generic family keyword.
+
+What is shown, and how. Chromium prints a generic family in a font of the system it runs on, not in the family the
+caller maps, so a document with a generic family is not a measured case. Equal to Chromium is shown for the
+written-out family: the cases `gf-*` measure the initial value through an `@font-face` rule of "Times New Roman" (in
+the body, in a page-margin box, through `inherit`, `unset` and `revert`) and lists that end in a generic family after
+a supplied one. That a mapping prints exactly as the written-out family is shown by `GenericFamilyTests`: each generic
+document, printed with its mapping, gives the same page model item for item as the equal case it was made from.
+
+### A character the face has no glyph for
+
+A browser takes such a character from a later family of the list, or from any font of the system. The engine takes
+no glyph from another font and draws no box for a missing one, so the character is refused in both modes
+(`Documents.Font.GlyphMissing`), at its own line and column in the document (a character reference: its ampersand;
+the text of a page-margin box: its `content` declaration). Every missing character of the document is reported, each
+pair of face and character once, in source order, up to 64 (`HtmlBoxGenerator.MaxMissingGlyphs`). The message names
+the character, its code point, the face, the list and what to do, and a later family of the list that has it:
+
+"The character '※' (U+203B) has no glyph in the face 'Lato-Regular' that 'font-family: Lato, Theano Didot' gives
+here, and the engine takes no glyph from another font: put the character in an element whose font has it, or use an
+image. The family 'Theano Didot' of the list has it: set 'Theano Didot' on an element around the character."
+
+The check is the shaper's own rule, which `HtmlRendering` passes in (`HtmlBoxOptions.MissingCharacters`); a caller of
+`HtmlBoxGenerator` alone who leaves it out gets layout's refusal of the first paragraph with a missing character, at
+the line of its text. Never missing: the characters that need no glyph (Default_Ignorable_Code_Point, among them the
+soft hyphen where no line breaks at it, U+200B, U+200C, U+200D, U+2060, U+FEFF and the variation selectors; the
+mandatory breaks), white space that collapses (a tab, a line feed), and a tab where white space is preserved (refused
+on its own). One character is drawn with another's glyph, as Chromium prints it: U+2011 NON-BREAKING HYPHEN, in a face
+without it, with the face's U+2010 (case `gm-nbhyphen-lato`, Lato at 12 and 20 pt: the same advance, no break at it,
+read back as U+2011). Refused, because Chromium takes them from a font of the system: U+2010 and U+2011 in a face that
+has only U+002D (case `gm-nbhyphen-theano`), and the spaces U+00A0, U+202F, U+2009, U+2002, U+2003, U+2007, U+2008 and
+U+200A in a face without them (case `gm-spaces-roboto`).
 
 ## HTML
 

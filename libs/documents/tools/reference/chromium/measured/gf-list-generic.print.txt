@@ -1,0 +1,18 @@
+page 1 300.000 300.000
+word 1 12.000 31.263 21.750 9.997 Lato #000000 Lato-Regular
+word 1 33.821 53.839 21.750 9.997 then #000000 Lato-Regular
+word 1 56.398 98.466 21.750 9.997 sans-serif #000000 Lato-Regular
+word 1 12.000 45.652 36.750 9.997 Theano #000000 TheanoDidot-Regular
+word 1 48.226 68.090 36.750 9.997 then #000000 TheanoDidot-Regular
+word 1 70.668 90.116 36.750 9.997 serif #000000 TheanoDidot-Regular
+word 1 12.000 31.263 54.750 9.997 Lato #000000 Lato-Regular
+word 1 33.821 53.839 54.750 9.997 then #000000 Lato-Regular
+word 1 56.398 106.394 54.750 9.997 monospace #000000 Lato-Regular
+word 1 12.000 49.056 70.500 9.997 Nobody, #000000 Lato-Regular
+word 1 51.614 73.146 70.500 9.997 Lato, #000000 Lato-Regular
+word 1 75.705 118.078 70.500 9.997 system-ui #000000 Lato-Regular
+word 1 12.000 48.228 85.500 9.997 Theano, #000000 TheanoDidot-Regular
+word 1 50.803 84.064 85.500 9.997 cursive, #000000 TheanoDidot-Regular
+word 1 86.639 118.287 85.500 9.997 fantasy #000000 TheanoDidot-Regular
+word 1 12.000 33.532 103.500 9.997 Lato, #000000 Lato-Regular
+word 1 36.090 97.772 103.500 9.997 ui-monospace #000000 Lato-Regular

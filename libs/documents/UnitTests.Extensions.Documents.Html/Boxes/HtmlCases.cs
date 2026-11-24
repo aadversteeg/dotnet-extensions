@@ -11,6 +11,7 @@ using Ave.Extensions.Documents.Html.Parsing;
 using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
 
@@ -158,6 +159,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
         HtmlStyleErrorCodes.Unsupported.List.ToString(),
+        FontErrorCodes.GlyphMissing.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
@@ -230,7 +232,7 @@ internal static class HtmlCases
         var baseUrl = new Uri(Path.GetFullPath(Path.Combine(folder.Html, name + ".html"))).AbsoluteUri;
         return Parsed(folder, name)
             .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }));
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy, MissingCharacters = Shaper.MissingCharacters }));
     }
 
     /// <summary>
@@ -692,7 +694,7 @@ internal static class HtmlCases
         var parsed = HtmlParser.Parse(html, new HtmlParseOptions("text.html"));
         var boxes = parsed
             .OnSuccessBind(document => HtmlStyleResolver.Resolve(document, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl }));
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, MissingCharacters = Shaper.MissingCharacters }));
         return boxes.IsFailure
             ? Refusal(boxes.Error)
             : BoxDifference(parsed.Value.Document, boxes.Value, [.. rows.Where(row => row.Length > 0).Select(row => row.Split(' '))]);
