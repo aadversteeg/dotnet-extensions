@@ -157,6 +157,46 @@ styled tree and the diagnostics of a file. Its limits are listed in `docs/archit
 public for a caller that styles its own tree, throws `InvalidOperationException` when it is called for a child before
 its parent.
 
+## The timesheet from HTML
+
+The samples app writes the timesheet a second way: the same data, filled into HTML and CSS by the caller's template,
+then laid out by the HTML front-end. The engine takes finished HTML; filling it with data is the caller's step:
+
+```csharp
+using Ave.Extensions.Documents;        // HtmlRendering, HtmlRenderOptions, ToPdf
+using Ave.Extensions.Documents.Html;   // HtmlStyleOptions, HtmlResource
+using Ave.Extensions.Functional;       // OnSuccessBind
+
+var html = TimesheetHtml.Write(data, brand, CultureInfo.GetCultureInfo("nl-NL"));   // the caller's template
+var pdf = HtmlRendering.ToPages(html, new HtmlRenderOptions
+    {
+        Style = new HtmlStyleOptions { BaseUrl = documentUrl, Resources = url => files.GetValueOrDefault(url) },
+    })
+    .OnSuccessBind(rendered => rendered.Output.ToPdf(options));
+```
+
+The template (`samples/Ave.Extensions.Documents.Samples/Html/TimesheetHtml.cs`) is a C# raw string literal, with no
+templating library. In a real caller's hands the data is untrusted: every value goes into the HTML through
+`HtmlText.Escape` and into a CSS string through `HtmlText.CssString`, never as it is. The engine opens no file: the
+fonts of the `@font-face` rules, the logo and the style sheets come from the resolver, which gives only the files the
+template names. What the HTML front-end draws, refuses and ignores is the HTML profile, `docs/html-css-profile.md`.
+
+The HTML the sample writes is, byte for byte, the document the family measures against Chromium 159's print
+(`tools/reference/chromium/documents/timesheet-*.html`; `HtmlSampleTests`), so the sample's pages are the ones that
+comparison holds equal. They are the pages of the code-built timesheet, but not the same page model
+(`HtmlSamePagesTests`): the same number of pages and the same texts in the same order, each within 1 pt across the
+page. The HTML profile puts rows on whole CSS pixels, as Chromium does: a text row is 21 px = 15.75 pt where the code
+front-end draws exactly 16 pt, so every HTML row is 0.25 to 0.72 pt shorter. Down a page that adds up, and on page 4 of
+the long month it leaves room for one more entry: that page holds 26 entries from HTML and 25 from code, the last page
+17 against 18. The page header and footer are built differently (margin boxes against header and footer areas) and
+hold the same texts. The invoice (`Html/InvoiceHtml.cs`, `data/invoice.json`) is written the same way.
+
+The documents name their fonts in `@font-face` rules, so the engine parses the font files for each document, from the
+bytes the resolver gives (the sample reads each file once). `HtmlRenderOptions.Fonts` takes fonts parsed once, for
+families a document does not name in its own rules. The HTML options take no attachment: to embed the data, as the
+code-built timesheet embeds `timesheet.xml`, add it to the pages before the PDF:
+`pages with { Metadata = pages.Metadata with { Attachments = [xml] } }`.
+
 ## What it does
 
 - **Text:** Unicode line breaking (UAX #14, Unicode 18.0.0), OpenType shaping (GSUB, GPOS, GDEF, legacy kern) for
@@ -311,6 +351,8 @@ The samples app writes `sample-a-letter.pdf` (two pages), `sample-b-long.pdf` (f
 synthetic data sets in Dutch and English (`timesheet-{normal,long,edge}.{nl,en}.pdf`), all as PDF/A-3a + PDF/UA-1,
 each with `.model.txt`, `.fragments.txt` and `.page.txt`: the three text serialisations of its intermediate models.
 The timesheets embed `timesheet.xml`, also written next to them as `.attachment.timesheet.xml`.
+Then the HTML samples: `html-timesheet-{normal,long,edge}.nl` and `html-invoice`, each as the filled `.html`, the
+`.pdf` (PDF/A-3a + PDF/UA-1, no attachment) and `.page.txt` (see *The timesheet from HTML*).
 `dotnet run --project samples/Ave.Extensions.Documents.Samples -- time long nl-NL 20` measures one timesheet (cold,
 then the median of 20 warm renders). The samples app needs culture data for the timesheet's number formats; the
 libraries do not.
