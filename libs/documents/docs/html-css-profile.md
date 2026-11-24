@@ -500,6 +500,18 @@ the box whatever its vertical alignment, unclipped, under the body; the box keep
   well-formed by BCP 47 (at most 64 characters); any other tag, and `lang=""` (an unknown language, which a PDF/UA-1
   `/Lang` cannot say), is refused at the start tag (`Documents.Html.Unsupported.Language`) and the element keeps its
   parent's language. The root's language is the document's, in the catalog.
+- Table header cells: a `th` is a `TH` element whose `/Scope` says what it heads (`Html/Boxes/HtmlBoxGenerator.HeaderScopes.cs`).
+  `scope=row` and `scope=rowgroup` head the row, `scope=col` and `scope=colgroup` the column, in any ASCII case; PDF has
+  no scope for a group, so a group scope heads the cell's own row or column only. Without a valid `scope`, a `th` in a
+  `thead`, or in a row whose cells are all `th`, heads its column; any other `th` heads its row. No cell heads both.
+  Not read, and drawn as without them: the `headers` attribute of a cell (no `/Headers` and no element ids are
+  written, so a cell under headers that nest has only the scopes to name its headers), `scope` on a `td`, and `abbr`.
+- Document metadata: the first `title` is the title. The first `meta` in tree order whose `name` is `author`, in any
+  ASCII case, with a `content` that is not empty after stripping white space at both ends is the author; the same for
+  `description`, written as the PDF's subject and XMP description (`HtmlMetadata`). Such a content longer than 4 096
+  characters, or with a control character (other than tab, line feed and carriage return) or a character XML does not
+  allow, is refused at the `meta` (`Documents.Html.Unsupported.Metadata`) and left out, not cleaned. Every other `meta`
+  name (`keywords`, `generator`, `date`, `application-name`, …) is ignored. Chromium writes neither into its PDF.
 
 Presentational attributes (HTML Standard §15.2–§15.4):
 

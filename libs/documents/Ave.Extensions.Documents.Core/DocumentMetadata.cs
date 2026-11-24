@@ -1,7 +1,7 @@
 namespace Ave.Extensions.Documents.Core;
 
 /// <summary>
-/// What a document says about itself, as opposed to what it shows: title, author, language, and the files that travel
+/// What a document says about itself, as opposed to what it shows: title, author, description, language, and the files that travel
 /// with it. Every layer carries the same value from the front-end to the back-end (document model, page model), so the
 /// PDF document information, its XMP metadata and its embedded files all come from one place.
 /// </summary>
@@ -15,6 +15,12 @@ public sealed record DocumentMetadata(string? Title, string? Author)
     /// voice. PDF/UA requires it (ISO 14289-1 §7.2). Front-ends check the tag's form.
     /// </summary>
     public string? Language { get; init; }
+
+    /// <summary>
+    /// What the document is about, in a sentence or a few, or null. Written as the document information's
+    /// <c>/Subject</c> (ISO 32000-1 §14.3.3) and as XMP <c>dc:description</c>, the same text in both.
+    /// </summary>
+    public string? Description { get; init; }
 
     /// <summary>The files embedded in the document, in the order they were attached.</summary>
     public ValueList<Attachment> Attachments { get; init; }

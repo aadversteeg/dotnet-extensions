@@ -306,7 +306,7 @@ public static partial class HtmlBoxGenerator
             var align = VerticalAlignOf(element);
             return box with
             {
-                Role = html.LocalName == "th" ? SemanticRole.TableHeaderCell : SemanticRole.TableCell,
+                Role = html.LocalName == "th" ? HeaderCellRole(html, box.Id) : SemanticRole.TableCell,
                 Style = box.Style with
                 {
                     Margin = Edges.Zero,
@@ -329,7 +329,7 @@ public static partial class HtmlBoxGenerator
         /// The header group's role is set by its table, which knows whether there are body rows.</summary>
         private Box GroupBox(StyledElement element, Box box)
         {
-            var rows = box.Children.OfType<Box>().ToList();
+            var rows = box.Children.OfType<Box>().Select(row => WithHeaderScopes(row, PartOf(element) == TablePart.HeaderGroup)).ToList();
             if (rows.Count == 0)
             {
                 RefuseTable($"The row group <{element.Element.LocalName}> without rows is not drawn in this version.", $"{element.Element.LocalName} without rows", element.Element.Position);

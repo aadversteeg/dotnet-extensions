@@ -40,6 +40,7 @@ public static class Elements
     /// <param name="author">The author, or null.</param>
     /// <param name="language">The document's language as a language tag such as <c>nl-NL</c> or <c>en</c>, or null.
     /// Screen readers use it to choose a voice; PDF/UA requires it.</param>
+    /// <param name="description">What the document is about, or null: the PDF's subject and its XMP description.</param>
     /// <param name="callerFile">Filled in by the compiler.</param>
     /// <param name="callerLine">Filled in by the compiler.</param>
     /// <returns>The document.</returns>
@@ -49,9 +50,10 @@ public static class Elements
         string? title = null,
         string? author = null,
         string? language = null,
+        string? description = null,
         [CallerFilePath] string callerFile = "",
         [CallerLineNumber] int callerLine = 0) =>
-        new(body, page ?? PageSetup.A4, Style.Empty, title, author, new SourceLocation(callerFile, callerLine)) { Language = language };
+        new(body, page ?? PageSetup.A4, Style.Empty, title, author, new SourceLocation(callerFile, callerLine)) { Language = language, Description = description };
 
     /// <summary>
     /// A file to embed in a document with <see cref="Fluent.Document.Attach"/>. The bytes are copied. Set its

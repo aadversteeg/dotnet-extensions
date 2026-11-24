@@ -47,8 +47,16 @@ public abstract record SemanticRole
     /// <summary>A row of a table (PDF structure type <c>TR</c>, §14.8.4.3.4).</summary>
     public static SemanticRole TableRow { get; } = new TableRowRole();
 
-    /// <summary>A header cell of a table (PDF structure type <c>TH</c>, §14.8.4.3.4).</summary>
-    public static SemanticRole TableHeaderCell { get; } = new TableHeaderCellRole();
+    /// <summary>A header cell of a table that heads its column (PDF structure type <c>TH</c>, §14.8.4.3.4), as a cell of a
+    /// header row does.</summary>
+    public static SemanticRole TableHeaderCell { get; } = new TableHeaderCellRole(TableHeaderScope.Column);
+
+    /// <summary>A header cell of a table that heads what <paramref name="scope"/> says (PDF structure type <c>TH</c>,
+    /// §14.8.4.3.4, with the scope of §14.8.5.7): its column, its row, or both.</summary>
+    /// <param name="scope">What the cell heads. Front-ends pass a defined value; the model check refuses another.</param>
+    /// <returns>The role; for <see cref="TableHeaderScope.Column"/> the same as <see cref="TableHeaderCell"/>.</returns>
+    public static SemanticRole TableHeaderCellFor(TableHeaderScope scope) =>
+        scope == TableHeaderScope.Column ? TableHeaderCell : new TableHeaderCellRole(scope);
 
     /// <summary>A data cell of a table (PDF structure type <c>TD</c>, §14.8.4.3.4).</summary>
     public static SemanticRole TableCell { get; } = new TableCellRole();
@@ -164,15 +172,22 @@ public abstract record SemanticRole
         public override string ToString() => "table-row";
     }
 
-    /// <summary>The role of <see cref="TableHeaderCell"/>.</summary>
-    public sealed record TableHeaderCellRole : SemanticRole
+    /// <summary>The role of <see cref="TableHeaderCell"/> and <see cref="TableHeaderCellFor"/>.</summary>
+    /// <param name="Scope">What the cell heads.</param>
+    public sealed record TableHeaderCellRole(TableHeaderScope Scope) : SemanticRole
     {
         /// <summary>Returns <c>TH</c>.</summary>
         public override string? StandardStructureType => "TH";
 
-        /// <summary>Returns <c>table-header-cell</c>.</summary>
+        /// <summary>Returns <c>table-header-cell</c>, with its scope when it is not the column.</summary>
         /// <returns>The text form.</returns>
-        public override string ToString() => "table-header-cell";
+        public override string ToString() => Scope switch
+        {
+            TableHeaderScope.Column => "table-header-cell",
+            TableHeaderScope.Row => "table-header-cell scope=row",
+            TableHeaderScope.Both => "table-header-cell scope=both",
+            _ => $"table-header-cell scope={(int)Scope}",
+        };
     }
 
     /// <summary>The role of <see cref="TableCell"/>.</summary>

@@ -360,7 +360,7 @@ its sample squares, as the PDF defines it, where some viewers smooth it. At most
 than the font's advances, by a share that depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small
 sizes; none at 9, 10.5 and 12 pt), so a line that fits in Chromium by less than that share of its text width can
 break one word earlier in the engine, which keeps the font's exact advances (`tools/reference/chromium/README.md`,
-"Where Chromium is not exact"). Tagging limits (no row headers, lists or captions; links to a URI and inside the document, from the code front-end and from HTML's `a href`; a language per element only where it is a well-formed tag) and
+"Where Chromium is not exact"). Tagging limits (row headers from HTML only, no Headers/IDs, no lists or captions; links to a URI and inside the document, from the code front-end and from HTML's `a href`; a language per element only where it is a well-formed tag) and
 the PDF/UA checks a person must make are in `docs/pdf-profiles-and-accessibility.md`; all limits together are in
 `docs/architecture.md`.
 

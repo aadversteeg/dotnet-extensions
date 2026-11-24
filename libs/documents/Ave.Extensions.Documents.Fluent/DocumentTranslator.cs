@@ -37,7 +37,7 @@ public static class DocumentTranslator
         var format = document.Format.Text;
         var problems = InputChecks.Page(document.Page, document.Source)
             .Concat(InputChecks.Text(format, document.Source))
-            .Concat(InputChecks.Metadata(document.Title, document.Author, document.Source))
+            .Concat(InputChecks.Metadata(document.Title, document.Author, document.Description, document.Source))
             .Concat(InputChecks.Language(document.Language, document.Source))
             .Concat(InputChecks.Profile(document.Profile, document.Source))
             .Concat(InputChecks.Attachments(document.Attachments))
@@ -76,6 +76,7 @@ public static class DocumentTranslator
     private static DocumentMetadata Metadata(Document document) => new(document.Title, document.Author)
     {
         Language = document.Language,
+        Description = document.Description,
         Attachments = document.Attachments,
     };
 

@@ -101,6 +101,13 @@ public static class HtmlStyleErrorCodes
         /// Property (<c>href</c>, or <c>title</c> for a description text may not hold), Value (the href), SourceFile,
         /// SourceLine, SourceColumn (the start tag).</summary>
         public static readonly ErrorCode Link = _ / "Link";
+
+        /// <summary>A <c>meta</c> element whose <c>content</c> the document's metadata does not take, by THE RULE FOR A
+        /// DOCUMENT'S METADATA IN HTML (<c>HtmlMetadata</c>): longer than its limit, or holding a control character or a
+        /// character XML does not allow. The document is drawn without that author or description. Metadata: Property
+        /// (<c>content</c>), Value (the <c>name</c>, <c>author</c> or <c>description</c>), SourceFile, SourceLine,
+        /// SourceColumn (the start tag).</summary>
+        public static readonly ErrorCode Metadata = _ / "Metadata";
     }
 
     /// <summary>A document with no element (made in code; the parser always makes the html element): there is nothing to

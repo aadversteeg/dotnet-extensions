@@ -49,8 +49,8 @@ internal static class StructureTypes
 
     /// <summary>
     /// The attribute object of a table cell (§14.8.5.7, Table 349, owner <c>/Table</c>): a header cell's
-    /// <c>/Scope /Column</c> — in this engine header cells come only from header rows, so each heads the column(s) it
-    /// spans (PDF/UA: veraPDF rule 7.5-1, "TH shall have a Scope attribute"); and <c>/ColSpan</c> and <c>/RowSpan</c>
+    /// <c>/Scope</c>, what it heads: <c>/Column</c>, <c>/Row</c> or <c>/Both</c>, from its role (PDF/UA: veraPDF rule
+    /// 7.5-1, "TH shall have a Scope attribute"); and <c>/ColSpan</c> and <c>/RowSpan</c>
     /// when the cell covers more than one column or row, which is how a reader rebuilds the table's grid (rules
     /// 7.2-41 and 7.2-42). Null for anything that needs no attributes.
     /// </summary>
@@ -59,16 +59,16 @@ internal static class StructureTypes
     /// <returns>The attribute dictionary, or null.</returns>
     private static PdfDictionary? TableAttributes(SemanticRole role, CellSpan span)
     {
-        var isHeader = role == SemanticRole.TableHeaderCell;
-        if (!isHeader && role != SemanticRole.TableCell)
+        var header = role as SemanticRole.TableHeaderCellRole;
+        if (header is null && role != SemanticRole.TableCell)
         {
             return null;
         }
 
-        return isHeader || span != CellSpan.Single
+        return header is not null || span != CellSpan.Single
             ? PdfDictionary.Of(
                 ("O", new PdfName("Table")),
-                ("Scope", isHeader ? new PdfName("Column") : null),
+                ("Scope", header is null ? null : new PdfName(header.Scope.ToString())),
                 ("ColSpan", span.Columns > 1 ? new PdfInteger(span.Columns) : null),
                 ("RowSpan", span.Rows > 1 ? new PdfInteger(span.Rows) : null))
             : null;

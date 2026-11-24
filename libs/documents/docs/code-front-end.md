@@ -107,7 +107,7 @@ default, `null` for transparent). A page number the document does not have is `D
 
 | Function | Makes |
 | --- | --- |
-| `Document(body, page:, title:, author:, language:)` | the document; `page` defaults to A4 without margins; `language` is a tag such as `nl-NL` |
+| `Document(body, page:, title:, author:, language:, description:)` | the document; `page` defaults to A4 without margins; `language` is a tag such as `nl-NL`; `description` says what the document is about (the PDF's subject and XMP description) |
 | `Block(children)` | a box that stacks its children vertically |
 | `Paragraph(text)`, `Paragraph([spans])` | a paragraph of one or several spans |
 | `Heading(level, text)` | a heading, level 1–6: bold and sized like HTML's h1–h6 |
@@ -119,7 +119,7 @@ default, `null` for transparent). A page number the document does not have is `D
 | `PageBreak()` | starts the next element of the same list on a new page |
 | `Table(columns, rows)` | a table; `columns` made with `Columns(…)`, `rows` a list of the three below |
 | `Columns(2.5.Cm(), Fill(1), Auto)` | the column sizes: a length is fixed, `Fill(weight)` takes a share of the width left over (CSS Grid `fr`), `Auto` is as wide as the content needs |
-| `HeaderRow([cells])` | a header row: repeated at the top of every page the table continues on, when the header rows are at most a quarter of the page area (as Chromium) |
+| `HeaderRow([cells])` | a header row: repeated at the top of every page the table continues on, when the header rows are at most a quarter of the page area (as Chromium); its cells head their columns, and there are no row headers in code |
 | `TableRow([cells])` | a body row; it may break between the lines of its cells unless kept together |
 | `RowGroup([rows])` | rows that belong together (a row span ends at the end of its group) |
 | `Cell(text)`, `Cell([elements])` | a table cell |

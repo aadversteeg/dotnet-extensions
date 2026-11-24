@@ -28,6 +28,7 @@ public static class PageModelText
         var header = "document"
             + (metadata.Title is { } title ? $" title={QuotedText.Quote(title)}" : string.Empty)
             + (metadata.Author is { } author ? $" author={QuotedText.Quote(author)}" : string.Empty)
+            + (metadata.Description is { } description ? $" description={QuotedText.Quote(description)}" : string.Empty)
             + (metadata.Language is { } language ? $" language={language}" : string.Empty);
         IEnumerable<string> lines =
         [

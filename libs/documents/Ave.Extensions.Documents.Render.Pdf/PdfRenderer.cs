@@ -192,11 +192,12 @@ public static class PdfRenderer
         ("Kids", new PdfArray([.. Enumerable.Range(0, plan.PageCount).Select(index => new PdfReference(plan.Page(index).Page))])),
         ("Count", new PdfInteger(plan.PageCount)));
 
-    /// <summary>The document information dictionary (§14.3.3, Table 317). Absent title or author: entry left out. The
-    /// same values go into the XMP metadata (<see cref="MetadataPacket"/>).</summary>
+    /// <summary>The document information dictionary (§14.3.3, Table 317). Absent title, author or description
+    /// (<c>/Subject</c>): entry left out. The same values go into the XMP metadata (<see cref="MetadataPacket"/>).</summary>
     private static PdfDictionary Info(DocumentMetadata metadata, PdfRenderOptions options) => PdfDictionary.Of(
         ("Title", metadata.Title is null ? null : PdfString.FromText(metadata.Title)),
         ("Author", metadata.Author is null ? null : PdfString.FromText(metadata.Author)),
+        ("Subject", metadata.Description is null ? null : PdfString.FromText(metadata.Description)),
         ("Producer", PdfString.FromText(PdfRenderOptions.Producer)),
         ("CreationDate", PdfDate.Format(options.CreationDate)),
         ("ModDate", PdfDate.Format(options.CreationDate)));

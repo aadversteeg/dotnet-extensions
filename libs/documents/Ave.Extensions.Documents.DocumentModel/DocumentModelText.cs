@@ -29,7 +29,7 @@ public static class DocumentModelText
     {
         IEnumerable<string> lines =
         [
-            "document" + Attribute("title", document.Metadata.Title) + Attribute("author", document.Metadata.Author),
+            "document" + Attribute("title", document.Metadata.Title) + Attribute("author", document.Metadata.Author) + Attribute("description", document.Metadata.Description),
             $"page size={InvariantNumber.Format(document.Page.Width.Points)}x{InvariantNumber.Format(document.Page.Height.Points)}"
                 + $" margin={document.Page.Margins}",
             .. document.Profile is { } profile && profile != LayoutProfile.Default

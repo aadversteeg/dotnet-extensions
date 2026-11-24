@@ -235,6 +235,9 @@ public static class ModelCheck
             ?? (box.Role is SemanticRole.HeadingRole { Level: < 1 or > 6 } heading
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.HeadingLevel, "A heading level must be 1–6.", Number(heading.Level), "level", box)
                 : null)
+            ?? (box.Role is SemanticRole.TableHeaderCellRole header && !System.Enum.IsDefined(header.Scope)
+                ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Table, "A header cell heads its column, its row or both.", Number((int)header.Scope), "scope", box)
+                : null)
             ?? (box.Role is SemanticRole.LinkRole or SemanticRole.SpanRole
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, $"The role {box.Role} belongs to an inline group, not to a box.", box.Role.ToString()!, "role", box)
                 : null)

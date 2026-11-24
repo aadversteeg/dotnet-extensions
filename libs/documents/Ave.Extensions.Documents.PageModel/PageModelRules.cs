@@ -222,6 +222,8 @@ public static class PageModelRules
         ClipStart clip when !EdgesInRange(clip.Area, pageHeight) => Invalid(code, $"A clip on page {number} has {EdgesText}.", $"{clip.Area}"),
         ArtifactStart artifact when !Enum.IsDefined(artifact.Kind) =>
             Invalid(code, $"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
+        StructureStart { Role: SemanticRole.TableHeaderCellRole header } start when !Enum.IsDefined(header.Scope) =>
+            Invalid(code, $"Header cell {start.Node} on page {number} has the scope {(int)header.Scope}; a header cell heads its column, its row or both.", ((int)header.Scope).ToString(CultureInfo.InvariantCulture)).WithSource(start.Source),
         _ => null,
     };
 

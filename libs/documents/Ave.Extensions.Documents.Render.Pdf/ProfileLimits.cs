@@ -136,7 +136,7 @@ internal static class ProfileLimits
     private static IEnumerable<(string Property, string Text, SourceLocation? Source)> WrittenTexts(PageDocument document)
     {
         var metadata = document.Metadata;
-        var fields = new (string Property, string? Text)[] { ("title", metadata.Title), ("author", metadata.Author), ("language", metadata.Language) }
+        var fields = new (string Property, string? Text)[] { ("title", metadata.Title), ("author", metadata.Author), ("description", metadata.Description), ("language", metadata.Language) }
             .Where(field => field.Text is not null)
             .Select(field => (field.Property, field.Text!, (SourceLocation?)null));
         var attachments = metadata.Attachments.SelectMany(attachment => new (string, string?)[] { ("attachment file name", attachment.FileName), ("attachment description", attachment.Description) }

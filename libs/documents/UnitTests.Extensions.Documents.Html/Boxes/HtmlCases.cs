@@ -133,6 +133,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
         HtmlStyleErrorCodes.Unsupported.Link.ToString(),
         HtmlStyleErrorCodes.Unsupported.Language.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Metadata.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
@@ -770,7 +771,7 @@ internal static class HtmlCases
 
         var line = cell.Position.Line;
         var place = cells.Where(other => other.Position.Line == line).ToList().IndexOf(cell);
-        var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role == SemanticRole.TableHeaderCell)).ElementAtOrDefault(place);
+        var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role is SemanticRole.TableHeaderCellRole)).ElementAtOrDefault(place);
         return box is null ? (null, $"{at} has no cell box on any page") : (box, null);
     }
 
@@ -796,7 +797,7 @@ internal static class HtmlCases
         var (element, role) = (named[0], RoleOf(named[0]));
         var line = element.Position.Line;
         var peers = elements.Where(other => other.Position.Line == line && RoleOf(other) == role).ToList();
-        var candidates = Boxes(root).Where(box => box.Source.Line == line && box.Role == role).ToList();
+        var candidates = Boxes(root).Where(box => box.Source.Line == line && (box.Role == role || (box.Role is SemanticRole.TableHeaderCellRole && role is SemanticRole.TableHeaderCellRole))).ToList();
         return candidates.Count == peers.Count
             ? (candidates[peers.IndexOf(element)], null)
             : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role");

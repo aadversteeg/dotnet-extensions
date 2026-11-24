@@ -16,7 +16,8 @@ internal static class MetadataPacket
     /// <summary>
     /// The properties, each only when its value exists:
     /// <list type="bullet">
-    /// <item><c>dc:title</c> (Info /Title), <c>dc:creator</c> (Info /Author), <c>dc:language</c> (the catalog's /Lang);</item>
+    /// <item><c>dc:title</c> (Info /Title), <c>dc:creator</c> (Info /Author), <c>dc:description</c> (Info /Subject), a
+    /// language alternative as the title is, <c>dc:language</c> (the catalog's /Lang);</item>
     /// <item><c>xmp:CreateDate</c> and <c>xmp:ModifyDate</c> (Info /CreationDate, /ModDate), <c>pdf:Producer</c> (Info /Producer);</item>
     /// <item><c>pdfaid:part</c> 3 and <c>pdfaid:conformance</c> A or B (ISO 19005-3 §6.6.4, veraPDF rules 6.6.4-1 to -3);</item>
     /// <item><c>pdfuaid:part</c> 1 (ISO 14289-1 §5, rules 5-1 and 5-2);</item>
@@ -40,6 +41,11 @@ internal static class MetadataPacket
         if (metadata.Author is { } author)
         {
             yield return new XmpProperty(XmpNamespace.DublinCore, "creator", new XmpOrderedArray([new XmpText(author)]));
+        }
+
+        if (metadata.Description is { } description)
+        {
+            yield return new XmpProperty(XmpNamespace.DublinCore, "description", new XmpLanguageAlternative(description));
         }
 
         if (metadata.Language is { } language)

@@ -152,4 +152,26 @@ public class TaggingTests
             "Document\n  Table\n    THead\n      TR\n        TH Scope=Column ColSpan=2 \"H\"\n"
             + "    TBody\n      TR\n        TD \"a\"\n        TD RowSpan=3 \"b\"\n");
     }
+
+    [Fact]
+    public void A_header_cell_carries_the_scope_of_its_role_row_or_both()
+    {
+        var document = Document(Page(
+            Start(0, SemanticRole.Document),
+            Start(1, SemanticRole.Table),
+            Start(2, SemanticRole.TableBody), Start(3, SemanticRole.TableRow),
+            Start(4, SemanticRole.TableHeaderCellFor(TableHeaderScope.Both)), Run("H", new Point(10, 20)), End(4),
+            Start(5, SemanticRole.TableHeaderCell), Run("C", new Point(60, 20)), End(5),
+            End(3), Start(6, SemanticRole.TableRow),
+            Start(7, SemanticRole.TableHeaderCellFor(TableHeaderScope.Row)), Run("R", new Point(10, 40)), End(7),
+            Start(8, SemanticRole.TableCell), Run("a", new Point(60, 40)), End(8),
+            End(6), End(2),
+            End(1), End(0)));
+
+        var outline = PdfStructureReadBack.Outline(PdfStructureReadBack.Read(PdfRenderer.Render(document, Tagged).Value));
+
+        outline.Should().Be(
+            "Document\n  Table\n    TBody\n      TR\n        TH Scope=Both \"H\"\n        TH Scope=Column \"C\"\n"
+            + "      TR\n        TH Scope=Row \"R\"\n        TD \"a\"\n");
+    }
 }

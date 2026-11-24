@@ -168,7 +168,11 @@ public static partial class HtmlBoxGenerator
 
         public StyledDocument Generate()
         {
-            var metadata = new DocumentMetadata(Title(styled.Root), null) { Language = string.IsNullOrEmpty(styled.Root.Language) ? null : styled.Root.Language };
+            var metadata = new DocumentMetadata(Title(styled.Root), Meta(styled.Root, "author"))
+            {
+                Language = string.IsNullOrEmpty(styled.Root.Language) ? null : styled.Root.Language,
+                Description = Meta(styled.Root, "description"),
+            };
             if (Display(styled.Root) == "none")
             {
                 // CSS Display 3 §2.5: the root with display: none generates no box at all. Chromium prints one empty page
@@ -726,6 +730,25 @@ public static partial class HtmlBoxGenerator
                 CssLength length => new LineHeight.Fixed(Length.FromPoints(Math.Round(length.Value.Points / unit, MidpointRounding.AwayFromZero) * unit)),
                 _ => LineHeight.Normal.Instance,
             };
+        }
+
+        /// <summary>The author or the description by THE RULE FOR A DOCUMENT'S METADATA IN HTML (<see cref="HtmlMetadata"/>),
+        /// or null; a refused one is reported at its <c>meta</c> element and left out.</summary>
+        private string? Meta(StyledElement root, string name)
+        {
+            if (HtmlMetadata.First(root, name) is not { } found)
+            {
+                return null;
+            }
+
+            var (meta, content) = found;
+            if (HtmlMetadata.Problem(content) is { } problem)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Metadata, $"The {name} in <meta name> is not taken into the document's metadata: {problem}.", name, meta.Position, "content");
+                return null;
+            }
+
+            return content;
         }
 
         /// <summary>The text of the first title element (HTML Standard §4.2.2: its child text content with ASCII white

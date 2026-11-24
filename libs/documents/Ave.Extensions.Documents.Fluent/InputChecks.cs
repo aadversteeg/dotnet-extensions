@@ -430,11 +430,11 @@ internal static class InputChecks
         char.IsSurrogatePair(text, offset) ? char.ConvertToUtf32(text, offset) : text[offset];
 
     /// <summary>
-    /// The document's title and author: text that goes into the XMP metadata, which is XML, so only characters XML 1.0
+    /// The document's title, author and description: text that goes into the XMP metadata, which is XML, so only characters XML 1.0
     /// allows (§2.2, production [2] Char; <see cref="XmlCharacters"/>). Reported at the document's line.
     /// </summary>
-    public static IEnumerable<Error> Metadata(string? title, string? author, SourceLocation source) =>
-        new[] { (Text: title, Property: "title"), (Text: author, Property: "author") }
+    public static IEnumerable<Error> Metadata(string? title, string? author, string? description, SourceLocation source) =>
+        new[] { (Text: title, Property: "title"), (Text: author, Property: "author"), (Text: description, Property: "description") }
             .SelectMany(field => MetadataText(field.Text, field.Property, source));
 
     /// <summary>One metadata text: an error when it holds a character XML 1.0 does not allow.</summary>

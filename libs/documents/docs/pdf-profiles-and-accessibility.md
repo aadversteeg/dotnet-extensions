@@ -27,8 +27,8 @@ For a business document, choose `PdfA3a.AndPdfUa1()`. The samples do.
 
 You do not build any of this; the profile does.
 
-- **Metadata.** The title, author, language and dates go into the XMP metadata and the document information, with
-  the same values. The file says which standards it follows.
+- **Metadata.** The title, author, description, language and dates go into the XMP metadata and the document
+  information, with the same values. The file says which standards it follows.
 - **Colour.** PDF/A needs device-independent colour. The engine embeds an sRGB colour profile, so your RGB colours,
   greys and images are defined exactly.
 - **Structure (tagged PDF).** Every paragraph, heading, table, row, cell and image becomes a structure element, in
@@ -36,7 +36,8 @@ You do not build any of this; the profile does.
 - **Decoration and page furniture.** Backgrounds, borders and table grid lines are marked as decoration. The page
   header and footer are marked as page furniture, so a screen reader does not read "page 3 of 7" between two
   paragraphs. A table's header row that repeats on every page is in the structure once.
-- **Tables.** Header cells (from `HeaderRow`) are marked as column headers. Cells that span columns or rows say so.
+- **Tables.** Header cells (from `HeaderRow`) are marked as column headers. From HTML, a `th` heads its row or its
+  column, by its `scope` or by its row. Cells that span columns or rows say so.
 - **Attachments.** Attached files are embedded as PDF/A-3 asks: with their media type, a description and their
   relationship to the document.
 
@@ -147,10 +148,10 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 14-001 | headings not tagged | Met when you use `Heading`. **Your part** otherwise (see 01-006). |
 | 14-004 | numbered headings not in Arabic numerals | Met: H1–H6. |
 | 14-005 | a 7th-level heading not tagged H7 | **Open (limit):** levels above 6 are refused as input; such content cannot be expressed. |
-| 15-001 | a row header not tagged as header | **Open (limit):** header cells exist only in header rows; there are no row headers. |
+| 15-001 | a row header not tagged as header | Met from HTML: a `th` outside a header row is tagged TH with Scope Row (or as its `scope` says). **Open (limit)** in code: header cells exist only in header rows; there are no row headers. |
 | 15-002 | a column header not tagged as header | Met when you use `HeaderRow`; **your part** to use it. |
 | 15-004 | a table used for non-tabular content | Met for `Row(...)`: a row of blocks is a layout, tagged as Div, not Table. **Your part** for `Table(...)`. |
-| 15-005 | a cell's header cannot be determined | Met for simple tables: every header cell has Scope Column and its spans. **Open** for header rows that nest (a header spanning two sub-headers): no Headers/IDs attributes yet. |
+| 15-005 | a cell's header cannot be determined | Met for simple tables: every header cell has its Scope (Column, or Row for a row header from HTML) and its spans. **Open** for header rows that nest (a header spanning two sub-headers): no Headers/IDs attributes yet. |
 | 16-001, 16-002, 16-003 | lists without list tags or numbering | **Open (limit):** there is no list element; a list written as paragraphs is tagged as paragraphs. |
 | 17-001 | a formula not tagged as Formula | **Open (limit):** no formula element. |
 | 18-001 | headers and footers not pagination artifacts | Met. |
