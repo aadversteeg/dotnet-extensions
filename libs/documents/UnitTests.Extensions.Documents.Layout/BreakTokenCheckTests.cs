@@ -88,6 +88,10 @@ public class BreakTokenCheckTests
         ["an infinite height past the page end"] = new TracksBreakToken(3, [], RowIsSplit: false) { Passed = double.PositiveInfinity },
         ["a height past the page end inside a row"] = new TracksBreakToken(3, [], RowIsSplit: true) { Passed = 0.75 },
         ["nothing past the page end, painted"] = new TracksBreakToken(3, [], RowIsSplit: false) { PaintsPassed = true },
+        ["a negative rest of a row's height"] = new TracksBreakToken(1, [new CellBreak(1, null, IsComplete: true)], RowIsSplit: true) { RowRest = -0.75 },
+        ["a rest of a row's height that is not a number"] = new TracksBreakToken(1, [new CellBreak(1, null, IsComplete: true)], RowIsSplit: true) { RowRest = double.NaN },
+        ["an infinite rest of a row's height"] = new TracksBreakToken(1, [new CellBreak(1, null, IsComplete: true)], RowIsSplit: true) { RowRest = double.PositiveInfinity },
+        ["a rest of a row's height for a break before the row"] = new TracksBreakToken(3, [], RowIsSplit: false) { RowRest = 0.75 },
     };
 
     public static TheoryData<string> FlowCases => [.. NotForFlow.Keys];
@@ -156,6 +160,16 @@ public class BreakTokenCheckTests
         token.GetHashCode().Should().Be(new TracksBreakToken(3, [], RowIsSplit: false) { Passed = 0.75, PaintsPassed = true }.GetHashCode());
         token.Should().NotBe(token with { Passed = 0.375 });
         token.Should().NotBe(token with { PaintsPassed = false });
+    }
+
+    [Fact]
+    public void A_table_token_s_rest_of_a_row_s_height_is_part_of_its_position()
+    {
+        var token = new TracksBreakToken(1, [new CellBreak(1, null, IsComplete: true)], RowIsSplit: true) { RowRest = 16.875 };
+
+        token.Should().Be(token with { RowRest = 16.875 });
+        token.GetHashCode().Should().Be((token with { RowRest = 16.875 }).GetHashCode());
+        token.Should().NotBe(token with { RowRest = 0 });
     }
 
     [Fact]

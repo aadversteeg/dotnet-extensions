@@ -382,6 +382,88 @@ public class TableBoxTests
         height.Should().BeApproximately(expected, 1e-9);
     }
 
+    private const string SmallPage = "@page { size: 300pt 200pt; margin: 12pt } ";
+
+    /// <summary>The pages of a document, or the error.</summary>
+    private static Result<ValueList<PageFragment>, Error> Pages(string body, string css)
+    {
+        var result = Boxes(Doc(body, SmallPage + css));
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        return Paginator.Paginate(LayoutEnvironment.Create(result.Value.Fonts), result.Value.Document);
+    }
+
+    /// <summary>The heights of every row fragment of a page, in the order the page holds them.</summary>
+    private static List<double> RowHeights(PageFragment page)
+    {
+        var heights = new List<double>();
+        var pending = new Stack<Fragment>([page.Root.Fragment]);
+        while (pending.Count > 0)
+        {
+            if (pending.Pop() is BoxFragment box)
+            {
+                if (box.Box.Style.TableDisplay == TableDisplay.Row)
+                {
+                    heights.Add(box.Size.Height);
+                }
+
+                foreach (var child in box.Children.Reverse())
+                {
+                    pending.Push(child.Fragment);
+                }
+            }
+        }
+
+        return heights;
+    }
+
+    /// <summary>A row whose height does not fit at the page end is cut there although its content fits, and its part on
+    /// the next page is the rest of its height, in both border models and for a table's height shared over its rows (cases
+    /// <c>tg-break</c>: a row of 60 pt cut after 43.125 pt goes on 16.875 pt; <c>tg-break-cut-two</c>,
+    /// <c>tg-break-table</c>).</summary>
+    [Theory]
+    [InlineData("<tr style=\"height:60pt\"><td>a</td></tr>", "", 60)]
+    [InlineData("<tr style=\"height:60pt\"><td>a</td></tr>", "table { border-collapse: separate; border-spacing: 3pt } ", 60)]
+    [InlineData("<tr><td style=\"height:60pt\">a</td></tr>", "", 60)]
+    [InlineData("<tr><td>a</td></tr>", "table { height: 120pt } ", 120)]
+    public void A_row_with_a_height_cut_at_the_page_end_goes_on_with_the_rest_of_its_height(string row, string css, double height)
+    {
+        var pages = Pages($"<p style=\"padding-top:120pt\">first</p><table>{row}</table>", Collapsed + css);
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+
+        var first = RowHeights(pages.Value[0]);
+        var second = RowHeights(pages.Value[1]);
+        (first.Count, second.Count).Should().Be((1, 1));
+        first[0].Should().BePositive();
+        second[0].Should().BePositive();
+        (first[0] + second[0]).Should().BeApproximately(height, 1e-9);
+    }
+
+    /// <summary>A row taller than the page by its height runs over as many pages as it needs, each part the rest of the
+    /// height the page before left (case <c>tg-break-tall</c>: rows of 250 and 400 pt).</summary>
+    [Fact]
+    public void A_row_taller_than_the_page_by_its_height_runs_over_pages()
+    {
+        var pages = Pages("<table><tr style=\"height:400pt\"><td>a</td></tr></table>", Collapsed);
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+
+        var parts = pages.Value.SelectMany(RowHeights).ToList();
+        parts.Should().HaveCount(3);
+        parts.Sum().Should().BeApproximately(399.99609375, 1e-9, "400 pt is 533.328125 px on the 1/64 px step");
+    }
+
+    /// <summary>Over a page break no case measured a table with heights where a cell's own content runs over the page end,
+    /// or where a cell over several rows is cut: both are refused, with the room the table had.</summary>
+    [Theory]
+    [InlineData("<table><tr style=\"height:20pt\"><td>a<br>b<br>c<br>d<br>e<br>f<br>g<br>h<br>i<br>j<br>k<br>l<br>m<br>n<br>o</td></tr></table>")]
+    [InlineData("<table><tr style=\"height:20pt\"><td rowspan=2>a</td><td>b</td></tr><tr style=\"height:200pt\"><td>c</td></tr></table>")]
+    public void A_table_with_heights_whose_break_cuts_content_or_a_row_span_is_refused(string body)
+    {
+        var pages = Pages(body, Collapsed);
+
+        pages.IsFailure.Should().BeTrue();
+        pages.Error.Code.Should().Be(LayoutErrorCodes.TableBreak);
+    }
+
     [Theory]
     [InlineData("left")]
     [InlineData("block-end")]

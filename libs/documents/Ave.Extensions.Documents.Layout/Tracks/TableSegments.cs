@@ -53,6 +53,12 @@ internal static class TableSegments
         /// <summary>The cells that go on below the slice of a piece in another cell of the segment, each with the height
         /// it is lowered by (<see cref="CellsBesideSlices.Below"/>, <see cref="BelowSlices"/>); empty otherwise.</summary>
         public ImmutableDictionary<int, double> BelowSlice { get; init; } = ImmutableDictionary<int, double>.Empty;
+
+        /// <summary>Each row's least height (<see cref="Least"/>), without its content; empty for a segment not measured.</summary>
+        public ImmutableArray<double> LeastHeights { get; init; } = [];
+
+        /// <summary>The least height of <paramref name="row"/>; 0 without one.</summary>
+        public double LeastOf(int row) => row - FirstRow < LeastHeights.Length ? LeastHeights[row - FirstRow] : 0;
     }
 
     /// <summary>
@@ -285,7 +291,8 @@ internal static class TableSegments
                 var measured = natural.ToImmutableDictionary();
                 var below = BelowSlices(table, cells, measured);
                 var fragments = measured.SetItems(below.Select(cell => KeyValuePair.Create(cell.Key, Lowered(measured[cell.Key], cell.Value))));
-                return shell with { Heights = RowHeights(table.Grid, firstRow, lastRow, cells, fragments, table.RowGap, Least(table, shell, cells)), Natural = fragments, BelowSlice = below };
+                var least = Least(table, shell, cells);
+                return shell with { Heights = RowHeights(table.Grid, firstRow, lastRow, cells, fragments, table.RowGap, least), Natural = fragments, BelowSlice = below, LeastHeights = least };
             });
     }
 
@@ -356,7 +363,8 @@ internal static class TableSegments
     /// with the cell's padding and border (in the collapsing model its halves of the grid lines), and the row's share of
     /// the table's height (<see cref="TablePreparation.RowMinimums"/>). Each height is floored to the layout's step (cases
     /// <c>tg-row</c>: 40 pt gives 39.996 pt; <c>tg-cell</c> d, e: the larger of the row's and the cell's wins; <c>tg-fraction</c>
-    /// b: a cell's content height of 21.37 pt is 21.363 pt). Zero for a row without one.
+    /// b: a cell's content height of 21.37 pt is 21.363 pt). Zero for a row without one. The part on this page of a row the
+    /// page before broke inside has what that page left of it (<see cref="TableGeometry.RowRest"/>) instead.
     /// </summary>
     private static ImmutableArray<double> Least(TableGeometry table, Segment shell, ImmutableArray<ActiveCell> cells)
     {
@@ -365,10 +373,12 @@ internal static class TableSegments
         for (var row = shell.FirstRow; row <= shell.LastRow; row++)
         {
             var own = table.Grid.Rows[row].Box.Style.TableHeight is { Points: var height } ? TrackSizing.Floor(height, step) : 0;
-            least[row - shell.FirstRow] = Math.Max(own, table.Prepared.RowMinimums.IsDefaultOrEmpty ? 0 : table.Prepared.RowMinimums[row]);
+            least[row - shell.FirstRow] = row == table.ResumedSplitRow
+                ? table.RowRest
+                : Math.Max(own, table.Prepared.RowMinimums.IsDefaultOrEmpty ? 0 : table.Prepared.RowMinimums[row]);
         }
 
-        foreach (var cell in cells.Where(cell => cell.Token is null && table.Grid.Cells[cell.Cell].LastRow == cell.StartRow))
+        foreach (var cell in cells.Where(cell => cell.Token is null && !cell.IsComplete && cell.StartRow != table.ResumedSplitRow && table.Grid.Cells[cell.Cell].LastRow == cell.StartRow))
         {
             if (table.Grid.Cells[cell.Cell].Box.Style.TableHeight is { Points: var content })
             {

@@ -51,17 +51,27 @@ public static class TracksLayout
             : TableGrid.Build(box).OnSuccessBind(grid => Prepare(environment, box, grid, space.AvailableWidth));
         return preparation
             .OnSuccessBind(table => token is null ? TableHeights.Shared(environment, box, table, space, unlimited => Grid(environment, box, table, unlimited, null)) : Result<TablePreparation, Error>.Success(table))
-            .OnSuccessBind(table => token is not null && InvalidToken(table.Grid, token) is { } reason
+            .OnSuccessBind(table => (token is not null && InvalidToken(table.Grid, token) is { } reason
                 ? Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, token, reason))
                 : TableCaption.Of(box) is { } caption
                     ? TableCaption.Layout(environment, box, caption, table.Width, table.Grid.HeaderRowCount, space, token is not null, gridSpace => Grid(environment, box, table, gridSpace, token))
                     : Grid(environment, box, table, space, token))
-            .OnSuccessBind(result => TableHeights.Fits(box, space, result));
+                .OnSuccessBind(result => TableHeights.Fits(box, table.Grid, space, result)));
     }
 
     /// <summary>A page of the table's grid (<see cref="TablePage"/>), its continuation carrying the prepared grid.</summary>
     private static Result<LayoutResult, Error> Grid(LayoutEnvironment environment, Box box, TablePreparation table, ConstraintSpace space, TracksBreakToken? token) =>
-        TablePage.LayOut(new TableGeometry(environment, box, table) { IsAtPageStart = space.IsAtPageStart, IsBelowStartInsets = space.IsBelowStartInsets, ContinuesFromPageBefore = token is not null }, space, token)
+        TablePage.LayOut(
+                new TableGeometry(environment, box, table)
+                {
+                    IsAtPageStart = space.IsAtPageStart,
+                    IsBelowStartInsets = space.IsBelowStartInsets,
+                    ContinuesFromPageBefore = token is not null,
+                    ResumedSplitRow = token is { RowIsSplit: true } ? token.NextRow : null,
+                    RowRest = token is { RowIsSplit: true } ? token.RowRest : 0,
+                },
+                space,
+                token)
             .OnSuccessMap(result => result is LayoutResult.Placed { Continuation: TracksBreakToken next } placed
                 ? placed with { Continuation = next with { Prepared = table } }
                 : result);
@@ -88,6 +98,11 @@ public static class TracksLayout
         if (token.Passed > 0 && token.RowIsSplit)
         {
             return $"a height passes the page end only below a row placed whole, not inside row {token.NextRow}";
+        }
+
+        if (!double.IsFinite(token.RowRest) || token.RowRest < 0 || (token.RowRest > 0 && !token.RowIsSplit))
+        {
+            return $"the rest of a row's height, {token.RowRest}, is not a height a row broken inside can keep";
         }
 
         var seen = new HashSet<int>();
@@ -423,6 +438,14 @@ internal sealed record TableGeometry(LayoutEnvironment Environment, Box Box, Tab
 
     /// <summary>True when the table continues from the page before: it is laid out from a break token.</summary>
     public bool ContinuesFromPageBefore { get; init; }
+
+    /// <summary>The row the page before broke inside (<see cref="TracksBreakToken.RowIsSplit"/>), or null: its part on this
+    /// page has <see cref="RowRest"/> as its least height instead of the row's own.</summary>
+    public int? ResumedSplitRow { get; init; }
+
+    /// <summary>What the page before left of the least height of <see cref="ResumedSplitRow"/>
+    /// (<see cref="TracksBreakToken.RowRest"/>); 0 without one.</summary>
+    public double RowRest { get; init; }
 
     /// <summary>True on a later page where content taller than the page area starts the page right below the repeated
     /// header rows (<see cref="TablePage"/>, remarks): the cells of the page's first body row are laid out as starting

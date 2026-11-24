@@ -58,15 +58,16 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(table.Source);
 
-    /// <summary>A table with a height of its own, of a row or of a cell that does not fit whole on the page where it
-    /// starts (<see cref="LayoutErrorCodes.TableBreak"/>; <see cref="TableHeights"/>).</summary>
+    /// <summary>A table with a height of its own, of a row or of a cell where a page break cuts a cell's content or a cell
+    /// over several rows (<see cref="LayoutErrorCodes.TableBreak"/>; <see cref="TableHeights"/>).</summary>
     /// <param name="table">The tracks box.</param>
     /// <param name="available">The height it had on the page.</param>
     public static Error HeightBreak(Box table, double available) =>
         new Error(
                 LayoutErrorCodes.TableBreak,
-                $"{Describe(table)} has a height on the table, a row or a cell and does not fit whole in {Room(available)}: such a table that breaks over pages "
-                + "is not drawn in this version. Give the table the room on one page, for example with a page break before it, or leave the heights out.")
+                $"{Describe(table)} has a height on the table, a row or a cell, and the page end in {Room(available)} cuts the content of a cell or a cell over "
+                + "several rows: such a break is not drawn in this version. Give that row the room on one page, for example with a page break before "
+                + "the table, or leave the heights out.")
             .With(ErrorMetadataKeys.Node, table.Id.ToString())
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(table.Source);

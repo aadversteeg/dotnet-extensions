@@ -144,16 +144,25 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     /// </summary>
     internal bool FollowsPassed { get; init; }
 
+    /// <summary>
+    /// The part of the least height of <see cref="NextRow"/> (its own height, its cells' and its share of the table's,
+    /// <see cref="BoxStyle.TableHeight"/>) that the page this token ends did not hold, when the break fell inside that row
+    /// (<see cref="RowIsSplit"/>): the row's part on the next page is at least that tall. 0 when the row has no least height
+    /// or the page held all of it. Part of the position.
+    /// </summary>
+    public double RowRest { get; init; }
+
     /// <summary>Equal when the positions are equal (<see cref="Prepared"/> and <see cref="PassedLines"/> are not compared).</summary>
     /// <param name="other">The other token.</param>
     /// <returns>True for the same position.</returns>
     public bool Equals(TracksBreakToken? other) =>
         other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit && BodyShown == other.BodyShown
-        && CutBelowHeader == other.CutBelowHeader && RepeatsHeader == other.RepeatsHeader && Passed.Equals(other.Passed) && PaintsPassed == other.PaintsPassed;
+        && CutBelowHeader == other.CutBelowHeader && RepeatsHeader == other.RepeatsHeader && Passed.Equals(other.Passed) && PaintsPassed == other.PaintsPassed
+        && RowRest.Equals(other.RowRest);
 
     /// <summary>The hash of the position.</summary>
     /// <returns>The hash code.</returns>
-    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, CutBelowHeader, RepeatsHeader, Passed, PaintsPassed);
+    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, CutBelowHeader, RepeatsHeader, Passed, HashCode.Combine(PaintsPassed, RowRest));
 }
 
 /// <summary>Where one cut cell continues.</summary>

@@ -1,0 +1,9 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A row of height 80pt with two lines in a cell that does not fit at the end of the page, separated: its content fits, its height does not. -->
+<style>@page { size: 300pt 200pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }</style></head><body>
+<p id="first" style="padding-top: 110pt">first</p>
+<table id="a" class="s">
+<tr style="height: 80pt"><td id="one-a">one<br>more</td><td>two</td></tr>
+</table>
+<p>after</p>
+</body></html>

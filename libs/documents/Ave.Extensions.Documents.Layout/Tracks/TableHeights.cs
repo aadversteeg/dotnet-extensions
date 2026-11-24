@@ -18,9 +18,15 @@ namespace Ave.Extensions.Documents.Layout;
 /// become 25.887, 43.992 and 62.121 pt). A height less than the rows' has no effect (<c>tg-table-small</c>).
 /// </summary>
 /// <remarks>
-/// A table with any such height is drawn only where it fits whole on its page: Chromium breaks a row inside its height and
-/// goes on with the rest of the height on the next page (case <c>tg-break</c>: a row of 60 pt is cut after 43.25 pt, a row
-/// of 250 pt runs over two pages), which this version does not draw (<see cref="LayoutErrors.TableBreak"/>).
+/// Over a page break a row with a least height is cut at the page end like any row, also where its cells' content ends on
+/// the page, and its part on the next page is the rest of that height: the least height less the part from the row's top
+/// to the page end (<see cref="TracksBreakToken.RowRest"/>), with its content at the top of the part where it is cut
+/// (<see cref="CutRowAlignment.TopOnEveryPage"/>). Measured in both border models (cases <c>tg-break</c>: a row of 60 pt
+/// cut after 43.125 pt goes on 16.875 pt; <c>tg-break-rows</c>, <c>tg-break-rows-separated</c>: rows of 30 pt and of a
+/// 24 pt cell below a header that repeats; <c>tg-break-cut-two</c>, <c>tg-break-cut-align</c>, <c>tg-break-cut-cell</c>;
+/// <c>tg-break-tall</c>: rows of 250 and 400 pt over two and four pages; <c>tg-break-table</c>: the shares of a table's
+/// height). Not measured, so refused (<see cref="LayoutErrors.TableBreak"/>): a table with heights where a cell's own
+/// content runs over the page end, or where a cell over several rows is cut.
 /// </remarks>
 internal static class TableHeights
 {
@@ -75,14 +81,17 @@ internal static class TableHeights
         });
     }
 
-    /// <summary>The result, or the refusal of a table with a height of its own, of a row or of a cell that does not fit
-    /// whole where it starts (see remarks).</summary>
+    /// <summary>The result, or the refusal of a table with a height of its own, of a row or of a cell that breaks where no
+    /// case measured it (see remarks): a cut cell whose content goes on, or a cut cell over several rows.</summary>
     /// <param name="box">The tracks box.</param>
+    /// <param name="grid">Its grid.</param>
     /// <param name="space">The table's space.</param>
     /// <param name="result">Its layout on this page.</param>
     /// <returns>The result, or the error.</returns>
-    public static Result<LayoutResult, Error> Fits(Box box, ConstraintSpace space, LayoutResult result) =>
-        result is LayoutResult.Placed { Continuation: null } || !HasAnyHeight(box)
+    public static Result<LayoutResult, Error> Fits(Box box, TableGrid grid, ConstraintSpace space, LayoutResult result) =>
+        result is not LayoutResult.Placed { Continuation: TracksBreakToken next }
+        || !next.Cells.Any(cut => !cut.IsComplete || grid.Cells[cut.Cell].Row != grid.Cells[cut.Cell].LastRow)
+        || !HasAnyHeight(box)
             ? Result<LayoutResult, Error>.Success(result)
             : Result<LayoutResult, Error>.Failure(LayoutErrors.HeightBreak(box, space.AvailableHeight));
 
