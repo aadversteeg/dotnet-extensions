@@ -73,6 +73,7 @@ internal static class HtmlCases
         ["h-page-a4-zero-justify"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["h-page-a4-zero-lines"] = "The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet",
         ["sr-same-font"] = "A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run",
+        ["mx-gen-link"] = "A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest",
         ["sr-zwnj"] = "A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it",
         ["a4-continued-cell-pad-bottom-30-under-header"] = "A_continued_cell_whose_rest_fits_the_page_area_but_not_with_its_bottom_padding_goes_on_without_the_outer_repeated_header",
         ["fr-old-row-taller-by-padding"] = "A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank",

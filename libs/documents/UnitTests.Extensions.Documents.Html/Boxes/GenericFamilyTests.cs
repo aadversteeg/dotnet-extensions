@@ -88,6 +88,7 @@ public class GenericFamilyTests
     [InlineData("pm-inherit-family", "color: #008000; font-family: Lato;", "color: #008000; font-family: sans-serif;", "SansSerif", "Lato")]
     [InlineData("pm-inherit-family", "@top-left { content: \"Aa\"; }", "@top-left { content: \"Aa\"; font-family: serif; }", "Serif", "Lato")]
     [InlineData("gf-initial-body", "@font-face { font-family: \"Times New Roman\";", "@font-face { font-family: Theano;", "Standard", "Theano")]
+    [InlineData("mx-gen-family", "content: \"Serif \"; font-family: Theano;", "content: \"Serif \"; font-family: serif;", "Serif", "Theano")]
     public void A_mapped_generic_family_prints_as_the_family_written_out(string name, string written, string generic, string property, string family)
     {
         HtmlCases.Status(name, "equal").Should().Be("equal", "the written-out document is equal to Chromium");

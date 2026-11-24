@@ -805,6 +805,25 @@ public static partial class HtmlBoxGenerator
             return ' ';
         }
 
+        /// <summary>
+        /// Refuses generated text inside an inline element with a box of its own (<see cref="InlineBoxStyle"/>), at its
+        /// <c>content</c> declaration, and draws it there under <see cref="UnsupportedPolicy.Warn"/>: Chromium 159 draws that
+        /// text from the line's pixels and the element's own text from the box's (case <c>mx-link-gen</c>: under a padding of
+        /// 1pt the <c>::before</c> text "from" on the baseline 78.75 pt, the element's "inside" 0.246 pt below it), where the
+        /// engine draws both from the box's (THE RULE FOR AN INLINE BOX ON WHOLE PIXELS).
+        /// </summary>
+        private void RefuseGeneratedTextInBox(StyledText text, InlineFrame frame)
+        {
+            if (frame.Element.Generated is not { } declared || !frame.InBox || text.Text.Data.All(IsCollapsible))
+            {
+                return;
+            }
+
+            Refuse(HtmlStyleErrorCodes.Unsupported.Value,
+                "Generated text inside an element with a background, border, padding or margin of its own is not drawn in this version: Chromium draws it on the pixels of the line and the element's own text on those of the box. Generate the text outside that element, or give the box to an element inside it.",
+                InputQuote.Of(text.Text.Data), declared.Position, "content");
+        }
+
         private static TextPosition Position(StyledNode node) => node is StyledElement element ? element.Element.Position : ((StyledText)node).Text.Position;
 
         /// <summary>One child of inline content: a text becomes a run in its parent's text style; an inline element's
@@ -821,6 +840,7 @@ public static partial class HtmlBoxGenerator
 
                     var preservedTab = RefusePreservedTab(text);
                     RefuseUnspacedCharacter(text);
+                    RefuseGeneratedTextInBox(text, frame);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
                         // The glyphs are checked in the text as it is drawn, after its transform, at the source's places.

@@ -130,6 +130,31 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// A link around generated text (case <c>mx-gen-link</c>: <c>a::before { content: "see " }</c> and
+    /// <c>a::after { content: " more" }</c>): Chromium's print writes two link annotations for each link, one around the
+    /// generated text and one around the element's own (33.75 to 52.5 pt and 52.5 to 74.25 pt for "see page"), where the
+    /// engine writes one area for the link's part on the line, from its first piece to its last (THE RULE FOR A LINK'S
+    /// AREA). A link area is not printed, so the print is the same, and each is a valid link annotation (ISO 32000-1
+    /// §12.5.6.5); the engine's area is the union of Chromium's two, edge for edge: the number of rectangles is the whole
+    /// difference.
+    /// </summary>
+    [Fact]
+    public void A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest()
+    {
+        HtmlCases.Difference(Engine("mx-gen-link"), HtmlCases.ChromiumPrint("mx-gen-link")).Should().BeNull("the print is equal, its underlines cut around the ink");
+        var boxes = HtmlCases.Boxes("mx-gen-link").Value;
+        var pages = DocumentLayout.Run(boxes.Document, boxes.Fonts).Value;
+        var chromium = HtmlCases.Links(HtmlCases.Cases, "mx-gen-link");
+
+        chromium.Should().HaveCount(4);
+        HtmlCases.Links(pages).Should().HaveCount(2);
+        chromium.Chunk(2).Should().OnlyContain(pair => pair[0].X1 == pair[1].X0 && pair[0].Y0 == pair[1].Y0 && pair[0].Y1 == pair[1].Y1 && pair[0].Target == pair[1].Target,
+            "Chromium's two rectangles of a link touch, on one line, to one target");
+        var unions = chromium.Chunk(2).Select(pair => pair[0] with { X1 = pair[1].X1 }).ToList();
+        HtmlCases.LinkDifference(pages, unions, boxes.Document.Page.Margins.Top.Points).Should().BeNull();
+    }
+
+    /// <summary>
     /// A table whose given width is narrower than its content in the fixed layout, the same limit of the fill columns
     /// (above): case <c>twd-table-narrow</c>, four tables of <c>width: 40pt</c> holding "one" beside "text with more words",
     /// one word a line. In the automatic layout (tables a and c) Chromium and the engine both widen the table to its

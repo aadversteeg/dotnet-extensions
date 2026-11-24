@@ -532,6 +532,16 @@ mf4-line-0 equal
 mf4-line-075 equal
 mf4-line-150 equal
 mf4-line-225 equal
+mx-caption-percent equal
+mx-gen-caption equal
+mx-gen-family equal
+mx-gen-link listed A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest: link 1 on page 1: x1 74.156, Chromium 52.5 (links.txt)
+mx-gen-spacing equal
+mx-height-separated equal
+mx-link-gen refused Documents.Html.Unsupported.Value content: from  at 3:183
+mx-list-cell equal
+mx-shift-cut equal
+mx-spacing-box equal
 pm-defaults equal
 pm-empty equal
 pm-family-unused listed A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face: page 1 'Cc' x1 61.32, Chromium 61.65 (print.txt)

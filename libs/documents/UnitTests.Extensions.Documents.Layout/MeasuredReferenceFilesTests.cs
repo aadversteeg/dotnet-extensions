@@ -14,11 +14,11 @@ public class MeasuredReferenceFilesTests
 {
     /// <summary>The cases whose print has an underline or overline cut around a glyph's ink, so that the read-back writes their
     /// gaps (<c>ink.py</c>, <c>&lt;case&gt;.ink.txt</c>).</summary>
-    private static readonly string[] InkCases = ["dl-skip", "lk-missing", "lk-same-page", "lk-top", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose", "tt-groups"];
+    private static readonly string[] InkCases = ["dl-skip", "lk-missing", "lk-same-page", "lk-top", "mx-gen-link", "mx-link-gen", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose", "tt-groups"];
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = ["dw-half", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "tt-groups", "va-decorated", "va-link", "va-sub"];
+    private static readonly string[] LinkCases = ["dw-half", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "mx-gen-link", "mx-link-gen", "mx-list-cell", "tt-groups", "va-decorated", "va-link", "va-sub"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -2178,6 +2178,51 @@ public class MeasuredReferenceFilesTests
         ["mf4-line-225.lines.txt"] = 106,
         ["mf4-line-225.print.txt"] = 169,
         ["mf4-line-225.words.txt"] = 60,
+        ["mx-caption-percent.boxes.txt"] = 6,
+        ["mx-caption-percent.lines.txt"] = 17,
+        ["mx-caption-percent.print.txt"] = 35,
+        ["mx-caption-percent.words.txt"] = 17,
+        ["mx-gen-caption.boxes.txt"] = 4,
+        ["mx-gen-caption.lines.txt"] = 14,
+        ["mx-gen-caption.print.txt"] = 27,
+        ["mx-gen-caption.words.txt"] = 12,
+        ["mx-gen-family.boxes.txt"] = 1,
+        ["mx-gen-family.lines.txt"] = 0,
+        ["mx-gen-family.print.txt"] = 8,
+        ["mx-gen-family.words.txt"] = 7,
+        ["mx-gen-link.boxes.txt"] = 1,
+        ["mx-gen-link.ink.txt"] = 10,
+        ["mx-gen-link.lines.txt"] = 4,
+        ["mx-gen-link.links.txt"] = 4,
+        ["mx-gen-link.print.txt"] = 17,
+        ["mx-gen-link.words.txt"] = 12,
+        ["mx-gen-spacing.boxes.txt"] = 1,
+        ["mx-gen-spacing.lines.txt"] = 0,
+        ["mx-gen-spacing.print.txt"] = 17,
+        ["mx-gen-spacing.words.txt"] = 16,
+        ["mx-height-separated.boxes.txt"] = 20,
+        ["mx-height-separated.lines.txt"] = 34,
+        ["mx-height-separated.print.txt"] = 141,
+        ["mx-height-separated.words.txt"] = 24,
+        ["mx-link-gen.boxes.txt"] = 1,
+        ["mx-link-gen.ink.txt"] = 10,
+        ["mx-link-gen.lines.txt"] = 5,
+        ["mx-link-gen.links.txt"] = 4,
+        ["mx-link-gen.print.txt"] = 22,
+        ["mx-link-gen.words.txt"] = 16,
+        ["mx-list-cell.boxes.txt"] = 4,
+        ["mx-list-cell.lines.txt"] = 17,
+        ["mx-list-cell.links.txt"] = 3,
+        ["mx-list-cell.print.txt"] = 34,
+        ["mx-list-cell.words.txt"] = 15,
+        ["mx-shift-cut.boxes.txt"] = 2,
+        ["mx-shift-cut.lines.txt"] = 10,
+        ["mx-shift-cut.print.txt"] = 42,
+        ["mx-shift-cut.words.txt"] = 30,
+        ["mx-spacing-box.boxes.txt"] = 1,
+        ["mx-spacing-box.lines.txt"] = 4,
+        ["mx-spacing-box.print.txt"] = 19,
+        ["mx-spacing-box.words.txt"] = 14,
         ["pm-defaults.boxes.txt"] = 1,
         ["pm-defaults.lines.txt"] = 9,
         ["pm-defaults.print.txt"] = 22,
@@ -3172,7 +3217,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(775);
+        cases.Should().HaveCount(785);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

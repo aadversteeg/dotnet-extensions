@@ -1,0 +1,8 @@
+page 1 300.000 300.000
+word 1 12.000 32.233 22.500 10.500 Lato #000000 Lato-Regular
+word 1 34.922 57.570 22.500 10.500 Serif #000000 TheanoDidot-Regular
+word 1 60.270 81.936 22.500 10.500 after #000000 Lato-Regular
+word 1 84.415 101.698 22.500 10.500 end #000000 Lato-Regular
+word 1 12.000 38.166 42.750 10.500 Again #000000 Lato-Regular
+word 1 40.863 63.512 42.750 10.500 Serif #000000 TheanoDidot-Regular
+word 1 66.211 86.765 42.750 10.500 here #000000 Lato-Regular

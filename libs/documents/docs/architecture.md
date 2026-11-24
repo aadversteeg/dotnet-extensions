@@ -1106,6 +1106,9 @@ Each is documented next to its code as well.
   face prints in both (case `pm-inherit-family`).
 - **A zero width non-joiner in the text:** Chromium's print keeps U+200C in the text of its PDF, in the word it
   lies in; the engine's PDF does not (case `sr-zwnj`, listed; `HtmlListedDifferenceTests`).
+- **A link around generated text:** Chromium writes two link annotations for such a link on a line, one around the
+  generated text and one around the element's own; the engine writes one, their union (case `mx-gen-link`, listed;
+  `HtmlListedDifferenceTests`). A link area is not printed.
 
 - **Layout:** negative margins (refused as unsupported); `vertical-align: baseline`
   in cells; column gaps and column styles; the separated border model; diagonal joins of differently coloured

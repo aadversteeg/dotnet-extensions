@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- text-transform and letter-spacing on generated text at 10.5 pt: an uppercase ::before, a letter-spaced ::before, capitalize on a paragraph with a ::before, and an ::after in a letter-spaced span. -->
+<style>@page { size: 300pt 300pt; margin: 12pt; } body { font-size: 10.5pt; } p { margin: 0 0 6pt 0; } .u::before { content: "pre "; text-transform: uppercase; } .s::before { content: "wide "; letter-spacing: 1pt; } .c { text-transform: capitalize; } .c::before { content: "one two "; } .w { letter-spacing: 0.5pt; } .w::after { content: " tail"; }</style></head><body>
+<p>Text <span class="u">after</span> end</p>
+<p>Text <span class="s">after</span> end</p>
+<p class="c">text after</p>
+<p>Text <span class="w">spaced</span> end</p>
+</body></html>
