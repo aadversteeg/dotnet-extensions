@@ -253,9 +253,7 @@ public class TableBoxTests
     [InlineData("<table><col style=\"width:30%\"><col><tr><td style=\"width:40pt\">a</td><td>b</td></tr></table>", "table { table-layout: auto }", "width", "40pt")]
     [InlineData("<table style=\"width:100%\"><col style=\"width:50%\"><col><tr><td style=\"width:10pt\">a</td><td>b</td></tr></table>", "table { table-layout: fixed }", "width", "10pt")]
     [InlineData("<table style=\"background:#ccc\"><tr><td>a</td></tr></table>", "", "background-color", "rgb(204, 204, 204)")]
-    [InlineData("<table><tbody style=\"background:#ccc\"><tr><td>a</td></tr></tbody></table>", "", "background-color", "rgb(204, 204, 204)")]
-    [InlineData("<table><tr style=\"background:#ccc\"><td>a</td></tr></table>", "", "background-color", "rgb(204, 204, 204)")]
-    [InlineData("<table><col style=\"background:#ccc\"><tr><td>a</td></tr></table>", "", "background-color", "rgb(204, 204, 204)")]
+    [InlineData("<table><tr style=\"background:rgba(204, 204, 204, 0.5)\"><td>a</td></tr></table>", "", "background-color", "rgba(204, 204, 204, 0.5)")]
     [InlineData("<table><col style=\"border-left:1pt solid #000\"><tr><td>a</td></tr></table>", "", "border-left-width", "0.75pt")]
     [InlineData("<table><colgroup style=\"width:10pt\"><col></colgroup><tr><td>a</td></tr></table>", "", "width", "10pt")]
     [InlineData("<table><tr><td style=\"width:50%\">a</td></tr></table>", "", "width", "50%")]
@@ -380,6 +378,23 @@ public class TableBoxTests
             ? fragments.Single(box => box.Box.Role == SemanticRole.Table).Size.Height
             : fragments.Single(box => box.Box.Style.TableDisplay == TableDisplay.Row).Size.Height;
         height.Should().BeApproximately(expected, 1e-9);
+    }
+
+    /// <summary>The backgrounds of row groups, rows, columns and column groups go to the cells: a cell without its own takes
+    /// its row's, else its row group's, else its column's, else its column group's; a cell over several rows or columns the
+    /// one it starts in (cases <c>tk-separated</c>, <c>tk-collapsed</c>, <c>tk-span</c>). The groups and rows keep none.</summary>
+    [Fact]
+    public void Backgrounds_of_groups_rows_and_columns_are_the_cells_backgrounds()
+    {
+        var table = Table("<table><colgroup style=\"background:#00ff00\"><col style=\"background:#0000ff\"><col><col></colgroup>"
+            + "<tbody style=\"background:#ffff00\"><tr style=\"background:#ff0000\"><td style=\"background:#00ffff\">a</td><td rowspan=2>b</td><td>c</td></tr>"
+            + "<tr><td>d</td><td>e</td></tr></tbody><tbody><tr><td colspan=2>f</td><td>g</td></tr><tr><td>h</td><td>i</td><td>j</td></tr></tbody></table>");
+        var groups = Parts(table).ToList();
+        var cells = groups.SelectMany(Parts).SelectMany(Parts).Select(cell => cell.Style.Background).ToList();
+        Color red = new(255, 0, 0), yellow = new(255, 255, 0), blue = new(0, 0, 255), green = new(0, 255, 0);
+
+        cells.Should().Equal(new Color(0, 255, 255), red, red, yellow, yellow, blue, green, blue, green, green);
+        groups.Concat(groups.SelectMany(Parts)).Should().OnlyContain(part => part.Style.Background == null);
     }
 
     private const string SmallPage = "@page { size: 300pt 200pt; margin: 12pt } ";

@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A row with a background cut at a page break: a, collapsed, a row of height 60pt; b, separated, a row whose first cell has six lines. -->
+<style>@page { size: 300pt 200pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }
+.t { background: #eeeeee; } .g { background: #ccffcc; } .c { background: #ccccff; } .b { background: #ffffcc; } .r { background: #ffcccc; } .d { background: #ccffff; } #a tr { height: 60pt; }</style></head><body>
+<p id="first" style="padding-top: 120pt">first</p>
+<table id="a">
+<tr class="r"><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p style="break-before: page; padding-top: 120pt">second</p>
+<table id="b" class="s">
+<tr class="r"><td id="one-b">one<br>two<br>three<br>four<br>five<br>six</td><td>cell</td></tr>
+</table>
+<p>after</p>
+</body></html>

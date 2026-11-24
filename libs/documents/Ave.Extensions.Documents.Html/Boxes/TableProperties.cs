@@ -94,15 +94,14 @@ internal static class TableProperties
     /// table part, its table's, as the property is inherited (CSS 2.1 §17.6) and never set on a part in the cases.</summary>
     public static bool IsSeparated(ElementFacts facts) => facts.Style[PropertyRegistry.Find("border-collapse")!] is not CssKeyword { Name: "collapse" };
 
-    /// <summary>A background: a cell's and a caption's are drawn (case <c>tc-box</c>), and a table's with separated borders, which paints it under its whole
-    /// border box as a block box does (CSS 2.1 §17.6.1; case <c>ts-paint</c>); a group's, a row's and a column's are not in
-    /// this version, nor a table's with collapsed borders.</summary>
+    /// <summary>A background: a cell's and a caption's are drawn (case <c>tc-box</c>); a row group's, a row's, a column's and a
+    /// column group's, which the cells take (<c>HtmlBoxGenerator</c>, Backgrounds; cases <c>tk-*</c>); and a table's with
+    /// separated borders, which paints it under its whole border box as a block box does (CSS 2.1 §17.6.1; case
+    /// <c>ts-paint</c>). A table's with collapsed borders is not drawn in this version.</summary>
     public static string? Background(ElementFacts facts) => Part(facts) switch
     {
-        TablePart.Cell or TablePart.Caption or TablePart.None => null,
-        TablePart.Table when IsSeparated(facts) => null,
-        TablePart.Table => "a background on a table with collapsed borders is not drawn in this version: put it on the cells, or draw the table with border-collapse: separate",
-        _ => "a background on a row group, a row or a column is not drawn in this version: put it on the cells",
+        TablePart.Table when !IsSeparated(facts) => "a background on a table with collapsed borders is not drawn in this version: put it on the cells, or draw the table with border-collapse: separate",
+        _ => null,
     };
 
     /// <summary>A border width: the columns' borders are not in the model's collapsing border model (CSS 2.1 §17.6.2.1

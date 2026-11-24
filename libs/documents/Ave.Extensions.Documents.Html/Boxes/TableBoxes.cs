@@ -127,6 +127,10 @@ public static partial class HtmlBoxGenerator
         /// draw is refused (<see cref="CellWidths"/>).</summary>
         private readonly Dictionary<NodeId, TextPosition> _cellWidths = [];
 
+        /// <summary>Per table: per column element, its span, its background and its column group's (null for none), in
+        /// the order of the columns (<see cref="Backgrounds"/>).</summary>
+        private readonly Dictionary<StyledElement, List<(int Span, Color? Column, Color? Group)>> _columnBackgrounds = new(ReferenceEqualityComparer.Instance);
+
         /// <summary>The boxes of the footer groups, which their table draws after its other row groups.</summary>
         private readonly HashSet<NodeId> _footers = [];
 
@@ -233,6 +237,12 @@ public static partial class HtmlBoxGenerator
                 _columns[table] = columns;
             }
 
+            if (!_columnBackgrounds.TryGetValue(table, out var backgrounds))
+            {
+                backgrounds = [];
+                _columnBackgrounds[table] = backgrounds;
+            }
+
             Check(element, isBlock: true);
             var children = part == TablePart.ColumnGroup
                 ? element.Children.OfType<StyledElement>().Where(child => PartOf(child) == TablePart.Column && Display(child) != "none").ToList()
@@ -240,6 +250,9 @@ public static partial class HtmlBoxGenerator
             if (children.Count == 0)
             {
                 columns.Add((Width(element), Span(element.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1), element.Element.Position));
+                backgrounds.Add(part == TablePart.ColumnGroup
+                    ? (columns[^1].Span, null, BackgroundOf(element))
+                    : (columns[^1].Span, BackgroundOf(element), null));
                 return;
             }
 
@@ -254,7 +267,62 @@ public static partial class HtmlBoxGenerator
             {
                 Check(column, isBlock: true);
                 columns.Add((Width(column), Span(column.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1), column.Element.Position));
+                backgrounds.Add((columns[^1].Span, BackgroundOf(column), BackgroundOf(element)));
             }
+        }
+
+        /// <summary>A computed <c>background-color</c> of alpha 1, or null (transparent; another alpha is refused).</summary>
+        private Color? BackgroundOf(StyledElement element) =>
+            Value(element, "background-color") is { } background && BoxProperties.Alpha(background) == 1 ? ColorOf(background) : null;
+
+        /// <summary>
+        /// The backgrounds of the table's row groups, rows, columns and column groups, given to its cells (CSS 2.1 §17.5.1,
+        /// the table layers): a cell without a background of its own takes its row's, else its row group's, else its column's,
+        /// else its column group's, over its whole area, as Chromium prints them in both border models (cases
+        /// <c>tk-separated</c>, <c>tk-collapsed</c>: each layer is painted once per cell, over the cell's box, never in the
+        /// spacing; bottom to top column group, column, row group, row, cell, so with colours of alpha 1 the cell shows the
+        /// highest; <c>tk-span</c>: a cell over several rows takes the row it starts in, a cell over several columns the column
+        /// it starts in, over all of its area; <c>tk-break-stripe</c>, <c>tk-break-cut</c>: on every page, in a repeated header
+        /// and in both parts of a cut row, as the cell's own). The groups and rows keep none of their own. Linear in the cells.
+        /// </summary>
+        private List<Box> Backgrounds(StyledElement table, List<Box> groups, TableSlots.Grid grid)
+        {
+            var columns = new (Color? Column, Color? Group)[grid.ColumnCount];
+            var next = 0;
+            foreach (var (span, column, group) in _columnBackgrounds.TryGetValue(table, out var given) ? given : [])
+            {
+                for (var index = next; index < Math.Min(columns.Length, next + span); index++)
+                {
+                    columns[index] = (column, group);
+                }
+
+                next += span;
+                if (next >= columns.Length)
+                {
+                    break;
+                }
+            }
+
+            var placed = groups.SelectMany(Parts).SelectMany(Parts).Count() == grid.Cells.Length;
+            var at = 0;
+            Box Cell(Box cell, Box row, Box group)
+            {
+                var start = placed ? grid.Cells[at].Column : -1;
+                at++;
+                var layer = cell.Style.Background ?? row.Style.Background ?? group.Style.Background
+                    ?? (start >= 0 && start < columns.Length ? columns[start].Column ?? columns[start].Group : null);
+                return layer == cell.Style.Background ? cell : cell with { Style = cell.Style with { Background = layer } };
+            }
+
+            return [.. groups.Select(group => group with
+            {
+                Style = group.Style with { Background = null },
+                Children = [.. Parts(group).Select(row => (Node)(row with
+                {
+                    Style = row.Style with { Background = null },
+                    Children = [.. Parts(row).Select(cell => (Node)Cell(cell, row, group))],
+                }))],
+            })];
         }
 
         /// <summary>A computed width other than auto, or null (auto, or refused).</summary>
@@ -508,7 +576,7 @@ public static partial class HtmlBoxGenerator
 
             var height = TableHeightOf(element, caption, groups);
             var sizes = Columns(element, grid);
-            groups = CellWidths(element, groups, grid, sizes.Width != BoxWidth.Auto && Value(element, "table-layout") is CssKeyword { Name: "fixed" });
+            groups = Backgrounds(element, CellWidths(element, groups, grid, sizes.Width != BoxWidth.Auto && Value(element, "table-layout") is CssKeyword { Name: "fixed" }), grid);
             var separated = Value(element, "border-collapse") is not CssKeyword { Name: "collapse" };
             return box with
             {

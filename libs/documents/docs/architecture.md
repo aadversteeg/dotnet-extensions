@@ -737,7 +737,7 @@ or `Value` for a computed value): a table part outside its parent part, which CS
 (§17.2.1); a table part on another element than its HTML element; a second caption, a block inside a caption, a width on
 a caption, a header group after a row group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
 a column in which no cell starts; the percentages and cell lengths named above, a width on a column group with column
-elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
+elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); a background on a table with collapsed borders; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
 
@@ -761,6 +761,16 @@ the part where it is cut, a row taller than a page over as many pages as it need
 first (cases `tg-break`, `tg-break-rows`, `tg-break-rows-separated`, `tg-break-cut-two`, `tg-break-cut-align`,
 `tg-break-cut-cell`, `tg-break-tall`, `tg-break-table`: where the row's first line fits, Chromium cuts such a row at the
 page end rather than moving it to the next page).
+
+**Backgrounds of rows, groups and columns.** In both border models the HTML front-end gives them to the cells
+(CSS 2.1 §17.5.1, the table layers): a cell without a background of its own takes its row's, else its row group's, else
+its column's, else its column group's, over its whole area, and the groups and rows keep none. Chromium paints each layer
+once per cell over the cell's box, never in the spacing, bottom to top column group, column, row group, row, cell, so
+with colours of alpha 1 a cell shows the highest (cases `tk-separated`, `tk-collapsed`, `tk-thick`); a cell over several
+rows or columns takes the row and the column it starts in, over all of its area (`tk-span`); on every page, in a repeated
+header and in both parts of a cut row, as the cell's own (`tk-break-stripe`, `tk-break-cut`). Other alphas stay refused,
+as on any block; `empty-cells: hide` is refused by the registry (`tk-empty`: Chromium paints the row's and the column's
+background under a hidden empty cell).
 
 **Captions.** A table's `caption` element (CSS 2.1 §17.4) is the first child of the table's box in the model
 (`TableDisplay.Caption`, role `Caption`), wherever it stands among the row groups, and the table lays it out
@@ -791,8 +801,7 @@ as wide as its columns, its border and padding and one spacing more than it has 
 (`ts-width-100`); a cell over several columns or rows covers the spacing between them, and gives its columns its width
 less that spacing (`ts-span`); a thicker cell border widens its own column and heightens its own row (`ts-paint`). Refused:
 a spacing other than whole CSS pixels (Chromium's rounding of it is not measured), a border on a row or a row group of
-such a table (CSS 2.1 §17.6.1 gives them none; not measured), and backgrounds of rows, groups and columns as with
-collapsed borders. Over pages the table and each cell a break cuts are sliced as block boxes are (CSS Fragmentation 3
+such a table (CSS 2.1 §17.6.1 gives them none; not measured). Over pages the table and each cell a break cuts are sliced as block boxes are (CSS Fragmentation 3
 §5.4), as Chromium prints them (cases `ts-break-*`, equal): a fragment that breaks runs to the page end with its side
 borders and background, without its bottom border and without the spacing below its last row; the next page starts
 with its first row (or the repeated header row) at the fragment's top, with no border, padding or spacing above it,

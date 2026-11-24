@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Backgrounds of a row, a row group, a column and a column group with collapsed borders: r, a row; b, a row group; c, a column; g, a column group over two columns; a, all of them with the cell: the first cell has its own, the first row a row background, its group a group background, the first column a column background inside a column group with a background. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }
+.t { background: #eeeeee; } .g { background: #ccffcc; } .c { background: #ccccff; } .b { background: #ffffcc; } .r { background: #ffcccc; } .d { background: #ccffff; }</style></head><body>
+<table id="cr">
+<tr class="r"><td id="one-cr">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 1</p>
+<table id="cb">
+<tbody class="b"><tr><td id="one-cb">one</td><td>two</td></tr>
+</tbody><tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 2</p>
+<table id="cc">
+<col class="c"><col><tr><td id="one-cc">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 3</p>
+<table id="cg">
+<colgroup class="g"><col><col></colgroup><colgroup><col></colgroup><tr><td id="one-cg">one</td><td>two</td><td>five</td></tr>
+<tr><td>three</td><td>four</td><td>six</td></tr>
+</table>
+<p>next 4</p>
+<table id="ca">
+<colgroup class="g"><col class="c"><col><col></colgroup><tbody class="b"><tr class="r"><td id="one-ca" class="d">one</td><td>two</td><td>five</td></tr>
+<tr><td>three</td><td>four</td><td>six</td></tr>
+</tbody><tr><td>seven</td><td>eight</td><td>nine</td></tr>
+</table>
+<p>after</p>
+</body></html>

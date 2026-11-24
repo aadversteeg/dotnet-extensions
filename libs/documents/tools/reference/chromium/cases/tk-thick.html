@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Backgrounds of a row and a column with collapsed borders of 6pt between the cells and 3pt around the table: r, a row; c, a column; and the same with separated borders of 6pt cells: s. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }
+.t { background: #eeeeee; } .g { background: #ccffcc; } .c { background: #ccccff; } .b { background: #ffffcc; } .r { background: #ffcccc; } .d { background: #ccffff; } #r td, #c td { border-width: 6pt; } #s td { border-width: 6pt; }</style></head><body>
+<table id="r" style="border: 3pt solid #ff0000">
+<tr class="r"><td id="one-r">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 1</p>
+<table id="c" style="border: 3pt solid #ff0000">
+<col class="c"><col><tr><td id="one-c">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 2</p>
+<table id="s" class="s">
+<tr class="r"><td id="one-s">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>after</p>
+</body></html>

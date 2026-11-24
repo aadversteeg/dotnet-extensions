@@ -113,7 +113,9 @@ around them, in whole CSS pixels (another spacing is refused). Such a table brea
 sliced: between rows and inside rows, the cells of a cut row at the top of each part whatever their alignment, with a
 repeated header. It is refused at the table's line where it breaks with a cell over several rows across the break,
 with content sliced in a cell, or with `box-decoration-break: clone`. A border on a row or a row group of such a table
-is refused; put borders and backgrounds on the cells.
+is refused; put borders on the cells. In both models the background of a row, a row group, a column or a column group
+is drawn on the cells of it that have none of their own (the row's first, then the group's, the column's, the column
+group's), as Chromium prints it; a table's background is drawn with separated borders only.
 
 ### Supported at the initial value only
 
