@@ -43,9 +43,9 @@ internal static class BoxProperties
         "border-bottom-left-radius", "border-bottom-right-radius", "border-top-left-radius", "border-top-right-radius",
         "bottom", "box-shadow", "clear", "clip-path", "column-count", "column-gap", "column-width", "contain", "content",
         "content-visibility", "counter-increment", "counter-reset", "counter-set", "direction", "filter", "float",
-        "font-feature-settings", "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
+        "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
         "font-variant-alternates", "font-variant-caps", "font-variant-east-asian", "font-variant-emoji",
-        "font-variant-ligatures", "font-variant-numeric", "font-variant-position", "font-variation-settings", "hyphens",
+        "font-variant-ligatures", "font-variant-position", "font-variation-settings", "hyphens",
         "image-rendering", "isolation", "left", "line-break", "list-style-image", "max-height",
         "min-height", "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
         "quotes", "right", "row-gap", "tab-size", "text-align-last", "text-decoration-thickness", "text-indent",
@@ -194,6 +194,9 @@ internal static class BoxProperties
             (value, _) => value is CssKeyword { Name: "normal" } or CssLength ? null : "only normal and a length are drawn");
         yield return new("word-spacing", "normal, a length",
             (value, _) => value is CssLength or CssPercentage { Value: 0 } ? null : "only normal and a length are drawn");
+        // CSS Fonts 4 §6.7, §7.1: the OpenType features they select, in the text style (TextStyle.FontFeatures).
+        yield return new("font-variant-numeric", "normal, lining-nums, oldstyle-nums, proportional-nums, tabular-nums, ordinal", (_, _) => null);
+        yield return new("font-feature-settings", "normal, the tags lnum, onum, pnum, tnum and ordn on or off", (_, _) => null);
         yield return new("text-transform", "none, uppercase, lowercase, capitalize, mapped in each text (a character the transform does not map is refused at its text)", (_, _) => null);
 
         // CSS Fragmentation 3 §3.1, §3.2, §5.4; break properties apply to block-level boxes only.

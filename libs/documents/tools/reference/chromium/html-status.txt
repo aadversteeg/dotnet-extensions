@@ -213,8 +213,8 @@ f-theano-13-ab equal
 f-theano-9 equal
 f-tiny listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does: page 1 reads 't0t1t2t3t4t5t6t7t8t9t10t11t12t13t14t15t16t17t18t19t20t21t22t23t24t25t26t27t28t29t30t31t32t33t34t35t36t37t38t39t40t41t42t43t44t45t46t47t48t49 after', Chromium 'after' (print.txt)
 f-tiny-038 listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does: page 1 reads 't0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34 t35 t36 t37 t38 t39 t40 t41 t42 t43 t44 t45 t46 t47 t48 t49 after', Chromium 'after' (print.txt)
-fn-numeric refused Documents.Css.Unsupported.Value font-variant-numeric: tabular-nums at 4:6
-fn-table refused Documents.Css.Unsupported.Value font-variant-numeric: proportional-nums at 3:153
+fn-numeric equal
+fn-table equal
 font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 fr-border-continued equal
 fr-border-top-and-bottom equal

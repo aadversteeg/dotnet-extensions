@@ -54,6 +54,13 @@ public class ModelCheckTests
     }
 
     [Theory]
+    [InlineData("frac")]
+    [InlineData("TNUM")]
+    [InlineData("")]
+    public void A_font_feature_the_model_does_not_switch_is_refused(string tag) =>
+        Refused(WithText(Text() with { FontFeatures = [tag] })).Code.Should().Be(DocumentErrorCodes.Input.Invalid.FontFeature);
+
+    [Theory]
     [InlineData(double.NaN, 0)]
     [InlineData(double.PositiveInfinity, 0)]
     [InlineData(0, -14_400.5)]

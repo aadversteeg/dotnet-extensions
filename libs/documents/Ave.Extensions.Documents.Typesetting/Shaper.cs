@@ -23,7 +23,9 @@ namespace Ave.Extensions.Documents.Typesetting;
 /// <remarks>
 /// <para>What is implemented, for the scripts that need no reordering — Latin, Greek and Cyrillic:</para>
 /// <list type="bullet">
-/// <item>GSUB features <c>ccmp</c>, <c>liga</c>, <c>clig</c>; lookup types 1 (single), 2 (multiple) and 4
+/// <item>GSUB features <c>ccmp</c>, <c>liga</c>, <c>clig</c> (the ligatures off where <see cref="ShapingFeatures.Ligatures"/> says so) and the optional
+/// features a text switches on (<see cref="ShapingFeatures.Enabled"/>: <c>lnum</c>, <c>onum</c>, <c>pnum</c>, <c>tnum</c>,
+/// <c>ordn</c>); lookup types 1 (single), 2 (multiple) and 4
 /// (ligature), reached directly or through type 7 (extension).</item>
 /// <item>GPOS features <c>kern</c> and <c>mark</c>; lookup types 2 (pair adjustment, formats 1 and 2) and 4
 /// (mark-to-base), directly or through type 9 (extension). Without a GPOS <c>kern</c> feature, the 'kern' table

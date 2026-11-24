@@ -47,12 +47,14 @@ names nothing.
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
 | `empty-cells` | yes | `show` | `show` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
+| `font-feature-settings` | yes | `normal` | `normal \| [ "lnum" \| "onum" \| "pnum" \| "tnum" \| "ordn" ] [ 0 \| 1 \| on \| off ]?#` | CSS Fonts 4 §7.1 |
 | `font-kerning` | yes | `auto` | `auto \| normal` | CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured) |
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |
 | `font-style` | yes | `normal` | `normal \| italic` | CSS Fonts 4 §2.4 |
 | `font-synthesis-small-caps` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
 | `font-synthesis-style` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
 | `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
+| `font-variant-numeric` | yes | `normal` | `normal \| [ lining-nums \| oldstyle-nums ] \|\| [ proportional-nums \| tabular-nums ] \|\| ordinal` | CSS Fonts 4 §6.7 |
 | `font-weight` | yes | `400` | `normal \| bold \| bolder \| lighter \| <number [1,1000]>` | CSS Fonts 4 §2.2 |
 | `height` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
 | `letter-spacing` | yes | `normal` | `normal \| <length>` | CSS Text 3 §7.2 |
@@ -142,7 +144,6 @@ a percentage is the same value and accepted too: `background-position-x: 0` and 
 | `direction` | `ltr` | `ltr` | CSS Writing Modes 4 §2.1 |
 | `filter` | `none` | `none` | Filter Effects 1 §5 |
 | `float` | `none` | `none` | CSS 2.1 §9.5.1 |
-| `font-feature-settings` | `normal` | `normal` | CSS Fonts 4 §7.1 |
 | `font-language-override` | `normal` | `normal` | CSS Fonts 4 §7.4 |
 | `font-optical-sizing` | `auto` | `auto` | CSS Fonts 4 §2.6 |
 | `font-size-adjust` | `none` | `none` | CSS Fonts 5 §2.1 |
@@ -152,7 +153,6 @@ a percentage is the same value and accepted too: `background-position-x: 0` and 
 | `font-variant-east-asian` | `normal` | `normal` | CSS Fonts 4 §6.10 |
 | `font-variant-emoji` | `normal` | `normal` | CSS Fonts 4 §6.11 |
 | `font-variant-ligatures` | `normal` | `normal` | CSS Fonts 4 §6.4 |
-| `font-variant-numeric` | `normal` | `normal` | CSS Fonts 4 §6.7 |
 | `font-variant-position` | `normal` | `normal` | CSS Fonts 4 §6.5 |
 | `font-variation-settings` | `normal` | `normal` | CSS Fonts 4 §7.2 |
 | `hyphens` | `manual` | `manual` | CSS Text 3 §5.4 |

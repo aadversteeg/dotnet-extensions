@@ -93,12 +93,10 @@ public static partial class PropertyRegistry
         // Fonts beyond family, size, weight and style (the font shorthand resets them).
         yield return InitialKeyword("font-variant-caps", true, "normal", ["small-caps", "all-small-caps", "petite-caps", "all-petite-caps", "unicase", "titling-caps"], false, "all elements and text", "CSS Fonts 4 §6.6");
         yield return InitialKeyword("font-variant-ligatures", true, "normal", ["none"], true, "all elements and text", "CSS Fonts 4 §6.4");
-        yield return InitialKeyword("font-variant-numeric", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.7");
         yield return InitialKeyword("font-variant-east-asian", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.10");
         yield return InitialKeyword("font-variant-position", true, "normal", ["sub", "super"], false, "all elements and text", "CSS Fonts 4 §6.5");
         yield return InitialKeyword("font-variant-alternates", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.8");
         yield return InitialKeyword("font-variant-emoji", true, "normal", ["text", "emoji", "unicode"], false, "all elements and text", "CSS Fonts 4 §6.11");
-        yield return InitialKeyword("font-feature-settings", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.1");
         yield return InitialKeyword("font-variation-settings", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.2");
         // font-stretch: normal is 100% (CSS Fonts 4 §2.3, the computed value is a percentage; Chromium writes 100%).
         yield return new PropertyDefinition(

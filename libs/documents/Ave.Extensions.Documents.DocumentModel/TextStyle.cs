@@ -70,4 +70,13 @@ public sealed record TextStyle(string FontFamily, Length FontSize, FontWeight Fo
     /// <c>ls-word-spacing</c>).
     /// </summary>
     public Length WordSpacing { get; init; }
+
+    /// <summary>
+    /// The optional OpenType features switched on for the run (CSS Fonts 4 §6.7, <c>font-variant-numeric</c>, and §7.1,
+    /// <c>font-feature-settings</c>, as the tags they select), each one of <see cref="OptionalFontFeatures.Tags"/>, in the
+    /// order of that list; empty unless set. The font applies them where it has them, as its lookups say (a font without the
+    /// feature draws the text as without it); measured in Lato, whose default figures are tabular and lining (cases
+    /// <c>fn-numeric</c>, <c>fn-table</c>).
+    /// </summary>
+    public ValueList<string> FontFeatures { get; init; } = [];
 }

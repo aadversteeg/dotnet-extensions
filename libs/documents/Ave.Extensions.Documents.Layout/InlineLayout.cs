@@ -332,16 +332,21 @@ public static class InlineLayout
     /// <summary>The zero width non-joiner U+200C.</summary>
     private const char ZeroWidthNonJoiner = '\u200C';
 
-    /// <summary>True when two runs' text is set in the same font at the same size (<see cref="ShapingGroups"/>).</summary>
+    /// <summary>True when two runs' text is set in the same font at the same size, with the same spacing and font features
+    /// (<see cref="ShapingGroups"/>; Chromium shapes text of another letter or word spacing as another font).</summary>
     private static bool SameFont(TextStyle one, TextStyle other) =>
         string.Equals(one.FontFamily, other.FontFamily, StringComparison.Ordinal)
         && one.FontSize == other.FontSize && one.FontWeight == other.FontWeight && one.FontStyle == other.FontStyle
-        && one.LetterSpacing == other.LetterSpacing && one.WordSpacing == other.WordSpacing;
+        && one.LetterSpacing == other.LetterSpacing && one.WordSpacing == other.WordSpacing && one.FontFeatures.Equals(other.FontFeatures);
 
     /// <summary>The switchable features a run is shaped with: no ligatures where its letter spacing is not zero
-    /// (<see cref="ShapingFeatures.Ligatures"/>).</summary>
-    private static ShapingFeatures FeaturesOf(TextStyle style) =>
-        style.LetterSpacing == Length.Zero ? ShapingFeatures.Default : NoLigatures;
+    /// (<see cref="ShapingFeatures.Ligatures"/>), and its font features (<see cref="TextStyle.FontFeatures"/>).</summary>
+    private static ShapingFeatures FeaturesOf(TextStyle style) => (style.LetterSpacing == Length.Zero, style.FontFeatures.Count) switch
+    {
+        (true, 0) => ShapingFeatures.Default,
+        (false, 0) => NoLigatures,
+        var (ligatures, _) => new ShapingFeatures(ligatures) { Enabled = style.FontFeatures },
+    };
 
     private static readonly ShapingFeatures NoLigatures = new(Ligatures: false);
 

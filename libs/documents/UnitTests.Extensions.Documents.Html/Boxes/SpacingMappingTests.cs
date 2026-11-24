@@ -9,9 +9,10 @@ using Ave.Extensions.Functional;
 
 namespace UnitTests.Extensions.Documents.Html.Boxes;
 
-/// <summary>Box generation of <c>letter-spacing</c> and <c>word-spacing</c>: the computed lengths in each run's text style
-/// (<see cref="TextStyle.LetterSpacing"/>, <see cref="TextStyle.WordSpacing"/>), or refused; the reference cases
-/// <c>ls-*</c> hold Chromium's prints, which the case comparison lays out.</summary>
+/// <summary>Box generation of <c>letter-spacing</c> and <c>word-spacing</c> (the computed lengths in each run's text style,
+/// <see cref="TextStyle.LetterSpacing"/>, <see cref="TextStyle.WordSpacing"/>) and of <c>font-variant-numeric</c> and
+/// <c>font-feature-settings</c> (the OpenType features they select, <see cref="TextStyle.FontFeatures"/>), or refused; the
+/// reference cases <c>ls-*</c> and <c>fn-*</c> hold Chromium's prints, which the case comparison lays out.</summary>
 public class SpacingMappingTests
 {
     private static string Doc(string body, string css = "") =>
@@ -91,4 +92,24 @@ public class SpacingMappingTests
     public void A_spacing_on_a_page_margin_box_is_refused_there() =>
         Refusal(Doc("<p>a</p>", "@page { margin: 36pt; @top-left { content: \"x\"; letter-spacing: 1px } } html { font-family: Lato }"))
             .Message.Should().Contain("page-margin box");
+
+    [Theory]
+    [InlineData("font-variant-numeric: tabular-nums", "tnum")]
+    [InlineData("font-variant-numeric: ordinal oldstyle-nums proportional-nums", "onum pnum ordn")]
+    [InlineData("font-feature-settings: \"tnum\"", "tnum")]
+    [InlineData("font-variant-numeric: tabular-nums; font-feature-settings: \"tnum\" 0", "")]
+    [InlineData("font-feature-settings: \"tnum\" on, \"onum\"", "onum tnum")]
+    [InlineData("font-feature-settings: \"onum\" 1, \"onum\" off", "")]
+    [InlineData("font-variant-numeric: normal", "")]
+    public void The_figure_values_switch_on_their_OpenType_features_with_the_settings_last(string css, string tags) =>
+        string.Join(" ", Run(Doc($"<p style='{css}'>a 1</p>"), "a 1").Style.FontFeatures).Should().Be(tags);
+
+    [Theory]
+    [InlineData("font-variant-numeric: diagonal-fractions")]
+    [InlineData("font-variant-numeric: tabular-nums stacked-fractions")]
+    [InlineData("font-variant-numeric: slashed-zero")]
+    [InlineData("font-feature-settings: \"frac\"")]
+    [InlineData("font-feature-settings: \"salt\" 2")]
+    public void A_feature_the_engine_does_not_switch_is_refused_by_value(string css) =>
+        Refusal(Doc($"<p style='{css}'>1</p>")).Message.Should().Contain("font-");
 }

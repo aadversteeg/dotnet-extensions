@@ -725,6 +725,7 @@ public static partial class HtmlBoxGenerator
                     TextWrapMode = WrapOf(element.Style),
                     LetterSpacing = SpacingOf(Value(element, "letter-spacing")),
                     WordSpacing = SpacingOf(Value(element, "word-spacing")),
+                    FontFeatures = FeaturesOf(Value(element, "font-variant-numeric"), Value(element, "font-feature-settings")),
                 };
             }
 
@@ -736,6 +737,58 @@ public static partial class HtmlBoxGenerator
         /// the layout unit: Chromium adds the length as it is (case <c>ls-values</c>: 0.37pt after each of 46 characters
         /// moves the last word 17.02pt).</summary>
         private static Length SpacingOf(CssValue? value) => value is CssLength length ? length.Value : Length.Zero;
+
+        /// <summary>
+        /// The OpenType features a text switches on (CSS Fonts 4 §6.7, §7.1): each keyword of font-variant-numeric as its
+        /// tag (<c>lining-nums</c> lnum, <c>oldstyle-nums</c> onum, <c>proportional-nums</c> pnum, <c>tabular-nums</c> tnum,
+        /// <c>ordinal</c> ordn), then font-feature-settings over them, a tag at 1 on and at 0 off, the last of a tag
+        /// winning (CSS Fonts 4 §7.2, the order of feature precedence: font-feature-settings after the font variant
+        /// properties; case <c>fn-numeric</c>: <c>"tnum" on, "onum"</c> prints oldstyle figures). In the order of
+        /// <see cref="OptionalFontFeatures.Tags"/>.
+        /// </summary>
+        private static ValueList<string> FeaturesOf(CssValue? numeric, CssValue? settings)
+        {
+            var on = new HashSet<string>(StringComparer.Ordinal);
+            IEnumerable<CssValue> Items(CssValue? value) => value switch
+            {
+                CssList list => list.Items,
+                CssKeyword { Name: "normal" } or null => [],
+                _ => [value],
+            };
+
+            foreach (var item in Items(numeric))
+            {
+                if (item is CssKeyword { Name: var name } && name switch
+                {
+                    "lining-nums" => "lnum",
+                    "oldstyle-nums" => "onum",
+                    "proportional-nums" => "pnum",
+                    "tabular-nums" => "tnum",
+                    "ordinal" => "ordn",
+                    _ => null,
+                } is { } tag)
+                {
+                    on.Add(tag);
+                }
+            }
+
+            foreach (var item in Items(settings))
+            {
+                if (item is CssList { Items: [CssString { Value: var tag }, CssNumber { Value: var value }] })
+                {
+                    if (value == 0)
+                    {
+                        on.Remove(tag);
+                    }
+                    else
+                    {
+                        on.Add(tag);
+                    }
+                }
+            }
+
+            return [.. OptionalFontFeatures.Tags.Where(on.Contains)];
+        }
 
         private static string SpacingText(Length spacing) => spacing.Points.ToString("0.###", CultureInfo.InvariantCulture) + "pt";
 
