@@ -1,0 +1,5 @@
+dw-gap-box.boxes.txt 1
+dw-gap-box.ink.txt 59
+dw-gap-box.lines.txt 8
+dw-gap-box.print.txt 29
+dw-gap-box.words.txt 20
