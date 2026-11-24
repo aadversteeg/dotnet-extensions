@@ -43,15 +43,15 @@ internal static class BoxProperties
         "border-bottom-left-radius", "border-bottom-right-radius", "border-top-left-radius", "border-top-right-radius",
         "bottom", "box-shadow", "clear", "clip-path", "column-count", "column-gap", "column-width", "contain", "content",
         "content-visibility", "counter-increment", "counter-reset", "counter-set", "direction", "filter", "float",
-        "font-feature-settings", "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
+        "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
         "font-variant-alternates", "font-variant-caps", "font-variant-east-asian", "font-variant-emoji",
-        "font-variant-ligatures", "font-variant-numeric", "font-variant-position", "font-variation-settings", "hyphens",
-        "image-rendering", "isolation", "left", "letter-spacing", "line-break", "list-style-image",
+        "font-variant-ligatures", "font-variant-position", "font-variation-settings", "hyphens",
+        "image-rendering", "isolation", "left", "line-break", "list-style-image",
         "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
         "quotes", "right", "row-gap", "tab-size", "text-align-last", "text-decoration-thickness", "text-indent",
-        "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-transform", "text-underline-offset",
+        "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-underline-offset",
         "text-underline-position", "text-wrap-style", "top",
-        "transform", "visibility", "word-break", "word-spacing", "writing-mode", "z-index",
+        "transform", "visibility", "word-break", "writing-mode", "z-index",
     ];
 
     private static readonly string[] Sides = ["top", "right", "bottom", "left"];
@@ -219,8 +219,10 @@ internal static class BoxProperties
         yield return new("white-space-collapse", "collapse, preserve, preserve-breaks, break-spaces (a tab where spaces are preserved is refused at its text)", (_, _) => null);
         yield return new("text-wrap-mode", "wrap, nowrap", (_, _) => null);
         yield return new("unicode-bidi", "both values: isolate has no effect in left-to-right text, the only direction", (_, _) => null);
-        yield return new("vertical-align", "baseline (on a table cell drawn as top); top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
-            (value, facts) => TableProperties.VerticalAlign(value, facts) ?? (IsKeyword(value, "baseline") || facts.IsBlock ? null : "vertical alignment of inline boxes is not drawn in this version"));
+        // CSS 2.1 §10.8.1: super, sub, a length and a percentage shift an inline element's text (TextStyle.BaselineShift).
+        yield return new("vertical-align", "baseline (on a table cell drawn as top); super, sub, a length and a percentage on an inline element that is not an image; top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
+            (value, facts) => TableProperties.VerticalAlign(value, facts) ?? (IsKeyword(value, "baseline") || facts.IsBlock || (!facts.IsReplaced && IsShift(value))
+                ? null : "this vertical alignment of an inline box is not drawn in this version: baseline, super, sub, a length and a percentage are"));
 
         // CSS Text Decoration 3 §2, CSS Text Decoration 4 §2.10.4: the lines go to the text of the element and of every
         // element inside it (HtmlBoxGenerator.Decorations.cs); the style sheet accepts only the solid style, the automatic
@@ -231,6 +233,15 @@ internal static class BoxProperties
                 ? null : "a decoration colour with an alpha other than 1 is not drawn");
         yield return new("text-decoration-style", "solid, the only value the style sheet accepts", (_, _) => null);
         yield return new("text-decoration-skip-ink", "auto, none", (_, _) => null);
+        // CSS Text 3 §7.2, CSS Text 4 §7.1: a computed length, added in layout (TextStyle.LetterSpacing, WordSpacing).
+        yield return new("letter-spacing", "normal, a length (a mark or an invisible character in letter-spaced text is refused at its text)",
+            (value, _) => value is CssKeyword { Name: "normal" } or CssLength ? null : "only normal and a length are drawn");
+        yield return new("word-spacing", "normal, a length",
+            (value, _) => value is CssLength or CssPercentage { Value: 0 } ? null : "only normal and a length are drawn");
+        // CSS Fonts 4 §6.7, §7.1: the OpenType features they select, in the text style (TextStyle.FontFeatures).
+        yield return new("font-variant-numeric", "normal, lining-nums, oldstyle-nums, proportional-nums, tabular-nums, ordinal", (_, _) => null);
+        yield return new("font-feature-settings", "normal, the tags lnum, onum, pnum, tnum and ordn on or off", (_, _) => null);
+        yield return new("text-transform", "none, uppercase, lowercase, capitalize, mapped in each text (a character the transform does not map is refused at its text)", (_, _) => null);
 
         // CSS Fragmentation 3 §3.1, §3.2, §5.4; break properties apply to block-level boxes only.
         yield return new("break-before", "every value (avoid-page as avoid); no effect on an inline box", (_, _) => null);
@@ -290,6 +301,9 @@ internal static class BoxProperties
     private static bool IsImageSize(CssValue value, ElementFacts facts) => facts.IsReplaced && value is CssLength { Value.Points: > 0 };
 
     private static bool IsKeyword(CssValue value, string name) => value is CssKeyword keyword && string.Equals(keyword.Name, name, StringComparison.Ordinal);
+
+    /// <summary>A vertical-align that shifts the baseline of an inline element's text: super, sub, a length or a percentage.</summary>
+    internal static bool IsShift(CssValue value) => value is CssKeyword { Name: "super" or "sub" } or CssLength or CssPercentage;
 
     private static bool IsZero(CssValue value) => value switch
     {

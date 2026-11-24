@@ -58,6 +58,12 @@ public static partial class HtmlBoxGenerator
                 refused = true;
             }
 
+            if (ShiftOf(frame.Element) != Length.Zero)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Element, $"An <img> inside the raised or lowered <{frame.Element.Element.LocalName}> is not drawn in this version: it sits on the line's baseline.",
+                    "img", element.Element.Position);
+            }
+
             foreach (var name in new[] { "break-before", "break-after", "break-inside" })
             {
                 if (Value(element, name) is { } value and not CssKeyword { Name: "auto" })

@@ -54,6 +54,33 @@ public class ModelCheckTests
     }
 
     [Theory]
+    [InlineData("frac")]
+    [InlineData("TNUM")]
+    [InlineData("")]
+    public void A_font_feature_the_model_does_not_switch_is_refused(string tag) =>
+        Refused(WithText(Text() with { FontFeatures = [tag] })).Code.Should().Be(DocumentErrorCodes.Input.Invalid.FontFeature);
+
+    [Theory]
+    [InlineData(double.NaN, 0)]
+    [InlineData(double.PositiveInfinity, 0)]
+    [InlineData(0, -14_400.5)]
+    [InlineData(0, 14_400.5)]
+    public void A_letter_or_word_spacing_that_is_not_finite_or_beyond_the_limit_either_way_is_refused(double letter, double word)
+    {
+        var error = Refused(WithText(Text() with { LetterSpacing = letter.Pt(), WordSpacing = word.Pt() }));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Spacing);
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.NegativeInfinity)]
+    [InlineData(-14_400.5)]
+    [InlineData(14_400.5)]
+    public void A_baseline_shift_that_is_not_finite_or_beyond_the_limit_either_way_is_refused(double shift) =>
+        Refused(WithText(Text() with { BaselineShift = shift.Pt() })).Code.Should().Be(DocumentErrorCodes.Input.Invalid.BaselineShift);
+
+    [Theory]
     [InlineData(-0.5)]
     [InlineData(double.NaN)]
     [InlineData(14_400.5)]

@@ -36,7 +36,7 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
     private static readonly Dictionary<string, (int Values, int Equal, int Refused, int Refusals)> Pinned = new()
     {
         ["cascade"] = (5_438, 5_438, 0, 4),
-        ["elements"] = (18_521, 13_376, 5_145, 34),
+        ["elements"] = (18_521, 13_670, 4_851, 32),
         ["fonts-tables-lists"] = (17_051, 17_051, 0, 1),
         ["hints"] = (17_198, 17_198, 0, 0),
         ["hints-gaps"] = (12_788, 12_200, 588, 4),

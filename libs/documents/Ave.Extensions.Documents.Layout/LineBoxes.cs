@@ -70,8 +70,11 @@ internal static class LineBoxes
     /// </summary>
     internal sealed record InlineExtent(double Ascent, double Descent, double LeadingAbove, double LeadingBelow)
     {
-        public double Above => Ascent + LeadingAbove;
-        public double Below => Descent + LeadingBelow;
+        /// <summary>How far the box's baseline lies above the line's baseline (<see cref="TextStyle.BaselineShift"/>).</summary>
+        public double Shift { get; init; }
+
+        public double Above => Ascent + LeadingAbove + Shift;
+        public double Below => Descent + LeadingBelow - Shift;
 
         public static InlineExtent Of(TrueTypeFont font, double fontSize, LineHeight lineHeight, FontMetricRounding rounding)
         {
@@ -85,6 +88,11 @@ internal static class LineBoxes
             var above = whole ? CssPixels.Floor(leading / 2) : leading / 2;
             return new InlineExtent(ascent, descent, above, leading - above);
         }
+
+        /// <summary>The extent of a run's inline box, shifted by the run's <see cref="TextStyle.BaselineShift"/> (<see cref="Build"/>,
+        /// THE RULE FOR A SHIFTED RUN ON THE LINE).</summary>
+        public static InlineExtent OfRun(ShapedRun run, FontMetricRounding rounding) =>
+            Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight, rounding) with { Shift = run.Run.Style.BaselineShift.Points };
 
         /// <summary>The extent of an atomic inline's margin box: all of it above the baseline (<see cref="Build"/>, THE RULE
         /// FOR AN ATOMIC INLINE ON THE LINE).</summary>
@@ -110,6 +118,20 @@ internal static class LineBoxes
     /// <c>LogicalBoxFragment::BaselineMetrics</c>, core/layout/logical_box_fragment.cc). So it makes the line taller when it
     /// is taller than the strut's part above the baseline, never below it; its margins count above, below and beside it
     /// (case <c>ii-baseline</c>).</para>
+    /// <para>THE RULE FOR A SHIFTED RUN ON THE LINE: a run with a <see cref="TextStyle.BaselineShift"/> s has its own baseline s
+    /// above the line's baseline (CSS 2.1 §10.8.1, <c>vertical-align</c>: the box is raised or lowered), and its inline box,
+    /// the same extent as unshifted (its ascent and descent, and under a line height other than <c>normal</c> its
+    /// half-leadings), moves with it: it reaches s further above the baseline and s less below it. The line box reaches from
+    /// the highest top to the lowest bottom of all its boxes, the strut's among them, as for runs that are not shifted. So a
+    /// raised run makes the line taller above its baseline, a lowered one below it, and only by what its own box passes the
+    /// others'. Measured in Chromium 159 under a line height of 18pt (cases <c>va-shift</c>, <c>va-length</c>: 10.5 pt text
+    /// raised 5.656 px is a line of 17 + 5.656 px above the baseline and 7 px below, 22.242 pt, where the strut alone is
+    /// 18 pt; lowered 3.797 px, 17 px above and 10.797 px below) and under <c>normal</c> (cases <c>va-shift</c>,
+    /// <c>va-elements</c>, <c>va-sizes</c>: 14 + 5.656 px above and 3 px below; a smaller sup's own box of 12 + 2 px raised
+    /// 5.656 px reaches 17.656 px above). The run's glyphs and its decorations are drawn on its own baseline
+    /// (<see cref="TextDecorations"/>: the underline of a <c>sup</c> lies under the raised text, case <c>va-decorated</c>).
+    /// Its place on the line, its width and every break stay as they are (case <c>va-decorated</c>: a raised span at a
+    /// line's start and across a soft wrap is raised on both lines).</para>
     /// </remarks>
     /// <param name="broken">The broken line.</param>
     /// <param name="runs">The paragraph's runs; <see cref="LineSegment.Run"/> indexes into it.</param>
@@ -133,13 +155,13 @@ internal static class LineBoxes
             .Select(segment => (Segment: segment, Run: runs[segment.Run]))
             .Select(piece => (piece.Segment, piece.Run, Extent: piece.Run switch
             {
-                ShapedRun run => InlineExtent.Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight, rounding),
+                ShapedRun run => InlineExtent.OfRun(run, rounding),
                 AtomicInline atomic => InlineExtent.OfMarginBox(atomic),
                 _ => throw new InvalidOperationException($"Unknown line item {piece.Run.GetType().Name}."),
             }))
             .ToImmutableArray();
         ImmutableArray<InlineExtent> extents = [.. pieces.Select(piece => piece.Extent),
-            .. (empty ?? []).Select(run => InlineExtent.Of(run.Font, run.Run.Style.FontSize.Points, run.Run.Style.LineHeight, rounding)),
+            .. (empty ?? []).Select(run => InlineExtent.OfRun(run, rounding)),
             .. strut is { } own ? [InlineExtent.Of(own.Font, own.Style.FontSize.Points, own.Style.LineHeight, rounding)] : Array.Empty<InlineExtent>()];
 
         var above = extents.Max(extent => extent.Above);
@@ -148,21 +170,22 @@ internal static class LineBoxes
         var x = offset;
         foreach (var (segment, item, extent) in pieces)
         {
-            // The baseline lies `above` below the line's top; this piece's top edge is its ascent above that. An atomic
-            // inline's border box lies inside its margin box, whose bottom is on the baseline.
+            // The baseline lies `above` below the line's top, a run's own baseline its shift above that; the piece's top edge
+            // is its ascent above its own baseline. An atomic inline's border box lies inside its margin box, whose bottom is
+            // on the baseline.
             children.Add(item switch
             {
                 AtomicInline { Fragment: { } fragment } atomic => new PlacedFragment(
                     new Point(x + atomic.Box.Style.Margin.Left.Points, above - atomic.Box.Style.Margin.Bottom.Points - fragment.Size.Height), fragment),
                 ShapedRun run => new PlacedFragment(
-                    new Point(x, above - extent.Ascent), new TextFragment(run.Run, run.Font, extent.Ascent, segment.Glyphs, new Size(segment.Width, extent.Ascent + extent.Descent))),
+                    new Point(x, above - extent.Shift - extent.Ascent), new TextFragment(run.Run, run.Font, extent.Ascent, segment.Glyphs, new Size(segment.Width, extent.Ascent + extent.Descent))),
                 _ => throw new InvalidOperationException("An atomic inline is placed on a line only once it is laid out."),
             });
             if (item is ShapedRun { Decorations.Count: > 0 } decorated)
             {
                 // The piece's text was added last: its underlines and overlines go before it, its line-throughs after it.
                 var ink = new TextDecorations.Ink(decorated.Font, decorated.Run.Style.FontSize.Points, decorated.Run.Style.DecorationSkipInk, outlines);
-                var lines = TextDecorations.Of(decorated.Decorations, x, segment.Glyphs, above, extent.Ascent, rounding, ink);
+                var lines = TextDecorations.Of(decorated.Decorations, x, segment, above - extent.Shift, extent.Ascent, rounding, ink);
                 if (lines.IsFailure)
                 {
                     return Result<LineFragment, Error>.Failure(lines.Error.WithSource(decorated.Run.Source));

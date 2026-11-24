@@ -12,7 +12,7 @@ reference is Chromium 159; see `docs/architecture.md`, "HTML/CSS front-end".
 
 Longhands with every value the engine supports. A value CSS defines that is not listed is refused. So is a value that
 does not match the engine's grammar of a known property: a typing error such as `color: 12px`, or valid CSS beyond this
-profile such as `vertical-align: 5px`. The engine cannot tell the two apart, and a browser drops the first and uses the
+profile such as `vertical-align: -webkit-baseline-middle`. The engine cannot tell the two apart, and a browser drops the first and uses the
 second, so both get the one answer "not valid or not supported in this profile". The same holds for a selector or media
 query that does not parse and an unknown at-rule. Dropped with a warning, as in a browser, is only what CSS Syntax 3
 recovers from (an unclosed block, a declaration without a colon), a top-level `!` other than `!important`, a rule in a
@@ -47,14 +47,17 @@ names nothing.
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
 | `empty-cells` | yes | `show` | `show \| hide` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
+| `font-feature-settings` | yes | `normal` | `normal \| <feature-tag-value># (the tags "lnum", "onum", "pnum", "tnum" and "ordn", each with 0, 1, on or off)` | CSS Fonts 4 §7.1 |
 | `font-kerning` | yes | `auto` | `auto \| normal` | CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured) |
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |
 | `font-style` | yes | `normal` | `normal \| italic` | CSS Fonts 4 §2.4 |
 | `font-synthesis-small-caps` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
 | `font-synthesis-style` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
 | `font-synthesis-weight` | yes | `auto` | `auto \| none` | CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error) |
+| `font-variant-numeric` | yes | `normal` | `normal \| [ lining-nums \| oldstyle-nums ] \|\| [ proportional-nums \| tabular-nums ] \|\| ordinal` | CSS Fonts 4 §6.7 |
 | `font-weight` | yes | `400` | `normal \| bold \| bolder \| lighter \| <number [1,1000]>` | CSS Fonts 4 §2.2 |
 | `height` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
+| `letter-spacing` | yes | `normal` | `normal \| <length>` | CSS Text 3 §7.2 |
 | `line-height` | yes | `normal` | `normal \| <number [0,∞]> \| <length-percentage [0,∞]>` | CSS Inline 3 §5.1; CSS 2.1 §10.8.1 |
 | `list-style-position` | yes | `outside` | `outside` | CSS Lists 3 §3.5 |
 | `list-style-type` | yes | `disc` | `disc \| circle \| square \| decimal \| decimal-leading-zero \| lower-roman \| upper-roman \| lower-alpha \| upper-alpha \| lower-latin \| upper-latin \| none` | CSS Lists 3 §3.3; CSS Counter Styles 3 §6 |
@@ -83,12 +86,14 @@ names nothing.
 | `text-decoration-line` | no | `none` | `none \| [ underline \|\| overline \|\| line-through ]` | CSS Text Decoration 3 §2.1 |
 | `text-decoration-skip-ink` | yes | `auto` | `auto \| none` | CSS Text Decoration 4 §2.10.4 |
 | `text-decoration-style` | no | `solid` | `solid` | CSS Text Decoration 3 §2.2 |
+| `text-transform` | yes | `none` | `none \| capitalize \| uppercase \| lowercase` | CSS Text 3 §2.1 |
 | `text-wrap-mode` | yes | `wrap` | `wrap \| nowrap` | CSS Text 4 §6.1 |
 | `unicode-bidi` | no | `normal` | `normal \| isolate` | CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text |
-| `vertical-align` | no | `baseline` | `baseline \| top \| middle \| bottom` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
+| `vertical-align` | no | `baseline` | `baseline \| sub \| super \| top \| middle \| bottom \| <length-percentage>` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
 | `white-space-collapse` | yes | `collapse` | `collapse \| preserve \| preserve-breaks \| break-spaces` | CSS Text 4 §3.1 |
 | `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |
+| `word-spacing` | yes | `0pt` | `normal \| <length>` | CSS Text 4 §7.1 |
 
 `overflow-x` and `overflow-y`: `hidden` on one axis while the other stays `visible` is refused, since Chromium
 computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
@@ -162,8 +167,8 @@ What the layout always does: a declaration that sets one of these to its initial
 the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,
 which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and
 on any other element stage 4 applies the ratio or refuses it. A zero length where the initial value is a keyword or
-a percentage is the same value and accepted too: `letter-spacing: 0` (computed normal), `background-position-x: 0`
-and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other value is refused.
+a percentage is the same value and accepted too: `background-position-x: 0` and `background-position-y: 0`
+(computed 0px, as Chromium keeps it). Any other value is refused.
 
 | Property | Initial | Accepted | Defined in |
 | --- | --- | --- | --- |
@@ -197,7 +202,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `direction` | `ltr` | `ltr` | CSS Writing Modes 4 §2.1 |
 | `filter` | `none` | `none` | Filter Effects 1 §5 |
 | `float` | `none` | `none` | CSS 2.1 §9.5.1 |
-| `font-feature-settings` | `normal` | `normal` | CSS Fonts 4 §7.1 |
 | `font-language-override` | `normal` | `normal` | CSS Fonts 4 §7.4 |
 | `font-optical-sizing` | `auto` | `auto` | CSS Fonts 4 §2.6 |
 | `font-size-adjust` | `none` | `none` | CSS Fonts 5 §2.1 |
@@ -207,14 +211,12 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `font-variant-east-asian` | `normal` | `normal` | CSS Fonts 4 §6.10 |
 | `font-variant-emoji` | `normal` | `normal` | CSS Fonts 4 §6.11 |
 | `font-variant-ligatures` | `normal` | `normal` | CSS Fonts 4 §6.4 |
-| `font-variant-numeric` | `normal` | `normal` | CSS Fonts 4 §6.7 |
 | `font-variant-position` | `normal` | `normal` | CSS Fonts 4 §6.5 |
 | `font-variation-settings` | `normal` | `normal` | CSS Fonts 4 §7.2 |
 | `hyphens` | `manual` | `manual` | CSS Text 3 §5.4 |
 | `image-rendering` | `auto` | `auto` | CSS Images 3 §5.3 |
 | `isolation` | `auto` | `auto` | Compositing 1 §3.3 |
 | `left` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
-| `letter-spacing` | `normal` | `normal` | CSS Text 3 §7.2 |
 | `line-break` | `auto` | `auto` | CSS Text 3 §5.3 |
 | `list-style-image` | `none` | `none` | CSS Lists 3 §3.4 |
 | `mix-blend-mode` | `normal` | `normal` | Compositing 1 §3.2 |
@@ -235,7 +237,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `text-overflow` | `clip` | `clip` | CSS Overflow 3 §5.1 |
 | `text-rendering` | `auto` | `auto` | SVG 2 §11.9 |
 | `text-shadow` | `none` | `none` | CSS Text Decoration 3 §4 |
-| `text-transform` | `none` | `none` | CSS Text 3 §2.1 |
 | `text-underline-offset` | `auto` | `auto` | CSS Text Decoration 4 §2.8 |
 | `text-underline-position` | `auto` | `auto` | CSS Text Decoration 3 §2.5 |
 | `text-wrap-style` | `auto` | `auto` | CSS Text 4 §6.2 |
@@ -243,7 +244,6 @@ and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other v
 | `transform` | `none` | `none` | CSS Transforms 1 §5 |
 | `visibility` | `visible` | `visible` | CSS Display 3 §4 |
 | `word-break` | `normal` | `normal` | CSS Text 3 §5.2 |
-| `word-spacing` | `0pt` | `normal \| 0` | CSS Text 4 §7.1 |
 | `writing-mode` | `horizontal-tb` | `horizontal-tb` | CSS Writing Modes 4 §3.1 |
 | `z-index` | `auto` | `auto` | CSS 2.1 §9.9.1 |
 

@@ -323,7 +323,7 @@ public enum LengthRounding
     /// <list type="number">
     /// <item>The width of a text item as line layout sees it, rounded UP: the part of one run's text that lies on one line
     /// (<c>Typesetting.LineSegment</c>), its glyphs' advances summed and rounded up to the next 1/64 px, for placing the
-    /// next item, for aligning the line and for whether the line fits. Blink's line breaker takes each text item's width
+    /// next item, for aligning the line, for whether the line fits and for the width of the item's text decorations. Blink's line breaker takes each text item's width
     /// as <c>ShapeResult::SnappedWidth</c>, <c>LayoutUnit::FromFloatCeil</c> of the shaped width
     /// (<c>core/layout/inline/line_breaker.cc</c>, <c>LineBreaker::HandleText</c>); a new item starts at every element
     /// boundary. The glyphs inside an item keep their exact advances; an image on the line is not a text item. Cases
@@ -331,7 +331,9 @@ public enum LengthRounding
     /// item widths rounded up, where unrounded widths put the last word up to 0.176 pt early and widths rounded per word
     /// 0.266 pt late), <c>ta-items-right</c> (right-aligned: the start of the line moves by the sum of the steps),
     /// <c>ta-items-fit</c> (in a block wider than the unrounded widths and narrower than the rounded ones the last word
-    /// wraps) and <c>sk-size</c> (an underline gap's edge).</item>
+    /// wraps), <c>sk-size</c> (an underline gap's edge) and <c>dw-half</c>, <c>dw-runs</c>, <c>dw-spacing</c> (each line of a
+    /// decoration ends at its item's start plus the rounded width: an exact end 1/128 px or less below a half pixel paints
+    /// one pixel more).</item>
     /// <item>A percentage width of a block box (<see cref="BoxStyle.SpecifiedWidth"/>, <see cref="BoxStyle.MinWidth"/>,
     /// <see cref="BoxStyle.MaxWidth"/>), resolved against its container's content width, rounded DOWN to 1/64 px. Cases
     /// <c>sz-width-percent</c> (40 % of 368 px, 147.2 px, is 147.1875 px: 110.391 pt), <c>sz-width-percent-parent</c>

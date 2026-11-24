@@ -1,0 +1,7 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Shifted text inside another inline element, and under a decoration from around it, line height normal: a sup inside a sup at 10.5 pt and 11 pt; super and sub inside spans of 16 pt and 8 pt in 10.5 pt text (the shift by the parent's size, and the outer span's text at a whole pixel); a sup in a 16 pt span; an underline of the paragraph across a sup and a sub. -->
+<style>@page { size: 300pt 480pt; margin: 12pt; } .a { font-size: 10.5pt; } .b { font-size: 11pt; } .big { font-size: 16pt; } .small { font-size: 8pt; } .u { vertical-align: super; } .d { vertical-align: sub; } .l { text-decoration: underline; text-decoration-skip-ink: none; }</style></head><body>
+<div class="a"><p>Word e<sup>x<sup>2</sup></sup></p><p>Word x</p></div>
+<div class="b"><p>Word e<sup>x<sup>2</sup></sup></p><p>Word x</p></div>
+<div class="a"><p>Word <span class="big">Big <span class="u">2</span> z</span> y</p><p>Word <span class="big">Big <span class="d">2</span> z</span> y</p><p>Word <span class="small">small <span class="u">2</span> z</span> y</p><p>Word <span class="big">Big<sup>2</sup></span> y</p><p class="l">Word x<sup>2</sup> y H<sub>2</sub>O z</p><p>Word x</p></div>
+</body></html>

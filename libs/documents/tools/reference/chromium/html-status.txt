@@ -205,6 +205,9 @@ dl-skip equal
 dl-space equal
 dl-theano equal
 dl-whose equal
+dw-half equal
+dw-runs equal
+dw-spacing equal
 f-lato-10 equal
 f-lato-11 equal
 f-lato-13 equal
@@ -229,6 +232,8 @@ f-theano-13-ab equal
 f-theano-9 equal
 f-tiny listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does: page 1 reads 't0t1t2t3t4t5t6t7t8t9t10t11t12t13t14t15t16t17t18t19t20t21t22t23t24t25t26t27t28t29t30t31t32t33t34t35t36t37t38t39t40t41t42t43t44t45t46t47t48t49 after', Chromium 'after' (print.txt)
 f-tiny-038 listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_the_engine_does: page 1 reads 't0 t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34 t35 t36 t37 t38 t39 t40 t41 t42 t43 t44 t45 t46 t47 t48 t49 after', Chromium 'after' (print.txt)
+fn-numeric equal
+fn-table equal
 font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 fr-border-continued equal
 fr-border-top-and-bottom equal
@@ -461,6 +466,10 @@ li-page-break equal
 li-symbol-sizes equal
 li-types refused Documents.Layout.MarkerOutsideSheet -32.461 at 13
 li-ul-levels equal
+ls-align equal
+ls-letters equal
+ls-values equal
+ls-word-spacing equal
 mf4-line-0 equal
 mf4-line-075 equal
 mf4-line-150 equal
@@ -648,6 +657,10 @@ ts-span equal
 ts-table-border equal
 ts-table-padding equal
 ts-width-100 equal
+tt-capitalize equal
+tt-inline equal
+tt-special refused Documents.Html.Unsupported.Value text-transform: uppercase at 6:14
+tt-values equal
 tv-baseline-height equal
 tv-baseline-sizes equal
 tw-auto equal
@@ -664,6 +677,12 @@ twd-fraction equal
 twd-sum equal
 twd-table-narrow listed A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 reads 'one text with more words next 1 one text with more words next 2 one text with more words next 3 one text with more words after', Chromium 'one text with more words next 1 one text with more words next 2 one text with more words next 3 onetext with more words after' (print.txt)
 twd-table-wide equal
+va-decorated equal
+va-elements equal
+va-length equal
+va-nested refused Documents.Html.Unsupported.Value vertical-align: super at 4:31
+va-shift equal
+va-sizes equal
 wg-cell-gap equal
 wg-spacing-gap equal
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48

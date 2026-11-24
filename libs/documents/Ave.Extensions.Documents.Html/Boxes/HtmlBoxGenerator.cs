@@ -524,6 +524,77 @@ public static partial class HtmlBoxGenerator
             stack.Push(frame);
         }
 
+        /// <summary>
+        /// Refuses a letter-spaced text (<c>letter-spacing</c> other than zero) that holds a character whose spacing is not
+        /// measured: a combining mark (Unicode general category M, which Chromium spaces with its base, as one typographic
+        /// character unit) or a format character (category Cf, such as the soft hyphen and the zero width joiners, which may
+        /// get none), at the first such character with its offset. The text is drawn as written under
+        /// <see cref="UnsupportedPolicy.Warn"/>, spaced after each glyph.
+        /// </summary>
+        private void RefuseUnspacedCharacter(StyledText text)
+        {
+            if (SpacingOf(text.Style[PropertyRegistry.Find("letter-spacing")!]) == Length.Zero)
+            {
+                return;
+            }
+
+            var data = text.Text.Data;
+            for (var offset = 0; offset < data.Length; offset++)
+            {
+                if (char.GetUnicodeCategory(data[offset]) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark
+                    or UnicodeCategory.EnclosingMark or UnicodeCategory.Format)
+                {
+                    Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"A mark or a format character (U+{(int)data[offset]:X4}) in letter-spaced text is not drawn in this version: its letter spacing is not measured.")
+                        .With(ErrorMetadataKeys.Value, SpacingText(SpacingOf(text.Style[PropertyRegistry.Find("letter-spacing")!]))).With(ErrorMetadataKeys.Property, "letter-spacing").With(ErrorMetadataKeys.Offset, offset)
+                        .WithSource(_sourceName, text.Text.Position));
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A text with its <c>text-transform</c> applied (<see cref="TextTransforms"/>), in the language of the element it
+        /// lies in. Capitalize looks at the character before the text: the last character of the text before it in the same
+        /// inline content, past inline elements without text; a space after an image or at the start (Chromium looks back
+        /// so, to the previous text in the tree past inline boxes, and takes a space at anything else). A text with a
+        /// character the transform does not map is refused there, with its offset, and drawn as written.
+        /// </summary>
+        private string Transformed(StyledText text, InlineFrame frame, string data)
+        {
+            var transform = text.Style[PropertyRegistry.Find("text-transform")!] is CssKeyword { Name: var name } ? name : "none";
+            if (transform == "none")
+            {
+                return data;
+            }
+
+            var previous = ' ';
+            for (var i = frame.Target.Count - 1; i >= 0; i--)
+            {
+                if (frame.Target[i] is TextRun { Text: var before })
+                {
+                    if (before.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    previous = before[^1];
+                }
+
+                break;
+            }
+
+            var result = TextTransforms.Apply(data, transform, frame.Element.Language, previous);
+            if (result.Reason is null)
+            {
+                return result.Text;
+            }
+
+            Refusals.Add(new Error(HtmlStyleErrorCodes.Unsupported.Value, $"'text-transform: {transform}' is not drawn for this text: {result.Reason}.")
+                .With(ErrorMetadataKeys.Value, transform).With(ErrorMetadataKeys.Property, "text-transform").With(ErrorMetadataKeys.Offset, result.Offset)
+                .WithSource(_sourceName, text.Text.Position));
+            return data;
+        }
+
         private static TextPosition Position(StyledNode node) => node is StyledElement element ? element.Element.Position : ((StyledText)node).Text.Position;
 
         /// <summary>One child of inline content: a text becomes a run in its parent's text style; an inline element's
@@ -539,9 +610,10 @@ public static partial class HtmlBoxGenerator
                     }
 
                     var preservedTab = RefusePreservedTab(text);
+                    RefuseUnspacedCharacter(text);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
-                        var data = Characters(text.Text);
+                        var data = Transformed(text, frame, Characters(text.Text));
                         frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, Source(text.Text.Position)));
                     }
 
@@ -560,6 +632,7 @@ public static partial class HtmlBoxGenerator
                         // CSS 2.1 §10.8.1: every inline box, also one without a glyph, has a line height that counts
                         // for the line box ("empty inline elements ... still have margins, padding, borders and a line
                         // height"); the model has no inline box, so an empty run in the element's style carries it.
+                        OpenShift(element, frame.Element);
                         if (TextStyleOf(element) is { } own)
                         {
                             frame.Target.Add(new TextRun(NewId(), string.Empty, own, Source(element.Element.Position)));
@@ -785,8 +858,9 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>The text style of an element's text and of its lines' strut: its face, size, colour, line height and
-        /// white space (<see cref="FaceStyleOf"/>), the decorations applied to it (<see cref="Decorations"/>) and whether
-        /// they skip the glyphs' ink; null after a missing face was reported.</summary>
+        /// white space (<see cref="FaceStyleOf"/>), the decorations applied to it (<see cref="Decorations"/>), whether
+        /// they skip the glyphs' ink, and for an inline element its baseline shift (<see cref="ShiftOf"/>, opened before);
+        /// null after a missing face was reported.</summary>
         private TextStyle? TextStyleOf(StyledElement element)
         {
             if (_decorated.TryGetValue(element, out var known))
@@ -794,7 +868,7 @@ public static partial class HtmlBoxGenerator
                 return known;
             }
 
-            var style = FaceStyleOf(element) is { } face ? face with { Decorations = Decorations(element), DecorationSkipInk = SkipInkOf(element) } : null;
+            var style = FaceStyleOf(element) is { } face ? face with { Decorations = Decorations(element), DecorationSkipInk = SkipInkOf(element), BaselineShift = ShiftOf(element) } : null;
             _decorated[element] = style;
             return style;
         }
@@ -824,12 +898,74 @@ public static partial class HtmlBoxGenerator
                     LineHeight = LineHeightOf(element.Style[PropertyRegistry.LineHeight], size),
                     WhiteSpaceCollapse = CollapseOf(element.Style),
                     TextWrapMode = WrapOf(element.Style),
+                    LetterSpacing = SpacingOf(Value(element, "letter-spacing")),
+                    WordSpacing = SpacingOf(Value(element, "word-spacing")),
+                    FontFeatures = FeaturesOf(Value(element, "font-variant-numeric"), Value(element, "font-feature-settings")),
                 };
             }
 
             _text[element] = style;
             return style;
         }
+
+        /// <summary>A computed letter-spacing or word-spacing as the model's length: zero for normal and 0%. Not put on
+        /// the layout unit: Chromium adds the length as it is (case <c>ls-values</c>: 0.37pt after each of 46 characters
+        /// moves the last word 17.02pt).</summary>
+        private static Length SpacingOf(CssValue? value) => value is CssLength length ? length.Value : Length.Zero;
+
+        /// <summary>
+        /// The OpenType features a text switches on (CSS Fonts 4 §6.7, §7.1): each keyword of font-variant-numeric as its
+        /// tag (<c>lining-nums</c> lnum, <c>oldstyle-nums</c> onum, <c>proportional-nums</c> pnum, <c>tabular-nums</c> tnum,
+        /// <c>ordinal</c> ordn), then font-feature-settings over them, a tag at 1 on and at 0 off, the last of a tag
+        /// winning (CSS Fonts 4 §7.2, the order of feature precedence: font-feature-settings after the font variant
+        /// properties; case <c>fn-numeric</c>: <c>"tnum" on, "onum"</c> prints oldstyle figures). In the order of
+        /// <see cref="OptionalFontFeatures.Tags"/>.
+        /// </summary>
+        private static ValueList<string> FeaturesOf(CssValue? numeric, CssValue? settings)
+        {
+            var on = new HashSet<string>(StringComparer.Ordinal);
+            IEnumerable<CssValue> Items(CssValue? value) => value switch
+            {
+                CssList list => list.Items,
+                CssKeyword { Name: "normal" } or null => [],
+                _ => [value],
+            };
+
+            foreach (var item in Items(numeric))
+            {
+                if (item is CssKeyword { Name: var name } && name switch
+                {
+                    "lining-nums" => "lnum",
+                    "oldstyle-nums" => "onum",
+                    "proportional-nums" => "pnum",
+                    "tabular-nums" => "tnum",
+                    "ordinal" => "ordn",
+                    _ => null,
+                } is { } tag)
+                {
+                    on.Add(tag);
+                }
+            }
+
+            foreach (var item in Items(settings))
+            {
+                if (item is CssList { Items: [CssString { Value: var tag }, CssNumber { Value: var value }] })
+                {
+                    if (value == 0)
+                    {
+                        on.Remove(tag);
+                    }
+                    else
+                    {
+                        on.Add(tag);
+                    }
+                }
+            }
+
+            return [.. OptionalFontFeatures.Tags.Where(on.Contains)];
+        }
+
+        private static string SpacingText(Length spacing) => spacing.Points.ToString("0.###", CultureInfo.InvariantCulture) + "pt";
 
         /// <summary>
         /// A margin or padding in Chromium's layout unit of 1/64 CSS px: 25.313pt is laid out as 33.75 px, 25.3125pt

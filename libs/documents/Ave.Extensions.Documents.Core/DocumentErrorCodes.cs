@@ -61,6 +61,19 @@ public static class DocumentErrorCodes
             /// Property.</summary>
             public static readonly ErrorCode WhiteSpace = _ / "WhiteSpace";
 
+            /// <summary>A font feature tag a run switches on that is not one the model has (<see cref="OptionalFontFeatures.Tags"/>).
+            /// Metadata: Value, Property.</summary>
+            public static readonly ErrorCode FontFeature = _ / "FontFeature";
+
+            /// <summary>A <c>letter-spacing</c> or <c>word-spacing</c> that is not a finite length of at most the front-end's
+            /// longest length either way (CSS Text 3 §7.2, CSS Text 4 §7.1 allow negative values). Metadata: Value,
+            /// Property.</summary>
+            public static readonly ErrorCode Spacing = _ / "Spacing";
+
+            /// <summary>A baseline shift that is not a finite length of at most the front-end's longest length either way
+            /// (CSS Inline 3 §4, <c>vertical-align</c> raises or lowers a box). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BaselineShift = _ / "BaselineShift";
+
             /// <summary>A text decoration with a line its enum does not have, a decorating font that is not valid (as
             /// <see cref="FontFamily"/>, <see cref="FontSize"/> and <see cref="FontWeight"/> say for a run's own font), or a run
             /// with more decorations than <c>ModelLimits.MaxDecorations</c>. Metadata: Value, Property.</summary>

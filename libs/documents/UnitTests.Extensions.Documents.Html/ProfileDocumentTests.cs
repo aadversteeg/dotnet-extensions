@@ -66,7 +66,7 @@ public class ProfileDocumentTests
         Line();
         Line("Longhands with every value the engine supports. A value CSS defines that is not listed is refused. So is a value that");
         Line("does not match the engine's grammar of a known property: a typing error such as `color: 12px`, or valid CSS beyond this");
-        Line("profile such as `vertical-align: 5px`. The engine cannot tell the two apart, and a browser drops the first and uses the");
+        Line("profile such as `vertical-align: -webkit-baseline-middle`. The engine cannot tell the two apart, and a browser drops the first and uses the");
         Line("second, so both get the one answer \"not valid or not supported in this profile\". The same holds for a selector or media");
         Line("query that does not parse and an unknown at-rule. Dropped with a warning, as in a browser, is only what CSS Syntax 3");
         Line("recovers from (an unclosed block, a declaration without a colon), a top-level `!` other than `!important`, a rule in a");
@@ -153,8 +153,8 @@ public class ProfileDocumentTests
         Line("the user-agent style sheet are not refused. So is a value in the Accepted column: aspect-ratio auto with a ratio,");
         Line("which the width and height attributes of img make; an image with a natural ratio uses its own, as in Chromium, and");
         Line("on any other element stage 4 applies the ratio or refuses it. A zero length where the initial value is a keyword or");
-        Line("a percentage is the same value and accepted too: `letter-spacing: 0` (computed normal), `background-position-x: 0`");
-        Line("and `background-position-y: 0` (computed 0px, as Chromium keeps it). Any other value is refused.");
+        Line("a percentage is the same value and accepted too: `background-position-x: 0` and `background-position-y: 0`");
+        Line("(computed 0px, as Chromium keeps it). Any other value is refused.");
         Line();
         Line("| Property | Initial | Accepted | Defined in |");
         Line("| --- | --- | --- | --- |");

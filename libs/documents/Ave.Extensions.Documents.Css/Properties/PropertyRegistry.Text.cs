@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Ave.Extensions.Documents.Css.Syntax;
 using Ave.Extensions.Documents.Css.Values;
 
@@ -21,9 +22,11 @@ public static partial class PropertyRegistry
             ParseTextAlign,
             ComputeTextAlign);
 
-        yield return Keywords(
-            "vertical-align", inherited: false, "baseline", ["baseline", "top", "middle", "bottom"], ["sub", "super", "text-top", "text-bottom"],
-            "inline-level and table-cell boxes", "CSS 2.1 §10.8.1; CSS Inline 3 §4");
+        yield return new PropertyDefinition(
+            "vertical-align", inherited: false, new CssKeyword("baseline"), "inline-level and table-cell boxes",
+            "baseline | sub | super | top | middle | bottom | <length-percentage>", PropertySupport.Supported, "CSS 2.1 §10.8.1; CSS Inline 3 §4",
+            ParseVerticalAlign,
+            ComputeSpacing);
 
         yield return Keywords(
             "white-space-collapse", inherited: true, "collapse", ["collapse", "preserve", "preserve-breaks", "break-spaces"], ["discard", "preserve-spaces"],
@@ -54,6 +57,25 @@ public static partial class PropertyRegistry
 
         // Inherited; the value of the text decides, not that of the decorating box.
         yield return Keywords("text-decoration-skip-ink", inherited: true, "auto", ["auto", "none"], ["all"], "all elements", "CSS Text Decoration 4 §2.10.4");
+
+        // letter-spacing: normal is zero (CSS Text 3 §7.2); Chromium writes normal for a zero length, so 0 is kept as normal.
+        yield return new PropertyDefinition(
+            "letter-spacing", inherited: true, new CssKeyword("normal"), "inline boxes and text", "normal | <length>", PropertySupport.Supported,
+            "CSS Text 3 §7.2",
+            reader => ParseSpacing(reader, "letter-spacing", new CssKeyword("normal")),
+            ComputeSpacing);
+
+        // word-spacing: normal computes to zero (CSS Text 4 §7.1; Chromium writes 0px).
+        yield return new PropertyDefinition(
+            "word-spacing", inherited: true, Zero, "text", "normal | <length>", PropertySupport.Supported, "CSS Text 4 §7.1",
+            reader => ParseSpacing(reader, "word-spacing", Zero),
+            ComputeSpacing);
+
+        yield return new PropertyDefinition(
+            "text-transform", inherited: true, new CssKeyword("none"), "text", "none | capitalize | uppercase | lowercase", PropertySupport.Supported,
+            "CSS Text 3 §2.1",
+            ParseTextTransform,
+            AsSpecified);
 
         yield return Keywords(
             "print-color-adjust", inherited: true, "economy", ["economy", "exact"], [], "all elements", "CSS Color Adjust 1 §3.1");
@@ -109,6 +131,102 @@ public static partial class PropertyRegistry
         }
 
         return ParsedValue.Of(lines.Count == 1 ? lines[0] : new CssList([.. lines], CommaSeparated: false));
+    }
+
+    /// <summary>
+    /// letter-spacing (CSS Text 3 §7.2) and word-spacing (CSS Text 4 §7.1): <c>normal</c> or a length, negative too, which
+    /// stays relative (<c>em</c>) until it is computed. A zero length is the initial value (<paramref name="zero"/>); so is
+    /// <c>0%</c> of word-spacing, which Chromium 159 keeps as <c>0%</c> (measured). Another percentage, which CSS Text 4
+    /// allows, is refused: it is not measured.
+    /// </summary>
+    private static ParsedValue ParseSpacing(ValueReader reader, string name, CssValue zero)
+    {
+        if (reader.Count == 1 && reader.Keyword("normal") is not null)
+        {
+            return ParsedValue.Of(zero);
+        }
+
+        if (reader.Count != 1 || reader.Length(percentages: true, nonNegative: false, name) is not { } parsed)
+        {
+            return ParsedValue.Invalid($"not a value of {name}");
+        }
+
+        return parsed.Value switch
+        {
+            null => parsed,
+            CssLength { Points: 0 } => ParsedValue.Of(zero),
+            CssPercentage { Value: 0 } when name == "word-spacing" => ParsedValue.Of(new CssPercentage(0)),
+            CssPercentage { Value: 0 } => ParsedValue.Of(zero),
+            CssPercentage => ParsedValue.Refused($"a percentage in '{name}' is not supported: give a length"),
+            CssLength or CssDimension or CssCalc => parsed,
+            _ => ParsedValue.Refused($"'{name}' is supported as normal or a length"),
+        };
+    }
+
+    /// <summary>The keywords of vertical-align the engine supports somewhere (CSS 2.1 §10.8.1): which box takes which is the
+    /// front-end's check; text-top and text-bottom are refused.</summary>
+    private static readonly string[] VerticalAlignKeywords = ["baseline", "sub", "super", "top", "middle", "bottom"];
+
+    /// <summary>vertical-align (CSS 2.1 §10.8.1): one keyword, or a length or a percentage (of the element's own line
+    /// height), either sign; text-top and text-bottom are refused.</summary>
+    private static ParsedValue ParseVerticalAlign(ValueReader reader)
+    {
+        if (reader.Count == 1 && reader.Keyword(VerticalAlignKeywords) is { } keyword)
+        {
+            return ParsedValue.Of(new CssKeyword(keyword));
+        }
+
+        if (reader.Count == 1 && reader.Keyword(["text-top", "text-bottom"]) is { } refused)
+        {
+            return ParsedValue.Refused($"'vertical-align: {refused}' is not supported");
+        }
+
+        return reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "vertical-align") is { } parsed
+            ? parsed
+            : ParsedValue.Invalid("not a value of vertical-align");
+    }
+
+    /// <summary>The computed letter-spacing, word-spacing or vertical-align: the keyword or the percentage as it is, a
+    /// length absolute (an em of the element's own font size).</summary>
+    private static ComputedResult ComputeSpacing(CssValue value, ComputeContext context) =>
+        value is CssKeyword or CssPercentage ? value : context.LengthPercentage(value);
+
+    /// <summary>The case transforms of text-transform the engine draws (CSS Text 3 §2.1).</summary>
+    private static readonly string[] CaseTransforms = ["capitalize", "uppercase", "lowercase"];
+
+    /// <summary>
+    /// text-transform (CSS Text 3 §2.1): <c>none | [ capitalize | uppercase | lowercase ] || full-width || full-size-kana |
+    /// math-auto</c>. <c>none</c> and one case transform alone are drawn; <c>full-width</c>, <c>full-size-kana</c> and
+    /// <c>math-auto</c>, alone or with a case transform, are refused: they map characters to other forms (full-width
+    /// characters, full-size kana, mathematical italic letters) that the engine does not map; the author can write those
+    /// characters in the text.
+    /// </summary>
+    private static ParsedValue ParseTextTransform(ValueReader reader)
+    {
+        if (reader.Count == 1 && reader.Keyword(["none", .. CaseTransforms]) is { } single)
+        {
+            return ParsedValue.Of(new CssKeyword(single));
+        }
+
+        if (reader.Count == 1 && reader.Keyword("math-auto") is not null)
+        {
+            return ParsedValue.Refused("'text-transform: math-auto' is not supported: write the mathematical italic letters in the text");
+        }
+
+        var seen = new List<string>();
+        while (!reader.AtEnd)
+        {
+            var keyword = reader.Keyword([.. CaseTransforms, "full-width", "full-size-kana"]);
+            if (keyword is null || seen.Contains(keyword) || (CaseTransforms.Contains(keyword) && seen.Exists(other => CaseTransforms.Contains(other))))
+            {
+                return ParsedValue.Invalid("not a value of text-transform");
+            }
+
+            seen.Add(keyword);
+        }
+
+        var form = seen.Find(keyword => !CaseTransforms.Contains(keyword));
+        return ParsedValue.Refused($"'text-transform: {form}' is not supported: write the {(form == "full-width" ? "full-width characters" : "full-size kana")} in the text");
     }
 
     /// <summary>The computed colour (CSS Color 4 §3.1, §6.4): <c>currentcolor</c> in <c>color</c> itself is the inherited

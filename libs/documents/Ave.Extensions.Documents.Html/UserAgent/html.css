@@ -17,6 +17,8 @@
  * - cursor (ignored by rule) and br/wbr display-outside (no such property in CSS 2; line breaks are made by layout).
  * - :heading: Chromium 159 does not support it; h1-h6 are written out.
  * - nobr wbr { white-space: normal }: Chromium 159 does not apply it (a wbr in nobr computes nowrap, measured).
+ * - sub, sup { line-height: normal }: Chromium 159 does not apply it; a sup keeps the line height it inherits (case
+ *   va-decorated: under 18pt lines a sup's box reaches its half-leading higher than at normal).
  * :link is written a:link: Chromium 159 colours and underlines links of a elements only, not of area (measured).
  * - The quirks-mode rules: a document in quirks mode is refused.
  * - The rules that are presentational hints (§15.3.3 pre[wrap], §15.3.7 list types, §15.3.8 table attributes,
@@ -103,7 +105,7 @@ small { font-size: smaller; }
 
 sub { vertical-align: sub; }
 sup { vertical-align: super; }
-sub, sup { line-height: normal; font-size: smaller; }
+sub, sup { font-size: smaller; }
 
 ruby { display: ruby; }
 rt { display: ruby-text; }

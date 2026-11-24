@@ -69,18 +69,6 @@ public static partial class PropertyRegistry
 
         // Text.
         yield return InitialZero("text-indent", true, "0", "block containers", "CSS Text 3 §8.1");
-        yield return InitialZero("letter-spacing", true, "normal", "inline boxes and text", "CSS Text 3 §7.2");
-        // word-spacing: normal computes to zero (CSS Text 4 §7.1; Chromium writes 0px).
-        yield return new PropertyDefinition(
-            "word-spacing", inherited: true, Zero, "text", "normal | 0", PropertySupport.InitialOnly, "CSS Text 4 §7.1",
-            reader => reader.Count == 1 && reader.Keyword("normal") is not null
-                ? ParsedValue.Of(Zero)
-                : reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "word-spacing") is { Value: CssLength { Points: 0 } or CssPercentage { Value: 0 } } zero
-                    // Chromium 159 keeps 0% as 0% (measured); 0 and 0px are 0px.
-                    ? ParsedValue.Of(zero.Value is CssPercentage ? new CssPercentage(0) : Zero)
-                    : ParsedValue.Refused("'word-spacing' is supported only at its initial value, normal"),
-            AsSpecified);
-        yield return InitialKeyword("text-transform", true, "none", ["capitalize", "uppercase", "lowercase", "full-width", "full-size-kana", "math-auto"], true, "text", "CSS Text 3 §2.1");
         yield return InitialKeyword("text-overflow", false, "clip", ["ellipsis"], true, "block containers", "CSS Overflow 3 §5.1");
         yield return InitialKeyword("text-align-last", true, "auto", ["start", "end", "left", "right", "center", "justify", "match-parent"], false, "block containers", "CSS Text 3 §6.2");
         yield return InitialKeyword("text-justify", true, "auto", ["none", "inter-word", "inter-character", "distribute"], false, "text", "CSS Text 3 §6.4");
@@ -105,12 +93,10 @@ public static partial class PropertyRegistry
         // Fonts beyond family, size, weight and style (the font shorthand resets them).
         yield return InitialKeyword("font-variant-caps", true, "normal", ["small-caps", "all-small-caps", "petite-caps", "all-petite-caps", "unicase", "titling-caps"], false, "all elements and text", "CSS Fonts 4 §6.6");
         yield return InitialKeyword("font-variant-ligatures", true, "normal", ["none"], true, "all elements and text", "CSS Fonts 4 §6.4");
-        yield return InitialKeyword("font-variant-numeric", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.7");
         yield return InitialKeyword("font-variant-east-asian", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.10");
         yield return InitialKeyword("font-variant-position", true, "normal", ["sub", "super"], false, "all elements and text", "CSS Fonts 4 §6.5");
         yield return InitialKeyword("font-variant-alternates", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §6.8");
         yield return InitialKeyword("font-variant-emoji", true, "normal", ["text", "emoji", "unicode"], false, "all elements and text", "CSS Fonts 4 §6.11");
-        yield return InitialKeyword("font-feature-settings", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.1");
         yield return InitialKeyword("font-variation-settings", true, "normal", [], true, "all elements and text", "CSS Fonts 4 §7.2");
         // font-stretch: normal is 100% (CSS Fonts 4 §2.3, the computed value is a percentage; Chromium writes 100%).
         yield return new PropertyDefinition(
