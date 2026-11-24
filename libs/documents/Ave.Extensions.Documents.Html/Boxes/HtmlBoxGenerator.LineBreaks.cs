@@ -31,6 +31,12 @@ public static partial class HtmlBoxGenerator
                 return;
             }
 
+            if (ShiftOf(frame.Element) != Length.Zero)
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Element, $"A <br> inside the raised or lowered <{frame.Element.Element.LocalName}> is not drawn in this version: where Chromium puts its line height is not measured.",
+                    "br", element.Element.Position);
+            }
+
             if (TextStyleOf(element) is { } style)
             {
                 frame.Target.Add(new TextRun(NewId(), ForcedLineBreak, style, Source(element.Element.Position)));

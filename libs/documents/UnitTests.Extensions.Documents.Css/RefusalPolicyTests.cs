@@ -18,7 +18,6 @@ public class RefusalPolicyTests
         [.. computed.Diagnostics.Where(error => CssDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal)];
 
     [Theory]
-    [InlineData("vertical-align: 5px")]
     [InlineData("vertical-align: -webkit-baseline-middle")]
     [InlineData("display: -webkit-flex")]
     [InlineData("color-scheme: light dark")]
@@ -40,7 +39,7 @@ public class RefusalPolicyTests
     public void A_value_the_grammar_does_not_read_after_var_substitution_is_refused()
     {
         var root = Doc(E("p", A("id", "x")));
-        var computed = Compute(root, "p { --a: 5px; vertical-align: var(--a) }");
+        var computed = Compute(root, "p { --a: -webkit-baseline-middle; vertical-align: var(--a) }");
 
         Refusals(computed).Should().ContainSingle().Which.Message.Should().Contain("not valid or not supported in this profile");
     }
@@ -49,7 +48,7 @@ public class RefusalPolicyTests
     public void A_refused_value_that_loses_the_cascade_refuses_nothing()
     {
         var root = Doc(E("p", A("id", "x")));
-        var computed = Compute(root, "#x { vertical-align: top } p { vertical-align: 5px }");
+        var computed = Compute(root, "#x { vertical-align: top } p { vertical-align: -webkit-baseline-middle }");
 
         Refusals(computed).Should().BeEmpty();
         computed.Value(root["x"], "vertical-align").Should().Be("top");

@@ -462,7 +462,7 @@ public class ChromiumBehaviourTests
     [InlineData("<p><math><mi>x</mi></math>", "math")]
     [InlineData("<noscript><p>x</p></noscript>", "noscript")]
     // The user-agent style of an element outside the profile names the element.
-    [InlineData("<p>a<sub>b</sub>", "sub")]
+    [InlineData("<p>a<abbr title=\"t\">b</abbr>", "abbr")]
     [InlineData("<div contenteditable>x</div>", "contenteditable")]
     public void What_the_engine_does_not_run_or_draw_is_refused_where_the_author_wrote_it(string body, string value)
     {

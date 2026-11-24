@@ -558,6 +558,7 @@ public static partial class HtmlBoxGenerator
                         // CSS 2.1 §10.8.1: every inline box, also one without a glyph, has a line height that counts
                         // for the line box ("empty inline elements ... still have margins, padding, borders and a line
                         // height"); the model has no inline box, so an empty run in the element's style carries it.
+                        OpenShift(element, frame.Element);
                         if (TextStyleOf(element) is { } own)
                         {
                             frame.Target.Add(new TextRun(NewId(), string.Empty, own, Source(element.Element.Position)));
@@ -684,8 +685,9 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>The text style of an element's text and of its lines' strut: its face, size, colour, line height and
-        /// white space (<see cref="FaceStyleOf"/>), the decorations applied to it (<see cref="Decorations"/>) and whether
-        /// they skip the glyphs' ink; null after a missing face was reported.</summary>
+        /// white space (<see cref="FaceStyleOf"/>), the decorations applied to it (<see cref="Decorations"/>), whether
+        /// they skip the glyphs' ink, and for an inline element its baseline shift (<see cref="ShiftOf"/>, opened before);
+        /// null after a missing face was reported.</summary>
         private TextStyle? TextStyleOf(StyledElement element)
         {
             if (_decorated.TryGetValue(element, out var known))
@@ -693,7 +695,7 @@ public static partial class HtmlBoxGenerator
                 return known;
             }
 
-            var style = FaceStyleOf(element) is { } face ? face with { Decorations = Decorations(element), DecorationSkipInk = SkipInkOf(element) } : null;
+            var style = FaceStyleOf(element) is { } face ? face with { Decorations = Decorations(element), DecorationSkipInk = SkipInkOf(element), BaselineShift = ShiftOf(element) } : null;
             _decorated[element] = style;
             return style;
         }

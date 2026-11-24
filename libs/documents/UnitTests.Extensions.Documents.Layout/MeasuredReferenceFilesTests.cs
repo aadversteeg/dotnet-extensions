@@ -2189,14 +2189,30 @@ public class MeasuredReferenceFilesTests
         ["tw-span.lines.txt"] = 32,
         ["tw-span.print.txt"] = 55,
         ["tw-span.words.txt"] = 22,
+        ["va-decorated.boxes.txt"] = 1,
+        ["va-decorated.lines.txt"] = 3,
+        ["va-decorated.print.txt"] = 32,
+        ["va-decorated.words.txt"] = 28,
         ["va-elements.boxes.txt"] = 1,
         ["va-elements.lines.txt"] = 0,
-        ["va-elements.print.txt"] = 29,
-        ["va-elements.words.txt"] = 28,
+        ["va-elements.print.txt"] = 21,
+        ["va-elements.words.txt"] = 20,
+        ["va-length.boxes.txt"] = 1,
+        ["va-length.lines.txt"] = 0,
+        ["va-length.print.txt"] = 45,
+        ["va-length.words.txt"] = 44,
+        ["va-nested.boxes.txt"] = 1,
+        ["va-nested.lines.txt"] = 5,
+        ["va-nested.print.txt"] = 47,
+        ["va-nested.words.txt"] = 41,
         ["va-shift.boxes.txt"] = 1,
         ["va-shift.lines.txt"] = 0,
         ["va-shift.print.txt"] = 41,
         ["va-shift.words.txt"] = 40,
+        ["va-sizes.boxes.txt"] = 1,
+        ["va-sizes.lines.txt"] = 0,
+        ["va-sizes.print.txt"] = 43,
+        ["va-sizes.words.txt"] = 42,
         ["versions.txt"] = 5,
         ["widths-exact.boxes.txt"] = 19,
         ["widths-exact.lines.txt"] = 20,
@@ -2313,7 +2329,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(567);
+        cases.Should().HaveCount(571);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

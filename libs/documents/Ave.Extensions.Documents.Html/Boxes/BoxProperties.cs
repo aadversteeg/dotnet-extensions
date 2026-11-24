@@ -177,8 +177,10 @@ internal static class BoxProperties
         yield return new("white-space-collapse", "collapse, preserve, preserve-breaks, break-spaces (a tab where spaces are preserved is refused at its text)", (_, _) => null);
         yield return new("text-wrap-mode", "wrap, nowrap", (_, _) => null);
         yield return new("unicode-bidi", "both values: isolate has no effect in left-to-right text, the only direction", (_, _) => null);
-        yield return new("vertical-align", "baseline; top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
-            (value, facts) => TableProperties.VerticalAlign(value, facts) ?? (IsKeyword(value, "baseline") || facts.IsBlock ? null : "vertical alignment of inline boxes is not drawn in this version"));
+        // CSS 2.1 §10.8.1: super, sub, a length and a percentage shift an inline element's text (TextStyle.BaselineShift).
+        yield return new("vertical-align", "baseline; super, sub, a length and a percentage on an inline element that is not an image; top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
+            (value, facts) => TableProperties.VerticalAlign(value, facts) ?? (IsKeyword(value, "baseline") || facts.IsBlock || (!facts.IsReplaced && IsShift(value))
+                ? null : "this vertical alignment of an inline box is not drawn in this version: baseline, super, sub, a length and a percentage are"));
 
         // CSS Text Decoration 3 §2, CSS Text Decoration 4 §2.10.4: the lines go to the text of the element and of every
         // element inside it (HtmlBoxGenerator.Decorations.cs); the style sheet accepts only the solid style, the automatic
@@ -248,6 +250,9 @@ internal static class BoxProperties
     private static bool IsImageSize(CssValue value, ElementFacts facts) => facts.IsReplaced && value is CssLength { Value.Points: > 0 };
 
     private static bool IsKeyword(CssValue value, string name) => value is CssKeyword keyword && string.Equals(keyword.Name, name, StringComparison.Ordinal);
+
+    /// <summary>A vertical-align that shifts the baseline of an inline element's text: super, sub, a length or a percentage.</summary>
+    internal static bool IsShift(CssValue value) => value is CssKeyword { Name: "super" or "sub" } or CssLength or CssPercentage;
 
     private static bool IsZero(CssValue value) => value switch
     {

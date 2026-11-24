@@ -22,9 +22,11 @@ public static partial class PropertyRegistry
             ParseTextAlign,
             ComputeTextAlign);
 
-        yield return Keywords(
-            "vertical-align", inherited: false, "baseline", ["baseline", "top", "middle", "bottom"], ["sub", "super", "text-top", "text-bottom"],
-            "inline-level and table-cell boxes", "CSS 2.1 §10.8.1; CSS Inline 3 §4");
+        yield return new PropertyDefinition(
+            "vertical-align", inherited: false, new CssKeyword("baseline"), "inline-level and table-cell boxes",
+            "baseline | sub | super | top | middle | bottom | <length-percentage>", PropertySupport.Supported, "CSS 2.1 §10.8.1; CSS Inline 3 §4",
+            ParseVerticalAlign,
+            ComputeSpacing);
 
         yield return Keywords(
             "white-space-collapse", inherited: true, "collapse", ["collapse", "preserve", "preserve-breaks", "break-spaces"], ["discard", "preserve-spaces"],
@@ -161,8 +163,31 @@ public static partial class PropertyRegistry
         };
     }
 
-    /// <summary>The computed letter-spacing or word-spacing: the keyword or the percentage as it is, a length absolute
-    /// (an em of the element's own font size).</summary>
+    /// <summary>The keywords of vertical-align the engine supports somewhere (CSS 2.1 §10.8.1): which box takes which is the
+    /// front-end's check; text-top and text-bottom are refused.</summary>
+    private static readonly string[] VerticalAlignKeywords = ["baseline", "sub", "super", "top", "middle", "bottom"];
+
+    /// <summary>vertical-align (CSS 2.1 §10.8.1): one keyword, or a length or a percentage (of the element's own line
+    /// height), either sign; text-top and text-bottom are refused.</summary>
+    private static ParsedValue ParseVerticalAlign(ValueReader reader)
+    {
+        if (reader.Count == 1 && reader.Keyword(VerticalAlignKeywords) is { } keyword)
+        {
+            return ParsedValue.Of(new CssKeyword(keyword));
+        }
+
+        if (reader.Count == 1 && reader.Keyword(["text-top", "text-bottom"]) is { } refused)
+        {
+            return ParsedValue.Refused($"'vertical-align: {refused}' is not supported");
+        }
+
+        return reader.Count == 1 && reader.Length(percentages: true, nonNegative: false, "vertical-align") is { } parsed
+            ? parsed
+            : ParsedValue.Invalid("not a value of vertical-align");
+    }
+
+    /// <summary>The computed letter-spacing, word-spacing or vertical-align: the keyword or the percentage as it is, a
+    /// length absolute (an em of the element's own font size).</summary>
     private static ComputedResult ComputeSpacing(CssValue value, ComputeContext context) =>
         value is CssKeyword or CssPercentage ? value : context.LengthPercentage(value);
 

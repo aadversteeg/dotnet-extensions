@@ -66,7 +66,7 @@ public class ProfileDocumentTests
         Line();
         Line("Longhands with every value the engine supports. A value CSS defines that is not listed is refused. So is a value that");
         Line("does not match the engine's grammar of a known property: a typing error such as `color: 12px`, or valid CSS beyond this");
-        Line("profile such as `vertical-align: 5px`. The engine cannot tell the two apart, and a browser drops the first and uses the");
+        Line("profile such as `vertical-align: -webkit-baseline-middle`. The engine cannot tell the two apart, and a browser drops the first and uses the");
         Line("second, so both get the one answer \"not valid or not supported in this profile\". The same holds for a selector or media");
         Line("query that does not parse and an unknown at-rule. Dropped with a warning, as in a browser, is only what CSS Syntax 3");
         Line("recovers from (an unclosed block, a declaration without a colon), a top-level `!` other than `!important`, a rule in a");

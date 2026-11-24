@@ -537,8 +537,12 @@ tw-fixed refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-insets refused Documents.Html.Unsupported.Value width: 300pt at 5:1
 tw-pref refused Documents.Html.Unsupported.Value width: 300pt at 6:1
 tw-span refused Documents.Html.Unsupported.Value width: 300pt at 4:1
-va-elements refused Documents.Html.Unsupported.Element sup at 4:25
-va-shift refused Documents.Css.Unsupported.Value vertical-align: super at 4:6
+va-decorated equal
+va-elements equal
+va-length equal
+va-nested refused Documents.Html.Unsupported.Value vertical-align: super at 4:31
+va-shift equal
+va-sizes equal
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
 ws-border refused Documents.Html.Unsupported.Value width: 6pt at 6:1

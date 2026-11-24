@@ -12,7 +12,7 @@ reference is Chromium 159; see `docs/architecture.md`, "HTML/CSS front-end".
 
 Longhands with every value the engine supports. A value CSS defines that is not listed is refused. So is a value that
 does not match the engine's grammar of a known property: a typing error such as `color: 12px`, or valid CSS beyond this
-profile such as `vertical-align: 5px`. The engine cannot tell the two apart, and a browser drops the first and uses the
+profile such as `vertical-align: -webkit-baseline-middle`. The engine cannot tell the two apart, and a browser drops the first and uses the
 second, so both get the one answer "not valid or not supported in this profile". The same holds for a selector or media
 query that does not parse and an unknown at-rule. Dropped with a warning, as in a browser, is only what CSS Syntax 3
 recovers from (an unclosed block, a declaration without a colon), a top-level `!` other than `!important`, a rule in a
@@ -87,7 +87,7 @@ names nothing.
 | `text-transform` | yes | `none` | `none \| capitalize \| uppercase \| lowercase` | CSS Text 3 §2.1 |
 | `text-wrap-mode` | yes | `wrap` | `wrap \| nowrap` | CSS Text 4 §6.1 |
 | `unicode-bidi` | no | `normal` | `normal \| isolate` | CSS Writing Modes 4 §2.2; isolate has no effect in left-to-right text |
-| `vertical-align` | no | `baseline` | `baseline \| top \| middle \| bottom` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
+| `vertical-align` | no | `baseline` | `baseline \| sub \| super \| top \| middle \| bottom \| <length-percentage>` | CSS 2.1 §10.8.1; CSS Inline 3 §4 |
 | `white-space-collapse` | yes | `collapse` | `collapse \| preserve \| preserve-breaks \| break-spaces` | CSS Text 4 §3.1 |
 | `widows` | yes | `2` | `<integer [1,32767]>` | CSS Fragmentation 3 §3.3 |
 | `width` | no | `auto` | `auto \| <length-percentage [0,∞]>` | CSS Sizing 3 §3.1 |

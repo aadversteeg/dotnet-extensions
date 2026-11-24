@@ -501,7 +501,7 @@ chooses whether refusals fail the document (the default) or are only reported.
 The policy for each refusal: input above CSS Syntax 3 that the engine cannot read is either
 invalid, which a browser drops, or valid CSS beyond this profile, which a browser uses, and the engine cannot tell
 which. Its one answer to both is a refusal, "not valid or not supported in this profile": a value that does not match
-its grammar of a known property (`vertical-align: 5px`, `color: 12px`), also after `var()` substitution; a selector or
+its grammar of a known property (`vertical-align: -webkit-baseline-middle`, `color: 12px`), also after `var()` substitution; a selector or
 media query that does not parse; an unknown at-rule; a media feature it does not evaluate; an `@supports` condition it
 cannot answer as Chromium. Valid CSS the engine does not implement is refused as before. A refused declaration that
 would win is skipped, so the next one applies, as in a browser that does not know the value. So the engine refuses
@@ -621,6 +621,7 @@ Where each rule lives:
 | line height in Chromium's layout unit (a length rounded to 1/64 px, a number times the font size floored to it) | `HtmlBoxGenerator.LineHeightOf` |
 | `font-variant-numeric`, `font-feature-settings`: the feature tags of a text | `HtmlBoxGenerator.FeaturesOf`; the tags in `Core/OptionalFontFeatures.cs` |
 | `letter-spacing`, `word-spacing`: the computed lengths, the characters refused in letter-spaced text | `HtmlBoxGenerator.FaceStyleOf` (`SpacingOf`), `HtmlBoxGenerator.RefuseUnspacedCharacter` |
+| `vertical-align` on inline text: the baseline shift in Chromium's layout unit, summed over nested elements; the shapes refused | `Html/Boxes/HtmlBoxGenerator.BaselineShifts.cs` (`OpenShift`, `OwnShift`) |
 | `text-transform`: case mapping per text node, capitalize's word starts, the refused letters | `Html/Boxes/TextTransforms.cs`; the character before a text in `HtmlBoxGenerator.Transformed` |
 | margins and padding in Chromium's layout unit (cut toward zero to 1/64 px) | `HtmlBoxGenerator.LayoutUnits` |
 | tables: the parts, their structure, column sizes, spans; what the model's table cannot show | `Html/Boxes/TableBoxes.cs`; the values in `Html/Boxes/TableProperties.cs` |
@@ -643,7 +644,7 @@ start tag, with the property and the value) only where it would change the print
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
 | `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-decoration-skip-ink` | every line and combination, applied to the element's text and the text of every element inside it, through block boxes, not into an image: the parent's lines, then the element's own in the order underline, overline, line-through, each in the element's font and its decoration colour (`currentcolor` its `color`; `TextStyle.Decorations`); `solid`; `auto`, `none` from the element the text lies in (`TextStyle.DecorationSkipInk`) | a decoration colour of another alpha than 1; a text with more than 16 lines (at the start tag of the element it lies in); `blink`, `spelling-error`, `grammar-error`, other styles, a thickness, an underline offset or position other than `auto` and `skip-ink: all` (refused by the registry) |
-| `vertical-align` | `baseline`; any on a block box | other values on an inline box |
+| `vertical-align` | `baseline`; any on a block box; on an inline element that is not an image `super`, `sub`, a length and a percentage (of its own line height), as the shift of its text's baseline in Chromium's layout unit (`TextStyle.BaselineShift`; `super` the parent's font size in 1/64 px divided by 3, `sub` by 5, each cut to 1/64 px plus 1 px; a length or percentage cut toward zero; cases `va-*`); laid out by THE RULE FOR A SHIFTED RUN ON THE LINE | `text-top`, `text-bottom` (by the registry); `top`, `middle`, `bottom` on an inline box; any other value on an image; at the element's start tag: a shifted element inside another inline element (Chromium paints the outer element's text at a whole pixel) and one inside text with a decoration from around it (Chromium draws that line on the outer baseline; case `va-nested`); an image or a `br` inside a shifted element |
 | `box-decoration-break` | `slice`; `clone` on a box without border, padding or background | `clone` where it would draw |
 | `font-variant-numeric`, `font-feature-settings` | `normal`, `lining-nums`, `oldstyle-nums`, `proportional-nums`, `tabular-nums`, `ordinal`; the tags `lnum`, `onum`, `pnum`, `tnum`, `ordn` on or off, over the variant (`TextStyle.FontFeatures`, applied by the shaper as the font's lookups say; cases `fn-*`) | `diagonal-fractions`, `stacked-fractions` (Lato's `frac` is a contextual substitution the shaper does not apply), `slashed-zero` (no font of the cases has one), other tags and values (by the registry) |
 | `letter-spacing`, `word-spacing` | `normal` and a length, negative too, as the computed length (`em` of the element's own font size) in the text style (`TextStyle.LetterSpacing`, `TextStyle.WordSpacing`), added in layout (THE RULE FOR LETTER AND WORD SPACING); `0%` of word-spacing as zero | a percentage (by the registry); in letter-spaced text a combining mark or a format character (soft hyphen, joiners), at the text with its offset; a spacing on a page-margin box |
@@ -663,8 +664,10 @@ Chromium stretches the image to and the image algorithm does not (`Value`, case 
 among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
 in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
 break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: lists by `display`, a table without collapsed borders by
-`border-collapse`, `hr` by its `inset` border, `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`
-(in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
+`border-collapse`, `hr` by its `inset` border, `abbr` with a title by its dotted underline (in style resolution). `sub` and
+`sup` are drawn with `vertical-align` and `font-size: smaller` (the parent's size divided by 1.2; cases `va-elements`,
+`va-sizes`); the HTML Standard's `line-height: normal` for them is left out of the user-agent style sheet, as Chromium 159 does
+not apply it (case `va-decorated`). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
 at its text, once per text with the first such character, its offset and their count (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed
 and U+0085 as a missing glyph), the line and paragraph separators (Chromium prints a space that does not collapse), a

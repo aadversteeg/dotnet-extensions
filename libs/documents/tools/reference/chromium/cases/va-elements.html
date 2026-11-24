@@ -1,6 +1,6 @@
 <!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
-<!-- The sup and sub elements with the user-agent style sheet (vertical-align super and sub, font-size smaller), at 10.5 pt and 11 pt, line height normal: the font size of the shifted text, its baseline, the line box's height; one nested sup inside a sup. -->
+<!-- The sup and sub elements with the user-agent style sheet (vertical-align super and sub, font-size smaller), at 10.5 pt and 11 pt, line height normal: the font size of the shifted text, its baseline, the line box's height. A sup inside a sup is in case va-nested. -->
 <style>@page { size: 300pt 480pt; margin: 12pt; } .a { font-size: 10.5pt; } .b { font-size: 11pt; }</style></head><body>
-<div class="a"><p>Word x<sup>2</sup> y</p><p>Word H<sub>2</sub>O</p><p>Word e<sup>x<sup>2</sup></sup></p><p>Word x</p></div>
-<div class="b"><p>Word x<sup>2</sup> y</p><p>Word H<sub>2</sub>O</p><p>Word e<sup>x<sup>2</sup></sup></p><p>Word x</p></div>
+<div class="a"><p>Word x<sup>2</sup> y</p><p>Word H<sub>2</sub>O</p><p>Word x</p></div>
+<div class="b"><p>Word x<sup>2</sup> y</p><p>Word H<sub>2</sub>O</p><p>Word x</p></div>
 </body></html>

@@ -1,0 +1,7 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- vertical-align as a length, an em length and a percentage on spans of the paragraph's own font size, at 10.5 pt, under a line height of 18pt and of normal, and baseline: how far each baseline moves (a length that is not whole 1/64 px, a percentage of the span's own line height), and how the line box grows. -->
+<style>@page { size: 300pt 480pt; margin: 12pt; } .a { font-size: 10.5pt; } .f { line-height: 18pt; } .n { line-height: normal; }
+.p { vertical-align: 2.35pt; } .q { vertical-align: -2.35pt; } .r { vertical-align: 30%; } .t { vertical-align: -30%; } .w { vertical-align: 0.4em; } .b { vertical-align: baseline; } .h { line-height: 30pt; }</style></head><body>
+<div class="a f"><p>Word x <span class="p">2</span> y</p><p>Word x <span class="q">2</span> y</p><p>Word x <span class="r">2</span> y</p><p>Word x <span class="t">2</span> y</p><p>Word x <span class="w">2</span> y</p><p>Word x <span class="b">2</span> y</p><p>Word x</p></div>
+<div class="a n"><p>Word x <span class="p">2</span> y</p><p>Word x <span class="r">2</span> y</p><p>Word x <span class="t">2</span> y</p><p>Word x <span class="r h">2</span> y</p><p>Word x</p></div>
+</body></html>
