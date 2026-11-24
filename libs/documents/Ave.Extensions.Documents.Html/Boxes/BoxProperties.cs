@@ -168,10 +168,10 @@ internal static class BoxProperties
         // A block box takes a height of a length, and a percentage of a parent with a height of a length, which the box
         // generator resolves (BoxStyle.SpecifiedHeight; cases sz-height*); min-height and max-height of a length
         // (sz-min-height-break, sz-max-height, sz-min-max-height). A percentage minimum or maximum is not measured.
-        yield return new("height", "auto; a length or a percentage on a block box; a positive length on an image; no effect on an inline box", (value, facts) =>
-            IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null
+        yield return new("height", "auto; a length or a percentage on a block box; a positive length on an image; no effect on an inline box; on a table part what TableProperties.Height says", (value, facts) =>
+            TableProperties.IsPart(facts) ? TableProperties.Height(value, facts)
+            : IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null
             : facts.IsReplaced ? "an image is drawn at a positive length height in this version"
-            : TableProperties.IsPart(facts) ? "a height on a table part is not drawn in this version"
             : BlockSize(value));
         yield return new("min-height", "auto or 0; a length on a block box; no effect on an inline box", (value, facts) =>
             IsKeyword(value, "auto") || IsZero(value) || !facts.IsBlock ? null
@@ -184,11 +184,11 @@ internal static class BoxProperties
 
         // CSS Box Model 3 §4.3: read for the width and the height of a block box; on an image its padding and border would change the
         // image's size under border-box, which the image algorithm does not take.
-        yield return new("box-sizing", "both values on a block box (read for its width and height); content-box on an image with padding or a border", (value, facts) =>
+        yield return new("box-sizing", "both values on a block box (read for its width and height); on a table, a row and a cell with a height what the table draws (HtmlBoxGenerator, tables); content-box on an image with padding or a border", (value, facts) =>
             facts.IsReplaced && IsKeyword(value, "border-box") && HasInsets(facts.Style) ? "border-box on an image with padding or a border is not drawn in this version" : null);
 
         // CSS Display 3 §2.
-        yield return new("display", "block, inline, none, list-item (CSS Lists 3 §2; HtmlBoxGenerator.Lists.cs), table and its parts but the caption",
+        yield return new("display", "block, inline, none, list-item (CSS Lists 3 §2; HtmlBoxGenerator.Lists.cs), table and its parts",
             (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" or "list-item" } ? null : TableProperties.Display(value));
 
         // CSS Color 4 §3.1: the colour of the element's own text; a border in currentcolor is checked in its row.
@@ -219,7 +219,7 @@ internal static class BoxProperties
         yield return new("white-space-collapse", "collapse, preserve, preserve-breaks, break-spaces (a tab where spaces are preserved is refused at its text)", (_, _) => null);
         yield return new("text-wrap-mode", "wrap, nowrap", (_, _) => null);
         yield return new("unicode-bidi", "both values: isolate has no effect in left-to-right text, the only direction", (_, _) => null);
-        yield return new("vertical-align", "baseline; top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
+        yield return new("vertical-align", "baseline (on a table cell drawn as top); top, middle, bottom on a table cell; any value on another block box (it applies to inline boxes and table cells)",
             (value, facts) => TableProperties.VerticalAlign(value, facts) ?? (IsKeyword(value, "baseline") || facts.IsBlock ? null : "vertical alignment of inline boxes is not drawn in this version"));
 
         // CSS Text Decoration 3 §2, CSS Text Decoration 4 §2.10.4: the lines go to the text of the element and of every
@@ -256,12 +256,11 @@ internal static class BoxProperties
             yield return new(name, "every value: no effect while outline-style is none, its only value", (_, _) => null);
         }
 
-        // Tables (CSS 2.1 §17.6): collapsed borders only; the rest has no effect with them, or is read for the columns.
-        yield return new("border-collapse", "collapse on a table; no effect on another box", (value, facts) => TableProperties.TableProperty("border-collapse", value, facts));
-        foreach (var name in new[] { "border-spacing", "caption-side", "empty-cells" })
-        {
-            yield return new(name, "every value: no effect with collapsed borders and no caption (separated borders and captions are refused)", (value, facts) => TableProperties.TableProperty(name, value, facts));
-        }
+        // Tables (CSS 2.1 §17.6): both border models; the rest has no effect with collapsed borders, or is read for the columns.
+        yield return new("border-collapse", "collapse and separate on a table; no effect on another box", (value, facts) => TableProperties.TableProperty("border-collapse", value, facts));
+        yield return new("border-spacing", "whole CSS pixels on a table with separated borders; no effect with collapsed borders", (value, facts) => TableProperties.TableProperty("border-spacing", value, facts));
+        yield return new("caption-side", "top and bottom: where a table draws its caption", (value, facts) => TableProperties.TableProperty("caption-side", value, facts));
+        yield return new("empty-cells", "show draws every cell; hide, with separated borders, paints no border or background of an empty cell", (value, facts) => TableProperties.TableProperty("empty-cells", value, facts));
 
         yield return new("table-layout", "both values: read for the column widths of a table", (_, _) => null);
 

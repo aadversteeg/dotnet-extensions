@@ -41,11 +41,11 @@ names nothing.
 | `break-after` | no | `auto` | `auto \| avoid \| avoid-page \| page` | CSS Fragmentation 3 §3.1 |
 | `break-before` | no | `auto` | `auto \| avoid \| avoid-page \| page` | CSS Fragmentation 3 §3.1 |
 | `break-inside` | no | `auto` | `auto \| avoid \| avoid-page` | CSS Fragmentation 3 §3.2 |
-| `caption-side` | yes | `top` | `top` | CSS 2.1 §17.4.1 |
+| `caption-side` | yes | `top` | `top \| bottom` | CSS 2.1 §17.4.1 |
 | `color` | yes | `rgb(0, 0, 0)` | `<color>` | CSS Color 4 §3.1; the initial value is black (HTML Standard §15.3.4) |
 | `color-scheme` | yes | `normal` | `normal \| light` | CSS Color Adjust 1 §2.1 |
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
-| `empty-cells` | yes | `show` | `show` | CSS 2.1 §17.6.1.1 |
+| `empty-cells` | yes | `show` | `show \| hide` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
 | `font-kerning` | yes | `auto` | `auto \| normal` | CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured) |
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |
@@ -106,11 +106,34 @@ its `color`, `noshade`, `size`, `width` and `align` attributes:
 `overflow: hidden` is accepted on a block box with no children and a border, padding or height that is not 0 at its
 top or bottom, where it clips nothing.
 
-`width` on a table part: a table is drawn at `auto` or `100%`; a `col` takes a length, or a percentage in the fixed
-layout (`table-layout: fixed` on a table of width `100%`) when every other column is a percentage or has no width
-and, beside a column without a width, the percentages add up to less than 100. A percentage on a `col` of the
-automatic layout, a width on a cell (`td`, `th`) and on a `colgroup` are refused. A `tfoot` is drawn after the body
-rows, once; Chromium repeats a small one on every page of a table that breaks (Known limits).
+`width` on a table part: a table is drawn at `auto`, a length or a percentage of its container (its border box; never
+narrower than its content needs, and refused where wider than its container); a cell (`td`, `th`) takes a length, of
+its content box, which its column takes: the widest in the automatic layout, the first row's in the fixed layout,
+where a `col` length wins. A `col`, a cell and a `colgroup` without `col` elements (for each column of its span) take a
+length or a percentage. In the automatic layout a percentage is of the width the columns share, and a table of width
+`auto` grows until its columns have their percentages and the others their widest content; in the fixed layout a
+percentage on a `col` when every other column is a percentage or has no width and, beside a column without a width,
+the percentages add up to less than 100. Refused: in the automatic layout percentages of 100 or more beside other
+columns, a percentage beside another width in one column, a percentage on a cell over several columns and a cell over
+several columns beside a percent column; in the fixed layout a percentage on a cell, a width on a cell over several
+columns and a cell width beside percent columns; a width on a `colgroup` with `col` elements. In the fixed layout a
+column without a width is never narrower than its content, where Chromium lets the content overflow (Known limits). A
+`tfoot` is drawn after the body rows, once; Chromium repeats a small one on every page of a table that breaks (Known
+limits).
+
+`border-collapse`: both models are drawn. A table with separated borders (`separate`, the initial value) keeps its
+border, padding and background, each cell paints its own border, and `border-spacing` lies between the cells and
+around them, in whole CSS pixels (another spacing is refused). Such a table breaks over pages as Chromium prints it,
+sliced: between rows and inside rows, the cells of a cut row at the top of each part whatever their alignment, with a
+repeated header. It is refused at the table's line where it breaks with a cell over several rows across the break,
+with content sliced in a cell, or with `box-decoration-break: clone`. A border on a row or a row group of such a table
+is refused; put borders on the cells. In both models the background of a row, a row group, a column or a column group
+is drawn on the cells of it that have none of their own (the row's first, then the group's, the column's, the column
+group's), as Chromium prints it; a table's background is drawn in both models, under its border box.
+
+`vertical-align: baseline` on a table cell, the initial value, is drawn as `top`, as Chromium prints it: each cell's
+first line at its own content top, whatever the font sizes and paddings in the row (cases `tv-baseline-sizes`,
+`tv-baseline-height`). A browser window aligns the cells' first baselines instead.
 
 `width`, `min-width`, `max-width` and `box-sizing` on a block box: a length or a percentage of the containing block's
 width, for the content box or the border box; `max-width` limits the width and `min-width` wins over both. The
@@ -514,7 +537,7 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 | html, head |  | align |
 | body | bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag) | align, background |
 | table | width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center | align=left/right/inline-start/inline-end (float), background, frame, rules |
-| caption | align=top | align=bottom |
+| caption | align=top, align=bottom (caption-side: bottom) |  |
 | col, colgroup | width, align (-webkit-left/right/center, or one text-align value) |  |
 | thead, tbody, tfoot, tr | height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign | background |
 | td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535; 0 when that integer is beyond 2,147,483,647) and border (1px inset, or solid with bordercolor) | background; a td or th with no table around it (only a tree made in code has one) |

@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Two words in two cells side by side with no white space between them, in tables with separated borders and cells without borders: the gap between the words is the spacing (0.75, 1.5 or 2.25pt) and the second cell's left padding (0 or 0.1875pt): where the readers of the print join the two words into one and where they keep them apart. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } table { border-collapse: separate; } td { border: none; padding: 0; }</style></head><body>
+<table style="border-spacing: 0.75pt"><tr><td>left</td><td style="padding-left: 0">right</td></tr></table>
+<p>next 1</p>
+<table style="border-spacing: 0.75pt"><tr><td>left</td><td style="padding-left: 0.1875pt">right</td></tr></table>
+<p>next 2</p>
+<table style="border-spacing: 0.75pt"><tr><td>left</td><td style="padding-left: 0.5625pt">right</td></tr></table>
+<p>next 3</p>
+<table style="border-spacing: 1.5pt"><tr><td>left</td><td style="padding-left: 0">right</td></tr></table>
+<p>next 4</p>
+<table style="border-spacing: 1.5pt"><tr><td>left</td><td style="padding-left: 0.1875pt">right</td></tr></table>
+<p>next 5</p>
+<table style="border-spacing: 2.25pt"><tr><td>left</td><td style="padding-left: 0">right</td></tr></table>
+<p>next 6</p>
+</body></html>

@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Percentages whose sizes are not a whole number of 1/64 px: a, width 100%, cols of 33.3% and 17.17% beside one without; b, separated, width 80.1%; c, width 100%, a cell of 33.3%; d, separated, width 100%, a cell of 17.17%. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a" style="width: 100%">
+<colgroup><col style="width: 33.3%"><col style="width: 17.17%"><col></colgroup>
+<tr><td id="one-a">one</td><td>two</td><td>text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s" style="width: 80.1%">
+<tr><td id="one-b">one</td><td>text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" style="width: 100%">
+<tr><td id="one-c" style="width: 33.3%">one</td><td>text with more words</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s" style="width: 100%">
+<tr><td id="one-d" style="width: 17.17%">one</td><td>text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>

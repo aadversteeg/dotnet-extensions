@@ -48,8 +48,8 @@ a2-row-end-first-row-half-top equal
 a2-row-end-nested-under-header equal
 a2-row-end-nested-under-header-13875 open page 2 reads 'x0 x1 x2 x3 x4 x5 x6 x7 x8 x9', Chromium 'H x0 x1 x2 x3 x4 x5 x6 x7' (print.txt)
 a2-row-end-nested-under-header-end open 2 pages, Chromium 3 (print.txt)
-a2-row-end-pad-past open 2 pages, Chromium 3 (print.txt)
-a2-row-end-pad-past-after open 2 pages, Chromium 3 (print.txt)
+a2-row-end-pad-past listed At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page: 2 pages, Chromium 3 (print.txt)
+a2-row-end-pad-past-after listed At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page: 2 pages, Chromium 3 (print.txt)
 a2-row-end-span equal
 a2-row-end-span-after equal
 a2-row-end-thick-less equal
@@ -77,18 +77,22 @@ a4-header-image-170 equal
 a4-header-image-174 equal
 a4-header-image-180 equal
 a4-header-image-228 equal
-a4-header-image-228-background open page 1 painted area: the pixel at (12, 28.5): Chromium paints it and the engine does not; the engine paints 776 px #000000, Chromium 1212 px (print.txt)
-a4-header-image-228-beside-line open page 1 reads 'H G', Chromium 'H G beside' (print.txt)
+a4-header-image-228-background equal
+a4-header-image-228-background-beside listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
+a4-header-image-228-beside-fit listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
+a4-header-image-228-beside-line listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
+a4-header-image-228-beside-two-pages listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
 a4-header-image-228-line3-below equal
 a4-header-image-360-image listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
-a4-header-image-beside-lines open 5 pages, Chromium 4 (print.txt)
+a4-header-image-beside-lines listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 reads 'H G p20 p21 p22 p23 p24 p25', Chromium 'H G p20 p21 p22 p23 p24 p25 p26' (print.txt)
 a4-header-image-row equal
 a4-header-image-row-image listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-line2-25-cut-text-row equal
 a4-header-line2-25-image-228 equal
 a4-header-line6-image-228 equal
-a4-header-nested-image-228 open 5 pages, Chromium 3 (print.txt)
+a4-header-nested-image-228 listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 105 (laid out at 104.625), Chromium 88.5 (print.txt)
 a4-header-row-image-228 equal
+a4-header-row-image-228-beside-line listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 4 'after' baseline 104.25 (laid out at 104.25), Chromium 88.5 (print.txt)
 a4-header-row-image-row listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 a4-header-rows-fill-image-row equal
 a4-header-rows-image-row equal
@@ -102,7 +106,7 @@ a4-image-beside-lines equal
 a4-image-block-padding-133 equal
 a4-image-block-padding-60 equal
 a4-image-first equal
-a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 72.75 (laid out at 72.375), Chromium 24.75 (print.txt)
+a4-image-in-cell listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 72.75 (laid out at 72.75), Chromium 24.75 (print.txt)
 a4-image-nested-table listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 73.5 (laid out at 73.125), Chromium 24.75 (print.txt)
 a4-image-rowspan listed An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells: page 1 reads 'a b', Chromium 'a' (print.txt)
 a4-image-single-cell equal
@@ -170,7 +174,7 @@ bs-solid-order equal
 bs-solid-pairs equal
 bs-solid-widths equal
 bs-widths equal
-c-cell-first-line refused Documents.Html.Unsupported.Value width: 50% at 3:58
+c-cell-first-line equal
 c-cell-orphan equal
 c-cell-orphan-moves equal
 c-custom equal
@@ -228,13 +232,15 @@ f-tiny-038 listed At_font_sizes_below_half_a_pixel_Chromium_draws_no_text_where_
 font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 fr-border-continued equal
 fr-border-top-and-bottom equal
-fr-cell-first-line-block-fits refused Documents.Html.Unsupported.Value width: 50% at 3:58
+fr-cell-first-line-block-fits equal
 fr-continued-pad-past-33 equal
-fr-continued-pad-past-33-next-row open page 3 painted area: the pixel at (12.75, 15.75): the engine paints it and Chromium does not; the engine paints 1142 px #000000, Chromium 776 px (print.txt)
+fr-continued-pad-past-33-next-row equal
+fr-continued-pad-past-33-next-row-line-2-25pt equal
+fr-continued-pad-past-33-next-row-line-6pt equal
 fr-continued-pad-past-45 equal
 fr-continued-pad-past-60 equal
-fr-continued-pad-past-taller-than-page open page 4 'z' baseline 62.25 (laid out at 62.496), Chromium 22.5 (print.txt)
-fr-continued-pad-past-taller-than-page-next-row open page 4 painted area: the pixel at (12.75, 52.5): the engine paints it and Chromium does not; the engine paints 1240 px #000000, Chromium 874 px (print.txt)
+fr-continued-pad-past-taller-than-page listed What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding: page 4 'z' baseline 62.25 (laid out at 62.496), Chromium 22.5 (print.txt)
+fr-continued-pad-past-taller-than-page-next-row equal
 fr-cut-row-between-aligned-rows equal
 fr-cut-row-three-pages-bottom equal
 fr-cut-row-uncut-bottom-cell equal
@@ -275,7 +281,7 @@ fr-header-cell-margin refused Documents.Layout.DoesNotFit 36 at 3
 fr-header-pad-box-20 equal
 fr-header-pad-box-36 equal
 fr-header-pad-box-50 refused Documents.Layout.DoesNotFit 36 at 8
-fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header_is_printed: 4 pages, Chromium 3 (print.txt)
+fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header_is_printed: page 2 reads '', Chromium 'H' (print.txt)
 fr-header-pad-grid-36 equal
 fr-header-pad-none-36 equal
 fr-header-pad-top-36 equal
@@ -333,7 +339,9 @@ fr-row-later-padding-beside-line equal
 fr-row-later-padding-fits-line-not equal
 fr-row-later-padding-under-header equal
 fr-row-later-page-padding-overflows equal
-fr-row-later-page-padding-overflows-two-cells open page 2 reads 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6', Chromium 'w1 v1 w2 v2 w3 v3 w4 v4 w5 v5 w6 v6 w7' (print.txt)
+fr-row-later-page-padding-overflows-three-cells listed Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again: page 3 'z' baseline 26.25 (laid out at 25.875), Chromium 44.25 (print.txt)
+fr-row-later-page-padding-overflows-two-cells listed Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again: page 3 'z' baseline 27 (laid out at 26.625), Chromium 39 (print.txt)
+fr-row-later-page-padding-overflows-two-cells-pad-6 listed Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again: page 3 'z' baseline 26.25 (laid out at 25.875), Chromium 32.25 (print.txt)
 h-break-after-last equal
 h-break-after-last-nested equal
 h-char-cr equal
@@ -406,7 +414,7 @@ ii-height equal
 ii-hyphen listed A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case: page 1 reads 'a -b a -b a- b x', Chromium 'a - b a - b a- b x' (print.txt)
 ii-joiners listed A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners: page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x' (print.txt)
 ii-page equal
-ii-table refused Documents.Html.Unsupported.Value width: 60pt at 4:1
+ii-table equal
 ii-wrap equal
 kb-m1-kept-box-margin-in-padded-box equal
 kb-m2-kept-para-margin-in-padded-box equal
@@ -489,7 +497,7 @@ pm-tall-top equal
 pm-width equal
 pm-zero equal
 pm-zero-alone equal
-sk-extreme open page 1 'gạọụ' x1 53.489, Chromium 54.417 (print.txt)
+sk-extreme equal
 sk-lato equal
 sk-lato-bold equal
 sk-lato-italic equal
@@ -536,6 +544,14 @@ ta-marks equal
 ta-px equal
 ta-right equal
 ta-sizes equal
+tc-box equal
+tc-break-bottom equal
+tc-break-first refused Documents.Layout.TableBreak 23.508 at 5
+tc-break-rows equal
+tc-side equal
+tc-two refused Documents.Html.Unsupported.Table second caption at 6:1
+tc-width equal
+tc-wrap equal
 te-bottom equal
 te-break equal
 te-left-first equal
@@ -552,6 +568,27 @@ tf-pages listed A_footer_group_is_drawn_once_after_the_body_where_Chromium_repea
 tf-pages-auto equal
 tf-top-border equal
 tf-two equal
+tg-break equal
+tg-break-cut-align equal
+tg-break-cut-cell equal
+tg-break-cut-two equal
+tg-break-rows equal
+tg-break-rows-separated equal
+tg-break-table equal
+tg-break-tall equal
+tg-cell equal
+tg-fraction equal
+tg-min refused Documents.Html.Unsupported.Value min-height: 40pt at 5:1
+tg-percent refused Documents.Html.Unsupported.Value height: 50% at 5:1
+tg-row equal
+tg-table equal
+tg-table-small equal
+tg-text-align equal
+tg-text-equal equal
+tg-text-header equal
+tg-text-late equal
+tg-text-three equal
+tg-text-two equal
 tj-break equal
 tj-cell-table equal
 tj-four equal
@@ -560,24 +597,75 @@ tj-outer equal
 tj-right-edge equal
 tj-same-cell equal
 tj-top-edge equal
+tk-break-cut equal
+tk-break-stripe equal
+tk-collapsed equal
+tk-empty equal
+tk-separated equal
+tk-span equal
+tk-table-break equal
+tk-table-caption equal
+tk-table-collapsed equal
+tk-thick equal
 tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.49, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
+tm-collapse equal
+tm-empty equal
+tm-row equal
 tp-beside-auto equal
 tp-beside-length refused Documents.Html.Unsupported.Value width: 30% at 4:42
 tp-col-span equal
-tp-colgroup refused Documents.Html.Unsupported.Value width: 25% at 4:8
-tp-length-table refused Documents.Html.Unsupported.Value width: 240pt at 4:1
+tp-colgroup equal
+tp-length-table equal
 tp-outer-border equal
 tp-sum-100 equal
 tp-sum-above equal
 tp-sum-below equal
 tp-thirds equal
+tpa-auto equal
+tpa-beside equal
+tpa-colgroup refused Documents.Html.Unsupported.Value width: 30% at 20:1
+tpa-fraction equal
+tpa-full equal
+tpa-length equal
+tpa-sum equal
+tpa-table equal
+ts-break-cut equal
+ts-break-cut-bottom equal
+ts-break-cut-middle equal
+ts-break-end equal
+ts-break-first-row equal
+ts-break-header equal
+ts-break-image refused Documents.Layout.TableBreak 136.5 at 4
+ts-break-move equal
+ts-break-rows equal
+ts-break-span refused Documents.Layout.TableBreak 136.5 at 4
+ts-paint equal
+ts-plain equal
+ts-spacing-one equal
+ts-spacing-two equal
+ts-span equal
+ts-table-border equal
+ts-table-padding equal
+ts-width-100 equal
+tv-baseline-height equal
+tv-baseline-sizes equal
 tw-auto equal
 tw-col equal
 tw-fixed equal
 tw-insets equal
 tw-pref refused Documents.Layout.ColumnsDoNotFit 157.805>150 at 21
 tw-span equal
+twd-cell-col equal
+twd-cell-row equal
+twd-cell-span refused Documents.Html.Unsupported.Value width: 150pt at 10:5
+twd-cell-two equal
+twd-fraction equal
+twd-sum equal
+twd-table-narrow listed A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 reads 'one text with more words next 1 one text with more words next 2 one text with more words next 3 one text with more words after', Chromium 'one text with more words next 1 one text with more words next 2 one text with more words next 3 onetext with more words after' (print.txt)
+twd-table-wide equal
+wg-cell-gap equal
+wg-spacing-gap equal
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
 widths-exact refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 11:48
 ws-border listed Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case: page 1 'bb' x0 28.395, Chromium 12 (print.txt)
@@ -589,7 +677,7 @@ ws-hang-pre equal
 ws-hang-pre-wrap equal
 ws-image equal
 ws-image-border listed Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case: page 1 'cd' baseline 43.5 (laid out at 43.5), Chromium 61.5 (print.txt)
-ws-intrinsic refused Documents.Html.Unsupported.Value width: 20pt at 3:1
+ws-intrinsic equal
 ws-justify equal
 ws-justify-nbsp equal
 ws-kern equal
@@ -603,4 +691,4 @@ ws-pre-line equal
 ws-pre-wrap equal
 ws-soft listed A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them: page 1 reads 'aabbcc aa­ bb cc aabbcc aa­ bb cc x', Chromium 'aa­bb​cc aa­‐ bb​ cc aa­bb​cc aa­‐ bb​ cc x' (print.txt)
 ws-tab refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
-ws-table refused Documents.Html.Unsupported.Value width: 20pt at 4:1
+ws-table equal

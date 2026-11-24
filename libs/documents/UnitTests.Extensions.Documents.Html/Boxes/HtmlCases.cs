@@ -86,10 +86,20 @@ internal static class HtmlCases
         ["a4-header-row-image-row"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
         ["a4-header-image-row-image"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
         ["a4-header-two-image-rows"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-beside-lines"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-228-beside-fit"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-228-beside-line"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-228-beside-two-pages"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-image-228-background-beside"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-row-image-228-beside-line"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
+        ["a4-header-nested-image-228"] = "A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice",
         ["a4-image-nested-table"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
         ["a4-image-rowspan"] = "An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells",
         ["a4-line-beside-lines"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
+        ["twd-table-narrow"] = "A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["fr-f4-padding-page-start"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
+        ["a2-row-end-pad-past"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
+        ["a2-row-end-pad-past-after"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
         ["ii-hyphen"] = "A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case",
         ["ii-joiners"] = "A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners",
@@ -97,6 +107,10 @@ internal static class HtmlCases
         ["ws-image-border"] = "Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
         ["ws-soft"] = "A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them",
         ["sk-misc"] = "An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen",
+        ["fr-row-later-page-padding-overflows-two-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
+        ["fr-row-later-page-padding-overflows-two-cells-pad-6"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
+        ["fr-row-later-page-padding-overflows-three-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
+        ["fr-continued-pad-past-taller-than-page"] = "What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -117,7 +131,9 @@ internal static class HtmlCases
     /// box's source line, where Chromium prints that content on the next page: cases <c>sz-height-overflow-page</c>,
     /// <c>sz-height-forced</c>), or a list item's label that would start left of the sheet
     /// (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>, at the item's source line, where Chromium cuts the label at the
-    /// sheet's edge or leaves it out). Any other error, also another code under the same parent, is a failure of the case.</summary>
+    /// sheet's edge or leaves it out), or a table with separated borders that would break over pages
+    /// (<see cref="LayoutErrorCodes.TableBreak"/>: the room it had, at the table's source line). Any other error, also
+    /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
         CssErrorCodes.Unsupported.Property.ToString(),
@@ -148,6 +164,7 @@ internal static class HtmlCases
         LayoutErrorCodes.ColumnsDoNotFit.ToString(),
         LayoutErrorCodes.OverflowAcrossPages.ToString(),
         LayoutErrorCodes.MarkerOutsideSheet.ToString(),
+        LayoutErrorCodes.TableBreak.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -359,7 +376,7 @@ internal static class HtmlCases
         return (line, column) switch
         {
             ({ }, { }) => $"refused {first.Code} {what} at {line}:{column}",
-            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages || first.Code == LayoutErrorCodes.MarkerOutsideSheet => $"refused {first.Code} {what} at {line}",
+            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages || first.Code == LayoutErrorCodes.MarkerOutsideSheet || first.Code == LayoutErrorCodes.TableBreak => $"refused {first.Code} {what} at {line}",
             _ => $"failed {first.Code} {what}: a refusal without its line and column",
         };
     }
@@ -779,11 +796,12 @@ internal static class HtmlCases
     /// <summary>An element the HTML front-end never makes a box for: a column, a column group, a line break.</summary>
     private static bool MakesNoBox(HtmlElement element) => element.Namespace == ElementNamespace.Html && element.LocalName is "col" or "colgroup" or "br";
 
-    /// <summary>The role the HTML front-end gives the box of an element by its tag, for <see cref="IdBox"/>: a table, a
-    /// table cell, a paragraph, a heading, a row group or a row; any other element a generic box.</summary>
+    /// <summary>The role the HTML front-end gives the box of an element by its tag, for <see cref="IdBox"/>: a table, its
+    /// caption, a table cell, a paragraph, a heading, a row group or a row; any other element a generic box.</summary>
     private static SemanticRole RoleOf(HtmlElement element) => element.Namespace != ElementNamespace.Html ? SemanticRole.Generic : element.LocalName switch
     {
         "table" => SemanticRole.Table,
+        "caption" => SemanticRole.Caption,
         "td" => SemanticRole.TableCell,
         "th" => SemanticRole.TableHeaderCell,
         "p" => SemanticRole.Paragraph,
@@ -1058,7 +1076,8 @@ internal static class HtmlCases
     /// <summary>
     /// The engine's words as PyMuPDF finds them in Chromium's PDF (<c>positions.py</c>, <c>print.txt</c>): two runs of
     /// glyphs on one baseline at the same font size, in the same face and colour, with no white space between
-    /// (<see cref="PrintedPage.WordGap"/>: text on both sides of an inline element's edge, kerned or not), are one word;
+    /// (<see cref="PrintedPage.PyMuPdfWordGap"/>: text on both sides of an inline element's edge, kerned or not, or the
+    /// words of two cells side by side close enough), are one word;
     /// PyMuPDF starts a new span, and <c>positions.py</c> a new word, where the font, the size or the colour changes.
     /// Poppler's words (<c>words.txt</c>) join across a change of face or colour too: <see cref="PrintedPage.JoinedWords"/>.
     /// </summary>
@@ -1067,10 +1086,10 @@ internal static class HtmlCases
         var joined = new List<PrintedWord>();
         foreach (var word in words)
         {
-            if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.WordGap
-                && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour)
+            if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.PyMuPdfWordGap * word.FontSize
+                && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour && word.IsDrawnRightAfter(last))
             {
-                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text };
+                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn };
                 continue;
             }
 

@@ -139,7 +139,7 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 12-001 | stretched characters not represented | Not possible: justification stretches spaces, never glyphs. |
 | 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. A filled path of the page model is content or an artifact as its producer marks it, as any drawn item; the layout draws none yet. |
 | 13-002 | a link with a meaningful background | Not possible: no links yet. |
-| 13-003 | a caption not tagged as Caption | **Open:** there is no caption element; a caption is a paragraph. |
+| 13-003 | a caption not tagged as Caption | **Partly:** a table's caption (HTML `caption`) is a Caption, the first kid of its Table; there is no other caption element, so a figure's caption is a paragraph. |
 | 13-005 | ActualText used where Alt fits better | Met: images and figures get Alt. ActualText is written only on the marked content of a glyph whose text differs from its ToUnicode entry (a ligature, a shared hyphen glyph), to give that glyph's own text, where Alt does not apply. |
 | 13-006 | a graphic that means something only in its group, tagged alone | Not possible: an image is always one picture. |
 | 13-007 | a more accessible form is not used | **Your part.** |

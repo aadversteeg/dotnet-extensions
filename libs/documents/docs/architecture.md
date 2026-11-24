@@ -160,7 +160,7 @@ The whole algorithms and the other rules:
 | margin collapsing | `Layout/MarginCollapsing.cs` | CSS 2.1 §8.3.1 |
 | box slicing at page breaks | `Layout/SlicedBox.cs` | CSS Fragmentation 3 §5.2–§5.4 |
 | inline layout, line boxes | `Layout/InlineLayout.cs`, `LineBoxes.cs` | CSS 2.1 §9.4.2, §10.8 |
-| tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
+| tables and rows of blocks | `Layout/Tracks/` (`TracksLayout.cs` lists the steps) | CSS 2.1 §17 (fixed and auto layout, collapsing borders, separated borders on one page), CSS Grid `fr` §7.2.4 / §11.7.1, CSS Fragmentation for row breaks |
 | images | `Layout/ImageLayout.cs` | CSS 2.1 §10.3.2 (with a stated deviation for width + height) |
 | list items (outside markers): the body laid out as block flow, the label outside the item's content box on the baseline of the body's first line (found down the first children, past empty boxes; an image, a table or no line first: a line of the label's own at the item's top, which an empty item grows to), only with the fragment of the first line. A bullet is w × w px with A the font's ascent in px as the profile's font metric rounding gives it, o = ⌊2A/3⌋, w = ⌊(o + 1)/2⌋, its left edge o + 7 px left of the content edge, its top ⌊3(A − o)/2⌋ − A px from the baseline; a disc is a filled circle of four cubics, a circle a ring one pixel wide under even-odd, a square a filled rectangle. A text label is right-aligned so its advance (the space after the number included) ends on the content edge, its width on 1/64 px under `LengthRounding.SixtyFourthPixels`. A label left of the sheet is refused (`Documents.Layout.MarkerOutsideSheet`, `ListMarkers`); one wholly outside a clipped body's area is not drawn (`PagePainter`). LIMIT: an item whose first fragment has no line and breaks gets its label at that fragment's top | `Layout/ListItemLayout.cs` (THE RULE FOR THE LABEL), `ListMarkers.cs`, `PagePainter.cs` (`Bullet`), `DocumentModel/ModelCheck.cs` (`List`), `Fluent/ListTranslator.cs`, `Html/Boxes/HtmlBoxGenerator.Lists.cs` | CSS Lists 3 §3, §3.1; CSS Counter Styles 3 §6.1 (`disc`, `circle`, `square`); ISO 32000-1 §14.8.4.3.3; checked against Chromium's print (cases `li-symbol-sizes`, `li-ol-12`, `li-ol-nested`, `li-ul-levels`, `li-first-line`, `li-page-break`, `li-marker-clip`, `li-marker-sheet`; `ListLayoutTests`) |
 | page templates, page counters | `Layout/PageAreas.cs`, `Paginator.cs`, `PageContext.cs` | CSS Paged Media 3 §4.2.2, §5, §6.1 |
@@ -615,7 +615,7 @@ it.
 Box generation produces the same `StyledDocument` the code front-end produces; layout knows no HTML. It sets
 Chromium's policies (`HtmlBoxGenerator.ChromiumProfile`: `MonolithicOverflow.Slice`, `EmptyRowParts.Allow`,
 `FontMetricRounding.WholePixels`, `SplitLineHalves.AtLeastOnePixel`, `TableEndOverflow.ContinuesOnNextPage`,
-`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`). It draws `display: block`, `inline` and `none`, tables with collapsed borders, text,
+`BodyClip.BodyArea`, `CellsBesideSlices.Below`, `CutRowAlignment.TopOnEveryPage`, `RepeatedHeaderRows.WhereContentIsLaidOut`, `SliceRestEnd.AtLineCentre`). It draws `display: block`, `inline` and `none`, tables with collapsed borders and, on one page, with separated borders, text,
 the box properties of block boxes and the page size and margins; every other computed value is refused by name.
 
 Where each rule lives:
@@ -638,22 +638,26 @@ start tag, with the property and the value) only where it would change the print
 
 | Properties | Drawn | Refused |
 | --- | --- | --- |
-| `display` | `block`, `inline`, `none`, `list-item` (see **Lists** below), `table` and its parts | `table-caption`; every other type |
-| `border-collapse` | `collapse` on a table | `separate` (the initial value, and HTML's) |
-| table width, column widths, `table-layout` | the table at `auto` and `100%`; lengths of column elements; `table-layout: fixed` at width `100%` (at width `auto` the table is laid out automatically, as Chromium does) | percentages on column elements, any width on a cell or a column group, other table widths: see **Tables** |
+| `display` | `block`, `inline`, `none`, `list-item` (see **Lists** below), `table` and its parts, the caption among them | every other type |
+| `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders breaks over pages, sliced | a table with separated borders that breaks with a cell over several rows across the break, content sliced in a cell, `box-decoration-break: clone`, or past the page end (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
+| `border-spacing` | whole CSS pixels on a table with separated borders; any value with collapsed borders (no effect) | other lengths on a table with separated borders |
+| table width, column widths, `table-layout` | the table at `auto`, a length and a percentage; lengths and percentages of column elements, of cells and of column groups without column elements; `table-layout: fixed` at a width other than `auto` (at width `auto` the table is laid out automatically, as Chromium does) | some percentages beside other widths, a width on a column group with column elements, a cell width over several columns in the fixed layout: see **Tables** |
 | margins | lengths of 0 or more; horizontal `auto` on a block box with a width shares the width it leaves (`BoxStyle.AutoMargins`), else 0; on an inline box the vertical ones have no effect | negative, percentage, calculated; horizontal margins on an inline box |
 | padding, border widths | lengths on a block box | percentages; any on an inline box |
 | border styles and colours | `none`, `hidden`, `solid`; `inset` and `outset` on a block box that is no table part (`BorderSide.Style`; layout paints the two shades, `BorderShades`, and cuts the corners, cases `bs-*`, `hr-*`); solid sides of more than one colour, cut at the corners by the same rule (`PagePainter`, cases `bs-solid-*`; a border of one colour stays four rectangles); colours of alpha 1; anything where the width is 0 | `inset`, `outset` on a table or a part of one, and inset beside outset sides on one box; `dotted`, `dashed`, `double`, `groove`, `ridge` (by the registry); other alphas |
-| `background-color` | alpha 1 on a block box; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
+| `background-color` | alpha 1 on a block box, a table in both border models included; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
 | `width`, `min-width`, `max-width`, `box-sizing` | on a block box a length or a percentage, for the content or the border box (`BoxStyle.SpecifiedWidth`, `MinWidth`, `MaxWidth`, `BoxSizing`; layout: `InFlowChild.Horizontal`, CSS 2.1 §10.3.3, §10.4); any on an inline box; on an image a positive `width`; on a table part what **Tables** says | calculated and intrinsic sizes; `min-width` and `max-width` on a table part or an image; a size on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`, by the model check: the intrinsic widths of a sized box are not built); `border-box` on an image with padding or a border |
-| `height`, `min-height`, `max-height` | on a block box a length, for the content or the border box, and a `height` percentage of a parent whose height is a length in a content box, or `auto` (`BoxStyle.SpecifiedHeight`, `MinHeight`, `MaxHeight`; layout: `BlockSizes`, `SlicedBox`, CSS 2.1 §10.5–10.7; the height the pages before showed is carried in the box's break token); any on an inline box; on an image a positive `height` | calculated and intrinsic sizes; another percentage height; a percentage `min-height` or `max-height`; a height on a table part, or on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`); content that goes on past a page break after the box's height ended (`Documents.Layout.OverflowAcrossPages`) |
+| `height`, `min-height`, `max-height` | on a block box a length, for the content or the border box, and a `height` percentage of a parent whose height is a length in a content box, or `auto` (`BoxStyle.SpecifiedHeight`, `MinHeight`, `MaxHeight`; layout: `BlockSizes`, `SlicedBox`, CSS 2.1 §10.5–10.7; the height the pages before showed is carried in the box's break token); any on an inline box; on an image a positive `height`; a length `height` on a table, a row or a cell (see **Tables**, heights) | calculated and intrinsic sizes; another percentage height; a percentage `min-height` or `max-height`; a percentage `height` on a table part, a `height` on a row group or a caption, a `min-height` or `max-height` on a table part, a height on a box inside a table cell or a page-margin box (`Documents.Input.Unsupported.Size`); content that goes on past a page break after the box's height ended (`Documents.Layout.OverflowAcrossPages`) |
 | `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image `auto` with a ratio (the natural one) and any `overflow`; `overflow: hidden` on a block box with no children and a border, padding or height that is not 0 at its top or bottom (the clip covers nothing, and its margins do not collapse through it: hr, cases `hr-*`) | other values on a block box |
+| `caption-side` | `top` and `bottom` on a caption; no effect on another box | other values (by the registry) |
+| `box-sizing` on a table part | both values, on a table or a cell with a height (see **Tables**, heights) | `content-box` on a table with a height; `border-box` on a cell with a height in a table with collapsed borders |
+| `empty-cells` | `show`; `hide` with separated borders: a cell without content, of white space that collapses or of comments paints no border or background of its own and keeps its size, the background of its row, row group, column or column group still painted under it; a row of only such cells keeps its height and spacings (cases `tm-empty`, `tm-row`, `tk-empty`: a no-break space and an empty inline element are content); no effect with collapsed borders (`tm-collapse`) | `hide` on a cell of only elements that are not displayed or of white space that is preserved |
 | `list-style-type`, `list-style-position` | the twelve counter styles the registry accepts (`disc`, `circle`, `square`, `decimal`, `decimal-leading-zero`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha`, `lower-latin`, `upper-latin`, `none`), `outside`; no effect on a box that is not a list item | `inside`, `list-style-image` other than `none`, other counter styles and strings (by the registry); `::marker` rules (a selector the style sheet refuses) |
-| `border-spacing`, `empty-cells`, `caption-side`, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (collapsed borders, no caption, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
 | `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-decoration-skip-ink` | every line and combination, applied to the element's text and the text of every element inside it, through block boxes, not into an image: the parent's lines, then the element's own in the order underline, overline, line-through, each in the element's font and its decoration colour (`currentcolor` its `color`; `TextStyle.Decorations`); `solid`; `auto`, `none` from the element the text lies in (`TextStyle.DecorationSkipInk`) | a decoration colour of another alpha than 1; a text with more than 16 lines (at the start tag of the element it lies in); `blink`, `spelling-error`, `grammar-error`, other styles, a thickness, an underline offset or position other than `auto` and `skip-ink: all` (refused by the registry) |
-| `vertical-align` | `baseline`; any on a block box | other values on an inline box |
+| `vertical-align` | `baseline`; any on a block box; on a table cell `top`, `middle`, `bottom` and `baseline`, which is drawn as `top`, as Chromium prints it (cases `tv-baseline-sizes`, `tv-baseline-height`: each cell's first line at its own content top, whatever the font sizes and paddings of the row; a browser window aligns the baselines) | other values on an inline box or a table cell |
 | `box-decoration-break` | `slice`; `clone` on a box without border, padding or background | `clone` where it would draw |
 | `font-kerning` | `auto`, `normal` (Chromium kerns with both: cases `h-kerning-*`) | `none` (refused by the registry) |
 | break properties, `orphans`, `widows`, `text-align`, font family, size, weight and style, `line-height` | every value (`avoid-page` as `avoid`; `break-after: page` as a forced break before the next box, none after the last box, as Chromium prints it) but a font size of 0 | a font size of 0; a family without a face (`Font`) |
@@ -692,8 +696,7 @@ or does not decode is refused (`Rendering`), and so is a width and a height in a
 Chromium stretches the image to and the image algorithm does not (`Value`, case `hi-stretch`). An `img` inside a line of text (`display: inline`) is the same image box
 among the runs, at its place, with its margins, padding, border and background, and the text style of the element it lies
 in, so it wraps as that element's text (cases `hi-inline`, `ii-baseline`); `vertical-align` other than `baseline` and a
-break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: a table without collapsed borders by
-`border-collapse`, `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`
+break property other than `auto` on it are refused at its start tag, and `display: inline-block` by its value. The others are refused through their values: `abbr` with a title by its dotted underline, `sub` and `sup` by `vertical-align`
 (in style resolution). A block box inside an inline box is refused (`BlockInInline`), and so is a tree deeper than
 `ModelLimits.MaxNestingDepth` (`TooDeep`, under both policies). A character in the text that is not drawn is refused
 at its text, once per text with the first such character, its offset and their count (`Character`): a control character other than tab, line feed and carriage return (Chromium draws form feed
@@ -722,29 +725,147 @@ its content (`TrackSize.Auto`); in the fixed layout, which Chromium takes only f
 `table-layout: fixed` and width `auto` gets its content's width), a column element's length is an exact width
 (`TrackSize.Fixed`) and the
 columns without one share what is left (fill columns of weight 1). A table of width `auto` is as wide as its columns
-need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`). A limit of the fixed
+need (`BoxWidth.Auto`), one of width `100%` takes its container's width (`BoxWidth.Stretch`), and one of a length
+(`BoxWidth.Fixed`, its border box: HTML's user agent sheet gives a table `box-sizing: border-box`) is that wide, its
+columns sharing it as at `100%`, in both border models and both layouts (cases `twd-table-wide`, `twd-sum`), and never
+narrower than its columns' minimum: the content's min-content in the automatic layout, the fixed columns in the fixed one
+(`twd-table-narrow` a and c, `twd-sum` c); a length wider than the container is refused (`ColumnsDoNotFit`). A cell's
+length is of its content box (`BoxWidth.Fixed` on the cell; layout adds its padding and border, in the collapsing model
+half of its lines) and sets its column (`TracksLayout.CellColumns`): in the automatic layout every row counts and the
+column is a preferred one of the widest, or of a column element's length when that is wider (`twd-cell-row` a and b,
+`twd-cell-two` a, `twd-cell-col` a and c); in the fixed layout only the first row counts (§17.5.2.1), a later row's width
+is not read and a column element's length wins (`twd-cell-row` c and d, `twd-cell-two` b and c, `twd-cell-col` b); a cell
+over several columns with a length asks it of them as its maximum in the automatic layout (`twd-cell-span` a and c).
+Chromium floors these lengths to 1/64 px (200.1 pt prints 200.098 pt, `twd-fraction`); the engine keeps them, at most
+0.016 pt apart. Refused (`Value`, at the cell or column element): a cell length over several columns in the fixed layout
+(`twd-cell-span` b: Chromium's equal columns are what the width left out and the width shared both give, so the case
+shows no rule), and in the fixed layout a cell length in a table with percent columns (not measured). A limit of the fixed
 layout: a fill column is never narrower than its content's min-content width, where Chromium lets content overflow
 it; the two agree while the content fits its column (cases `tl-fixed-fill-wide-word` and `a4-line-beside-lines`, a
 200 pt word in the first of two columns of 137.625 pt in Chromium, listed; `HtmlListedDifferenceTests`: the columns'
-widths are the whole difference). Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
-the fixed layout of a table of width `100%`, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
+widths are the whole difference). A table's percentage is of its container's width, its border box, floored to 1/64
+px, and then a given width as a length is (`tpa-table`: 80% of 276 pt is 220.793 pt, in both border models and both
+layouts). In the automatic layout a percentage on a `col`, on a cell (in any row) or on a column group without column
+elements (for each column of its span, `tpa-colgroup`) makes a percent column (`TrackSize.Percent`, CSS Tables 3 §3.9.3):
+its width is its percentage of the width the columns share (the table's width less its border, padding and all spacing
+in the separated model, less the outer half lines in the collapsing one), floored to 1/64 px, never less than its
+content's min-content (`tpa-full`, `tpa-length`, `tpa-fraction`, `tpa-sum` c and d); percentages past 100 in all get only
+what is left (`tpa-sum` a, b: 60% and 70% are 60% and 40%); the width left goes to the columns without a width, else to
+the length columns (`tpa-beside` c), and to the percent columns, in proportion to their percentages, only in a table of
+percent columns alone (`tpa-full` e); a table of width `auto` is as wide as its percent columns need for their
+percentages at their widest content and its other columns for their widest content in the percentage left, within its
+container (`tpa-auto`; `tpa-sum` d: a column of 10% holding a word of 76.2 pt fills the container). No other column kind
+does both, take a share of the table's width and widen a table of width `auto`, which is why it is a kind of its own.
+Percent columns (a `col` of `width: <percentage>`, also over its `span`) are drawn in
+the fixed layout of a table of any width, as Chromium sizes them (`SynchronizeAssignableTableInlineSizeAndColumnsFixed`):
 a percentage is of the width the columns share, the table's width less its outer half borders in the collapsing model
 (case `tp-outer-border`); percent columns alone grow or shrink in proportion to fill that width, whatever their sum
 (`tp-sum-100`, `tp-sum-below`, `tp-sum-above`, `tp-thirds`); beside columns without a width each keeps its percentage
 and those columns share the rest equally (`tp-beside-auto`); a span gives each of its columns the percentage
 (`tp-col-span`). Each is a fill column whose weight is its share, so layout divides the width exactly where Chromium cuts
 each share to 1/64 px and gives the last column the remainder (less than 0.012 pt per column). Refused at the column
-element (`Value`): a percent column in the automatic layout, beside a column of a length (Chromium widens the length
+element (`Value`): in the fixed layout a percent column beside a column of a length (Chromium widens the length
 columns to what the percentages leave, `tp-beside-length`), and percentages of 100 or more beside a column without a
-width (Chromium gives that column no width); a percent column, like a fill column, is never narrower than its
+width (Chromium gives that column no width); in the automatic layout, not measured, percentages of 100 or more beside
+other columns, a percentage beside another width in one column, a percentage on a cell over several columns and a cell
+over several columns beside a percent column; a percentage on a cell in the fixed layout; a width on a column group with
+column elements (one table of `tpa-colgroup` shows it unused, not enough for a rule). A percent column, like a fill column, is never narrower than its
 content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
-(§17.2.1); a table part on another element than its HTML element; captions, a header group after a row
-group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
-a column in which no cell starts; the percent columns named above, a width on a cell or a column group (`tp-colgroup`), a table width other than
-`auto` and `100%`, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
+(§17.2.1); a table part on another element than its HTML element; a second caption, a block inside a caption, a width on
+a caption, a header group after a row group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
+a column in which no cell starts; the percentages and cell lengths named above, a width on a column group with column
+elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
+
+**Heights.** A `height` on a table, a row or a cell is a least height (CSS 2.1 §17.5.3; `BoxStyle.TableHeight`), in both
+border models. A row is as tall as the largest of its content, its own height and its cells' heights; a cell's height is
+of its content box, its padding and border (with collapsed borders its halves of the grid lines) on top, or under
+`box-sizing: border-box` with separated borders of its border box (cases `tg-row`, `tg-cell`). A table's height is of its
+border box: the extra goes to the body rows without a height of their own or of a cell, in proportion to their heights;
+header rows and rows with a height keep theirs; a height less than the rows' has no effect (cases `tg-table`,
+`tg-table-small`). A cell's content keeps its alignment in the taller row. Each height, and each row's share of a table's
+height, is floored to 1/64 px under `LengthRounding.SixtyFourthPixels` (`tg-fraction`), the last row taking what is left.
+Refused: percentages (case `tg-percent`: Chromium prints them as `auto` in a page, but not measured in a cell with a
+height); a height on a row group or a caption; `min-height` and `max-height` (by the registry; case `tg-min`: Chromium
+prints them on rows and cells as if they were not there); a table height with a caption, over cells that span rows, under
+`box-sizing: content-box`, or where every body row has a height; a cell's `border-box` height with collapsed borders;
+and, by layout (`Documents.Layout.TableBreak`), a table with any of these heights where a page break cuts a cell over
+several rows (not measured). Over a page break a row with a least height is cut at the page end
+like any row, also where its content ends on the page, and goes on with the rest of the height on the next page: the
+least height less the part from the row's top to the page end (`TracksBreakToken.RowRest`), its content at the top of
+the part where it is cut, a row taller than a page over as many pages as it needs, a table's height shared over its rows
+first (cases `tg-break`, `tg-break-rows`, `tg-break-rows-separated`, `tg-break-cut-two`, `tg-break-cut-align`,
+`tg-break-cut-cell`, `tg-break-tall`, `tg-break-table`: where the row's first line fits, Chromium cuts such a row at the
+page end rather than moving it to the next page). Where the page end cuts the text of a cell, the row is cut between two
+lines as a row without a height is, by the cell's orphans and widows, and the part on the next page is the rest of the
+height or, where that is taller, the rest of the text (cases `tg-text-late`, `tg-text-three`: the rest of the height;
+`tg-text-equal`, `tg-text-header`: the rest of the text, below a header that repeats; `tg-text-two`, `tg-text-align`: a
+cell of two lines whose second line does not fit moves the row whole to the next page).
+
+**Backgrounds of rows, groups and columns.** In both border models the HTML front-end gives them to the cells
+(CSS 2.1 §17.5.1, the table layers): a cell without a background of its own takes its row's, else its row group's, else
+its column's, else its column group's, over its whole area, and the groups and rows keep none. Chromium paints each layer
+once per cell over the cell's box, never in the spacing, bottom to top column group, column, row group, row, cell, so
+with colours of alpha 1 a cell shows the highest (cases `tk-separated`, `tk-collapsed`, `tk-thick`); a cell over several
+rows or columns takes the row and the column it starts in, over all of its area (`tk-span`); on every page, in a repeated
+header and in both parts of a cut row, as the cell's own (`tk-break-stripe`, `tk-break-cut`). Other alphas stay refused,
+as on any block; under `empty-cells: hide` a hidden empty cell paints none of its own, and the row's and the column's
+background are still painted under it (`tk-empty`, `tm-empty`). A table's own background is painted under its border box as on any block, below
+the cells' and rows' backgrounds and the lines: with separated borders spacing included, with collapsed borders out to
+the outer edge of its outer lines (a 3 pt table border, the cells' 0.75 pt lines and cells without borders alike), never
+under its caption, and on a page where the table breaks down to the page end, as the table's fragment there runs to the
+page end in both models (cases `tk-table-collapsed`, `tk-table-caption`, `tk-table-break`).
+
+**Captions.** A table's `caption` element (CSS 2.1 §17.4) is the first child of the table's box in the model
+(`TableDisplay.Caption`, role `Caption`), wherever it stands among the row groups, and the table lays it out
+(`TableCaption`): a block as wide as the table's border box, with its own margins, padding, border, background and text
+alignment (the user agent centres it), its margins inside the table's outer box and never collapsing with the table's.
+It is drawn above the grid on the table's first page, or below it on the table's last page (`caption-side: bottom`, or
+HTML's `align=bottom`), and is not repeated on the pages between. The table's own border, padding and background lie
+around the grid alone. The caption's min-content width with its margins is the least width of the table, also of a table
+of a length or a percentage: a longer word widens the table and its columns share the width as any width above their
+maximum, while a longer text wraps at the table's width. Cases `tc-side`, `tc-wrap`, `tc-box`, `tc-width`,
+`tc-break-rows`, `tc-break-bottom`, both border models. In a tagged PDF the caption is the table's Caption element, its
+first kid also where it is drawn below the rows (ISO 32000-1 Table 337 allows the first or the last kid, and veraPDF's
+PDF/UA-1 rules 7.2-16 and 7.2-39 accept either and one at most); Chromium's print is untagged. Refused: a second caption
+(Chromium draws every caption element, `tc-two`), a block inside a caption, a width on a caption; and, by layout
+(`Documents.Layout.TableBreak`, at the table's line), a caption that does not fit on the page with the first body row
+below it whole (case `tc-break-first`: with collapsed borders Chromium leaves the caption alone at the page end and moves
+the grid, with separated borders it moves both, a rule the cases do not settle), and a caption below the table that does
+not fit below the last row.
+
+**Separated borders.** A table of `border-collapse: separate` (CSS 2.1 §17.6.1, the initial value and HTML's) is the same
+tracks box with `BoxStyle.BorderModel` `Separate` and its `border-spacing` (`BoxStyle.BorderSpacing`, horizontal then
+vertical), as Chromium prints it (cases `ts-*`, all equal): no grid lines; each cell keeps and paints its own border and
+padding, and a cell without a border takes no room for one; the table keeps its border, padding and background, painted
+as a block box paints them, the background under the whole border box, spacing included, under the cells; one spacing
+lies between two columns and between two rows, and between the outer cells and the table's padding edge, so a table is
+as wide as its columns, its border and padding and one spacing more than it has columns (`ts-plain`, `ts-table-border`,
+`ts-table-padding`, `ts-spacing-one`, `ts-spacing-two`); at width `100%` the columns share the width less all of that
+(`ts-width-100`); a cell over several columns or rows covers the spacing between them, and gives its columns its width
+less that spacing (`ts-span`); a thicker cell border widens its own column and heightens its own row (`ts-paint`). Refused:
+a spacing other than whole CSS pixels (Chromium's rounding of it is not measured), a border on a row or a row group of
+such a table (CSS 2.1 §17.6.1 gives them none; not measured). Over pages the table and each cell a break cuts are sliced as block boxes are (CSS Fragmentation 3
+§5.4), as Chromium prints them (cases `ts-break-*`, equal): a fragment that breaks runs to the page end with its side
+borders and background, without its bottom border and without the spacing below its last row; the next page starts
+with its first row (or the repeated header row) at the fragment's top, with no border, padding or spacing above it,
+and one spacing between the header and the first body row (`ts-break-rows`, `ts-break-header`); only the last fragment
+ends with the spacing, padding and border below the last row, and a last row that fits only without them moves to the
+next page (`ts-break-end`). A row cut inside itself slices each of its cells, and a cell whose content ended above the
+cut goes on, empty, as tall as the row, its bottom border on the next page (`ts-break-cut`); rows are cut and moved by
+the rules of collapsed tables (`ts-break-move`, `ts-break-first-row`); the cells of a cut row, aligned at the middle
+(the user agent's) or at the bottom, start at the top of their part on both pages, as in the collapsing model
+(`CutRowAlignment.TopOnEveryPage`; `ts-break-cut-middle`, `ts-break-cut-bottom`). Refused by layout with
+`Documents.Layout.TableBreak` at the table's source line, where no case shows a rule: a cell over several rows across
+the break (`ts-break-span`: Chromium starts the next row one spacing below the page's top while the spanning cell's
+rest ends higher); content sliced in a cell, or a row cut empty below a repeated header (`ts-break-image`: Chromium
+moves the image's row to the next page with its cells empty and draws the last fragment twice); a cut row with a cell
+aligned at the middle or bottom under `CutRowAlignment.RestAlignedInItsPart` (not measured in this model);
+`box-decoration-break: clone`; a page of the table that would pass the page end. The
+policies of `LayoutProfile` say what each means in this model. The code front-end keeps collapsed grid lines; the
+separated model is reached through HTML.
 
 **The page.** Without an `@page` rule the page is the caller's, as Chromium prints on the paper of the print call:
 `HtmlStyleOptions.Page`, by default A4 with no margins; media queries and viewport units see its page area, `size:
@@ -888,12 +1009,21 @@ Each is documented next to its code as well.
   never shown. The engine draws the header, then the slice below it (28.125 pt), so the piece shows whole and once, and
   what follows the slices in the table starts that much lower; where Chromium starts the next row in an empty part below
   the header on the page of the last slice, that row goes on 0.375 pt higher on the next page than the engine's, which
-  starts it there. That is the whole difference (cases `a4-header-image-360-image`, `a4-header-row-image-row`,
-  `a4-header-image-row-image`, `a4-header-two-image-rows`, listed; `HtmlListedDifferenceTests`). A writer does not want
-  a header over an image, so the engine does not copy it.
-- **Percent columns (HTML):** drawn only in the fixed layout of a table of width `100%`, alone or beside columns
-  without a width (cases `tp-*`); in the automatic layout, beside a column of a length, and at 100 % or more beside a
-  column without a width they are refused, as are widths on cells and column groups. A percent column is never
+  starts it there. The same on the page of the rest of a 228 pt image where the header is repeated because a cell of
+  the image's row beside it goes on (text, or the cell's empty part down to the row's end): the text beside the rest and
+  what follows the table start 16.125 pt lower in the engine, by the header's room, and in a cell of thirty lines one
+  line moves on to the next page (`a4-header-image-beside-lines`, `a4-header-image-228-beside-fit`, `-beside-line`,
+  `-beside-two-pages`, `-background-beside`, `a4-header-row-image-228-beside-line`; over the rest of an image in a
+  table nested in the cell, `a4-header-nested-image-228`). That is the whole difference (cases
+  `a4-header-image-360-image`, `a4-header-row-image-row`, `a4-header-image-row-image`, `a4-header-two-image-rows` and
+  those seven, listed; `HtmlListedDifferenceTests`). A writer does not want a header over an image, so the engine does
+  not copy it.
+- **Percent columns (HTML):** drawn in the fixed layout of a table of any width, alone or beside columns without a
+  width (cases `tp-*`), and in the automatic layout (cases `tpa-*`); in the fixed layout beside a column of a length,
+  at 100 % or more beside a column without a width, and on cells they are refused, and so are, in the automatic layout,
+  the combinations no case measured (Tables). A fill column is never narrower than its content's min-content width in a
+  table of a length either (`twd-table-narrow` b and d: 40 pt, which Chromium keeps, the content overflowing; listed,
+  `HtmlListedDifferenceTests`). A percent column is never
   narrower than its content's min-content width, where Chromium lets the content overflow (as for a fill column,
   `tl-fixed-fill-wide-word`). The percentages are of the table's width less its outer half borders; the engine and
   Chromium both take that half border from the widest line at the table's edge in any row, on every page (cases
@@ -1000,23 +1130,37 @@ Each is documented next to its code as well.
   through the HTML front-end too, `HtmlListedDifferenceTests`, where that height is the whole difference). Where a
   cell's lines all fit and only its bottom padding or grid line does not, at the top of a page the engine cuts the row
   as a last resort, where Chromium leaves the first page blank and prints the row whole on the next (cases
-  `fr-f4-padding-page-start`, listed through the HTML front-end too, where the engine's first page is Chromium's
-  second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
+  `fr-f4-padding-page-start`, and `a2-row-end-pad-past`, `a2-row-end-pad-past-after` with 12 pt of bottom padding that
+  passes Chromium's second page by 7.5 pt, listed through the HTML front-end too, where the engine's first page is
+  Chromium's second without its last line, and `a2-cells-end-page-top`, refused by the HTML path); a row that starts a later page,
   after a break between rows, and is taller than the page area only through its cells' padding is cut before its last
   line, where Chromium prints all its lines on that page and lets the padding overflow (cases
   `fr-row-later-page-padding-overflows`, `fr-row-later-page-padding-overflows-two-cells`). Under
   `TableEndOverflow.ContinuesOnNextPage`, the HTML front-end's value, such a row and a row that continues from the page
   before keep their lines and their padding continues on the next page, as Chromium prints it, where every cell of the
-  row passes the page end with content on the page (cases `fr-continued-pad-past-*`,
-  `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). Still cut so: a row
-  with a cell that ends above the page end, whose whole bottom padding Chromium gives the next page (13.5 pt in
-  `-two-cells`), and a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
+  row that passes the page end has content on the page that fits, beside cells that end above it (cases `fr-continued-pad-past-*`,
+  `fr-row-later-page-padding-overflows`, `a4-continued-cell-pad-bottom-30`; `TableEndOverflowTests`). With a row after
+  it, the line between the two rows is drawn there once, as the upper half that passed, and the next row keeps the room
+  of the lower half without drawing it (cases `fr-continued-pad-past-33-next-row`, with a 6 pt and a 2.25 pt line
+  `-line-6pt`, `-line-2-25pt`, and `-taller-than-page-next-row`). Still cut so: a row below a repeated header row (`a4-continued-cell-pad-bottom-30-under-header`, below).
   Padding that passes by more than the page area takes the whole next page and the rest the page after, as in Chromium;
   without a row after the table Chromium then starts what follows 0.75 pt below the page's top, over the padding, where
-  the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, open).
+  the engine starts it below the padding (case `fr-continued-pad-past-taller-than-page`, listed through the HTML front-end,
+  `HtmlListedDifferenceTests`, where that start is the whole difference: text over a table is not what a writer wants,
+  as with what follows a sliced image).
+  Beside a cell whose bottom padding passes the page end, the cells of the row that ended above the page end give the
+  next page nothing: it continues only what passed. Chromium gives the next page, besides what passed, the largest
+  whole bottom padding of those cells, which had its room on the page before: empty space printed a second time, which
+  no writer wants. The line below the row lies, as Chromium prints it, 13.125 pt below the next page's top beside 12 pt
+  of padding (`fr-row-later-page-padding-overflows-two-cells`), 7.125 pt beside 6 pt (`-two-cells-pad-6`) and 19.125 pt
+  beside 6 and 18 pt (`-three-cells`), where the engine's lies 1.125 pt below it, as Chromium's does beside no such cell
+  (`fr-row-later-page-padding-overflows`); listed through the HTML front-end, `HtmlListedDifferenceTests`, where that
+  padding is the whole difference.
   Under a repeated header row, a cell whose box's bottom padding does not fit on a page with the box's content: where
-  the header is repeated, the engine leaves the header alone on the first page, where Chromium cuts the row below it
-  because its line fits and only its padding does not (`fr-header-pad-box-72`). Where the header is more than a quarter
+  the header is repeated, Chromium cuts the row below it because its line fits and only its padding does not, and so
+  does the HTML front-end (`EmptyRowParts.Allow`); on the next page Chromium repeats the header above the rest of the
+  padding, where the engine leaves it out (`fr-header-pad-box-72`); the code front-end leaves the header alone on the
+  first page (`EmptyRowParts.Avoid`). Where the header is more than a quarter
   of the page area, neither repeats it and both print the same pages (cases `fr-header-pad-box-20`,
   `fr-header-pad-box-36`, `fr-header-pad-grid-36`, `fr-header-pad-top-36`), as they do without the header row
   (`fr-header-pad-none-36`). Padding taller than the page area with content after it is refused (the limit above;
@@ -1167,9 +1311,11 @@ Each is documented next to its code as well.
   page 1, moves to page 2 whole). (v) With 13.875 pt of top padding, under `Allow` that page goes on without the outer
   header, where the row starts the page and is placed whole (`H a0`..`a9`, `x0`..`x9`, `H after`), and Chromium repeats
   the header and cuts the row (`H a0`..`a9`, `H x0`..`x7`, `H x8 x9 after`; `RowEndTests`,
-  `a2-row-end-nested-under-header-13875`): below the header the engine starts the inner table 0.375 pt higher than
-  Chromium (its top line at 28.125, Chromium's at 28.5), so the row's ten lines fit there with only its line below past
-  the page end, and such a row is not cut. With 9 lines below 12 pt of top padding the
+  `a2-row-end-nested-under-header-13875`). Below the header both lay the inner table out in one place (its line laid
+  out at 28.125, which Chromium prints at 28.5, the nearest whole pixel), the row's lines from 42.375: 149.625 pt of
+  room for ten lines of 15 pt, which do not fit by 0.375; Chromium cuts the row there (widows 2: `x0`..`x7`), and the
+  engine finds no cut below the header that is not a last resort and goes on without it (with 13.125 or 14.25 pt it
+  keeps the header). With 9 lines below 12 pt of top padding the
   rest of the inner table fits below the repeated header but for the outer table's bottom line: Chromium repeats the
   header and lets that line pass the page end (and draws it again on a third page that shows nothing else), and the
   engine goes on without the header under every profile (`H a0`..`a9`, `x0`..`x8 after`;
@@ -1231,10 +1377,15 @@ Each is documented next to its code as well.
   below it and draws the row's cells empty down to the page end, their side lines and no line below them
   (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-tall-line`, `a4-header-row-image-row`, and so every
   `a4-header-*` case); a header that does not repeat ends its page alone (`a4-header-unrepeated-image-228`). Under
-  `EmptyRowParts.Allow`, the HTML front-end's value, the engine cuts the row there too, where the row's cells draw
-  nothing on that page; under `Avoid`, the code front-end's default, that page holds the header alone, and so it does
-  under `Allow` where a cell of the row would draw something on it (`fr-header-pad-box-72` above, where Chromium cuts
-  the row; with an image beside text, not measured). The cut row's cells then go on below the header on the next page,
+  `EmptyRowParts.Allow`, the HTML front-end's value, the engine cuts the row there too; under `Avoid`, the code
+  front-end's default, that page holds the header alone. Chromium cuts it so also where another cell of the row draws
+  something on that page: the text beside the image as far as the page reaches, an empty cell's background, the image's
+  own cell's background (`a4-header-image-228-beside-fit`, `-beside-two-pages`, `-beside-line`, `-background-beside`,
+  `-background`, `a4-header-image-beside-lines`, `a4-header-row-image-228-beside-line`), and the engine does too. The
+  row has then moved on once: on the next page the image starts in its cell's part below the header, beside the rest of
+  the text, and is not moved on again. One level down the same: a table nested in the cut cell starts on the page of
+  the cut, its top line and its own row cut empty below it, as at the top of a page, and its image starts on the next
+  page (`a4-header-nested-image-228`, three pages). The cut row's cells then go on below the header on the next page,
   where the part of a cell that continues starts at the centre of the grid line below the header, as in Chromium: below
   a 0.75 pt line at 28.125 pt, half a pixel below a whole one, which Chromium paints at the next whole pixel, 28.5 pt
   (`a4-header-image-228`; "c10" at 40.125 pt, painted at 40.5 pt, `a4-header-cut-row-image-row`; below a 2.25 pt line
@@ -1246,14 +1397,18 @@ Each is documented next to its code as well.
   its half of the grid line below it, so the line is centred on the rest's end (a 0.75 pt line at 75.75–76.5 pt below a
   rest that ends at 76.125 pt, `a4-header-image-228`; a 2.25 pt line at 75–77.25 pt, `a4-header-image-228-line3-below`;
   the text after the table that much higher, `a4-header-image-row`, `a4-header-image-174`, `-180`; in a cell with a
-  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, both open for
-  other reasons). A part that lays content out on
+  background, `a4-header-image-228-background`, and inside a nested table, `a4-header-nested-image-228`, listed with
+  the header over a slice). Beside a cell of the same row that goes on with nothing left, that cell's part keeps its half, so the
+  row ends half the line below the rest (the line at 76.5–77.25 pt, `a4-header-image-228-beside-line`,
+  `-beside-fit`, `-background-beside`; 60–60.75 pt below a rest that ends at 60 pt, `a4-image-in-cell`); a cell that
+  spans into the row from an earlier one does not keep it (`a4-header-empty-rowspan-line-image`). A part that lays content out on
   the page keeps its half (`a4-header-cut-text-row`). Under `SliceRestEnd.AtLineCentre`, the HTML front-end's value,
   the engine does the same (`Tracks/TableSegments.cs`, `AtRestEnd`; `SliceRestEndTests`); under `InsideCell`, the code
   front-end's default, the part holds its half as every cell does, and the line starts where the rest ends.
   On the later pages the policy `RepeatedHeaderRows` decides. Chromium lays the piece out whole below the header of the
   page where it starts, also a piece no taller than the page area, and lets it pass the page end; it repeats the header
-  on every later page where the table still lays content out (a row still to come, a cell beside the piece that goes on),
+  on every later page where the table still lays content out (a row still to come, a cell of the piece's row beside it
+  that goes on, also an empty one to the row's end, `a4-header-image-228-beside-line`),
   and not on a page that only shows the rest of content laid out before: there the rest starts at the top of the page
   area (`a4-header-image-228`, `a4-header2-image-228`, `a4-header-row-image-228`, `a4-header-image-row`,
   `a4-header-tall-line`, `a4-header-image-170`, `-174`, `-180`). Under `WhereContentIsLaidOut`, the HTML front-end's
@@ -1263,8 +1418,6 @@ Each is documented next to its code as well.
   the page area goes on without the header. Under both values, on a page where the header is repeated over a slice,
   Chromium still moves the content up a whole page area and draws the header over 16.5 pt of it, which are never shown;
   the engine draws the header above the slice, the slice below it (Known limits, "A repeated header row over a slice").
-  With text beside the image (`a4-header-image-beside-lines`, open) the engine also differs on the first page: it leaves
-  the header alone where the cut row's other cell would draw text, where Chromium starts the row.
   A piece that fits the page area alone, but not with the insets around it in its table cell (the cell's padding and
   grid lines), is sliced too: the test for slicing is "the piece with its insets does not fit a page", not "the piece is
   taller than the page area" (`Tracks/TableSegments.cs`, `SlicedAboveBottomInset`; `SliceAboveInsetTests`, cases
@@ -1346,6 +1499,11 @@ Each is documented next to its code as well.
 - **Input size:** elements nest at most 64 deep (`Fluent/InputLimits.cs`; `Documents.Input.Invalid.TooDeep`), which
   keeps every recursive step of the engine far from the stack limit; no length is longer than 14 400 pt
   (`InputLimits.MaxLength`). Every other limit is in the table under "Bounded work".
+- **Separated borders:** a table with separated borders (`BoxStyle.BorderModel` `Separate`) breaks between rows and
+  inside rows, as Chromium prints it; it is refused (`Documents.Layout.TableBreak`) where it breaks with a cell over
+  several rows across the break, with content sliced in a cell, with `box-decoration-break: clone`, or past the page end (cases `ts-break-span`,
+  `ts-break-image`; the others not measured). The code front-end has no separated model (its tables keep collapsed grid
+  lines). Measured with spacings of whole CSS pixels only, which is what the HTML front-end draws.
 - **Table breaks:** at a break between two rows, the grid line there is resolved once, from both rows, and drawn as
   the table's `BoxStyle.DecorationBreak` says: `Slice` splits it in two halves, the upper half ending the page and the
   lower half starting the next (as Chromium 159 does, cases `mf4-line-*`, `a2-row-break-line-6pt`). Chromium puts both
@@ -1391,7 +1549,7 @@ Each is documented next to its code as well.
   replacement text (`/ActualText`) where it is drawn.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
   nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
-  language, no Span, Link, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
+  language, no Span, Link, Note, Formula or TOC structure elements, a Caption only for a table, no bookmarks; ActualText only on the
   marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above) and on the `Lbl` structure
   element of a drawn bullet (its character, U+2022, U+25E6 or U+25AA; lists are `L` with `ListNumbering`, `LI`, `Lbl`,
   `LBody`, ISO 32000-1 §14.8.4.3.3, §14.8.5.5; from HTML, items outside a list element are an `L` of their own); empty structure elements are

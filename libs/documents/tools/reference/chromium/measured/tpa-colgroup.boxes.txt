@@ -1,0 +1,16 @@
+table 276.000 18.234 a
+td 68.813 17.484 one-a
+td 68.813 17.484 two
+td 137.625 17.484 text with more words
+table 245.637 30.234 b
+td 60.000 18.234 one-b
+td 60.000 18.234 two
+td 107.637 18.234 text with more words
+table 276.000 18.234 c
+td 60.000 17.484 one-c
+td 60.000 17.484 two
+td 155.250 17.484 text with more words
+table 167.648 18.234 d
+td 33.375 17.484 one-d
+td 26.637 17.484 two
+td 106.887 17.484 text with more words

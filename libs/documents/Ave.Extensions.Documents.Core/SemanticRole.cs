@@ -20,7 +20,7 @@ public abstract record SemanticRole
 
     /// <summary>
     /// The standard structure type the role is written as in a tagged PDF (ISO 32000-1 §14.8.4): <c>Document</c>,
-    /// <c>Div</c>, <c>P</c>, <c>H1</c>–<c>H6</c>, <c>Table</c>, <c>THead</c>, <c>TBody</c>, <c>TR</c>, <c>TH</c>,
+    /// <c>Div</c>, <c>P</c>, <c>H1</c>–<c>H6</c>, <c>Table</c>, <c>Caption</c>, <c>THead</c>, <c>TBody</c>, <c>TR</c>, <c>TH</c>,
     /// <c>TD</c>, <c>Figure</c>, <c>L</c>, <c>LI</c>, <c>Lbl</c> or <c>LBody</c>. Null for <see cref="Decorative"/>, which is no structure, and for a heading level
     /// outside 1–6, for which no standard type exists.
     /// </summary>
@@ -46,6 +46,9 @@ public abstract record SemanticRole
 
     /// <summary>A row of a table (PDF structure type <c>TR</c>, §14.8.4.3.4).</summary>
     public static SemanticRole TableRow { get; } = new TableRowRole();
+
+    /// <summary>The caption of a table (PDF structure type <c>Caption</c>, §14.8.4.3.4, Table 337: the first or the last child of its table).</summary>
+    public static SemanticRole Caption { get; } = new CaptionRole();
 
     /// <summary>A header cell of a table (PDF structure type <c>TH</c>, §14.8.4.3.4).</summary>
     public static SemanticRole TableHeaderCell { get; } = new TableHeaderCellRole();
@@ -163,6 +166,17 @@ public abstract record SemanticRole
         /// <summary>Returns <c>table-row</c>.</summary>
         /// <returns>The text form.</returns>
         public override string ToString() => "table-row";
+    }
+
+    /// <summary>The role of <see cref="Caption"/>.</summary>
+    public sealed record CaptionRole : SemanticRole
+    {
+        /// <summary>Returns <c>Caption</c>.</summary>
+        public override string? StandardStructureType => "Caption";
+
+        /// <summary>Returns <c>caption</c>.</summary>
+        /// <returns>The text form.</returns>
+        public override string ToString() => "caption";
     }
 
     /// <summary>The role of <see cref="TableHeaderCell"/>.</summary>

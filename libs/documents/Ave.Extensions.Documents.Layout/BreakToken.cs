@@ -116,6 +116,13 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     public bool BodyShown { get; init; } = true;
 
     /// <summary>
+    /// True when the page this token ends ended with its first body row cut right below the repeated header rows
+    /// (<see cref="TablePage"/>, remarks): the row has moved on once, so on the next page its cells go on below the
+    /// repeated header, and content in them taller than the room there is sliced there. Part of the position.
+    /// </summary>
+    internal bool CutBelowHeader { get; init; }
+
+    /// <summary>
     /// Whether the table's header rows are repeated at the top of its later fragments, as its first fragment decided
     /// (<see cref="TablePage"/>, RepeatsHeader): a later page does not decide again. Null in a token not made by the
     /// layout; then the page it resumes on decides, as a first page does. Part of the position.
@@ -141,16 +148,33 @@ public sealed record TracksBreakToken(int NextRow, ValueList<CellBreak> Cells, b
     /// </summary>
     internal ValueList<PlacedFragment> PassedLines { get; init; }
 
+    /// <summary>
+    /// True on the token of the rows that follow, on the same page, part of a cell that passed the page end at a break
+    /// between rows (<see cref="Passed"/>, <see cref="PaintsPassed"/>): the line between the rows is drawn there by the
+    /// upper half that passed, and the next row keeps the room of the lower half without drawing it, as Chromium prints
+    /// it (<see cref="TablePage"/>, ContinuationLine). Not part of the position, as <see cref="PassedLines"/>.
+    /// </summary>
+    internal bool FollowsPassed { get; init; }
+
+    /// <summary>
+    /// The part of the least height of <see cref="NextRow"/> (its own height, its cells' and its share of the table's,
+    /// <see cref="BoxStyle.TableHeight"/>) that the page this token ends did not hold, when the break fell inside that row
+    /// (<see cref="RowIsSplit"/>): the row's part on the next page is at least that tall. 0 when the row has no least height
+    /// or the page held all of it. Part of the position.
+    /// </summary>
+    public double RowRest { get; init; }
+
     /// <summary>Equal when the positions are equal (<see cref="Prepared"/> and <see cref="PassedLines"/> are not compared).</summary>
     /// <param name="other">The other token.</param>
     /// <returns>True for the same position.</returns>
     public bool Equals(TracksBreakToken? other) =>
         other is not null && NextRow == other.NextRow && Cells.Equals(other.Cells) && RowIsSplit == other.RowIsSplit && BodyShown == other.BodyShown
-        && RepeatsHeader == other.RepeatsHeader && Passed.Equals(other.Passed) && PaintsPassed == other.PaintsPassed;
+        && CutBelowHeader == other.CutBelowHeader && RepeatsHeader == other.RepeatsHeader && Passed.Equals(other.Passed) && PaintsPassed == other.PaintsPassed
+        && RowRest.Equals(other.RowRest);
 
     /// <summary>The hash of the position.</summary>
     /// <returns>The hash code.</returns>
-    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, RepeatsHeader, Passed, PaintsPassed);
+    public override int GetHashCode() => HashCode.Combine(NextRow, Cells, RowIsSplit, BodyShown, CutBelowHeader, RepeatsHeader, Passed, HashCode.Combine(PaintsPassed, RowRest));
 }
 
 /// <summary>Where one cut cell continues.</summary>

@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A caption wider than its table: a, a long caption that wraps at the width of the table; b, one word longer than the table, collapsed; c, the same, separated; d, the long caption below a separated table; e, the long word over a table of width 100pt; f, over a separated table of width 40%. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; } .b { caption-side: bottom; }</style></head><body>
+<table id="a">
+<caption id="caption-a">Caption words that are longer than the table is wide here</caption>
+<tr><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b">
+<caption id="captionwordthatislongerthanthetable-b">Captionwordthatislongerthanthetable</caption>
+<tr><td id="one-b">one</td><td>two</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="s">
+<caption id="captionwordthatislongerthanthetable-c">Captionwordthatislongerthanthetable</caption>
+<tr><td id="one-c">one</td><td>two</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s b">
+<caption id="caption-d">Caption words that are longer than the table is wide here</caption>
+<tr><td id="one-d">one</td><td>two</td></tr>
+</table>
+<p>next 4</p>
+<table id="e" style="width: 100pt">
+<caption id="captionwordthatislongerthanthetable-e">Captionwordthatislongerthanthetable</caption>
+<tr><td id="one-e">one</td><td>two</td></tr>
+</table>
+<p>next 5</p>
+<table id="f" class="s" style="width: 40%">
+<caption id="captionwordthatislongerthanthetable-f">Captionwordthatislongerthanthetable</caption>
+<tr><td id="one-f">one</td><td>two</td></tr>
+</table>
+<p>after</p>
+</body></html>

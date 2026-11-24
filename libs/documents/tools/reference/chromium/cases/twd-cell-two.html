@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Two cells of one column with different widths: a, automatic layout, 60pt then 90pt; b, fixed layout (table 200pt), separated, 60pt then 90pt; c, fixed layout, 90pt then 60pt. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<tr><td id="one-a" style="width: 60pt">one</td><td>text with more words</td></tr>
+<tr><td id="two-a" style="width: 90pt">two</td><td>text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s f" style="width: 200pt">
+<tr><td id="one-b" style="width: 60pt">one</td><td>text with more words</td></tr>
+<tr><td id="two-b" style="width: 90pt">two</td><td>text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="f" style="width: 200pt">
+<tr><td id="one-c" style="width: 90pt">one</td><td>text with more words</td></tr>
+<tr><td id="two-c" style="width: 60pt">two</td><td>text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>

@@ -172,7 +172,7 @@ public class BoxGenerationTests
     }
 
     [Theory]
-    [InlineData("<table><tr><td>a</td></tr></table>", "border-collapse")]
+    [InlineData("<table border=\"1\"><tr><td>a</td></tr></table>", "border-top-style")]
     [InlineData("<pre>a\tb</pre>", "white-space-collapse")]
     [InlineData("<p><span style=\"vertical-align:top\">a</span></p>", "vertical-align")]
     public void An_element_whose_user_agent_rendering_is_not_drawn_is_refused_through_its_values(string body, string property) =>

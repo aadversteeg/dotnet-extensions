@@ -275,7 +275,8 @@ internal static class TableBreaks
             var firstOnPage = table.IsAtPageStart && cell.StartRow <= segment.FirstRow;
             var startsPage = firstOnPage && content.Rows.IsEmpty;
             var belowHeader = firstOnPage && table.SlicesBelowHeader && content.Rows.All(placed => placed.IsRepeated);
-            var belowStartInsets = table.IsBelowStartInsets && cell.StartRow <= segment.FirstRow && content.Rows.IsEmpty;
+            var belowStartInsets = cell.StartRow <= segment.FirstRow
+                && ((table.IsBelowStartInsets && content.Rows.IsEmpty) || (table.CutsBelowHeaderRows && content.Rows.All(placed => placed.Row < grid.HeaderRowCount)));
             var sliceEnd = inside || IsCloned(table) ? cutY : pageEnd;
             var sliced = TableSegments.Slice(
                 table, segment, cell, sliceEnd - top, clearance, endsAtTheCut: inside && info.LastRow == cutRow, startsPage: startsPage, belowHeader: belowHeader, belowStartInsets: belowStartInsets);
@@ -292,7 +293,11 @@ internal static class TableBreaks
             continuing.Add(next);
         }
 
-        if (inside && !LeavesSomething(cut))
+        // A row with a least height that passes the cut goes on with the rest of that height, even where every cell ends
+        // on this page (cases tg-break, tg-break-rows, tg-break-cut-*: the rest is the least height less the part from the
+        // row's top to the page end, in both border models).
+        var rowRest = inside ? Math.Max(0, segment.LeastOf(cutRow) - (cutY - segment.RowTop(cutRow))) : 0;
+        if (inside && !LeavesSomething(cut) && !(rowRest > Fitting.TolerancePoints))
         {
             return Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
         }
@@ -304,8 +309,10 @@ internal static class TableBreaks
         }
 
         // A last resort must still move on: something above the row is on the page, or some cut cell placed something,
-        // even if it shows nothing. A cut that changes no cell would start the next page as this one started.
-        if (!shows.Value && !content.HasBody && cutRow == segment.FirstRow && !Advances(segment, cut))
+        // even if it shows nothing, or the page held part of the row's least height. A cut that changes none of these would
+        // start the next page as this one started.
+        var holdsHeight = rowRest < segment.LeastOf(cutRow) - Fitting.TolerancePoints;
+        if (!shows.Value && !content.HasBody && cutRow == segment.FirstRow && !Advances(segment, cut) && !holdsHeight)
         {
             return Result<Maybe<Outcome>, Error>.Success(Maybe<Outcome>.None);
         }
@@ -329,7 +336,7 @@ internal static class TableBreaks
         var taken = shows.Value || table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow
             ? BreakAvoidance.Worst(appeal, cellsAppeal)
             : BreakAppeal.LastResort;
-        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside), taken)
+        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(placed, bottomLine, new TracksBreakToken(cutRow, continuing.ToImmutable(), inside) { RowRest = rowRest > Fitting.TolerancePoints ? rowRest : 0 }, taken)
         {
             KeepsItsBreak = keepsItsBreak && shows.Value,
         }));

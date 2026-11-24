@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Percentages that sum over 100 and a percent column whose content needs more: a, width 100%, cols of 60% and 70%; b, width auto, separated, cols of 60% and 70%; c, width 100%, a col of 10% holding a long word; d, width auto, separated, a col of 10% holding a long word. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a" style="width: 100%">
+<colgroup><col style="width: 60%"><col style="width: 70%"></colgroup>
+<tr><td id="one-a">one</td><td>text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s">
+<colgroup><col style="width: 60%"><col style="width: 70%"></colgroup>
+<tr><td id="one-b">one</td><td>text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" style="width: 100%">
+<colgroup><col style="width: 10%"><col></colgroup>
+<tr><td id="extraordinarily-c">extraordinarily</td><td>text with more words</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s">
+<colgroup><col style="width: 10%"><col></colgroup>
+<tr><td id="extraordinarily-d">extraordinarily</td><td>text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>

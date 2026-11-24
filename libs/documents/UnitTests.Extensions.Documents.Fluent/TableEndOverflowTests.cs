@@ -218,11 +218,18 @@ public class TableEndOverflowTests
 
     /// <summary>A paragraph, then a one-column table of one row of 21 lines with <paramref name="padding"/> pt of bottom
     /// padding, which continues on page 2 with 10 lines that end at 132 (page area 12 to 162, 10.5 pt Lato, line height
-    /// 12 pt); a row "n0" after it, or none; then "z" (cases <c>fr-continued-pad-past-*</c>).</summary>
-    private static Element[] ContinuedPadding(double padding, bool nextRow) =>
+    /// 12 pt); a row "n0" after it, or none; then "z" (cases <c>fr-continued-pad-past-*</c>). With <paramref name="line"/>
+    /// the cell has a bottom border that wide, so the line below the row is that wide.</summary>
+    private static Element[] ContinuedPadding(double padding, bool nextRow, double? line = null)
+    {
+        var cell = Cell([Lines("a", 21)]).PaddingBottom(padding.Pt());
+        return ContinuedPadding(line is { } width ? cell.BorderBottom(width.Pt(), Color.Black) : cell, nextRow);
+    }
+
+    private static Element[] ContinuedPadding(CellElement cell, bool nextRow) =>
     [
         Paragraph("i"),
-        Table(Columns(Fill(1)), [TableRow([Cell([Lines("a", 21)]).PaddingBottom(padding.Pt())]), .. nextRow ? new[] { TableRow([Cell("n0")]) } : []])
+        Table(Columns(Fill(1)), [TableRow([cell]), .. nextRow ? new[] { TableRow([Cell("n0")]) } : []])
             .GridLines(0.75.Pt(), Color.Black).SplitLinesAtBreaks().CellPadding(0.Pt(), 3.Pt()),
         Paragraph("z"),
     ];
@@ -280,6 +287,32 @@ public class TableEndOverflowTests
         Word(next, "n0").Baseline.Should().Be(Word(chromium, "n0").Baseline);
         Word(next, "z").Baseline.Should().Be(Word(chromium, "z").Baseline);
         end.PageTexts[1].Should().Be(Words("a", 11, 19));
+    }
+
+    [Theory]
+    [InlineData("fr-continued-pad-past-33-next-row", 0.75, 15.75)]
+    [InlineData("fr-continued-pad-past-33-next-row-line-6pt", 6, 18)]
+    [InlineData("fr-continued-pad-past-33-next-row-line-2-25pt", 2.25, 16.5)]
+    public void Below_bottom_padding_that_passed_the_line_to_the_next_row_is_drawn_once_as_its_upper_half(string caseName, double line, double printedEnd)
+    {
+        // Page 3 starts with what passed: 3 pt of padding and the upper half of the line below the row, from 15. Chromium
+        // draws that half (at least one pixel; printedEnd on whole pixels) and nothing of the lower half, whose room the
+        // row "n0" keeps: its sides start at the line's centre, its text below the lower half, its bottom line 12 pt
+        // lower. The engine draws the half as laid out.
+        var chromium = PrintedPages.Chromium(caseName);
+        var next = PrintedPadded(ContinuedPadding(33, nextRow: true, line), TableEndOverflow.ContinuesOnNextPage);
+        var centre = 15 + (line / 2);
+        var bottom = centre + (line / 2) + 12 + 0.375;
+        static IEnumerable<(double Top, double Bottom)> Across(PrintedPage page) =>
+            page.Rectangles.Where(box => box.X1 - box.X0 > 200).Select(box => (box.Y0, box.Y1)).Order();
+
+        chromium.PageTexts.Should().Equal($"i {Words("a", 0, 10)}", Words("a", 11, 20), "n0 z");
+        Across(chromium.Pages[2]).Should().Equal((15, printedEnd), (bottom - 0.375, bottom + 0.375));
+        next.PageTexts.Should().Equal(chromium.PageTexts);
+        Across(next.Pages[2]).Should().Equal((15, 15 + Math.Max(line / 2, 0.75)), (bottom - 0.375, bottom + 0.375));
+        next.Pages[2].Rectangles.Where(box => box.X1 - box.X0 == 0.75 && box.Y0 == centre).Should().HaveCount(2, "the row's sides start at the line's centre");
+        Word(next, "n0").Baseline.Should().Be(Word(chromium, "n0").Baseline).And.Be(centre + (line / 2) + 9.75);
+        Word(next, "z").Baseline.Should().Be(Word(chromium, "z").Baseline);
     }
 
     [Theory]

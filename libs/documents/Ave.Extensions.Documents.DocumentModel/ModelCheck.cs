@@ -143,7 +143,9 @@ public static class ModelCheck
     }
 
     /// <summary>A box's own values: margins (negative ones are not implemented), padding and border widths, orphans and
-    /// widows of at least 1 (CSS Fragmentation 3 §3.3), column sizes, a heading level of 1–6, and its strut's text values.</summary>
+    /// widows of at least 1 (CSS Fragmentation 3 §3.3), column sizes, a table border model the model has and a border
+    /// spacing that is not negative, a given width that is not negative, a heading level of 1–6, and its strut's text
+    /// values.</summary>
     private static Error? Box(Box box)
     {
         var style = box.Style;
@@ -154,6 +156,8 @@ public static class ModelCheck
             ?? (style.Orphans < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Orphans, "Orphans must be at least 1 line.", Number(style.Orphans), "orphans", box) : null)
             ?? (style.Widows < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Widows, "Widows must be at least 1 line.", Number(style.Widows), "widows", box) : null)
             ?? Columns(box)
+            ?? TableBorders(style, box)
+            ?? Width(style, box)
             ?? (box.Role is SemanticRole.HeadingRole { Level: < 1 or > 6 } heading
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.HeadingLevel, "A heading level must be 1–6.", Number(heading.Level), "level", box)
                 : null)
@@ -425,7 +429,8 @@ public static class ModelCheck
             : null;
     }
 
-    /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and positive.</summary>
+    /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and
+    /// positive, percentages more than zero and at most <see cref="ModelLimits.MaxPercent"/>.</summary>
     private static Error? Columns(Box box)
     {
         foreach (var column in box.Style.Columns)
@@ -435,11 +440,12 @@ public static class ModelCheck
                 TrackSize.Fixed fixedWidth => IsBounded(fixedWidth.Width) && fixedWidth.Width.Points >= 0,
                 TrackSize.Preferred preferred => IsBounded(preferred.Width) && preferred.Width.Points >= 0,
                 TrackSize.Fill fill => double.IsFinite(fill.Weight) && fill.Weight > 0,
+                TrackSize.Percent percent => double.IsFinite(percent.Value) && percent.Value > 0 && percent.Value <= ModelLimits.MaxPercent,
                 _ => true,
             };
             if (!valid)
             {
-                return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed or preferred column width must be zero or more and at most {ModelLimits.MaxLength}, and a fill weight positive.", column.ToString()!, "columns", box);
+                return Problem(DocumentErrorCodes.Input.Invalid.Columns, $"A fixed or preferred column width must be zero or more and at most {ModelLimits.MaxLength}, a fill weight positive, and a percentage more than zero and at most {ModelLimits.MaxPercent}.", column.ToString()!, "columns", box);
             }
         }
 
@@ -591,6 +597,45 @@ public static class ModelCheck
                 shaded.Style.Border.ToString(), "border-style", shaded)
             : null;
     }
+
+    /// <summary>A border model and a caption side the model has (else Input.Invalid.Table), a table height of zero or more,
+    /// at most <see cref="ModelLimits.MaxLength"/> (else Input.Invalid.Length), and a border spacing of two finite lengths of
+    /// zero or more, at most <see cref="ModelLimits.MaxLength"/> (CSS 2.1 §17.6.1: "Negative values are not allowed";
+    /// else Input.Invalid.Length).</summary>
+    private static Error? TableBorders(BoxStyle style, Box box)
+    {
+        if (!System.Enum.IsDefined(style.BorderModel))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.Table, "The table border model is not one the model has.", style.BorderModel.ToString(), "border-collapse", box);
+        }
+
+        if (!System.Enum.IsDefined(style.CaptionSide))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.Table, "The caption side is not one the model has.", style.CaptionSide.ToString(), "caption-side", box);
+        }
+
+        if (style.TableHeight is { } height && !(IsBounded(height) && height.Points >= 0))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.Length, $"A table height must be zero or more and at most {ModelLimits.MaxLength}.", height.ToString(), "height", box);
+        }
+
+        var spacing = style.BorderSpacing;
+        return IsBounded(spacing.Horizontal) && IsBounded(spacing.Vertical) && spacing.Horizontal.Points >= 0 && spacing.Vertical.Points >= 0
+            ? null
+            : Problem(DocumentErrorCodes.Input.Invalid.Length, $"A border spacing must be zero or more and at most {ModelLimits.MaxLength}.", spacing.ToString(), "border-spacing", box);
+    }
+
+    /// <summary>A given width (<see cref="BoxWidth.Fixed"/>) of zero or more, at most <see cref="ModelLimits.MaxLength"/>,
+    /// and a percentage (<see cref="BoxWidth.Percent"/>) more than zero, at most <see cref="ModelLimits.MaxPercent"/>
+    /// (CSS 2.1 §10.2: "Negative values for 'width' are illegal"; else Input.Invalid.Length).</summary>
+    private static Error? Width(BoxStyle style, Box box) => style.Width switch
+    {
+        BoxWidth.Fixed { Width: var width } when !(IsBounded(width) && width.Points >= 0) =>
+            Problem(DocumentErrorCodes.Input.Invalid.Length, $"A width must be zero or more and at most {ModelLimits.MaxLength}.", width.ToString(), "width", box),
+        BoxWidth.Percent { Value: var value } when !(double.IsFinite(value) && value > 0 && value <= ModelLimits.MaxPercent) =>
+            Problem(DocumentErrorCodes.Input.Invalid.Length, $"A width as a percentage must be more than zero and at most {ModelLimits.MaxPercent}.", style.Width.ToString()!, "width", box),
+        _ => null,
+    };
 
     /// <summary>Four sides: finite and at most <see cref="ModelLimits.MaxLength"/> (else Input.Invalid.Length), and not
     /// negative (else <paramref name="negativeCode"/>).</summary>

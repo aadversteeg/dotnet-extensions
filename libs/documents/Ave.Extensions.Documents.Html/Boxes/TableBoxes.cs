@@ -57,14 +57,20 @@ internal enum TablePart
 /// caption, a header group after a row group; a table, group or row group without rows. A footer group is drawn after
 /// the other row groups, as the table's last body rows (<c>DrawOrder</c>).</para>
 /// <para>Column widths (§17.5.2), as Chromium lays them out: in the fixed table layout (<c>table-layout: fixed</c> on a
-/// table of width <c>100%</c>; at width <c>auto</c> Chromium lays the table out automatically) the lengths of the column
+/// table of width <c>100%</c> or a length; at width <c>auto</c> Chromium lays the table out automatically) the lengths of the column
 /// elements as fixed columns, and the width left shared equally over the columns without one (fill columns of weight
 /// 1). In the automatic table layout a column element's length is the column's preferred width and a column without
-/// one is sized by its content. The table's width is <c>auto</c> (as wide as its columns need) or <c>100%</c> (its
-/// container's width). Percent columns are drawn in the fixed layout (<c>PercentColumns</c>); widths on cells and
-/// column groups are refused.</para>
+/// one is sized by its content. The table's width is <c>auto</c> (as wide as its columns need), <c>100%</c> (its
+/// container's width), a length (<see cref="BoxWidth.Fixed"/>) or another percentage of its container's width
+/// (<see cref="BoxWidth.Percent"/>). A cell's length or percentage goes to the cell (<see cref="BoxWidth.Fixed"/>,
+/// <see cref="BoxWidth.Percent"/>), and layout gives it its column (<c>CellWidths</c>). Percent columns are drawn in the
+/// fixed layout of a table of any width and in the automatic layout (<c>PercentColumns</c>); a column group's width goes to
+/// the columns of its span.</para>
 /// <para>The parts follow CSS 2.1 §17.5: internal table elements have no margins; rows and row groups no padding; the
-/// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A row span ends with its row
+/// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A table of the separated borders
+/// model (<c>border-collapse: separate</c>, CSS 2.1 §17.6.1) keeps its padding and its <c>border-spacing</c>
+/// (<see cref="BoxStyle.BorderModel"/>, <see cref="BoxStyle.BorderSpacing"/>); layout slices it at page breaks and refuses the breaks no
+/// case measures (<c>Documents.Layout.TableBreak</c>). A row span ends with its row
 /// group (HTML Standard §4.9.12.1). The table breaks with <see cref="BoxDecorationBreak.Slice"/>: layout splits a grid
 /// line at a page break between rows at its centre, half on each page, where Chromium paints the line whole on one
 /// page.</para>
@@ -93,7 +99,7 @@ public static partial class HtmlBoxGenerator
         element.Namespace == ElementNamespace.Html && (part, element.LocalName) switch
         {
             (TablePart.Table, "table") or (TablePart.HeaderGroup, "thead") or (TablePart.RowGroup, "tbody") or (TablePart.FooterGroup, "tfoot")
-                or (TablePart.Row, "tr")
+                or (TablePart.Row, "tr") or (TablePart.Caption, "caption")
                 or (TablePart.Cell, "td" or "th") or (TablePart.Column, "col") or (TablePart.ColumnGroup, "colgroup") => true,
             _ => false,
         };
@@ -116,6 +122,14 @@ public static partial class HtmlBoxGenerator
     {
         /// <summary>Per table: per column element, the width it gives (null for none, auto), its span and its start tag.</summary>
         private readonly Dictionary<StyledElement, List<(CssValue? Width, int Span, TextPosition Position)>> _columns = new(ReferenceEqualityComparer.Instance);
+
+        /// <summary>The start tag of every cell with a width (<see cref="BoxWidth.Fixed"/>), where a width the table does not
+        /// draw is refused (<see cref="CellWidths"/>).</summary>
+        private readonly Dictionary<NodeId, TextPosition> _cellWidths = [];
+
+        /// <summary>Per table: per column element, its span, its background and its column group's (null for none), in
+        /// the order of the columns (<see cref="Backgrounds"/>).</summary>
+        private readonly Dictionary<StyledElement, List<(int Span, Color? Column, Color? Group)>> _columnBackgrounds = new(ReferenceEqualityComparer.Instance);
 
         /// <summary>The boxes of the footer groups, which their table draws after its other row groups.</summary>
         private readonly HashSet<NodeId> _footers = [];
@@ -154,24 +168,15 @@ public static partial class HtmlBoxGenerator
             var host = block.Element.Element.LocalName;
             var belongs = parent switch
             {
-                TablePart.Table => part is TablePart.HeaderGroup or TablePart.RowGroup or TablePart.FooterGroup or TablePart.Column or TablePart.ColumnGroup,
+                TablePart.Table => part is TablePart.Caption or TablePart.HeaderGroup or TablePart.RowGroup or TablePart.FooterGroup or TablePart.Column or TablePart.ColumnGroup,
                 TablePart.Row => part == TablePart.Cell,
                 _ => part == TablePart.Row,
             };
             if (!belongs)
             {
                 var what = element is null ? "text" : $"<{element.Element.LocalName}> ({(part == TablePart.None ? "not a table part" : DisplayName(part))})";
-                var message = part switch
-                {
-                    TablePart.Caption => $"The table caption <{element!.Element.LocalName}> is not drawn in this version.",
-                    _ => $"The {what} directly inside the <{host}> ({DisplayName(parent)}) is not drawn in this version: CSS would wrap it in an anonymous table box (CSS 2.1 §17.2.1).",
-                };
-                var value = part switch
-                {
-                    TablePart.Caption => element!.Element.LocalName,
-                    _ => $"{element?.Element.LocalName ?? "text"} in {host}",
-                };
-                RefuseTable(message, value, position);
+                RefuseTable($"The {what} directly inside the <{host}> ({DisplayName(parent)}) is not drawn in this version: CSS would wrap it in an anonymous table box (CSS 2.1 §17.2.1).",
+                    $"{element?.Element.LocalName ?? "text"} in {host}", position);
                 return true;
             }
 
@@ -188,8 +193,18 @@ public static partial class HtmlBoxGenerator
                 return true;
             }
 
-            // CSS 2.1 §17.2: the header group is drawn before every other row group; the model's is its table's first child.
-            if (part == TablePart.HeaderGroup && block.Nodes.Count > 0)
+            // A table has one caption in the model, which tagged PDF allows (ISO 32000-1 Table 337); Chromium draws every
+            // caption element (case tc-two: the second above the grid too, below the first).
+            if (part == TablePart.Caption && block.Nodes.OfType<Box>().Any(IsCaption))
+            {
+                RefuseTable($"A second table caption <{element.Element.LocalName}> is not drawn in this version: a table has one caption. Put its text in the first caption.",
+                    $"second {element.Element.LocalName}", position);
+                return true;
+            }
+
+            // CSS 2.1 §17.2: the header group is drawn before every other row group; the model's is its table's first child
+            // after the caption.
+            if (part == TablePart.HeaderGroup && block.Nodes.OfType<Box>().Any(node => !IsCaption(node)))
             {
                 RefuseTable($"The header row group <{element.Element.LocalName}> after another row group is not drawn in this version: the document model's header rows come first.",
                     $"{element.Element.LocalName} after a row group", position);
@@ -209,7 +224,9 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>The columns of a column element, or of a column group: its column elements, or as many columns as its
-        /// span (HTML Standard §4.9.3, §4.9.4), each with the width that applies to it. Each element is kept as one entry
+        /// span (HTML Standard §4.9.3, §4.9.4), each with the width that applies to it: a group's own width goes to each
+        /// column of its span (case <c>tpa-colgroup</c>: a group of span 2 at 25% or 60 pt makes two columns of 25% or 60 pt,
+        /// in the automatic and the fixed layout); a group with column elements and a width of its own is refused. Each element is kept as one entry
         /// with its span, so the work is one step per element whatever its span; the columns are counted out only against
         /// the table's grid (<see cref="Columns"/>).</summary>
         private void AddColumns(StyledElement table, StyledElement element, TablePart part)
@@ -220,6 +237,12 @@ public static partial class HtmlBoxGenerator
                 _columns[table] = columns;
             }
 
+            if (!_columnBackgrounds.TryGetValue(table, out var backgrounds))
+            {
+                backgrounds = [];
+                _columnBackgrounds[table] = backgrounds;
+            }
+
             Check(element, isBlock: true);
             var children = part == TablePart.ColumnGroup
                 ? element.Children.OfType<StyledElement>().Where(child => PartOf(child) == TablePart.Column && Display(child) != "none").ToList()
@@ -227,14 +250,79 @@ public static partial class HtmlBoxGenerator
             if (children.Count == 0)
             {
                 columns.Add((Width(element), Span(element.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1), element.Element.Position));
+                backgrounds.Add(part == TablePart.ColumnGroup
+                    ? (columns[^1].Span, null, BackgroundOf(element))
+                    : (columns[^1].Span, BackgroundOf(element), null));
                 return;
+            }
+
+            if (Width(element) is { } groupWidth)
+            {
+                // Chromium gives a group's width to the columns of its span only (case tpa-colgroup a, b, c); beside col
+                // elements one case shows it unused (d), which is not enough for a rule.
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'width: {groupWidth}' on a column group with column elements is not drawn in this version: give the width to its col elements.", groupWidth.ToString()!, element.Element.Position, "width");
             }
 
             foreach (var column in children)
             {
                 Check(column, isBlock: true);
                 columns.Add((Width(column), Span(column.Element.Attribute("span"), TableSlots.MaxColumnSpan, zero: 1), column.Element.Position));
+                backgrounds.Add((columns[^1].Span, BackgroundOf(column), BackgroundOf(element)));
             }
+        }
+
+        /// <summary>A computed <c>background-color</c> of alpha 1, or null (transparent; another alpha is refused).</summary>
+        private Color? BackgroundOf(StyledElement element) =>
+            Value(element, "background-color") is { } background && BoxProperties.Alpha(background) == 1 ? ColorOf(background) : null;
+
+        /// <summary>
+        /// The backgrounds of the table's row groups, rows, columns and column groups, given to its cells (CSS 2.1 §17.5.1,
+        /// the table layers): a cell without a background of its own takes its row's, else its row group's, else its column's,
+        /// else its column group's, over its whole area, as Chromium prints them in both border models (cases
+        /// <c>tk-separated</c>, <c>tk-collapsed</c>: each layer is painted once per cell, over the cell's box, never in the
+        /// spacing; bottom to top column group, column, row group, row, cell, so with colours of alpha 1 the cell shows the
+        /// highest; <c>tk-span</c>: a cell over several rows takes the row it starts in, a cell over several columns the column
+        /// it starts in, over all of its area; <c>tk-break-stripe</c>, <c>tk-break-cut</c>: on every page, in a repeated header
+        /// and in both parts of a cut row, as the cell's own). The groups and rows keep none of their own. Linear in the cells.
+        /// </summary>
+        private List<Box> Backgrounds(StyledElement table, List<Box> groups, TableSlots.Grid grid)
+        {
+            var columns = new (Color? Column, Color? Group)[grid.ColumnCount];
+            var next = 0;
+            foreach (var (span, column, group) in _columnBackgrounds.TryGetValue(table, out var given) ? given : [])
+            {
+                for (var index = next; index < Math.Min(columns.Length, next + span); index++)
+                {
+                    columns[index] = (column, group);
+                }
+
+                next += span;
+                if (next >= columns.Length)
+                {
+                    break;
+                }
+            }
+
+            var placed = groups.SelectMany(Parts).SelectMany(Parts).Count() == grid.Cells.Length;
+            var at = 0;
+            Box Cell(Box cell, Box row, Box group)
+            {
+                var start = placed ? grid.Cells[at].Column : -1;
+                at++;
+                var layer = cell.Style.Background ?? row.Style.Background ?? group.Style.Background
+                    ?? (start >= 0 && start < columns.Length ? columns[start].Column ?? columns[start].Group : null);
+                return layer == cell.Style.Background ? cell : cell with { Style = cell.Style with { Background = layer } };
+            }
+
+            return [.. groups.Select(group => group with
+            {
+                Style = group.Style with { Background = null },
+                Children = [.. Parts(group).Select(row => (Node)(row with
+                {
+                    Style = row.Style with { Background = null },
+                    Children = [.. Parts(row).Select(cell => (Node)Cell(cell, row, group))],
+                }))],
+            })];
         }
 
         /// <summary>A computed width other than auto, or null (auto, or refused).</summary>
@@ -277,21 +365,48 @@ public static partial class HtmlBoxGenerator
             return value == 0 ? zero : (int)value;
         }
 
+        private static bool IsCaption(Box box) => box.Style.TableDisplay == TableDisplay.Caption;
+
         /// <summary>The box of a finished block frame, made the table part its element is.</summary>
         private Box TablePartBox(BlockFrame block, Box box) => PartOf(block.Element) switch
         {
             TablePart.Table => TableBox(block.Element, box),
+            TablePart.Caption => CaptionBox(block.Element, box),
             TablePart.HeaderGroup or TablePart.RowGroup => GroupBox(block.Element, box),
             TablePart.FooterGroup => Footer(GroupBox(block.Element, box)),
             TablePart.Row => box with
             {
                 Role = SemanticRole.TableRow,
                 Layout = LayoutAlgorithmId.Tracks,
-                Style = box.Style with { TableDisplay = TableDisplay.Row, Margin = Edges.Zero, Padding = Edges.Zero, Text = null },
+                Style = box.Style with { TableDisplay = TableDisplay.Row, Margin = Edges.Zero, Padding = Edges.Zero, Text = null, TableHeight = HeightOf(block.Element) },
             },
             TablePart.Cell => CellBox(block.Element, box),
             _ => box,
         };
+
+        /// <summary>
+        /// A table caption (CSS 2.1 §17.4): a block of text and inline elements, laid out by its table above or below the
+        /// grid at the table's width (<c>caption-side</c>), its own margins, padding, border, background and text alignment
+        /// drawn as a block's (cases <c>tc-*</c>). A caption with a block inside is refused: no case measures one.
+        /// </summary>
+        private Box CaptionBox(StyledElement element, Box box)
+        {
+            if (box.Layout != LayoutAlgorithmId.Inline && box.Children.Count > 0)
+            {
+                RefuseTable($"A block inside the table caption <{element.Element.LocalName}> is not drawn in this version: a caption holds text and inline elements.",
+                    $"block in {element.Element.LocalName}", element.Element.Position);
+            }
+
+            return box with
+            {
+                Role = SemanticRole.Caption,
+                Style = box.Style with
+                {
+                    TableDisplay = TableDisplay.Caption,
+                    CaptionSide = Value(element, "caption-side") is CssKeyword { Name: "bottom" } ? CaptionSide.Bottom : CaptionSide.Top,
+                },
+            };
+        }
 
         private Box CellBox(StyledElement element, Box box)
         {
@@ -304,20 +419,115 @@ public static partial class HtmlBoxGenerator
             }
 
             var align = VerticalAlignOf(element);
+            var width = Value(element, "width") switch
+            {
+                CssLength length => new BoxWidth.Fixed(length.Value),
+                CssPercentage percent => new BoxWidth.Percent(percent.Value),
+                _ => BoxWidth.Auto,
+            };
+            if (width != BoxWidth.Auto)
+            {
+                _cellWidths[box.Id] = html.Position;
+            }
+
+            var style = box.Style with
+            {
+                Margin = Edges.Zero,
+                Span = new CellSpan(Span(html.Attribute("colspan"), TableSlots.MaxColumnSpan, zero: 1), rows),
+                VerticalAlign = align,
+                Width = width,
+                TableHeight = CellHeight(element, box.Style),
+            };
             return box with
             {
                 Role = html.LocalName == "th" ? SemanticRole.TableHeaderCell : SemanticRole.TableCell,
-                Style = box.Style with
-                {
-                    Margin = Edges.Zero,
-                    Span = new CellSpan(Span(html.Attribute("colspan"), TableSlots.MaxColumnSpan, zero: 1), rows),
-                    VerticalAlign = align,
-                },
+                Style = IsHidden(element) ? Hidden(style) : style,
             };
         }
 
+        /// <summary>
+        /// True for a cell that <c>empty-cells: hide</c> hides (CSS 2.1 §17.6.1.1, separated borders only): a cell without
+        /// content, of only white space that collapses, or of only comments, as Chromium prints it (case <c>tm-empty</c>: such
+        /// cells are not painted, a cell of a no-break space and a cell with an empty inline element are). With collapsed
+        /// borders the property has no effect (<c>tm-collapse</c>). A cell of white space that is preserved and a cell whose
+        /// elements are all not displayed are not measured, so refused.
+        /// </summary>
+        private bool IsHidden(StyledElement element)
+        {
+            if (Value(element, "empty-cells") is not CssKeyword { Name: "hide" } || Value(element, "border-collapse") is CssKeyword { Name: "collapse" })
+            {
+                return false;
+            }
+
+            var elements = element.Children.OfType<StyledElement>().ToList();
+            var texts = element.Children.OfType<StyledText>().Where(text => !IsDocumentWhiteSpace(text.Text.Data)).ToList();
+            if (texts.Count > 0 || elements.Any(child => Display(child) != "none"))
+            {
+                return false;
+            }
+
+            if (elements.Count > 0 || (element.Children.Count > 0 && CollapseOf(element.Style) != WhiteSpaceCollapse.Collapse))
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'empty-cells: hide' on a <{element.Element.LocalName}> of only elements that are not displayed, or of white space that is preserved, is not drawn in this version: no case measures whether such a cell is empty. Leave the cell empty, or use empty-cells: show.", "hide", element.Element.Position, "empty-cells");
+            }
+
+            return elements.Count == 0;
+        }
+
+        /// <summary>True for a text of only document white space (CSS Text 3 §4.1: space, tab, line feed, carriage return,
+        /// form feed; not a no-break space).</summary>
+        private static bool IsDocumentWhiteSpace(string text) => text.All(character => character is ' ' or '\t' or '\n' or '\r' or '\f');
+
+        /// <summary>A hidden empty cell (<see cref="IsHidden"/>): it paints neither its border nor its background, and keeps
+        /// its size: its border widths become padding, which holds the same room without painting (case <c>tm-empty</c>: the
+        /// columns of hidden cells keep their widths; <c>tm-row</c>: a row of only hidden cells keeps its height, its padding
+        /// and border, and its spacings). A row's, a row group's, a column's or a column group's background is still painted
+        /// under it (<see cref="Backgrounds"/>; <c>tm-empty</c>, <c>tk-empty</c>).</summary>
+        private static BoxStyle Hidden(BoxStyle style) => style with
+        {
+            Border = Border.None,
+            Padding = new Edges(
+                style.Padding.Top + style.Border.Top.Width,
+                style.Padding.Right + style.Border.Right.Width,
+                style.Padding.Bottom + style.Border.Bottom.Width,
+                style.Padding.Left + style.Border.Left.Width),
+            Background = null,
+        };
+
+        /// <summary>A computed <c>height</c> that is a length, or null (auto, or refused).</summary>
+        private Length? HeightOf(StyledElement element) => Value(element, "height") is CssLength { Value: var length } ? length : null;
+
+        /// <summary>
+        /// The content height a cell's <c>height</c> gives it (<see cref="BoxStyle.TableHeight"/>): the height itself, of the
+        /// content box (cases <c>tg-cell</c> a, b: 30 pt and padding 2 pt make a row of 34.734 pt with collapsed lines of
+        /// 0.75 pt, 35.484 pt with the cell's own border); under <c>box-sizing: border-box</c> in a table with separated
+        /// borders the height less the cell's padding and border (<c>tg-cell</c> c: a cell of 30 pt). With collapsed borders a
+        /// border-box height is refused: no case measures how the shared lines count.
+        /// </summary>
+        private Length? CellHeight(StyledElement element, BoxStyle style)
+        {
+            if (HeightOf(element) is not { } height || Value(element, "box-sizing") is not CssKeyword { Name: "border-box" })
+            {
+                return HeightOf(element);
+            }
+
+            if (Value(element, "border-collapse") is CssKeyword { Name: "collapse" })
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'box-sizing: border-box' on the <{element.Element.LocalName}> with a height in a table with collapsed borders is not drawn in this version: give the cell the height of its content box.",
+                    "border-box", element.Element.Position, "box-sizing");
+                return height;
+            }
+
+            var insets = style.Padding.Top.Points + style.Padding.Bottom.Points + style.Border.Widths.Top.Points + style.Border.Widths.Bottom.Points;
+            return Math.Max(0, height.Points - insets).Pt();
+        }
+
         /// <summary>The vertical alignment of a box's content in its height, for a table cell and a page-margin box (CSS 2.1
-        /// §17.5.3, CSS Paged Media 3 §5.3): middle, bottom, else top.</summary>
+        /// §17.5.3, CSS Paged Media 3 §5.3): middle, bottom, else top. A cell's <c>baseline</c>, the initial value, is top as
+        /// Chromium prints it: each cell's first line at its own content top, whatever the font sizes and top paddings of
+        /// the row, in both border models and in a row taller by a height (cases <c>tv-baseline-sizes</c>,
+        /// <c>tv-baseline-height</c>: first baselines 25.5, 31.5 and 36 pt in one row, where a baseline alignment puts
+        /// all at 36 pt). A browser window aligns the baselines.</summary>
         private VerticalAlign VerticalAlignOf(StyledElement element) => Value(element, "vertical-align") switch
         {
             CssKeyword { Name: "middle" } => VerticalAlign.Middle,
@@ -389,7 +599,8 @@ public static partial class HtmlBoxGenerator
             var html = element.Element;
             // A row group without rows was refused (GroupBox); under Warn it is left out, and a table without rows is an
             // empty block.
-            var groups = DrawOrder([.. box.Children.OfType<Box>().Where(group => group.Children.Count > 0)]);
+            var caption = box.Children.OfType<Box>().FirstOrDefault(IsCaption);
+            var groups = DrawOrder([.. box.Children.OfType<Box>().Where(group => group.Children.Count > 0 && !IsCaption(group))]);
             if (groups.Count == 0)
             {
                 RefuseTable($"The table <{html.LocalName}> without rows is not drawn in this version.", "table without rows", html.Position);
@@ -417,17 +628,67 @@ public static partial class HtmlBoxGenerator
                 return box with { Role = SemanticRole.Generic, Layout = LayoutAlgorithmId.Flow, Children = [] };
             }
 
+            var height = TableHeightOf(element, caption, groups);
             var sizes = Columns(element, grid);
+            groups = Backgrounds(element, CellWidths(element, groups, grid, sizes.Width != BoxWidth.Auto && Value(element, "table-layout") is CssKeyword { Name: "fixed" }), grid);
+            var separated = Value(element, "border-collapse") is not CssKeyword { Name: "collapse" };
             return box with
             {
                 Role = SemanticRole.Table,
                 Layout = LayoutAlgorithmId.Tracks,
-                Style = box.Style with { Columns = sizes.Columns, Width = sizes.Width, DecorationBreak = BoxDecorationBreak.Slice, Padding = Edges.Zero, Text = null },
-                Children = [.. groups.Select(group => (Node)(group.Style.TableDisplay == TableDisplay.HeaderGroup && hasBody ? group with { Role = SemanticRole.TableHead } : group))],
+                Style = box.Style with
+                {
+                    Columns = sizes.Columns,
+                    Width = sizes.Width,
+                    DecorationBreak = BoxDecorationBreak.Slice,
+                    BorderModel = separated ? TableBorderModel.Separate : TableBorderModel.Collapse,
+                    BorderSpacing = separated ? SpacingOf(element) : BorderSpacing.Zero,
+                    Padding = separated ? box.Style.Padding : Edges.Zero,
+                    Text = null,
+                    TableHeight = height,
+                },
+                Children = [.. caption is null ? [] : new[] { (Node)caption }, .. groups.Select(group => (Node)(group.Style.TableDisplay == TableDisplay.HeaderGroup && hasBody ? group with { Role = SemanticRole.TableHead } : group))],
             };
         }
 
         private static IEnumerable<Box> Parts(Box box) => box.Children.OfType<Box>();
+
+        /// <summary>
+        /// A table's <c>height</c> (<see cref="BoxStyle.TableHeight"/>): of its border box, as the user agent's
+        /// <c>box-sizing: border-box</c> gives it (cases <c>tg-table</c>, <c>tg-table-small</c>). Refused where no case shows
+        /// how Chromium shares it: under <c>box-sizing: content-box</c>, with a caption, over cells that span rows, and where
+        /// every body row has a height of its own or of a cell, so no row takes the extra.
+        /// </summary>
+        private Length? TableHeightOf(StyledElement element, Box? caption, List<Box> groups)
+        {
+            if (HeightOf(element) is not { } height)
+            {
+                return null;
+            }
+
+            var bodyRows = groups.Where(group => group.Style.TableDisplay == TableDisplay.RowGroup).SelectMany(Parts).ToList();
+            var problem =
+                Value(element, "box-sizing") is not CssKeyword { Name: "border-box" } ? "under 'box-sizing: content-box'"
+                : caption is not null ? "with a caption"
+                : groups.SelectMany(Parts).SelectMany(Parts).Any(cell => cell.Style.Span.Rows > 1) ? "over cells that span rows"
+                : bodyRows.All(row => row.Style.TableHeight is not null || Parts(row).Any(cell => cell.Style.TableHeight is not null)) ? "where every body row has a height"
+                : null;
+            if (problem is null)
+            {
+                return height;
+            }
+
+            Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"A height on the table <{element.Element.LocalName}> {problem} is not drawn in this version.",
+                height.ToString(), element.Element.Position, "height");
+            return null;
+        }
+
+        /// <summary>The computed <c>border-spacing</c> of a table with separated borders: horizontal, then vertical (CSS 2.1
+        /// §17.6.1).</summary>
+        private BorderSpacing SpacingOf(StyledElement element) =>
+            Value(element, "border-spacing") is CssList { Items: [CssLength horizontal, CssLength vertical] }
+                ? new BorderSpacing(horizontal.Value, vertical.Value)
+                : BorderSpacing.Zero;
 
         /// <summary>The slots of the table's cells (HTML Standard §4.9.12.1).</summary>
         private static TableSlots.Grid Grid(List<Box> groups) =>
@@ -443,8 +704,14 @@ public static partial class HtmlBoxGenerator
         {
             var html = table.Element;
             var count = grid.ColumnCount;
-            var stretch = Value(table, "width") is CssPercentage { Value: 100 };
-            var width = stretch ? BoxWidth.Stretch : BoxWidth.Auto;
+            var width = Value(table, "width") switch
+            {
+                CssPercentage { Value: 100 } => BoxWidth.Stretch,
+                CssPercentage percent => new BoxWidth.Percent(percent.Value),
+                CssLength length => new BoxWidth.Fixed(length.Value),
+                _ => BoxWidth.Auto,
+            };
+            var stretch = width != BoxWidth.Auto;
             var given = _columns.TryGetValue(table, out var columns) ? columns : [];
             var elements = given.Sum(column => (long)column.Span);
             if (elements > count)
@@ -496,6 +763,108 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>
+        /// The widths of the table's cells (CSS 2.1 §17.5.2: a cell's <c>width</c>, a length of its content box or a
+        /// percentage), which layout gives their columns (<see cref="BoxWidth.Fixed"/>, <see cref="BoxWidth.Percent"/>).
+        /// Refused (<c>Value</c>, at the cell), and then left out: a length on a cell over several columns in the fixed
+        /// table layout (case <c>twd-cell-span</c>, table <c>b</c>: Chromium's columns come out equal, which a width left out
+        /// and a width shared over the columns both give, so the case shows no rule); a length on a cell of a table with
+        /// percent columns in the fixed layout; and, not measured, a percentage on a cell in the fixed layout, on a cell
+        /// over several columns, or in a column that has another width (a length, or another percentage, of its column
+        /// element or another cell). Refused at the table: a cell over several columns of which one has a percentage (not
+        /// measured), and percentages of 100 or more beside other columns (<see cref="PercentColumns"/>).
+        /// </summary>
+        private List<Box> CellWidths(StyledElement table, List<Box> groups, TableSlots.Grid grid, bool isFixed)
+        {
+            var given = _columns.TryGetValue(table, out var columns) ? columns : [];
+            var percentColumns = given.Exists(column => column.Width is CssPercentage);
+            var cells = groups.SelectMany(Parts).SelectMany(Parts).ToList();
+            var count = grid.ColumnCount;
+
+            // What gives each column a width: its column element's, then the cells over that column alone.
+            var lengths = new bool[count];
+            var percents = new List<double>[count];
+            var next = 0;
+            foreach (var (value, span, _) in given)
+            {
+                for (var index = next; index < Math.Min(count, next + span); index++)
+                {
+                    lengths[index] = value is CssLength;
+                    percents[index] = value is CssPercentage percent ? [percent.Value] : [];
+                }
+
+                next += span;
+            }
+
+            for (var index = 0; index < count; index++)
+            {
+                percents[index] ??= [];
+            }
+
+            var placed = cells.Count == grid.Cells.Length;
+            for (var index = 0; placed && index < cells.Count; index++)
+            {
+                if (grid.Cells[index].Span.Columns == 1)
+                {
+                    var column = grid.Cells[index].Column;
+                    lengths[column] |= cells[index].Style.Width is BoxWidth.Fixed;
+                    if (cells[index].Style.Width is BoxWidth.Percent { Value: var value } && !percents[column].Contains(value))
+                    {
+                        percents[column].Add(value);
+                    }
+                }
+            }
+
+            if (!isFixed && placed)
+            {
+                var spanning = grid.Cells.FirstOrDefault(cell => cell.Span.Columns > 1 && Enumerable.Range(cell.Column, cell.Span.Columns).Any(column => column < count && percents[column].Count > 0));
+                if (spanning.Span.Columns > 1)
+                {
+                    RefuseTable($"The table <{table.Element.LocalName}> has a cell over several columns of which one has a percentage, which is not drawn in this version.", "a cell over a percent column", table.Element.Position);
+                }
+
+                var total = percents.Sum(values => values.Count > 0 ? values.Max() : 0);
+                var first = cells.FindIndex(cell => cell.Style.Width is BoxWidth.Percent);
+                if (total >= 100 && percents.Any(values => values.Count == 0) && first >= 0)
+                {
+                    Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'width: {cells[first].Style.Width}' on a table cell is not drawn: percent columns of 100% or more beside other columns are not drawn in the automatic table layout in this version.", cells[first].Style.Width.ToString()!, _cellWidths[cells[first].Id], "width");
+                }
+            }
+
+            Box Checked(Box cell, int index)
+            {
+                if (cell.Style.Width == BoxWidth.Auto)
+                {
+                    return cell;
+                }
+
+                var column = placed ? grid.Cells[index].Column : 0;
+                var reason = cell.Style.Width switch
+                {
+                    BoxWidth.Fixed when isFixed && percentColumns => "a width on a cell of a table with percent columns is not drawn in the fixed table layout in this version",
+                    BoxWidth.Fixed when isFixed && cell.Style.Span.Columns > 1 => "a width on a cell over several columns is not drawn in the fixed table layout (table-layout: fixed) in this version: give the columns their widths with col elements",
+                    BoxWidth.Fixed when placed && cell.Style.Span.Columns == 1 && percents[column].Count > 0 => "a length and a percentage in one column are not drawn in this version: give the column one width",
+                    BoxWidth.Percent when isFixed => "a percentage on a cell is not drawn in the fixed table layout (table-layout: fixed) in this version: give the column its width with a col element",
+                    BoxWidth.Percent when cell.Style.Span.Columns > 1 => "a percentage on a cell over several columns is not drawn in this version",
+                    BoxWidth.Percent when !placed || lengths[column] || percents[column].Count > 1 => "a percentage beside another width in one column is not drawn in this version: give the column one width",
+                    _ => null,
+                };
+                if (reason is null)
+                {
+                    return cell;
+                }
+
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'width: {cell.Style.Width}' on a table cell is not drawn: {reason}.", cell.Style.Width.ToString()!, _cellWidths[cell.Id], "width");
+                return cell with { Style = cell.Style with { Width = BoxWidth.Auto } };
+            }
+
+            var at = 0;
+            return [.. groups.Select(group => group with
+            {
+                Children = [.. Parts(group).Select(row => (Node)(row with { Children = [.. Parts(row).Select(cell => (Node)Checked(cell, at++))] }))],
+            })];
+        }
+
+        /// <summary>
         /// The columns of a table with percent columns (CSS 2.1 §17.5.2.1, where a percentage is of the table's width), as
         /// Chromium's fixed layout sizes them (<c>SynchronizeAssignableTableInlineSizeAndColumnsFixed</c>,
         /// table_layout_utils.cc): a percentage is of the width the columns share, the table's width less its outer half
@@ -504,11 +873,14 @@ public static partial class HtmlBoxGenerator
         /// <c>tp-sum-above</c>); beside columns without a width each keeps its percentage and those columns share the rest
         /// equally (<c>tp-beside-auto</c>). Both are fill columns whose weights are the shares of the width, so layout
         /// divides the width exactly where Chromium cuts each share to 1/64 px and gives the remainder to the last column.
-        /// A span repeats the percentage over its columns (<c>tp-col-span</c>). Refused, at the column element, and then
-        /// read as a column without a width: a percent column outside the fixed layout of a table of width <c>100%</c>
-        /// (Chromium's automatic layout has other rules); beside a column of a length, which Chromium widens to what the
-        /// percentages leave (<c>tp-beside-length</c>); and percentages of 100 or more beside a column without a width,
-        /// which Chromium leaves no width. Null when the table has no percent column or it was refused.
+        /// A span repeats the percentage over its columns (<c>tp-col-span</c>). The same holds in a table of a length
+        /// (<c>tp-length-table</c>, <c>tpa-length</c> e). In the automatic layout a percent column is a
+        /// <see cref="TrackSize.Percent"/> column, a column length a preferred width and the others auto columns (cases
+        /// <c>tpa-*</c>). Refused, at the column element, and then read as a column without a width: in the fixed layout a
+        /// percent column beside a column of a length, which Chromium widens to what the percentages leave
+        /// (<c>tp-beside-length</c>), and percentages of 100 or more beside a column without a width, which Chromium leaves
+        /// no width; in the automatic layout percentages of 100 or more beside other columns (not measured). Null when the
+        /// table has no percent column or it was refused.
         /// </summary>
         private ValueList<TrackSize>? PercentColumns(CssValue?[] widths, TextPosition[] places, bool isFixed)
         {
@@ -520,8 +892,9 @@ public static partial class HtmlBoxGenerator
 
             var total = widths.Sum(value => value is CssPercentage percent ? percent.Value : 0);
             var others = widths.Count(value => value is null);
-            var reason = !isFixed ? "a percent column is drawn only in the fixed table layout (table-layout: fixed) of a table of width 100% in this version"
-                : Array.Exists(widths, value => value is CssLength) ? "a percent column beside a column of a length is not drawn in this version"
+            var reason = !isFixed && total >= 100 && widths.Length > widths.Count(value => value is CssPercentage) ? "percent columns of 100% or more beside other columns are not drawn in the automatic table layout in this version"
+                : !isFixed ? null
+                : Array.Exists(widths, value => value is CssLength) ? "a percent column beside a column of a length is not drawn in the fixed table layout in this version"
                 : others > 0 && total >= 100 ? "percent columns of 100% or more beside a column without a width are not drawn in this version"
                 : null;
             if (reason is not null)
@@ -533,6 +906,18 @@ public static partial class HtmlBoxGenerator
                 }
 
                 return null;
+            }
+
+            if (!isFixed)
+            {
+                // The automatic layout: percent columns (TrackSize.Percent), column lengths as preferred widths (§17.5.2.2),
+                // the others sized by their content.
+                return [.. widths.Select(value => value switch
+                {
+                    CssPercentage percent => new TrackSize.Percent(percent.Value),
+                    CssLength length => new TrackSize.Preferred(length.Value),
+                    _ => (TrackSize)TrackSize.Auto.Instance,
+                })];
             }
 
             return [.. widths.Select(value => (TrackSize)new TrackSize.Fill(value switch

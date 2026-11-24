@@ -1,0 +1,27 @@
+table 112.852 333.047 t
+th 40.277 18.234 head-cell
+th 42.574 18.234 other
+td 40.277 18.234 one-cell
+td 42.574 18.234 text 1
+td 40.277 18.234 two-cell
+td 42.574 18.234 text 2
+td 40.277 18.234 three-cell
+td 42.574 18.234 text 3
+td 40.277 18.234 four-cell
+td 42.574 18.234 text 4
+td 40.277 18.234 five-cell
+td 42.574 18.234 text 5
+td 40.277 18.234 six-cell
+td 42.574 18.234 text 6
+td 40.277 18.234 seven-cell
+td 42.574 18.234 text 7
+td 40.277 18.234 eight-cell
+td 42.574 18.234 text 8
+td 40.277 18.234 nine-cell
+td 42.574 18.234 text 9
+td 40.277 18.234 ten-cell
+td 42.574 18.234 text 10
+td 40.277 18.234 eleven-cell
+td 42.574 18.234 text 11
+td 40.277 18.234 twelve-cell
+td 42.574 18.234 text 12

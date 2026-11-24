@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A cell width beside a col width in its column: a, automatic layout, col 60pt, cell 90pt; b, fixed layout (table 200pt), separated, col 60pt, cell 90pt; c, automatic, separated, col 90pt, cell 60pt. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<col style="width: 60pt"><col>
+<tr><td id="one-a" style="width: 90pt">one</td><td>text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s f" style="width: 200pt">
+<col style="width: 60pt"><col>
+<tr><td id="one-b" style="width: 90pt">one</td><td>text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="s">
+<col style="width: 90pt"><col>
+<tr><td id="one-c" style="width: 60pt">one</td><td>text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>

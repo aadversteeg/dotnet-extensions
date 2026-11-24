@@ -26,9 +26,9 @@ public static partial class PropertyRegistry
 
         yield return Keywords("table-layout", inherited: false, "auto", ["auto", "fixed"], [], "table and inline-table boxes", "CSS 2.1 §17.5.2");
 
-        yield return Keywords("caption-side", inherited: true, "top", ["top"], ["bottom"], "table-caption boxes", "CSS 2.1 §17.4.1");
+        yield return Keywords("caption-side", inherited: true, "top", ["top", "bottom"], ["block-start", "block-end", "inline-start", "inline-end", "left", "right"], "table-caption boxes", "CSS 2.1 §17.4.1");
 
-        yield return Keywords("empty-cells", inherited: true, "show", ["show"], ["hide"], "table-cell boxes", "CSS 2.1 §17.6.1.1");
+        yield return Keywords("empty-cells", inherited: true, "show", ["show", "hide"], [], "table-cell boxes", "CSS 2.1 §17.6.1.1");
 
         yield return new PropertyDefinition(
             "list-style-type", inherited: true, new CssKeyword("disc"), "list items", string.Join(" | ", SupportedListStyles),

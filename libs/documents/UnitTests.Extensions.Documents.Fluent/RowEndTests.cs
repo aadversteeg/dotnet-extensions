@@ -392,10 +392,10 @@ public class RowEndTests
     public void Under_an_outer_table_s_repeated_header_a_continued_row_below_13_875_pt_of_padding_is_cut_as_in_Chromium_under_Avoid_only()
     {
         // The shape above with 10 lines below 13.875 pt top padding: the row moves to page 2 whole as above. Under Avoid it
-        // is cut below the repeated header as Chromium cuts it. Under Allow page 2 goes on without the header: below the
-        // header the engine starts the inner table 0.375 pt higher than Chromium (its top line at 28.125, Chromium's at
-        // 28.5), so the row's ten lines fit there and only its line below passes the page end; such a row is not cut, and
-        // it cannot move (docs/architecture.md, "Known limits").
+        // is cut below the repeated header as Chromium cuts it. Under Allow page 2 goes on without the header. Below the
+        // header both lay the inner table out in one place (its line laid out at 28.125, printed by Chromium at 28.5), the
+        // row's lines from 42.375, 0.375 pt short of room for all ten; Chromium cuts the row there, and the engine finds
+        // only a last-resort cut below the header (docs/architecture.md, "Known limits").
         var chromium = PrintedPages.Chromium("a2-row-end-nested-under-header-13875");
         foreach (var overflow in Enum.GetValues<MonolithicOverflow>())
         {

@@ -80,6 +80,7 @@ public static class DocumentModelText
                 TableDisplay.HeaderGroup => "table-header-group",
                 TableDisplay.RowGroup => "table-row-group",
                 TableDisplay.Row => "table-row",
+                TableDisplay.Caption => "table-caption",
                 _ => box.Layout.ToString(),
             },
             box.Role.ToString(),
@@ -99,6 +100,10 @@ public static class DocumentModelText
             style.Columns.Count > 0 ? $"columns={string.Join(",", style.Columns)}" : null,
             style.Width != initial.Width ? $"width={style.Width.ToString().ToLowerInvariant()}" : null,
             style.Span != initial.Span ? $"span={style.Span}" : null,
+            style.BorderModel != initial.BorderModel ? $"border-collapse={style.BorderModel.ToString().ToLowerInvariant()}" : null,
+            style.BorderSpacing != initial.BorderSpacing ? $"border-spacing={style.BorderSpacing}" : null,
+            style.CaptionSide != initial.CaptionSide ? $"caption-side={style.CaptionSide.ToString().ToLowerInvariant()}" : null,
+            style.TableHeight is { } tableHeight ? $"height={tableHeight}" : null,
             $"@{box.Source}",
         ];
         return string.Join(" ", parts.OfType<string>());

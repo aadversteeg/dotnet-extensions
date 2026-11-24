@@ -68,9 +68,9 @@ public class HtmlRenderingTests
     public void Under_warn_every_entry_returns_its_output_with_a_diagnostic_for_everything_left_out_or_changed()
     {
         // What is left out or changed: the image, the quotation (its words), a tab where spaces are preserved, the table's
-        // separated borders (drawn collapsed), visibility: hidden (drawn), the float, the decorated list item's marker (drawn without its line).
+        // border spacing of a fraction of a pixel (drawn without), visibility: hidden (drawn), the float, the decorated list item's marker (drawn without its line).
         const string Body = "<p>before</p><p>keep <img src=\"x.png\" alt=\"ALT\"> this <q>quoted words</q> and <span style=\"white-space:pre\">a\ttab</span></p>" +
-            "<table><tr><td>cell one</td><td>cell two</td></tr></table><p style=\"visibility:hidden\">secret</p><p style=\"float:right\">floated</p><ul><li style=\"text-decoration: underline\">item</li></ul>";
+            "<table style=\"border-spacing:1pt\"><tr><td>cell one</td><td>cell two</td></tr></table><p style=\"visibility:hidden\">secret</p><p style=\"float:right\">floated</p><ul><li style=\"text-decoration: underline\">item</li></ul>";
         var html = Html.Replace("<p>Hello</p>", Body, StringComparison.Ordinal);
         var warn = Options with { Style = Options.Style with { Unsupported = UnsupportedPolicy.Warn } };
         HtmlRendering.ToPages(html, Options).IsFailure.Should().BeTrue("the same document is refused by default");
@@ -79,7 +79,7 @@ public class HtmlRenderingTests
 
         pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
         var values = pages.Value.Diagnostics.Select(error => error.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.Value, out var value) ? value as string : null).ToList();
-        values.Should().Contain(["img", "q", "preserve", "hidden", "right", "separate", "text-decoration"]);
+        values.Should().Contain(["img", "q", "preserve", "hidden", "right", "1pt 1pt", "text-decoration"]);
         pages.Value.Diagnostics.Should().OnlyContain(error => error.Metadata != null && error.Metadata.ContainsKey(ErrorMetadataKeys.SourceLine));
         var pdf = HtmlRendering.ToPdf(html, warn, new PdfRenderOptions(new DateTimeOffset(2026, 11, 19, 12, 0, 0, TimeSpan.Zero)));
         pdf.Value.Diagnostics.Should().Equal(pages.Value.Diagnostics);

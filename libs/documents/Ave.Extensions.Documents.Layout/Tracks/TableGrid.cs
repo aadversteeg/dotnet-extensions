@@ -82,7 +82,8 @@ internal sealed record TableGrid(
     /// <summary>
     /// Builds the grid, or reports why the tree is not a valid table:
     /// <list type="bullet">
-    /// <item>the children must be row groups, a header group (<c>table-header-group</c>) at most once and first;</item>
+    /// <item>the children must be row groups, a header group (<c>table-header-group</c>) at most once and first, after the
+    /// caption (<c>table-caption</c>) when there is one, which is the first child and is no part of the grid;</item>
     /// <item>a group's children must be rows, a row's children cells (any box);</item>
     /// <item>a cell must fit in the columns, and its row span must end inside its row group (HTML: a row span is
     /// limited to its row group).</item>
@@ -98,11 +99,15 @@ internal sealed record TableGrid(
             return Invalid(table, "a tracks box needs at least one column.");
         }
 
-        var groups = table.Children.OfType<Box>().ToImmutableArray();
-        if (groups.Length != table.Children.Count
+        // The caption, the first child when there is one, is not part of the grid (TableCaption).
+        ValueList<Node> parts = TableCaption.Of(table) is null ? table.Children : [.. table.Children.Skip(1)];
+        var groups = parts.OfType<Box>().ToImmutableArray();
+        if (groups.Length != parts.Count
             || groups.Any(group => group.Style.TableDisplay is not (TableDisplay.HeaderGroup or TableDisplay.RowGroup)))
         {
-            return Invalid(table, "the children of a tracks box must be row groups.");
+            return Invalid(table, groups.Any(group => group.Style.TableDisplay == TableDisplay.Caption)
+                ? "a tracks box has at most one caption, and it is the first child."
+                : "the children of a tracks box must be row groups.");
         }
 
         if (groups.Skip(1).Any(group => group.Style.TableDisplay == TableDisplay.HeaderGroup))

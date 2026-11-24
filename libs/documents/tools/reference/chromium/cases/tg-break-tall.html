@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Rows taller than the page by their height: a, a row of height 250pt, collapsed; b, a row of height 400pt, separated, below a header that repeats. -->
+<style>@page { size: 300pt 200pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<tr style="height: 250pt"><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s">
+<thead><tr><th id="head-b">head</th><th>two</th></tr>
+</thead>
+<tbody>
+<tr style="height: 400pt"><td id="one-b">one</td><td>two</td></tr>
+</tbody>
+</table>
+<p>after</p>
+</body></html>

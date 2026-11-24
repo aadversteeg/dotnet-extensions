@@ -11,14 +11,48 @@ namespace Ave.Extensions.Documents.TestSupport;
 /// top left of the page, y down.</summary>
 /// <param name="Page">The page, from 1.</param>
 /// <param name="X0">The origin of its first character.</param>
-/// <param name="X1">The origin of its last character plus that character's advance: the word's extent is its advances.</param>
+/// <param name="X1">The origin of its last glyph plus that glyph's advance: the word's extent is its advances. A combining
+/// mark drawn after its base ends the word at its own origin plus its advance (0 where the font gives it none), as
+/// <c>positions.py</c> reads Chromium's print (case <c>sk-extreme</c>).</param>
 /// <param name="Baseline">The baseline's y.</param>
 /// <param name="FontSize">The font size.</param>
 /// <param name="Text">The characters.</param>
 /// <param name="Colour">The text's fill colour as <c>#rrggbb</c> (<c>#rrggbbaa</c> where it is not opaque).</param>
 /// <param name="Face">The PostScript name of the font the word is drawn with (without a subset tag): it names the font
 /// file, and with it the weight and the style.</param>
-public sealed record PrintedWord(int Page, double X0, double X1, double Baseline, double FontSize, string Text, string? Colour = null, string? Face = null);
+public sealed record PrintedWord(int Page, double X0, double X1, double Baseline, double FontSize, string Text, string? Colour = null, string? Face = null)
+{
+    /// <summary>The word's place in its page's drawing order, where each white-space glyph a glyph run draws takes a place
+    /// too: set in the engine's pages (<see cref="PrintedPages.Engine"/>), null in a print read back from its PDF, whose
+    /// words are written sorted by place.</summary>
+    public int? Drawn { get; init; }
+
+    /// <summary>Whether two words print the same: their places in drawing order are not compared, so an engine word equals
+    /// the word read back from Chromium's print.</summary>
+    /// <param name="other">The other word.</param>
+    /// <returns>Whether they are equal.</returns>
+    public bool Equals(PrintedWord? other) =>
+        other is not null && (Page, X0, X1, Baseline, FontSize, Text, Colour, Face) == (other.Page, other.X0, other.X1, other.Baseline, other.FontSize, other.Text, other.Colour, other.Face);
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => HashCode.Combine(Page, X0, X1, Baseline, FontSize, Text, Colour, Face);
+
+    /// <summary>
+    /// Whether a reader of the PDF can take the word as the piece of text that comes right after <paramref name="before"/>:
+    /// pdftotext and PyMuPDF join two pieces into one word only where the second is drawn right after the first, with
+    /// nothing drawn between them, not even white space (case <c>ws-intrinsic</c>: a cell's last word and the next cell's
+    /// first are one word where they share a baseline; the words of the two cells' second lines, with the next cell's first
+    /// word drawn between them, are two; case <c>ws-table</c>: a cell's word followed by preserved spaces and the next
+    /// cell's word are two). A word without a place (read back from a PDF) may follow any.
+    /// </summary>
+    /// <param name="before">The word before it on its baseline.</param>
+    /// <returns>Whether it may continue <paramref name="before"/>.</returns>
+    public bool IsDrawnRightAfter(PrintedWord before)
+    {
+        ArgumentNullException.ThrowIfNull(before);
+        return before.Drawn is not { } first || Drawn is not { } second || second == first + 1;
+    }
+}
 
 /// <summary>A rectangle on a printed page: a painted rectangle (a background, a border, a grid line; filled, or one band
 /// of a stroked rectangle) or the area an image is drawn into (which may reach past the page when the page shows only a
@@ -83,31 +117,48 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
         [.. Words.GroupBy(word => Math.Round(word.Baseline, 3))
             .Select(line => (line.First().Baseline, string.Join(" ", line.Select(word => word.Text))))];
 
-    /// <summary>The widest gap between two pieces of text on one baseline that still counts as no white space between
-    /// them, in points: a pair kerned across the border of two runs overlaps, and a space leaves 2.7 pt or more at the
-    /// sizes of the cases. Both rules that join pieces into words use it (<see cref="JoinedWords"/>, and the HTML case
-    /// comparison's join of PyMuPDF's words).</summary>
-    public const double WordGap = 0.5;
+    /// <summary>The gap between two pieces of text on one baseline, as a share of the font size, below which poppler's
+    /// pdftotext reads them as one word (<c>words.txt</c>) where no white space lies between them. Measured with Lato at
+    /// 10.5 pt, a word in each of two cells side by side (cases <c>wg-cell-gap</c>, <c>wg-spacing-gap</c>): one word at a
+    /// gap of 0.939 pt (0.089 of the size), two at 1.127 pt (0.107). A pair kerned across the border of two runs overlaps,
+    /// and a space leaves a quarter of the size or more in the fonts of the cases.</summary>
+    public const double PopplerWordGap = 0.1;
+
+    /// <summary>The gap between two pieces of text on one baseline, as a share of the font size, below which PyMuPDF reads
+    /// them as one word (<c>positions.py</c>, <c>print.txt</c>) where no white space lies between them and the font, the
+    /// size and the colour stay the same. Measured as <see cref="PopplerWordGap"/>: one word at a gap of 1.502 pt (0.143 of
+    /// the size), two at 1.690 pt (0.161). So a gap between the two gives one word in <c>print.txt</c> and two in
+    /// <c>words.txt</c>.</summary>
+    public const double PyMuPdfWordGap = 0.15;
 
     /// <summary>The words as poppler's pdftotext reads the page (<c>words.txt</c>): the pieces that PyMuPDF (and the engine,
     /// one glyph run per run) gives where a word's colour or font changes are joined again where nothing lies between them
-    /// (<see cref="WordGap"/>) on one baseline at one font size; pdftotext starts a new word at a change of size, not of
-    /// face or colour. The joined word keeps its first piece's colour and face. Each word comes with the number of pieces
+    /// (<see cref="PopplerWordGap"/>) on one baseline at one font size, the second drawn right after the first
+    /// (<see cref="PrintedWord.IsDrawnRightAfter"/>); pdftotext starts a new word at a change of size, not of face or
+    /// colour. Words read back from a PDF have no place in drawing order, but PyMuPDF has joined every piece it could
+    /// already: two of its words are joined only where the face or the colour changes between them (cases
+    /// <c>ws-intrinsic</c>, <c>ws-table</c>: the words of two cells' second lines, apart in both files). The joined word
+    /// keeps its first piece's colour and face and takes its last piece's place. Each word comes with the number of pieces
     /// it was made of.</summary>
     public ImmutableArray<(PrintedWord Word, int Pieces)> JoinedWords
     {
         get
         {
             var words = ImmutableArray.CreateBuilder<(PrintedWord Word, int Pieces)>();
+            PrintedWord? previous = null;
             foreach (var piece in Words)
             {
-                if (words.Count > 0 && words[^1] is var (last, pieces) && Math.Abs(last.Baseline - piece.Baseline) < 0.01 && last.FontSize == piece.FontSize && piece.X0 - last.X1 < WordGap)
+                if (words.Count > 0 && words[^1] is var (last, pieces) && previous is not null && Math.Abs(last.Baseline - piece.Baseline) < 0.01 && last.FontSize == piece.FontSize
+                    && piece.X0 - last.X1 < PopplerWordGap * piece.FontSize && piece.IsDrawnRightAfter(last)
+                    && (piece.Drawn is not null || previous.Face != piece.Face || previous.Colour != piece.Colour))
                 {
-                    words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text }, pieces + 1);
+                    words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text, Drawn = piece.Drawn }, pieces + 1);
+                    previous = piece;
                     continue;
                 }
 
                 words.Add((piece, 1));
+                previous = piece;
             }
 
             return words.ToImmutable();
@@ -182,7 +233,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     /// The engine's page model in the same form. A word is a run of glyphs whose text has no white space; a glyph with no
     /// text of its own continues the word before it (the later glyphs of a one-to-many substitution). Its baseline is its
     /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance; its colour
-    /// and face are its run's. A rectangle's colour is its fill's. A rectangle and an image are the part the page shows,
+    /// and face are its run's, and its <see cref="PrintedWord.Drawn"/> its place in drawing order. A rectangle's colour is its fill's. A rectangle and an image are the part the page shows,
     /// inside the clips open around them (<see cref="ClipStart"/>, <see cref="Visible"/>), and left out where they lie
     /// wholly outside them, as <c>positions.py</c> reads Chromium's print; a word is whole. A filled path is the area it
     /// paints inside those clips, sampled by the rule <c>paths.py</c> reads Chromium's curves with (<see cref="PathSampler"/>),
@@ -220,7 +271,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             }
 
             return new PrintedPage(number, page.Size.Width, page.Size.Height,
-                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run))), rectangles.ToImmutable(), images.ToImmutable(), paths.ToImmutable());
+                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run)).Select((word, place) => word is null ? null : word with { Drawn = place }).OfType<PrintedWord>()), rectangles.ToImmutable(), images.ToImmutable(), paths.ToImmutable());
         })]);
 
     /// <summary>
@@ -261,7 +312,8 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     private static ImmutableArray<PrintedWord> Sorted(System.Collections.Generic.IEnumerable<PrintedWord> words) =>
         [.. words.OrderBy(word => Math.Round(word.Baseline, 3)).ThenBy(word => Math.Round(word.X0, 3))];
 
-    private static System.Collections.Generic.IEnumerable<PrintedWord> Words(int page, GlyphRun run)
+    // The words of a run in drawing order, with a null for each white-space glyph: a place in the page's drawing order.
+    private static System.Collections.Generic.IEnumerable<PrintedWord?> Words(int page, GlyphRun run)
     {
         var word = ImmutableArray.CreateBuilder<PositionedGlyph>();
         foreach (var glyph in run.Glyphs)
@@ -274,6 +326,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                     word.Clear();
                 }
 
+                yield return null;
                 continue;
             }
 

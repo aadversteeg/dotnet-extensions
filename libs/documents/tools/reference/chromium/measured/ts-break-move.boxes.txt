@@ -1,0 +1,11 @@
+table 104.086 177.422 t
+td 34.676 18.234 one-cell
+td 39.410 18.234 text 1
+td 34.676 18.234 two-cell
+td 39.410 18.234 text 2
+td 34.676 18.234 three-cell
+td 39.410 18.234 text 3
+td 34.676 56.484 tall-cell
+td 39.410 56.484 beside-cell
+td 34.676 18.234 five-cell
+td 39.410 18.234 text 5

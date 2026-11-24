@@ -77,10 +77,14 @@ namespace Ave.Extensions.Documents.Layout;
 /// breakpoint, so a header is never left alone at a page end — except at the start of an empty page, where nothing
 /// would be gained by moving on. There, below a header that repeats and under <see cref="EmptyRowParts.Allow"/>, the
 /// page ends with the first body row cut below the header instead, where only such a cut places it (a last resort, see
-/// above) and its cells draw nothing on the page: their first content, an image or a line, does not fit below the
-/// header, so they are drawn empty down to the page end, their side lines and no line below them, and the content goes
-/// on in their part on the next page, as Chromium prints it (<see cref="CutsBelowHeader"/>). A cut where another cell
-/// of the row draws something on the page is not taken so (no measured case). On a later page whose height cannot hold the header and some
+/// above): a cell whose first content, an image or a line, does not fit below the header is drawn empty down to the page
+/// end, its side lines and no line below it, the other cells draw what they hold there (text, a background), and the
+/// content goes on in its part on the next page, as Chromium prints it (<see cref="CutsBelowHeader"/>). The row has then
+/// moved on once (<see cref="TracksBreakToken.CutBelowHeader"/>): on the next page its cells go on below the repeated
+/// header, where content taller than the room is sliced, beside the rest of the other cells. The cells of the cut row
+/// lie below the header as below start insets (<see cref="TableGeometry.CutsBelowHeaderRows"/>), so a table nested in
+/// such a cell starts on that page and cuts its own first row as at the top of a page, as Chromium prints it (case
+/// <c>a4-header-nested-image-228</c>: the nested table's top line on page 1, its image from page 2). On a later page whose height cannot hold the header and some
 /// body content, the header is left out, so the table always makes progress.</para>
 /// <para><b>Content taller than the page area under a repeated header row</b> (<see cref="MonolithicOverflow.Slice"/>
 /// only): it is sliced right below the header, on a page after one that showed no body row other than slices of a
@@ -99,8 +103,9 @@ namespace Ave.Extensions.Documents.Layout;
 /// Under <see cref="RepeatedHeaderRows.WhereContentIsLaidOut"/>, as Chromium prints it, such a piece is sliced below the
 /// header also when it is no taller than the page area, and a later page where all that is left of the table is the rest
 /// of pieces laid out before (<see cref="OnlyRestLeft"/>) is laid out without the header, so the rest starts at the top
-/// of the page area; where a row is still to come or a cell beside the piece goes on, the header stays above the slice
-/// (Chromium draws it over the slice there, which the engine does not copy).</para>
+/// of the page area; where a row is still to come or a cell of the piece's row beside it goes on, also an empty one
+/// (<see cref="OnlySlicesGoOn"/>), the header stays above the slice (Chromium draws it over the slice there, which the
+/// engine does not copy).</para>
 /// </remarks>
 internal static class TablePage
 {
@@ -139,7 +144,8 @@ internal static class TablePage
         LowerHalf,
 
         /// <summary>Nothing of the line, though the page keeps the room of its lower half: the line at the start of the
-        /// next page where a cell that spans rows is cut by the break between them (see <see cref="ContinuationLine"/>).</summary>
+        /// next page where a cell that spans rows is cut by the break between them, or below part of a cell that passed
+        /// the page end (see <see cref="ContinuationLine"/>).</summary>
         Unpainted,
     }
 
@@ -164,6 +170,11 @@ internal static class TablePage
         /// the table keeps it too, at the cut's appeal, in which the cell's kept appeal stands
         /// (<see cref="LayoutResult.Placed.KeptAppeal"/>).</summary>
         public bool KeepsItsBreak { get; init; }
+
+        /// <summary>True when the page ends with its first body row cut right below the header rows
+        /// (<see cref="CutsBelowHeader"/>): the row has moved on once, so on the next page its content goes on below the
+        /// repeated header, and content taller than the room there is sliced there.</summary>
+        public bool CutBelowHeader { get; init; }
     }
 
     /// <summary>Lays out one page of the table and builds its fragment.</summary>
@@ -208,7 +219,11 @@ internal static class TablePage
             hasHeader = false;
         }
 
-        var outcome = Attempt(table, space, resume, isFirst, hasHeader, breakAt);
+        // After a page that ended with the first body row cut right below the header, that row's cells go on below the
+        // repeated header, where content taller than the room is sliced (see remarks).
+        var slicesAfterCut = !isFirst && hasHeader && resume.CutBelowHeader && space.IsAtPageStart
+            && table.Environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice;
+        var outcome = Attempt(slicesAfterCut ? table with { SlicesBelowHeader = true } : table, space, resume, isFirst, hasHeader, breakAt);
 
         // A later page that cannot hold the header and some body content that shows goes on without the header (see
         // remarks): under the header the body has no room, or only a last-resort cut. Content taller than the page area,
@@ -245,6 +260,12 @@ internal static class TablePage
             return Result<LayoutResult, Error>.Failure(outcome.Error);
         }
 
+        // A table with separated borders breaks only where a measured case says how (see SeparatedBreakIsDrawn).
+        if (table.IsSeparated && outcome.Value.HasValue && !SeparatedBreakIsDrawn(table, incoming, outcome.Value.Value))
+        {
+            return Result<LayoutResult, Error>.Failure(LayoutErrors.TableBreak(table.Box, space.AvailableHeight));
+        }
+
         // A last-resort cut (a part of a row that shows nothing, TableBreaks.CutShows) is taken only where the table
         // cannot move: at the top of a page, or below nothing but the top insets of boxes that start the page or the margins
         // kept there after a forced break, where a break before the table would be a last resort as well
@@ -261,7 +282,12 @@ internal static class TablePage
         }
 
         var placed = outcome.Value.Value;
-        var fragment = TableFragments.Build(table, placed);
+        var fragment = TableFragments.Build(table, placed, incoming, space.AvailableHeight);
+        if (table.IsSeparated && !SeparatedFits(fragment, space))
+        {
+            return Result<LayoutResult, Error>.Failure(LayoutErrors.TableBreak(table.Box, space.AvailableHeight));
+        }
+
         var passes = PassesPageArea(table, fragment, space);
         var carries = passes && table.Environment.Profile.TableEndOverflow == TableEndOverflow.ContinuesOnNextPage
             && (placed.Continuation is null || (!placed.Continuation.RowIsSplit && !repeatsHeader));
@@ -270,11 +296,60 @@ internal static class TablePage
             : placed.Continuation;
         return LayoutResult.Place(
             passes ? WithinPageArea(fragment, space) : fragment,
-            continuation is null ? null : continuation with { BodyShown = ShowsBody(table, placed.Content), RepeatsHeader = repeatsHeader },
+            continuation is null ? null : continuation with { BodyShown = ShowsBody(table, placed.Content), CutBelowHeader = placed.CutBelowHeader, RepeatsHeader = repeatsHeader },
             placed.Appeal,
             placed.BestBreak,
             placed.KeepsItsBreak,
             placed.Appeal);
+    }
+
+    /// <summary>
+    /// Whether a page's fragment of a table with separated borders stays in the room it has on its page. Where it would
+    /// pass the page end (a row that starts its page area and does not fit with the spacing, padding and border below it,
+    /// <see cref="PassesOnlyByItsLineBelow"/>), it is refused (<see cref="LayoutErrorCodes.TableBreak"/>, at the table's
+    /// source line): what Chromium prints there is not measured for separated borders.
+    /// </summary>
+    private static bool SeparatedFits(BoxFragment fragment, ConstraintSpace space) => Fitting.Fits(fragment.Size.Height, space.AvailableHeight);
+
+    /// <summary>
+    /// Whether a page of a table with separated borders breaks where a measured case says how Chromium prints it. Drawn:
+    /// a break between two rows that no cell spans (cases <c>ts-break-rows</c>, <c>ts-break-header</c>, <c>ts-break-end</c>)
+    /// and a break inside a row whose cells are all aligned at the top (<c>ts-break-cut</c>, <c>ts-break-move</c>), the
+    /// table and the cut cells sliced (<see cref="TableFragments"/>). Refused (<see cref="LayoutErrorCodes.TableBreak"/>):
+    /// a cell over several rows across the break (case <c>ts-break-span</c>: Chromium starts the next row one spacing below
+    /// the page's top while the spanning cell's rest ends higher, a part of a cell the rows do not set; no such mechanism
+    /// here); content taller than the page sliced in a cell, or a row cut empty below a repeated header (case
+    /// <c>ts-break-image</c>: Chromium moves the image's row to the next page with its cells empty, slices the image on the
+    /// pages after it and draws the table's last fragment twice); a cut row with a cell aligned at the middle or bottom
+    /// under <see cref="CutRowAlignment.RestAlignedInItsPart"/> (under <see cref="CutRowAlignment.TopOnEveryPage"/> such a
+    /// row is drawn, its cells at the top of their part on every page, as in the collapsing model: cases
+    /// <c>ts-break-cut-middle</c>, <c>ts-break-cut-bottom</c>); a table of
+    /// <see cref="BoxDecorationBreak.Clone"/> (not measured for separated borders).
+    /// </summary>
+    private static bool SeparatedBreakIsDrawn(TableGeometry table, TracksBreakToken? incoming, Outcome outcome)
+    {
+        var grid = table.Grid;
+        var breaks = outcome.Continuation is { } next ? [incoming, next] : new[] { incoming };
+        foreach (var token in breaks)
+        {
+            if (token is null)
+            {
+                continue;
+            }
+
+            if (IsCloned(table) || token.Cells.Any(cell => grid.Cells[cell.Cell].RowSpan > 1))
+            {
+                return false;
+            }
+
+            if (token.RowIsSplit && table.Environment.Profile.CutRowAlignment != CutRowAlignment.TopOnEveryPage
+                && token.Cells.Any(cell => grid.Cells[cell.Cell].Box.Style.VerticalAlign != VerticalAlign.Top))
+            {
+                return false;
+            }
+        }
+
+        return !outcome.CutBelowHeader && !StartsSlice(outcome) && !ContinuesSlice(Maybe.From(outcome));
     }
 
     /// <summary>
@@ -320,7 +395,7 @@ internal static class TablePage
     /// </summary>
     private static Result<LayoutResult, Error> BelowPassed(TableGeometry table, ConstraintSpace space, TracksBreakToken passed)
     {
-        var rest = passed with { Passed = 0, PaintsPassed = false, PassedLines = [] };
+        var rest = passed with { Passed = 0, PaintsPassed = false, PassedLines = [], FollowsPassed = passed.PaintsPassed };
         if (!Fitting.Fits(passed.Passed, space.AvailableHeight))
         {
             return !space.IsAtPageStart ? LayoutResult.NothingFits(table.Box, space)
@@ -378,7 +453,7 @@ internal static class TablePage
     /// <c>fr-continued-pad-past-taller-than-page</c> and <c>-next-row</c>: 220 pt of padding, 190.75 pt past the page end,
     /// a page area of 150 pt: one whole page and 40.75 pt on the next). Without a row after the table Chromium starts what
     /// follows 0.75 pt below that page's top, over the padding; the engine starts it below the padding, as where what
-    /// passed fits one page (an open difference of the first case). The work is bounded: every page takes the page
+    /// passed fits one page (a documented limit, listed for the first case). The work is bounded: every page takes the page
     /// area, more than zero (<see cref="TakesPageArea"/>), of a finite height, so the rest ends after at most that height
     /// divided by the page area pages.
     /// </summary>
@@ -395,9 +470,13 @@ internal static class TablePage
     }
 
     /// <summary>Whether a page's body cells draw anything besides slices of content taller than the page
-    /// (<see cref="TracksBreakToken.BodyShown"/>).</summary>
+    /// (<see cref="TracksBreakToken.BodyShown"/>). A cell's own background is not counted: it fills every part of the
+    /// cell on every page, whatever the part holds, as for a cut inside a row (<see cref="TableBreaks"/>, CutShows); so
+    /// a page with only the rest of an image in a cell with a background draws no header rows, as Chromium prints it
+    /// (case <c>a4-header-image-228-background</c>).</summary>
     private static bool ShowsBody(TableGeometry table, Content content) =>
-        content.Cells.Any(cell => table.Grid.Cells[cell.Cell].Row >= table.Grid.HeaderRowCount && DrawnContent.DrawsOutsideSlices(cell.Fragment));
+        content.Cells.Any(cell => table.Grid.Cells[cell.Cell].Row >= table.Grid.HeaderRowCount
+            && cell.Fragment.Children.Any(child => DrawnContent.DrawsOutsideSlices(child.Fragment)));
 
     /// <summary>Whether an outcome starts slicing content taller than the page area: some cell holds a first slice.</summary>
     private static bool StartsSlice(Outcome outcome) => outcome.Content.Cells.Any(cell => HoldsSlice(cell.Fragment, continuation: false));
@@ -501,7 +580,10 @@ internal static class TablePage
         // row cut inside itself starts again under the whole line above it, which is resolved as on the page it started
         // on, with the row's own cells and their top borders (see remarks). With clone the line also closes a spanning
         // cell that continues over the break (see remarks). One rule for the line above the page's first body row: the
-        // same context whether a repeated header comes before it or not.
+        // same context whether a repeated header comes before it or not. With separated borders the first row of the
+        // table's first page lies below the table's border, padding and one spacing (TopInset), and the first row of a
+        // later page, or its repeated header, at the fragment's top: the table is sliced there (cases ts-break-rows,
+        // ts-break-header, ts-break-cut).
         var reopensCutRow = !isFirst && resume.RowIsSplit && IsCloned(table);
         if (!isFirst && IsCloned(table))
         {
@@ -510,8 +592,8 @@ internal static class TablePage
 
         var continuesAfterBreak = !isFirst && !includeHeader && (!resume.RowIsSplit || reopensCutRow);
         var firstLine = continuesAfterBreak
-            ? ContinuationLine(table, firstRow.Value, resumeContext)
-            : new LineAt(null, firstRow, topContext, table.HorizontalWidth(null, firstRow, topContext) / 2);
+            ? ContinuationLine(table, firstRow.Value, resumeContext, resume.FollowsPassed)
+            : new LineAt(null, firstRow, topContext, table.IsSeparated ? (isFirst ? table.TopInset : 0) : table.HorizontalWidth(null, firstRow, topContext) / 2);
         var content = Empty(firstLine.Y) with { Lines = [firstLine] };
         if (includeHeader)
         {
@@ -527,7 +609,7 @@ internal static class TablePage
                 return Result<Maybe<Outcome>, Error>.Success(Maybe.From(Complete(table, content)));
             }
 
-            content = content with { Lines = content.Lines.Add(new LineAt(grid.HeaderRowCount - 1, nextBody, resumeContext, content.Bottom)) };
+            content = content with { Lines = content.Lines.Add(new LineAt(grid.HeaderRowCount - 1, nextBody, resumeContext, content.Bottom + table.RowGap)) };
         }
 
         var body = PlaceBody(table, content, resume, height, breakAt);
@@ -542,24 +624,34 @@ internal static class TablePage
             return body;
         }
 
-        return CutsBelowHeader(table, resume) && body.Value.HasValue && !ShowsBody(table, body.Value.Value.Content)
-            ? Result<Maybe<Outcome>, Error>.Success(Maybe.From(body.Value.Value with { Appeal = BreakAppeal.ViolatesAvoid }))
-            : Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(
-                content with { Lines = content.Lines.RemoveAt(content.Lines.Count - 1) },
-                BottomLine(table, grid.HeaderRowCount - 1, nextBody, content.Bottom),
-                resume,
-                BreakAppeal.ViolatesAvoid)));
+        // The cut row's cells lie below the header as below start insets, so content nested in them takes its own
+        // last-resort cut on this page (see remarks).
+        if (CutsBelowHeader(table, resume) && body.Value.HasValue)
+        {
+            var deeper = PlaceBody(table with { CutsBelowHeaderRows = true }, content, resume, height, breakAt);
+            return deeper.OnSuccessMap(cut => Maybe.From((cut.HasValue ? cut.Value : body.Value.Value) with { Appeal = BreakAppeal.ViolatesAvoid, CutBelowHeader = true }));
+        }
+
+        return Result<Maybe<Outcome>, Error>.Success(Maybe.From(new Outcome(
+            content with { Lines = content.Lines.RemoveAt(content.Lines.Count - 1) },
+            BottomLine(table, grid.HeaderRowCount - 1, nextBody, content.Bottom),
+            resume,
+            BreakAppeal.ViolatesAvoid)));
     }
 
     /// <summary>
     /// Whether a page that would end right below the header rows ends with its first body row cut below them instead,
     /// its cells empty down to the page end and their content on the next page (see remarks): only below header rows that
-    /// repeat (<see cref="TracksBreakToken.RepeatsHeader"/>), under <see cref="EmptyRowParts.Allow"/>, and where no cell
-    /// of the cut row draws anything on the page (the caller checks that), as Chromium
+    /// repeat (<see cref="TracksBreakToken.RepeatsHeader"/>) and under <see cref="EmptyRowParts.Allow"/>, as Chromium
     /// prints it (<c>tools/reference/chromium</c>, cases <c>a4-header-image-228</c>, <c>a4-header2-image-228</c>,
     /// <c>a4-header-tall-line</c>, <c>a4-header-row-image-row</c>: the cells' side lines from the header to the page end
     /// and no line below them; case <c>a4-header-unrepeated-image-228</c>: a header that does not repeat ends its page
-    /// alone).
+    /// alone). Also where another cell of the row draws something there: text that fits the page or goes on over two or
+    /// three pages, an empty cell with a background, the image's own cell with a background, the row as the second body
+    /// row (<c>a4-header-image-228-beside-fit</c>, <c>-beside-two-pages</c>, <c>a4-header-image-beside-lines</c>,
+    /// <c>a4-header-image-228-beside-line</c>, <c>-background-beside</c>, <c>-background</c>,
+    /// <c>a4-header-row-image-228-beside-line</c>: the image on the next page, below the header, beside the rest of the
+    /// text).
     /// </summary>
     private static bool CutsBelowHeader(TableGeometry table, TracksBreakToken resume) =>
         resume.RepeatsHeader == true && table.Environment.Profile.EmptyRowParts == EmptyRowParts.Allow;
@@ -589,8 +681,22 @@ internal static class TablePage
 
         var bare = geometry with { CellFragmentainerBlockSize = space.FragmentainerBlockSize };
         return Attempt(bare, space with { AvailableHeight = double.PositiveInfinity }, resume, isFirst: false, includeHeader: false, breakAt: null)
-            .OnSuccessMap(rest => ContinuesSlice(rest) && !ShowsBody(bare, rest.Value.Content));
+            .OnSuccessMap(rest => ContinuesSlice(rest) && !ShowsBody(bare, rest.Value.Content) && OnlySlicesGoOn(bare, rest.Value.Content));
     }
+
+    /// <summary>
+    /// Whether every body cell of the page's first row holds a later slice: no cell of that row beside the piece goes on.
+    /// A cell is as tall as its row (CSS 2.1 §17.5.3), so the cells beside a piece whose rest ends the row go on down to
+    /// that rest's end, empty, and Chromium repeats the header rows above them (cases
+    /// <c>a4-header-image-228-beside-fit</c>, <c>a4-header-image-228-beside-line</c>,
+    /// <c>a4-header-image-228-background-beside</c>, <c>a4-header-row-image-228-beside-line</c>: the last page shows the
+    /// header; <c>a4-header-image-228</c>, one column: it does not). A cell that spans into the row from an earlier one
+    /// does not count (<c>a4-header-empty-rowspan-line-image</c>: no header on the page of the rest).
+    /// </summary>
+    private static bool OnlySlicesGoOn(TableGeometry table, Content content) =>
+        content.Cells.All(cell => table.Grid.Cells[cell.Cell].Row < table.Grid.HeaderRowCount
+            || table.Grid.Cells[cell.Cell].Row < cell.TopRow
+            || HoldsSlice(cell.Fragment, continuation: true));
 
     /// <summary>The header rows, whole; None when they do not fit with the line below them.</summary>
     private static Result<Maybe<Content>, Error> PlaceHeader(
@@ -650,7 +756,7 @@ internal static class TablePage
             row = unit.LastRow + 1;
             if (row < grid.Rows.Length)
             {
-                content = content with { Lines = content.Lines.Add(new LineAt(row - 1, row, CollapsedBorders.LineContext.Interior, content.Bottom)) };
+                content = content with { Lines = content.Lines.Add(new LineAt(row - 1, row, CollapsedBorders.LineContext.Interior, content.Bottom + table.RowGap)) };
             }
         }
 
@@ -698,17 +804,18 @@ internal static class TablePage
     /// <summary>
     /// Under <see cref="TableEndOverflow.ContinuesOnNextPage"/>, as Chromium prints it: in a table that continues from the
     /// page before, a row that starts its page area and is a unit of its own (a row that continues from the page before,
-    /// or one that moved to this page whole), each of whose cells has content on the page that fits and a bottom padding
-    /// and border that do not, is placed whole: the padding and the line below pass the page end, by more than a line
+    /// or one that moved to this page whole), each of whose cells that pass the page end has content on the page that fits
+    /// and a bottom padding and border that do not, beside cells that end above the page end, is placed whole: the padding and the line below pass the page end, by more than a line
     /// where the padding is taller, and continue on the next page (<see cref="Passed"/>). Chromium keeps the lines on the
     /// page and does not move the last of them so that the padding fits (cases <c>fr-continued-pad-past-33</c>,
     /// <c>-45</c>, <c>-60</c>: 3, 15 and 30 pt of padding past the page end; <c>fr-continued-pad-past-33-next-row</c>,
     /// with a row after it; <c>fr-row-later-page-padding-overflows</c>, a row that moved to the page whole;
     /// <c>a4-continued-cell-pad-bottom-30</c>, a nested table as the content). Where a cell's content does not fit, the
-    /// row is cut as before, and its last lines go to the next page with the padding. Also as before: a row with a cell
-    /// that ends above the page end, where Chromium gives the next page that cell's whole bottom padding (case
-    /// <c>fr-row-later-page-padding-overflows-two-cells</c>: 13.5 pt on page 3, where the cell that passes leaves 1.5), and
-    /// a cell whose rest is only padding, without content (not measured).
+    /// row is cut as before, and its last lines go to the next page with the padding. The cells that end above the page
+    /// end give the next page nothing, where Chromium gives it the largest of their bottom paddings again (a documented
+    /// limit; cases <c>fr-row-later-page-padding-overflows-two-cells</c>, <c>-two-cells-pad-6</c>, <c>-three-cells</c>:
+    /// the line below 13.125, 7.125 and 19.125 pt below the next page's top as Chromium prints it, beside 12, 6, and 6
+    /// and 18 pt of padding). Also as before: a cell whose rest is only padding, without content (not measured).
     /// Under <see cref="TableEndOverflow.EndsOnPage"/> nothing changes.
     /// </summary>
     private static bool PassesByItsBottomPadding(TableGeometry table, TableSegments.Segment segment, int row, double height)
@@ -723,8 +830,8 @@ internal static class TablePage
             .Select(cell => (Top: segment.RowTop(cell.StartRow), Bottom: segment.RowTop(cell.StartRow) + segment.Natural[cell.Cell].Size.Height,
                 Inset: SlicedBox.BottomInset(TableSegments.CellLayoutBox(table, segment, cell).Style)))
             .ToList();
-        return cells.Count > 0 && cells.All(cell =>
-            !Fitting.Fits(cell.Bottom, height) && cell.Bottom - cell.Inset > cell.Top + Fitting.TolerancePoints && Fitting.Fits(cell.Bottom - cell.Inset, height));
+        return cells.Any(cell => !Fitting.Fits(cell.Bottom, height)) && cells.All(cell => Fitting.Fits(cell.Bottom, height)
+            || (cell.Bottom - cell.Inset > cell.Top + Fitting.TolerancePoints && Fitting.Fits(cell.Bottom - cell.Inset, height)));
     }
 
     /// <summary>Whether the table's fragment passes the page area where a unit placed whole lets its line below pass the
@@ -779,8 +886,13 @@ internal static class TablePage
     /// continues over the break (with slice), the page draws nothing of the lower half, in any column, and keeps its
     /// room: Chromium prints no line at the top of that page, while the first row's content starts below the half
     /// (case <c>b4-row-span-6pt</c>: page 2 has no rectangle at 12 pt, and row r8's text starts at 15 pt = 12 + 3, half of the
-    /// 6 pt line, as in <c>a2-row-break-line-6pt</c>; case <c>b4-row-span</c> with a 0.75 pt line likewise).</summary>
-    private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context)
+    /// 6 pt line, as in <c>a2-row-break-line-6pt</c>; case <c>b4-row-span</c> with a 0.75 pt line likewise). Below part of a
+    /// cell that passed the page end (<paramref name="followsPassed"/>, <see cref="TracksBreakToken.FollowsPassed"/>) the
+    /// page draws nothing of the lower half either and keeps its room: the upper half that passed is the line Chromium
+    /// prints there (cases <c>fr-continued-pad-past-33-next-row-line-6pt</c>: the 3 pt upper half at 15 to 18 pt and the
+    /// next row's text from 21 pt; <c>-line-2-25pt</c>: 15 to 16.5 pt at whole pixels; <c>-33-next-row</c> and
+    /// <c>-taller-than-page-next-row</c> with a 0.75 pt line, the half drawn one pixel thick).</summary>
+    private static LineAt ContinuationLine(TableGeometry table, int firstRow, CollapsedBorders.LineContext context, bool followsPassed = false)
     {
         if (firstRow == 0)
         {
@@ -790,15 +902,17 @@ internal static class TablePage
 
         return IsCloned(table)
             ? new LineAt(firstRow - 1, firstRow, context, table.HorizontalWidth(firstRow - 1, firstRow, context) / 2)
-            : new LineAt(firstRow - 1, firstRow, context, 0, context.CutCells.Count > 0 ? LinePart.Unpainted : LinePart.LowerHalf);
+            : new LineAt(firstRow - 1, firstRow, context, 0, context.CutCells.Count > 0 || followsPassed ? LinePart.Unpainted : LinePart.LowerHalf);
     }
 
     /// <summary>What a row needs below its bottom edge on this page, if the page ends there: for the table's last row,
-    /// the half of the table's bottom border inside the table; for any other row, with clone the half of the line below
+    /// the half of the table's bottom border inside the table (in the separated borders model the spacing, padding and
+    /// border below it, <see cref="TableGeometry.BottomInset"/>); for any other row, with clone the half of the line below
     /// it that lies under its centre (the line that closes the table at the break, see remarks), and with slice nothing,
     /// because the line is split at its centre.</summary>
     internal static double InsideBelow(TableGeometry table, int row) =>
-        row == table.Grid.Rows.Length - 1 || IsCloned(table) ? table.HorizontalWidth(row, Next(table.Grid, row), PageEndContext(table, row)) / 2
+        row == table.Grid.Rows.Length - 1 && table.IsSeparated ? table.BottomInset
+        : row == table.Grid.Rows.Length - 1 || IsCloned(table) ? table.HorizontalWidth(row, Next(table.Grid, row), PageEndContext(table, row)) / 2
         : 0;
 
     internal static Content Empty(double top) => new([], [], [], top, false);

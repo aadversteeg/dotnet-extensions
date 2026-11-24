@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A height on the table, more than its rows: a, height 150pt, three rows, collapsed; b, the same, separated; c, the second row of height 40pt; d, a header row and two body rows; e, rows aligned middle and bottom; f, height 150pt over rows of one, two and three lines, separated. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }</style></head><body>
+<table id="a" style="height: 150pt">
+<tr><td id="one-a">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+<tr><td>five</td><td>six words that wrap here and again</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s" style="height: 150pt">
+<tr><td id="one-b">one</td><td>two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+<tr><td>five</td><td>six words that wrap here and again</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" style="height: 150pt">
+<tr><td id="one-c">one</td><td>two</td></tr>
+<tr style="height: 40pt"><td>three</td><td>four</td></tr>
+<tr><td>five</td><td>six words that wrap here and again</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" style="height: 120pt">
+<thead><tr><th id="head-d">head</th><th>two</th></tr>
+</thead>
+<tr><td>three</td><td>four</td></tr>
+<tr><td>five</td><td>six words that wrap here and again</td></tr>
+</table>
+<p>next 4</p>
+<table id="e" style="height: 90pt">
+<tr><td id="one-e" style="vertical-align: middle">one</td><td style="vertical-align: bottom">two</td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 5</p>
+<table id="f" class="s" style="height: 150pt">
+<tr><td id="one-f">one</td><td>two</td></tr>
+<tr><td>three<br>lines</td><td>four</td></tr>
+<tr><td>five<br>more<br>lines</td><td>six</td></tr>
+</table>
+<p>after</p>
+</body></html>

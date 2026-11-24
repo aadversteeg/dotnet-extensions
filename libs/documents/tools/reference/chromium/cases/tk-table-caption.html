@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A background on a table with collapsed borders and a caption: a, the caption at the top; b, the caption at the bottom, with a table border of 3pt. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; } .k { background-color: #ffff00; } .g { background-color: #00ff00; } .c { background-color: #00ffff; } .w { border: 3pt solid #ff0000; }</style></head><body>
+<table id="a" class="k"><caption id="caption-a">caption above</caption><tr><td id="one-a">one</td><td>two</td></tr></table>
+<p>next 1</p>
+<table id="b" class="k w" style="caption-side: bottom"><caption id="caption-b">caption below</caption><tr><td id="one-b">one</td><td>two</td></tr><tr><td>three</td><td>four</td></tr></table>
+<p>after</p>
+</body></html>

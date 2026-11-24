@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A row background over an empty cell: a, collapsed; b, separated; c, separated with empty-cells: hide; d, a column background over an empty cell, separated with empty-cells: hide. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; }
+.t { background: #eeeeee; } .g { background: #ccffcc; } .c { background: #ccccff; } .b { background: #ffffcc; } .r { background: #ffcccc; } .d { background: #ccffff; }</style></head><body>
+<table id="a">
+<tr class="r"><td id="one-a">one</td><td></td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s">
+<tr class="r"><td id="one-b">one</td><td></td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="s" style="empty-cells: hide">
+<tr class="r"><td id="one-c">one</td><td></td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s" style="empty-cells: hide">
+<col><col class="c"><tr><td id="one-d">one</td><td></td></tr>
+<tr><td>three</td><td>four</td></tr>
+</table>
+<p>after</p>
+</body></html>

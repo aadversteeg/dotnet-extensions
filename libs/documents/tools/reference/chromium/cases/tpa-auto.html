@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Percent widths in a table of width auto: a, a cell of 30%; b, separated, a cell of 30%; c, a col of 30% beside a cell with a long text; d, separated, a col of 20% and a col of 30% beside a column without a width; e, a cell of 30% in a later row. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } .f { table-layout: fixed; } td { border-color: #0000ff; }</style></head><body>
+<table id="a">
+<tr><td id="one-a" style="width: 30%">one</td><td>text with more words</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s">
+<tr><td id="one-b" style="width: 30%">one</td><td>text with more words</td></tr>
+</table>
+<p>next 2</p>
+<table id="c">
+<colgroup><col style="width: 30%"><col></colgroup>
+<tr><td id="one-c">one</td><td>text with more words, so many that the line has to wrap at the end of the page area</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s">
+<colgroup><col style="width: 20%"><col style="width: 30%"><col></colgroup>
+<tr><td id="one-d">one</td><td>two</td><td>text with more words</td></tr>
+</table>
+<p>next 4</p>
+<table id="e">
+<tr><td id="one-e">one</td><td>text with more words</td></tr>
+<tr><td id="two-e" style="width: 30%">two</td><td>text with more words</td></tr>
+</table>
+<p>after</p>
+</body></html>
