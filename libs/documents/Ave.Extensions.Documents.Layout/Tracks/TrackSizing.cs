@@ -107,7 +107,7 @@ internal static class TrackSizing
     /// column is a fill column.</param>
     /// <returns>The widths, or the width needed.</returns>
     public static (ImmutableArray<double> Widths, double? Needed) Resolve(
-        ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges, double available, BoxWidth width = BoxWidth.Auto)
+        ValueList<TrackSize> columns, ImmutableArray<IntrinsicWidths> ranges, double available, BoxWidth? width = null)
     {
         var widths = ranges.Select(range => range.MinContent).ToArray();
         var needed = widths.Sum();

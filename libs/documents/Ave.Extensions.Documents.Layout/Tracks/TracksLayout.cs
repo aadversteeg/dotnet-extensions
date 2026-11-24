@@ -112,9 +112,14 @@ public static class TracksLayout
         TableGrid.Build(box).OnSuccessBind(grid =>
         {
             var lines = VerticalLineWidths(box, grid);
-            return ColumnRanges(environment, box, grid).OnSuccessMap(ranges =>
-                new IntrinsicWidths(ranges.Sum(range => range.MinContent), ranges.Sum(range => range.MaxContent))
-                    .Plus(Outer(box, lines, ranges.Length)));
+            return ColumnRanges(environment, box, grid).OnSuccessMap(sized =>
+            {
+                var widths = new IntrinsicWidths(sized.Ranges.Sum(range => range.MinContent), sized.Ranges.Sum(range => range.MaxContent))
+                    .Plus(Outer(box, lines, sized.Ranges.Length));
+                return box.Style.Width is BoxWidth.Fixed { Width.Points: var given }
+                    ? new IntrinsicWidths(Math.Max(given, widths.MinContent), Math.Max(given, widths.MinContent))
+                    : widths;
+            });
         });
 
     /// <summary>
@@ -195,22 +200,82 @@ public static class TracksLayout
         [.. Enumerable.Range(0, grid.ColumnCount + 1).Select(boundary =>
             Enumerable.Range(0, grid.Rows.Length).Select(row => CollapsedBorders.Vertical(box, grid, row, boundary).Width.Points).DefaultIfEmpty(0).Max())];
 
-    /// <summary>The columns' ranges, from every cell measured with half of its own vertical lines beside it
-    /// (<see cref="CollapsedBorders.OwnVerticalWidth"/>), as it is laid out; in the separated borders model with its own
-    /// border, and a cell over several columns gives them its widths less the spacing between them, which it covers
-    /// (case <c>ts-span</c>: a cell 139.969 pt wide over two columns of 66.328 and 67.641 pt and the 6 pt between them).</summary>
-    private static Result<ImmutableArray<IntrinsicWidths>, Error> ColumnRanges(LayoutEnvironment environment, Box box, TableGrid grid)
+    /// <summary>The columns' kinds with the cells' widths (<see cref="CellColumns"/>) and their ranges, from every cell
+    /// measured with half of its own vertical lines beside it (<see cref="CollapsedBorders.OwnVerticalWidth"/>), as it is
+    /// laid out; in the separated borders model with its own border, and a cell over several columns gives them its widths
+    /// less the spacing between them, which it covers (case <c>ts-span</c>: a cell 139.969 pt wide over two columns of
+    /// 66.328 and 67.641 pt and the 6 pt between them). A cell over several columns with a width in the automatic layout
+    /// asks that width of them as its maximum, never less than its min-content (cases <c>twd-cell-span</c> a and c: 158.742
+    /// and 159.492 pt over two columns of "one" and "two", shared as a cell's maximum is).</summary>
+    private static Result<(ValueList<TrackSize> Columns, ImmutableArray<IntrinsicWidths> Ranges), Error> ColumnRanges(LayoutEnvironment environment, Box box, TableGrid grid)
     {
         var gap = IsSeparated(box) ? box.Style.BorderSpacing.Horizontal.Points : 0;
         return grid.Cells
-            .TraverseAll(cell => environment
-                .Measure(IsSeparated(box) ? SeparatedCellBox(cell) : CellBox(cell, new Edges(
+            .TraverseAll(cell =>
+            {
+                var laid = IsSeparated(box) ? SeparatedCellBox(cell) : CellBox(cell, new Edges(
                     Length.Zero,
                     (CollapsedBorders.OwnVerticalWidth(box, grid, cell, cell.Column + cell.ColumnSpan) / 2).Pt(),
                     Length.Zero,
-                    (CollapsedBorders.OwnVerticalWidth(box, grid, cell, cell.Column) / 2).Pt())))
-                .OnSuccessMap(widths => new TrackSizing.Contribution(cell.Column, cell.ColumnSpan, cell.ColumnSpan > 1 && gap > 0 ? Covering(widths, (cell.ColumnSpan - 1) * gap) : widths)))
-            .OnSuccessMap(contributions => TrackSizing.ColumnRanges(box.Style.Columns, contributions));
+                    (CollapsedBorders.OwnVerticalWidth(box, grid, cell, cell.Column) / 2).Pt()));
+                return environment.Measure(laid).OnSuccessMap(widths => (Cell: cell, Given: GivenWidth(laid), Widths: widths));
+            })
+            .OnSuccessMap(measured =>
+            {
+                var columns = CellColumns(box.Style.Columns, measured.Select(item => (item.Cell, item.Given)));
+                var contributions = measured.Select(item =>
+                {
+                    var widths = item.Cell.ColumnSpan > 1 && item.Given is { } given && Enumerable.Range(item.Cell.Column, item.Cell.ColumnSpan).All(index => columns[index] is TrackSize.Auto or TrackSize.Preferred)
+                        ? new IntrinsicWidths(item.Widths.MinContent, Math.Max(item.Widths.MinContent, given))
+                        : item.Widths;
+                    return new TrackSizing.Contribution(item.Cell.Column, item.Cell.ColumnSpan, item.Cell.ColumnSpan > 1 && gap > 0 ? Covering(widths, (item.Cell.ColumnSpan - 1) * gap) : widths);
+                });
+                return (columns, TrackSizing.ColumnRanges(columns, contributions));
+            });
+    }
+
+    /// <summary>The border-box width a cell asks for with its <see cref="BoxWidth.Fixed"/> width, which is of its content
+    /// box (CSS 2.1 §17.5.2; cases <c>twd-cell-*</c>: a cell of <c>width: 80pt</c> with padding 4 pt each side is 88.734 pt
+    /// wide with collapsed lines of 0.75 pt, 89.484 pt with its own border of 0.75 pt), as laid out: its padding and
+    /// border, in the collapsing model half of its lines in its padding. Null without a width.</summary>
+    private static double? GivenWidth(Box laid) =>
+        laid.Style.Width is BoxWidth.Fixed { Width.Points: var width }
+            ? width + laid.Style.Padding.Left.Points + laid.Style.Padding.Right.Points + laid.Style.Border.Widths.Left.Points + laid.Style.Border.Widths.Right.Points
+            : null;
+
+    /// <summary>
+    /// The column kinds with the widths of the cells in one column (CSS 2.1 §17.5.2), as Chromium 159 prints them. In the
+    /// automatic layout every row counts: an auto column with such cells is a <see cref="TrackSize.Preferred"/> column of
+    /// the widest, and a preferred column (a column element's length, its border box) takes the larger of its width and
+    /// theirs (cases <c>twd-cell-row</c> a, b: 80 pt in the first or the second row; <c>twd-cell-two</c> a: 60 then
+    /// 90 pt give 90; <c>twd-cell-col</c> a: col 60 pt and cell 90 pt give 90, c: col 90 pt and cell 60 pt give 90). In
+    /// the fixed layout only the first row counts (CSS 2.1 §17.5.2.1: "a cell in the first row with a value other than
+    /// 'auto' for the 'width' property determines the width for that column"): a fill column whose first-row cell has a
+    /// width is a <see cref="TrackSize.Fixed"/> column of it, a later row's width is not read, and a column element's
+    /// length wins over a cell's (<c>twd-cell-row</c> c, d; <c>twd-cell-two</c> b, c: the first row's 60 or 90 pt;
+    /// <c>twd-cell-col</c> b: col 60 pt beside a cell of 90 pt gives 60). Cells over several columns do not set a
+    /// column's kind.
+    /// </summary>
+    internal static ValueList<TrackSize> CellColumns(ValueList<TrackSize> columns, IEnumerable<(TableGrid.Cell Cell, double? Given)> cells)
+    {
+        var kinds = columns.ToArray();
+        foreach (var (cell, given) in cells)
+        {
+            if (cell.ColumnSpan != 1 || given is not { } width)
+            {
+                continue;
+            }
+
+            kinds[cell.Column] = kinds[cell.Column] switch
+            {
+                TrackSize.Auto => new TrackSize.Preferred(width.Pt()),
+                TrackSize.Preferred preferred => new TrackSize.Preferred(Math.Max(preferred.Width.Points, width).Pt()),
+                TrackSize.Fill when cell.Row == 0 => new TrackSize.Fixed(width.Pt()),
+                var kept => kept,
+            };
+        }
+
+        return [.. kinds];
     }
 
     /// <summary>The widths a cell gives the columns it spans, less the <paramref name="gaps"/> between them, never below 0.</summary>
@@ -230,9 +295,25 @@ public static class TracksLayout
         var lines = VerticalLineWidths(box, grid);
         var outer = Outer(box, lines, grid.ColumnCount);
         var (left, right, gap) = Insets(box, lines);
-        return ColumnRanges(environment, box, grid).OnSuccessBind(ranges =>
+        var given = box.Style.Width is BoxWidth.Fixed { Width.Points: var length } ? length : (double?)null;
+        if (given is { } tooWide && !Fitting.Fits(tooWide, availableWidth))
         {
-            var (widths, needed) = TrackSizing.Resolve(box.Style.Columns, ranges, availableWidth - outer, box.Style.Width);
+            return Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, tooWide, availableWidth));
+        }
+
+        return ColumnRanges(environment, box, grid).OnSuccessBind(sized =>
+        {
+            var (columns, ranges) = sized;
+            var mode = given is null ? box.Style.Width : BoxWidth.Stretch;
+            var (widths, needed) = TrackSizing.Resolve(columns, ranges, (given ?? availableWidth) - outer, mode);
+            if (needed is { } least && given is not null && Fitting.Fits(least + outer, availableWidth))
+            {
+                // A table of a given width is never narrower than its columns' minimum (cases twd-table-narrow a, c: 40 pt
+                // gives 63.773 and 79.523 pt, the content's min-content; twd-sum c: 150 pt over two fixed columns of
+                // 108.738 pt gives 218.227 pt).
+                (widths, needed) = TrackSizing.Resolve(columns, ranges, least, mode);
+            }
+
             if (needed is { } width)
             {
                 return Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, width + outer, availableWidth));

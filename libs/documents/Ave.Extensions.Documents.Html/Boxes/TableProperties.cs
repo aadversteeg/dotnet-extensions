@@ -28,17 +28,17 @@ internal static class TableProperties
     };
 
     /// <summary>
-    /// The width of a table part: the table's <c>auto</c> or <c>100%</c>; a column's a length or a positive percentage
-    /// (the table reads it for its layout, CSS 2.1 §17.5.2, and refuses a percentage where its layout does not draw it);
-    /// a cell's and a column group's are not drawn; no effect on a row or a row group (CSS 2.1 §17.5.2 reads the widths
+    /// The width of a table part: the table's <c>auto</c>, <c>100%</c> or a length; a column's a length or a positive
+    /// percentage (the table reads it for its layout, CSS 2.1 §17.5.2, and refuses a percentage where its layout does not
+    /// draw it); a cell's a length (the table refuses it where its layout does not draw it); a column group's is not drawn; no effect on a row or a row group (CSS 2.1 §17.5.2 reads the widths
     /// of columns and cells only).
     /// </summary>
     public static string? Width(CssValue value, ElementFacts facts) => Part(facts) switch
     {
         _ when value is CssKeyword { Name: "auto" } => null,
-        TablePart.Table => value is CssPercentage { Value: 100 } ? null : "a table is drawn only at width: auto or 100% in this version",
+        TablePart.Table => value is CssLength or CssPercentage { Value: 100 } ? null : "a table is drawn only at width: auto, 100% or a length in this version",
         TablePart.Column => value is CssLength or CssPercentage { Value: > 0 } ? null : "a column width other than a length or a positive percentage is not drawn in this version",
-        TablePart.Cell => "a width on a cell is not drawn in this version",
+        TablePart.Cell => value is CssLength ? null : "a width on a cell other than a length is not drawn in this version",
         TablePart.ColumnGroup => "a width on a column group is not drawn in this version",
         _ => null,
     };

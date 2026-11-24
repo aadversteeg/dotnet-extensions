@@ -92,11 +92,16 @@ names nothing.
 computes the visible axis to auto then (Known limits); set both, as `overflow: hidden` does. `clip` does not scroll,
 so `clip` beside `visible` is accepted and kept, as in Chromium.
 
-`width` on a table part: a table is drawn at `auto` or `100%`; a `col` takes a length, or a percentage in the fixed
-layout (`table-layout: fixed` on a table of width `100%`) when every other column is a percentage or has no width
-and, beside a column without a width, the percentages add up to less than 100. A percentage on a `col` of the
-automatic layout, a width on a cell (`td`, `th`) and on a `colgroup` are refused. A `tfoot` is drawn after the body
-rows, once; Chromium repeats a small one on every page of a table that breaks (Known limits).
+`width` on a table part: a table is drawn at `auto`, `100%` or a length (its border box; never narrower than its
+content needs, and refused where wider than its container); a cell (`td`, `th`) takes a length, of its content box,
+which its column takes: the widest in the automatic layout, the first row's in the fixed layout, where a `col` length
+wins. A `col` takes a length, or a percentage in the fixed layout (`table-layout: fixed` on a table of width `100%`)
+when every other column is a percentage or has no width and, beside a column without a width, the percentages add up
+to less than 100. Refused: a percentage on a `col` of the automatic layout or of a table of a length, a percentage on a
+cell, a width on a cell over several columns in the fixed layout, a cell width beside percent columns, a width on a
+`colgroup`. In the fixed layout a column without a width is never narrower than its content, where Chromium lets the
+content overflow (Known limits). A `tfoot` is drawn after the body rows, once; Chromium repeats a small one on every
+page of a table that breaks (Known limits).
 
 `border-collapse`: both models are drawn. A table with separated borders (`separate`, the initial value) keeps its
 border, padding and background, each cell paints its own border, and `border-spacing` lies between the cells and

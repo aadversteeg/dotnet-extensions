@@ -57,12 +57,13 @@ internal enum TablePart
 /// caption, a header group after a row group; a table, group or row group without rows. A footer group is drawn after
 /// the other row groups, as the table's last body rows (<c>DrawOrder</c>).</para>
 /// <para>Column widths (§17.5.2), as Chromium lays them out: in the fixed table layout (<c>table-layout: fixed</c> on a
-/// table of width <c>100%</c>; at width <c>auto</c> Chromium lays the table out automatically) the lengths of the column
+/// table of width <c>100%</c> or a length; at width <c>auto</c> Chromium lays the table out automatically) the lengths of the column
 /// elements as fixed columns, and the width left shared equally over the columns without one (fill columns of weight
 /// 1). In the automatic table layout a column element's length is the column's preferred width and a column without
-/// one is sized by its content. The table's width is <c>auto</c> (as wide as its columns need) or <c>100%</c> (its
-/// container's width). Percent columns are drawn in the fixed layout (<c>PercentColumns</c>); widths on cells and
-/// column groups are refused.</para>
+/// one is sized by its content. The table's width is <c>auto</c> (as wide as its columns need), <c>100%</c> (its
+/// container's width) or a length (<see cref="BoxWidth.Fixed"/>). A cell's length goes to the cell
+/// (<see cref="BoxWidth.Fixed"/>), and layout gives it its column (<c>CellWidths</c>). Percent columns are drawn in the
+/// fixed layout of a table of width <c>100%</c> (<c>PercentColumns</c>); widths on column groups are refused.</para>
 /// <para>The parts follow CSS 2.1 §17.5: internal table elements have no margins; rows and row groups no padding; the
 /// table none in the collapsing border model (§17.6.2: "a table does not have padding"). A table of the separated borders
 /// model (<c>border-collapse: separate</c>, CSS 2.1 §17.6.1) keeps its padding and its <c>border-spacing</c>
@@ -119,6 +120,10 @@ public static partial class HtmlBoxGenerator
     {
         /// <summary>Per table: per column element, the width it gives (null for none, auto), its span and its start tag.</summary>
         private readonly Dictionary<StyledElement, List<(CssValue? Width, int Span, TextPosition Position)>> _columns = new(ReferenceEqualityComparer.Instance);
+
+        /// <summary>The start tag of every cell with a width (<see cref="BoxWidth.Fixed"/>), where a width the table does not
+        /// draw is refused (<see cref="CellWidths"/>).</summary>
+        private readonly Dictionary<NodeId, TextPosition> _cellWidths = [];
 
         /// <summary>The boxes of the footer groups, which their table draws after its other row groups.</summary>
         private readonly HashSet<NodeId> _footers = [];
@@ -307,6 +312,12 @@ public static partial class HtmlBoxGenerator
             }
 
             var align = VerticalAlignOf(element);
+            var width = Value(element, "width") is CssLength length ? new BoxWidth.Fixed(length.Value) : BoxWidth.Auto;
+            if (width is BoxWidth.Fixed)
+            {
+                _cellWidths[box.Id] = html.Position;
+            }
+
             return box with
             {
                 Role = html.LocalName == "th" ? SemanticRole.TableHeaderCell : SemanticRole.TableCell,
@@ -315,6 +326,7 @@ public static partial class HtmlBoxGenerator
                     Margin = Edges.Zero,
                     Span = new CellSpan(Span(html.Attribute("colspan"), TableSlots.MaxColumnSpan, zero: 1), rows),
                     VerticalAlign = align,
+                    Width = width,
                 },
             };
         }
@@ -421,6 +433,7 @@ public static partial class HtmlBoxGenerator
             }
 
             var sizes = Columns(element, grid);
+            groups = CellWidths(element, groups, sizes.Width != BoxWidth.Auto && Value(element, "table-layout") is CssKeyword { Name: "fixed" });
             var separated = Value(element, "border-collapse") is not CssKeyword { Name: "collapse" };
             return box with
             {
@@ -463,8 +476,13 @@ public static partial class HtmlBoxGenerator
         {
             var html = table.Element;
             var count = grid.ColumnCount;
-            var stretch = Value(table, "width") is CssPercentage { Value: 100 };
-            var width = stretch ? BoxWidth.Stretch : BoxWidth.Auto;
+            var width = Value(table, "width") switch
+            {
+                CssPercentage { Value: 100 } => BoxWidth.Stretch,
+                CssLength length => new BoxWidth.Fixed(length.Value),
+                _ => BoxWidth.Auto,
+            };
+            var stretch = width != BoxWidth.Auto;
             var given = _columns.TryGetValue(table, out var columns) ? columns : [];
             var elements = given.Sum(column => (long)column.Span);
             if (elements > count)
@@ -497,6 +515,13 @@ public static partial class HtmlBoxGenerator
             }
 
             var isFixed = stretch && Value(table, "table-layout") is CssKeyword { Name: "fixed" };
+            if (width is BoxWidth.Fixed && Array.Exists(widths, value => value is CssPercentage))
+            {
+                var first = Array.FindIndex(widths, value => value is CssPercentage);
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'width: {widths[first]}' on a column element is not drawn: a percent column is drawn only in a table of width 100% in this version.", widths[first]!.ToString()!, places[first], "width");
+                widths = [.. widths.Select(value => value is CssPercentage ? null : value)];
+            }
+
             if (PercentColumns(widths, places, isFixed) is { } shares)
             {
                 return (shares, width);
@@ -513,6 +538,41 @@ public static partial class HtmlBoxGenerator
 
             // §17.5.2.2: a column length is the column's preferred width, a column without one is sized by its content.
             return ([.. lengths.Select(length => length is null ? TrackSize.Auto.Instance : (TrackSize)new TrackSize.Preferred(length.Value))], width);
+        }
+
+        /// <summary>
+        /// The widths of the table's cells (CSS 2.1 §17.5.2: a cell's <c>width</c>, of its content box), which layout gives
+        /// their columns (<see cref="BoxWidth.Fixed"/>). Refused (<c>Value</c>, at the cell), and then left out: a width on a
+        /// cell over several columns in the fixed table layout (case <c>twd-cell-span</c>, table <c>b</c>: Chromium's
+        /// columns come out equal, which a width left out and a width shared over the columns both give, so the case shows no
+        /// rule), and a width on a cell of a table with percent columns (not measured).
+        /// </summary>
+        private List<Box> CellWidths(StyledElement table, List<Box> groups, bool isFixed)
+        {
+            var percent = _columns.TryGetValue(table, out var given) && given.Exists(column => column.Width is CssPercentage);
+            Box Checked(Box cell)
+            {
+                if (cell.Style.Width is not BoxWidth.Fixed { Width: var width })
+                {
+                    return cell;
+                }
+
+                var reason = percent ? "a width on a cell of a table with percent columns is not drawn in this version"
+                    : isFixed && cell.Style.Span.Columns > 1 ? "a width on a cell over several columns is not drawn in the fixed table layout (table-layout: fixed) in this version: give the columns their widths with col elements"
+                    : null;
+                if (reason is null)
+                {
+                    return cell;
+                }
+
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'width: {width}' on a table cell is not drawn: {reason}.", width.ToString(), _cellWidths[cell.Id], "width");
+                return cell with { Style = cell.Style with { Width = BoxWidth.Auto } };
+            }
+
+            return [.. groups.Select(group => group with
+            {
+                Children = [.. Parts(group).Select(row => (Node)(row with { Children = [.. Parts(row).Select(cell => (Node)Checked(cell))] }))],
+            })];
         }
 
         /// <summary>

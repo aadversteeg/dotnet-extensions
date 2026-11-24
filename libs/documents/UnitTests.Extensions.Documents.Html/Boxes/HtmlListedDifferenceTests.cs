@@ -130,6 +130,51 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// A table whose given width is narrower than its content in the fixed layout, the same limit of the fill columns
+    /// (above): case <c>twd-table-narrow</c>, four tables of <c>width: 40pt</c> holding "one" beside "text with more words",
+    /// one word a line. In the automatic layout (tables a and c) Chromium and the engine both widen the table to its
+    /// content's min-content, 63.773 and 79.523 pt. In the fixed layout (tables b and d) Chromium keeps the table 40 pt
+    /// wide, its two columns 19.617 and 12.492 pt, and lets "one" overflow into the second column (in d it touches "text",
+    /// which the print reads as "onetext"); the engine's fill columns hold "one" and its padding. The column widths are the
+    /// whole difference: every word is on Chromium's baseline, the words of tables a and c and the first column's where
+    /// Chromium prints them, and the second column's words of b and d one distance to the right of Chromium's.
+    /// </summary>
+    [Fact]
+    public void A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow()
+    {
+        var (engine, chromium) = (Engine("twd-table-narrow"), Chromium("twd-table-narrow"));
+        var ours = engine.Pages.Single().Words;
+        var theirs = chromium.Pages.Single().Words;
+        var starts = ours.Where(word => word.Text == "one").Select(word => word.Baseline).ToList();
+        starts.Select(ChromiumLayout.WholePixel).Should().HaveCount(4).And.Equal(theirs.Where(word => word.Text.StartsWith("one", StringComparison.Ordinal)).Select(word => word.Baseline),
+            "every table starts on Chromium's baseline, which Chromium paints at the nearest whole pixel");
+        theirs.Single(word => word.Text == "onetext").Baseline.Should().Be(ChromiumLayout.WholePixel(starts[3]), "in table d Chromium's \"one\" overflows into \"text\"");
+
+        // Each table's second column below its first line: "with", "more", "words".
+        PrintedWord[] Column(IEnumerable<PrintedWord> words, int table) =>
+            [.. words.Where(word => word.Baseline > starts[table] + 1 && word.Baseline < starts[table] + 40 && word.Text is "with" or "more" or "words")];
+        for (var table = 0; table < 4; table++)
+        {
+            var (mine, chromiums) = (Column(ours, table), Column(theirs, table));
+            mine.Select(word => word.Text).Should().Equal(chromiums.Select(word => word.Text));
+            mine.Zip(chromiums).Should().OnlyContain(pair => Math.Abs(ChromiumLayout.WholePixel(pair.First.Baseline) - pair.Second.Baseline) < HtmlCases.Bound, "on Chromium's baselines");
+            var shifts = mine.Zip(chromiums, (first, second) => first.X0 - second.X0).ToList();
+            shifts.Should().OnlyContain(shift => Math.Abs(shift - shifts[0]) < 0.01, "the column's words move by one distance");
+            if (table is 0 or 2)
+            {
+                shifts[0].Should().BeApproximately(0, HtmlCases.Bound, "the automatic layout widens the table to its content in both");
+            }
+            else
+            {
+                shifts[0].Should().BeGreaterThan(1, "the engine's first column holds \"one\" and its padding");
+            }
+        }
+
+        ours.Where(word => word.Text == "one").Zip(theirs.Where(word => word.Text.StartsWith("one", StringComparison.Ordinal)))
+            .Should().OnlyContain(pair => Math.Abs(pair.First.X0 - pair.Second.X0) < HtmlCases.Bound, "the first column starts where Chromium's does");
+    }
+
+    /// <summary>
     /// The fixed table layout at width 100% with columns without a width, the first holding a word wider than an even
     /// share of the page area: Chromium gives each column its share and lets the word overflow into the next column
     /// (CSS 2.1 §17.5.2.1: in the fixed layout the widths do not depend on the content). The engine's columns without a

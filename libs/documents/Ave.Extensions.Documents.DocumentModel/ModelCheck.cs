@@ -134,7 +134,8 @@ public static class ModelCheck
 
     /// <summary>A box's own values: margins (negative ones are not implemented), padding and border widths, orphans and
     /// widows of at least 1 (CSS Fragmentation 3 §3.3), column sizes, a table border model the model has and a border
-    /// spacing that is not negative, a heading level of 1–6, and its strut's text values.</summary>
+    /// spacing that is not negative, a given width that is not negative, a heading level of 1–6, and its strut's text
+    /// values.</summary>
     private static Error? Box(Box box)
     {
         var style = box.Style;
@@ -145,6 +146,7 @@ public static class ModelCheck
             ?? (style.Widows < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Widows, "Widows must be at least 1 line.", Number(style.Widows), "widows", box) : null)
             ?? Columns(box)
             ?? TableBorders(style, box)
+            ?? Width(style, box)
             ?? (box.Role is SemanticRole.HeadingRole { Level: < 1 or > 6 } heading
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.HeadingLevel, "A heading level must be 1–6.", Number(heading.Level), "level", box)
                 : null)
@@ -386,6 +388,13 @@ public static class ModelCheck
             ? null
             : Problem(DocumentErrorCodes.Input.Invalid.Length, $"A border spacing must be zero or more and at most {ModelLimits.MaxLength}.", spacing.ToString(), "border-spacing", box);
     }
+
+    /// <summary>A given width (<see cref="BoxWidth.Fixed"/>) of zero or more, at most <see cref="ModelLimits.MaxLength"/>
+    /// (CSS 2.1 §10.2: "Negative values for 'width' are illegal"; else Input.Invalid.Length).</summary>
+    private static Error? Width(BoxStyle style, Box box) =>
+        style.Width is BoxWidth.Fixed { Width: var width } && !(IsBounded(width) && width.Points >= 0)
+            ? Problem(DocumentErrorCodes.Input.Invalid.Length, $"A width must be zero or more and at most {ModelLimits.MaxLength}.", width.ToString(), "width", box)
+            : null;
 
     /// <summary>Four sides: finite and at most <see cref="ModelLimits.MaxLength"/> (else Input.Invalid.Length), and not
     /// negative (else <paramref name="negativeCode"/>).</summary>
