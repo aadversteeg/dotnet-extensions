@@ -63,6 +63,22 @@ public class CaseStatusTests(ITestOutputHelper output)
             .Should().Equal(statuses, "the status of each file is the committed one");
     }
 
+    /// <summary>A listed case names, in its status line, the test that pins its difference: that test is one of the
+    /// family's tests, so a name changed in the line alone fails here.</summary>
+    [Fact]
+    public void Every_listed_case_names_a_test_of_the_family()
+    {
+        var family = Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "..", "..", "..", ".."));
+        var obj = $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}";
+        var sources = Directory.GetDirectories(family, "UnitTests.*").SelectMany(project => Directory.GetFiles(project, "*.cs", SearchOption.AllDirectories))
+            .Where(file => !file.Contains(obj, StringComparison.Ordinal)).Select(File.ReadAllText).ToList();
+        var tests = HtmlCases.Names.Select(name => HtmlCases.Cases.Committed(name)?.Split(' ', 2) ?? [])
+            .Where(fields => fields is ["listed", _]).Select(fields => fields[1].Split(": ", 2)[0]).Distinct(StringComparer.Ordinal).ToList();
+
+        tests.Should().NotBeEmpty();
+        tests.Where(test => !sources.Any(source => source.Contains($" void {test}(", StringComparison.Ordinal))).Should().BeEmpty("a listed case names a test that pins its difference");
+    }
+
     [Fact]
     public void At_least_ten_cases_are_equal_to_Chromium() =>
         HtmlCases.Names.Count(name => HtmlCases.Cases.Committed(name) == "equal").Should().BeGreaterThanOrEqualTo(10);
