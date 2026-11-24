@@ -78,6 +78,14 @@ public sealed record BoxStyle
     /// of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>.</summary>
     public TableDisplay TableDisplay { get; init; }
 
+    /// <summary>The height of a part of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>, named after CSS
+    /// <c>height</c>, which is a least height there (CSS 2.1 §17.5.3: a row is as tall as the tallest of its height and
+    /// its cells'): on a row the least height of its cells' border boxes; on a cell the least height of its content box,
+    /// which the cell's padding and border make taller; on the table the least height of its border box, whose extra the
+    /// body rows without a height share in proportion to their heights. Null for <c>auto</c>, unless set. Ignored for every
+    /// other box.</summary>
+    public Length? TableHeight { get; init; }
+
     /// <summary>Where a table's caption (<see cref="TableDisplay.Caption"/>) is drawn, named after <c>caption-side</c> (CSS
     /// 2.1 §17.4.1); <see cref="CaptionSide.Top"/>, the CSS initial value, unless set. Ignored for every other box.</summary>
     public CaptionSide CaptionSide { get; init; }

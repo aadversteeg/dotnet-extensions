@@ -285,7 +285,7 @@ internal static class TableSegments
                 var measured = natural.ToImmutableDictionary();
                 var below = BelowSlices(table, cells, measured);
                 var fragments = measured.SetItems(below.Select(cell => KeyValuePair.Create(cell.Key, Lowered(measured[cell.Key], cell.Value))));
-                return shell with { Heights = RowHeights(table.Grid, firstRow, lastRow, cells, fragments, table.RowGap), Natural = fragments, BelowSlice = below };
+                return shell with { Heights = RowHeights(table.Grid, firstRow, lastRow, cells, fragments, table.RowGap, Least(table, shell, cells)), Natural = fragments, BelowSlice = below };
             });
     }
 
@@ -350,12 +350,44 @@ internal static class TableSegments
         return bottom;
     }
 
-    /// <summary>The row heights of §17.5.3 for one segment: single-row cells first, then each spanning cell grows the
-    /// last row it spans by what is missing; a spanning cell covers the <paramref name="gap"/> between its rows.</summary>
-    internal static ImmutableArray<double> RowHeights(
-        TableGrid grid, int firstRow, int lastRow, ImmutableArray<ActiveCell> cells, ImmutableDictionary<int, BoxFragment> natural, double gap = 0)
+    /// <summary>
+    /// The least height of every row of a segment (CSS 2.1 §17.5.3: a row is as tall as the largest of its own height and
+    /// its cells' heights): the row's <see cref="BoxStyle.TableHeight"/>, each cell's that starts in the row and ends there,
+    /// with the cell's padding and border (in the collapsing model its halves of the grid lines), and the row's share of
+    /// the table's height (<see cref="TablePreparation.RowMinimums"/>). Each height is floored to the layout's step (cases
+    /// <c>tg-row</c>: 40 pt gives 39.996 pt; <c>tg-cell</c> d, e: the larger of the row's and the cell's wins; <c>tg-fraction</c>
+    /// b: a cell's content height of 21.37 pt is 21.363 pt). Zero for a row without one.
+    /// </summary>
+    private static ImmutableArray<double> Least(TableGeometry table, Segment shell, ImmutableArray<ActiveCell> cells)
     {
-        var heights = new double[lastRow - firstRow + 1];
+        var step = TracksLayout.Step(table.Environment);
+        var least = new double[shell.LastRow - shell.FirstRow + 1];
+        for (var row = shell.FirstRow; row <= shell.LastRow; row++)
+        {
+            var own = table.Grid.Rows[row].Box.Style.TableHeight is { Points: var height } ? TrackSizing.Floor(height, step) : 0;
+            least[row - shell.FirstRow] = Math.Max(own, table.Prepared.RowMinimums.IsDefaultOrEmpty ? 0 : table.Prepared.RowMinimums[row]);
+        }
+
+        foreach (var cell in cells.Where(cell => cell.Token is null && table.Grid.Cells[cell.Cell].LastRow == cell.StartRow))
+        {
+            if (table.Grid.Cells[cell.Cell].Box.Style.TableHeight is { Points: var content })
+            {
+                var laid = CellLayoutBox(table, shell, cell).Style;
+                var height = TrackSizing.Floor(content, step) + laid.Padding.Top.Points + laid.Padding.Bottom.Points + laid.Border.Widths.Top.Points + laid.Border.Widths.Bottom.Points;
+                least[cell.StartRow - shell.FirstRow] = Math.Max(least[cell.StartRow - shell.FirstRow], height);
+            }
+        }
+
+        return [.. least];
+    }
+
+    /// <summary>The row heights of §17.5.3 for one segment: single-row cells first, each row at least its
+    /// <paramref name="least"/> height, then each spanning cell grows the last row it spans by what is missing; a spanning
+    /// cell covers the <paramref name="gap"/> between its rows.</summary>
+    internal static ImmutableArray<double> RowHeights(
+        TableGrid grid, int firstRow, int lastRow, ImmutableArray<ActiveCell> cells, ImmutableDictionary<int, BoxFragment> natural, double gap = 0, ImmutableArray<double> least = default)
+    {
+        var heights = least.IsDefault ? new double[lastRow - firstRow + 1] : least.ToArray();
         double HeightOf(ActiveCell cell) => natural.TryGetValue(cell.Cell, out var fragment) ? fragment.Size.Height : 0;
         foreach (var cell in cells.Where(cell => grid.Cells[cell.Cell].LastRow == cell.StartRow))
         {

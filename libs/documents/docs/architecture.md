@@ -635,9 +635,10 @@ start tag, with the property and the value) only where it would change the print
 | padding, border widths | lengths on a block box | percentages; any on an inline box |
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
 | `background-color` | alpha 1 on a block box, a table with separated borders included; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
-| `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `width` and `height`, `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
+| `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `width` and `height`, `auto` with a ratio (the natural one) and any `overflow`; a length `height` on a table, a row or a cell (see **Tables**, heights) | other values on a block box; a percentage `height` on a table part, a `height` on a row group or a caption |
 | `caption-side` | `top` and `bottom` on a caption; no effect on another box | other values (by the registry) |
-| `box-sizing`, `empty-cells`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, `empty-cells: show` the only value the registry takes, which draws every cell, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| `box-sizing` | both values, which matter only on a table or a cell with a height (see **Tables**, heights) | `content-box` on a table with a height; `border-box` on a cell with a height in a table with collapsed borders |
+| `empty-cells`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, `empty-cells: show` the only value the registry takes, which draws every cell, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
 | `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-decoration-skip-ink` | every line and combination, applied to the element's text and the text of every element inside it, through block boxes, not into an image: the parent's lines, then the element's own in the order underline, overline, line-through, each in the element's font and its decoration colour (`currentcolor` its `color`; `TextStyle.Decorations`); `solid`; `auto`, `none` from the element the text lies in (`TextStyle.DecorationSkipInk`) | a decoration colour of another alpha than 1; a text with more than 16 lines (at the start tag of the element it lies in); `blink`, `spelling-error`, `grammar-error`, other styles, a thickness, an underline offset or position other than `auto` and `skip-ink: all` (refused by the registry) |
@@ -739,6 +740,21 @@ a column in which no cell starts; the percentages and cell lengths named above, 
 elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
+
+**Heights.** A `height` on a table, a row or a cell is a least height (CSS 2.1 §17.5.3; `BoxStyle.TableHeight`), in both
+border models. A row is as tall as the largest of its content, its own height and its cells' heights; a cell's height is
+of its content box, its padding and border (with collapsed borders its halves of the grid lines) on top, or under
+`box-sizing: border-box` with separated borders of its border box (cases `tg-row`, `tg-cell`). A table's height is of its
+border box: the extra goes to the body rows without a height of their own or of a cell, in proportion to their heights;
+header rows and rows with a height keep theirs; a height less than the rows' has no effect (cases `tg-table`,
+`tg-table-small`). A cell's content keeps its alignment in the taller row. Each height, and each row's share of a table's
+height, is floored to 1/64 px under `LengthRounding.SixtyFourthPixels` (`tg-fraction`), the last row taking what is left.
+Refused: percentages (case `tg-percent`: Chromium prints them as `auto` in a page, but not measured in a cell with a
+height); a height on a row group or a caption; `min-height` and `max-height` (by the registry; case `tg-min`: Chromium
+prints them on rows and cells as if they were not there); a table height with a caption, over cells that span rows, under
+`box-sizing: content-box`, or where every body row has a height; a cell's `border-box` height with collapsed borders;
+and, by layout (`Documents.Layout.TableBreak`), a table with any of these heights that does not fit whole on its page
+(case `tg-break`: Chromium cuts a row inside its height and goes on with the rest of it on the next page).
 
 **Captions.** A table's `caption` element (CSS 2.1 §17.4) is the first child of the table's box in the model
 (`TableDisplay.Caption`, role `Caption`), wherever it stands among the row groups, and the table lays it out

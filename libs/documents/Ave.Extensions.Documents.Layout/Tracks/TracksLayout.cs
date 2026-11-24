@@ -49,11 +49,14 @@ public static class TracksLayout
         var preparation = token?.Prepared is { } prepared && ReferenceEquals(prepared.Table, box) && prepared.AvailableWidth == space.AvailableWidth
             ? Result<TablePreparation, Error>.Success(prepared)
             : TableGrid.Build(box).OnSuccessBind(grid => Prepare(environment, box, grid, space.AvailableWidth));
-        return preparation.OnSuccessBind(table => token is not null && InvalidToken(table.Grid, token) is { } reason
-            ? Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, token, reason))
-            : TableCaption.Of(box) is { } caption
-                ? TableCaption.Layout(environment, box, caption, table.Width, table.Grid.HeaderRowCount, space, token is not null, gridSpace => Grid(environment, box, table, gridSpace, token))
-                : Grid(environment, box, table, space, token));
+        return preparation
+            .OnSuccessBind(table => token is null ? TableHeights.Shared(environment, box, table, space, unlimited => Grid(environment, box, table, unlimited, null)) : Result<TablePreparation, Error>.Success(table))
+            .OnSuccessBind(table => token is not null && InvalidToken(table.Grid, token) is { } reason
+                ? Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, token, reason))
+                : TableCaption.Of(box) is { } caption
+                    ? TableCaption.Layout(environment, box, caption, table.Width, table.Grid.HeaderRowCount, space, token is not null, gridSpace => Grid(environment, box, table, gridSpace, token))
+                    : Grid(environment, box, table, space, token))
+            .OnSuccessBind(result => TableHeights.Fits(box, space, result));
     }
 
     /// <summary>A page of the table's grid (<see cref="TablePage"/>), its continuation carrying the prepared grid.</summary>
@@ -307,7 +310,7 @@ public static class TracksLayout
 
     /// <summary>The step a percentage of a width is floored to: 1/64 px under <see cref="LengthRounding.SixtyFourthPixels"/>,
     /// none under <see cref="LengthRounding.Exact"/>.</summary>
-    private static double Step(LayoutEnvironment environment) =>
+    internal static double Step(LayoutEnvironment environment) =>
         environment.Profile.LengthRounding == LengthRounding.SixtyFourthPixels ? 0.75 / 64 : 0;
 
     /// <summary>
@@ -396,7 +399,12 @@ public static class TracksLayout
 /// <param name="AvailableWidth">The width the columns were placed in; a page of another width prepares again.</param>
 internal sealed record TablePreparation(
     Box Table, TableGrid Grid, ImmutableArray<double> ColumnX, ImmutableArray<double> ColumnWidths, double ColumnGap, double GridStart, double GridEnd,
-    ImmutableArray<double> LineWidths, double Width, double AvailableWidth);
+    ImmutableArray<double> LineWidths, double Width, double AvailableWidth)
+{
+    /// <summary>Per row, the least height the table's <see cref="BoxStyle.TableHeight"/> gives it (<see cref="TableHeights"/>);
+    /// empty for a table without one.</summary>
+    public ImmutableArray<double> RowMinimums { get; init; } = [];
+}
 
 /// <summary>A tracks box with its grid and columns placed, on the current page: everything a page of it needs.</summary>
 /// <param name="Environment">The fonts, algorithms and current page.</param>

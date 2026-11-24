@@ -102,6 +102,7 @@ public static class DocumentModelText
             style.BorderModel != initial.BorderModel ? $"border-collapse={style.BorderModel.ToString().ToLowerInvariant()}" : null,
             style.BorderSpacing != initial.BorderSpacing ? $"border-spacing={style.BorderSpacing}" : null,
             style.CaptionSide != initial.CaptionSide ? $"caption-side={style.CaptionSide.ToString().ToLowerInvariant()}" : null,
+            style.TableHeight is { } tableHeight ? $"height={tableHeight}" : null,
             $"@{box.Source}",
         ];
         return string.Join(" ", parts.OfType<string>());

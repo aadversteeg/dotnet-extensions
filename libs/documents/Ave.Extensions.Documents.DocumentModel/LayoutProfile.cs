@@ -337,6 +337,11 @@ public enum LengthRounding
     /// <c>tpa-table</c> (80% of 276 pt is 220.793 pt, not 220.8), <c>tpa-full</c> (30% of 258 pt is 77.391 pt, not 77.4;
     /// table <c>c</c>: two columns of 30% and 20% floored put the next grid line half a pixel lower, a pixel to the left
     /// once painted) and <c>tpa-fraction</c> (33.3% and 17.17% of 275.25 pt are 91.652 and 47.25 pt).</item>
+    /// <item>A height in a table (<see cref="BoxStyle.TableHeight"/>), rounded DOWN to 1/64 px: a row's height, a cell's
+    /// content height and a table's height, and each body row's share of the extra of a table's height, the last row taking
+    /// what is left. Cases <c>tg-row</c> (40 pt is 39.996 pt, 40.1 pt is 40.09 pt), <c>tg-fraction</c> (a row of 33.33 pt is
+    /// 33.328 pt, a cell's 21.37 pt is 21.363 pt, a table's 100.1 pt is 100.09 pt and its two rows 42.539 and 42.551 pt) and
+    /// <c>tg-table</c> (three rows of 44 pt are 43.992, 43.992 and 44.016 pt).</item>
     /// </list>
     /// </summary>
     SixtyFourthPixels,

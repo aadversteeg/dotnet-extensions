@@ -37,7 +37,8 @@ public static class LayoutErrorCodes
     /// rows across the break, content sliced in a cell, a cut row beside a cell aligned at the middle or bottom under
     /// <c>CutRowAlignment.RestAlignedInItsPart</c>,
     /// <c>box-decoration-break: clone</c>, or a page of the table past the page end; and a table of either border model
-    /// whose caption does not fit on the page with the first row below it, or below the last row. Metadata: Node, Value (the
+    /// whose caption does not fit on the page with the first row below it, or below the last row, or with a height on the
+    /// table, a row or a cell that does not fit whole on its page. Metadata: Node, Value (the
     /// room it had, in points), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode TableBreak = _ / "TableBreak";
 

@@ -310,7 +310,7 @@ public static partial class HtmlBoxGenerator
             {
                 Role = SemanticRole.TableRow,
                 Layout = LayoutAlgorithmId.Tracks,
-                Style = box.Style with { TableDisplay = TableDisplay.Row, Margin = Edges.Zero, Padding = Edges.Zero, Text = null },
+                Style = box.Style with { TableDisplay = TableDisplay.Row, Margin = Edges.Zero, Padding = Edges.Zero, Text = null, TableHeight = HeightOf(block.Element) },
             },
             TablePart.Cell => CellBox(block.Element, box),
             _ => box,
@@ -371,8 +371,37 @@ public static partial class HtmlBoxGenerator
                     Span = new CellSpan(Span(html.Attribute("colspan"), TableSlots.MaxColumnSpan, zero: 1), rows),
                     VerticalAlign = align,
                     Width = width,
+                    TableHeight = CellHeight(element, box.Style),
                 },
             };
+        }
+
+        /// <summary>A computed <c>height</c> that is a length, or null (auto, or refused).</summary>
+        private Length? HeightOf(StyledElement element) => Value(element, "height") is CssLength { Value: var length } ? length : null;
+
+        /// <summary>
+        /// The content height a cell's <c>height</c> gives it (<see cref="BoxStyle.TableHeight"/>): the height itself, of the
+        /// content box (cases <c>tg-cell</c> a, b: 30 pt and padding 2 pt make a row of 34.734 pt with collapsed lines of
+        /// 0.75 pt, 35.484 pt with the cell's own border); under <c>box-sizing: border-box</c> in a table with separated
+        /// borders the height less the cell's padding and border (<c>tg-cell</c> c: a cell of 30 pt). With collapsed borders a
+        /// border-box height is refused: no case measures how the shared lines count.
+        /// </summary>
+        private Length? CellHeight(StyledElement element, BoxStyle style)
+        {
+            if (HeightOf(element) is not { } height || Value(element, "box-sizing") is not CssKeyword { Name: "border-box" })
+            {
+                return HeightOf(element);
+            }
+
+            if (Value(element, "border-collapse") is CssKeyword { Name: "collapse" })
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'box-sizing: border-box' on the <{element.Element.LocalName}> with a height in a table with collapsed borders is not drawn in this version: give the cell the height of its content box.",
+                    "border-box", element.Element.Position, "box-sizing");
+                return height;
+            }
+
+            var insets = style.Padding.Top.Points + style.Padding.Bottom.Points + style.Border.Widths.Top.Points + style.Border.Widths.Bottom.Points;
+            return Math.Max(0, height.Points - insets).Pt();
         }
 
         /// <summary>The vertical alignment of a box's content in its height, for a table cell and a page-margin box (CSS 2.1
@@ -477,6 +506,7 @@ public static partial class HtmlBoxGenerator
                 return box with { Role = SemanticRole.Generic, Layout = LayoutAlgorithmId.Flow, Children = [] };
             }
 
+            var height = TableHeightOf(element, caption, groups);
             var sizes = Columns(element, grid);
             groups = CellWidths(element, groups, grid, sizes.Width != BoxWidth.Auto && Value(element, "table-layout") is CssKeyword { Name: "fixed" });
             var separated = Value(element, "border-collapse") is not CssKeyword { Name: "collapse" };
@@ -493,12 +523,43 @@ public static partial class HtmlBoxGenerator
                     BorderSpacing = separated ? SpacingOf(element) : BorderSpacing.Zero,
                     Padding = separated ? box.Style.Padding : Edges.Zero,
                     Text = null,
+                    TableHeight = height,
                 },
                 Children = [.. caption is null ? [] : new[] { (Node)caption }, .. groups.Select(group => (Node)(group.Style.TableDisplay == TableDisplay.HeaderGroup && hasBody ? group with { Role = SemanticRole.TableHead } : group))],
             };
         }
 
         private static IEnumerable<Box> Parts(Box box) => box.Children.OfType<Box>();
+
+        /// <summary>
+        /// A table's <c>height</c> (<see cref="BoxStyle.TableHeight"/>): of its border box, as the user agent's
+        /// <c>box-sizing: border-box</c> gives it (cases <c>tg-table</c>, <c>tg-table-small</c>). Refused where no case shows
+        /// how Chromium shares it: under <c>box-sizing: content-box</c>, with a caption, over cells that span rows, and where
+        /// every body row has a height of its own or of a cell, so no row takes the extra.
+        /// </summary>
+        private Length? TableHeightOf(StyledElement element, Box? caption, List<Box> groups)
+        {
+            if (HeightOf(element) is not { } height)
+            {
+                return null;
+            }
+
+            var bodyRows = groups.Where(group => group.Style.TableDisplay == TableDisplay.RowGroup).SelectMany(Parts).ToList();
+            var problem =
+                Value(element, "box-sizing") is not CssKeyword { Name: "border-box" } ? "under 'box-sizing: content-box'"
+                : caption is not null ? "with a caption"
+                : groups.SelectMany(Parts).SelectMany(Parts).Any(cell => cell.Style.Span.Rows > 1) ? "over cells that span rows"
+                : bodyRows.All(row => row.Style.TableHeight is not null || Parts(row).Any(cell => cell.Style.TableHeight is not null)) ? "where every body row has a height"
+                : null;
+            if (problem is null)
+            {
+                return height;
+            }
+
+            Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"A height on the table <{element.Element.LocalName}> {problem} is not drawn in this version.",
+                height.ToString(), element.Element.Position, "height");
+            return null;
+        }
 
         /// <summary>The computed <c>border-spacing</c> of a table with separated borders: horizontal, then vertical (CSS 2.1
         /// §17.6.1).</summary>

@@ -261,6 +261,14 @@ public class TableBoxTests
     [InlineData("<table><tr><td style=\"width:50%\">a</td></tr></table>", "", "width", "50%")]
     [InlineData("<table><tr><td style=\"vertical-align:baseline\">a</td></tr></table>", "", "vertical-align", "baseline")]
     [InlineData("<table><caption style=\"width:40pt\">c</caption><tr><td>a</td></tr></table>", "", "width", "40pt")]
+    [InlineData("<table><tbody style=\"height:40pt\"><tr><td>a</td></tr></tbody></table>", "", "height", "40pt")]
+    [InlineData("<table><caption style=\"height:40pt\">c</caption><tr><td>a</td></tr></table>", "", "height", "40pt")]
+    [InlineData("<table><tr style=\"height:50%\"><td>a</td></tr></table>", "", "height", "50%")]
+    [InlineData("<table><tr><td style=\"height:30pt; box-sizing:border-box\">a</td></tr></table>", "", "box-sizing", "border-box")]
+    [InlineData("<table style=\"height:90pt; box-sizing:content-box\"><tr><td>a</td></tr></table>", "", "height", "90pt")]
+    [InlineData("<table style=\"height:90pt\"><caption>c</caption><tr><td>a</td></tr></table>", "", "height", "90pt")]
+    [InlineData("<table style=\"height:90pt\"><tr><td rowspan=2>a</td><td>b</td></tr><tr><td>c</td></tr></table>", "", "height", "90pt")]
+    [InlineData("<table style=\"height:90pt\"><tr style=\"height:20pt\"><td>a</td></tr><tr><td style=\"height:20pt\">b</td></tr></table>", "", "height", "90pt")]
     [InlineData("<table><caption style=\"margin-top:10%\">c</caption><tr><td>a</td></tr></table>", "", "margin-top", "10%")]
     public void Table_values_the_model_does_not_draw_are_refused(string body, string css, string property, string value)
     {
@@ -320,6 +328,23 @@ public class TableBoxTests
         var caption = Parts(table).First();
         (caption.Style.TableDisplay, caption.Role, caption.Style.CaptionSide).Should().Be((TableDisplay.Caption, SemanticRole.Caption, side));
         Parts(table).Skip(1).Should().OnlyContain(group => group.Style.TableDisplay != TableDisplay.Caption);
+    }
+
+    /// <summary>The heights the table draws, as the model's least heights (<see cref="BoxStyle.TableHeight"/>): a row's, a
+    /// cell's content height, which under <c>box-sizing: border-box</c> in a separated table is the height less the cell's
+    /// padding and border (case <c>tg-cell</c> c), and the table's border-box height.</summary>
+    [Fact]
+    public void Heights_on_the_table_its_rows_and_its_cells_are_least_heights_in_the_model()
+    {
+        var result = Boxes(Doc("<table style=\"height:120pt\"><tr style=\"height:40pt\"><td style=\"height:30pt\">a</td><td style=\"height:30pt; box-sizing:border-box; padding:6pt; border:0.75pt solid\">b</td></tr><tr><td>c</td><td>d</td></tr></table>",
+            "table { border-collapse: separate; width: 100%; table-layout: fixed }"));
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        var table = ((Box)result.Value.Document.Root.Children.Single()).Children.OfType<Box>().Single();
+        var row = Parts(Parts(table).Single()).First();
+        var cells = Parts(row).ToList();
+
+        (table.Style.TableHeight, row.Style.TableHeight, cells[0].Style.TableHeight).Should().Be((120.Pt(), 40.Pt(), 30.Pt()));
+        cells[1].Style.TableHeight!.Value.Points.Should().BeApproximately(30 - 12 - 1.5, 1e-9);
     }
 
     [Theory]

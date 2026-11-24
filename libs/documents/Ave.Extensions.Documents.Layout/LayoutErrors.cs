@@ -58,6 +58,19 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(table.Source);
 
+    /// <summary>A table with a height of its own, of a row or of a cell that does not fit whole on the page where it
+    /// starts (<see cref="LayoutErrorCodes.TableBreak"/>; <see cref="TableHeights"/>).</summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="available">The height it had on the page.</param>
+    public static Error HeightBreak(Box table, double available) =>
+        new Error(
+                LayoutErrorCodes.TableBreak,
+                $"{Describe(table)} has a height on the table, a row or a cell and does not fit whole in {Room(available)}: such a table that breaks over pages "
+                + "is not drawn in this version. Give the table the room on one page, for example with a page break before it, or leave the heights out.")
+            .With(ErrorMetadataKeys.Node, table.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
+            .WithSource(table.Source);
+
     /// <summary>A header or footer area's content that does not fit in the area: an area never breaks.</summary>
     /// <param name="content">The area's content.</param>
     /// <param name="height">The area's height: its fixed height, or the page area's.</param>

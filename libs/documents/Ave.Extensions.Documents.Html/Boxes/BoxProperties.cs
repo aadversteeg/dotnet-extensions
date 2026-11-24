@@ -141,10 +141,11 @@ internal static class BoxProperties
         // CSS Sizing 3 §3.1–3.2: the sizes do not apply to an inline box (CSS 2.1 §10.3.1, §10.6.1).
         yield return new("width", "auto; a positive length on an image; no effect on an inline box; on a table part what TableProperties.Width says", (value, facts) =>
             TableProperties.IsPart(facts) ? TableProperties.Width(value, facts) : IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null : "sizes are not drawn in this version");
-        yield return new("height", "auto; a positive length on an image; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null : "sizes are not drawn in this version");
+        yield return new("height", "auto; a positive length on an image; no effect on an inline box; on a table part what TableProperties.Height says", (value, facts) =>
+            TableProperties.IsPart(facts) ? TableProperties.Height(value, facts) : IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null : "sizes are not drawn in this version");
         yield return new("min-width", "auto or 0; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || IsZero(value) || !facts.IsBlock ? null : "sizes are not drawn in this version");
         yield return new("max-width", "none; no effect on an inline box", (value, facts) => IsKeyword(value, "none") || !facts.IsBlock ? null : "sizes are not drawn in this version");
-        yield return new("box-sizing", "both values: no effect while width and height are auto (every other width and height is refused)", (_, _) => null);
+        yield return new("box-sizing", "both values: no effect while width and height are auto (every other width and height is refused); on a table, a row and a cell with a height what the table draws (HtmlBoxGenerator, tables)", (_, _) => null);
 
         // CSS Display 3 §2.
         yield return new("display", "block, inline, none, table and its parts", (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" } ? null : TableProperties.Display(value));

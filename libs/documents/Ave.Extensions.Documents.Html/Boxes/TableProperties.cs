@@ -43,6 +43,26 @@ internal static class TableProperties
         _ => null,
     };
 
+    /// <summary>
+    /// The height of a table part: on a table, a row and a cell a length, which is a least height (cases <c>tg-row</c>,
+    /// <c>tg-cell</c>, <c>tg-table</c>; the table draws it, <see cref="HtmlBoxGenerator"/>, tables); no effect on a column
+    /// or a column group, to which <c>height</c> does not apply. Refused: a percentage (case <c>tg-percent</c> prints it as
+    /// <c>auto</c> in a page, but not measured in a cell with a height), and a height on a row group or a caption.
+    /// </summary>
+    public static string? Height(CssValue value, ElementFacts facts) => Part(facts) switch
+    {
+        _ when value is CssKeyword { Name: "auto" } => null,
+        TablePart.Column or TablePart.ColumnGroup => null,
+        TablePart.Table or TablePart.Row or TablePart.Cell => value switch
+        {
+            CssLength { Value.Points: >= 0 } => null,
+            CssPercentage => "a percentage height on a table, a row or a cell is not drawn in this version: give it a length",
+            _ => "a height other than a length on a table, a row or a cell is not drawn in this version",
+        },
+        TablePart.Caption => "a height on a table caption is not drawn in this version",
+        _ => "a height on a row group is not drawn in this version: give the height to its rows",
+    };
+
     /// <summary>Margins: internal table elements have none (CSS 2.1 §17.5: "Internal table elements do not have
     /// margins"); a table has no horizontal margin in this version (at width 100% it would pass its container, and auto
     /// margins centre a narrower table), but <c>auto</c> on a table of width 100%, where it is 0 (CSS 2.1 §10.3.3). A

@@ -375,7 +375,8 @@ public static class ModelCheck
         return null;
     }
 
-    /// <summary>A border model and a caption side the model has (else Input.Invalid.Table), and a border spacing of two finite lengths of
+    /// <summary>A border model and a caption side the model has (else Input.Invalid.Table), a table height of zero or more,
+    /// at most <see cref="ModelLimits.MaxLength"/> (else Input.Invalid.Length), and a border spacing of two finite lengths of
     /// zero or more, at most <see cref="ModelLimits.MaxLength"/> (CSS 2.1 §17.6.1: "Negative values are not allowed";
     /// else Input.Invalid.Length).</summary>
     private static Error? TableBorders(BoxStyle style, Box box)
@@ -388,6 +389,11 @@ public static class ModelCheck
         if (!System.Enum.IsDefined(style.CaptionSide))
         {
             return Problem(DocumentErrorCodes.Input.Invalid.Table, "The caption side is not one the model has.", style.CaptionSide.ToString(), "caption-side", box);
+        }
+
+        if (style.TableHeight is { } height && !(IsBounded(height) && height.Points >= 0))
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.Length, $"A table height must be zero or more and at most {ModelLimits.MaxLength}.", height.ToString(), "height", box);
         }
 
         var spacing = style.BorderSpacing;

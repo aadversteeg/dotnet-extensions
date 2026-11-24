@@ -517,6 +517,14 @@ tf-pages listed A_footer_group_is_drawn_once_after_the_body_where_Chromium_repea
 tf-pages-auto equal
 tf-top-border equal
 tf-two equal
+tg-break refused Documents.Layout.TableBreak 43.5 at 5
+tg-cell equal
+tg-fraction equal
+tg-min refused Documents.Css.Unsupported.Value min-height: 40pt at 5:12
+tg-percent refused Documents.Html.Unsupported.Value height: 50% at 5:1
+tg-row equal
+tg-table equal
+tg-table-small equal
 tj-break equal
 tj-cell-table equal
 tj-four equal
