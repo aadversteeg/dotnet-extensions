@@ -14,11 +14,11 @@ public class MeasuredReferenceFilesTests
 {
     /// <summary>The cases whose print has an underline or overline cut around a glyph's ink, so that the read-back writes their
     /// gaps (<c>ink.py</c>, <c>&lt;case&gt;.ink.txt</c>).</summary>
-    private static readonly string[] InkCases = ["dl-skip", "lk-missing", "lk-same-page", "lk-top", "mx-gen-link", "mx-link-gen", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose", "tt-groups"];
+    private static readonly string[] InkCases = ["dl-skip", "ib-link-button-break", "ib-link-span-inside", "ib-link-states", "lk-missing", "lk-same-page", "lk-top", "mx-gen-link", "mx-link-gen", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose", "tt-groups"];
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = ["dw-half", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "mx-gen-link", "mx-link-gen", "mx-list-cell", "tt-groups", "va-decorated", "va-link", "va-sub"];
+    private static readonly string[] LinkCases = ["dw-half", "ib-link-button", "ib-link-button-break", "ib-link-cell", "ib-link-inside-span", "ib-link-span-inside", "ib-link-states", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "mx-gen-link", "mx-link-gen", "mx-list-cell", "tt-groups", "va-decorated", "va-link", "va-sub"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -1789,6 +1789,14 @@ public class MeasuredReferenceFilesTests
         ["ib-break-fraction.lines.txt"] = 4,
         ["ib-break-fraction.print.txt"] = 22,
         ["ib-break-fraction.words.txt"] = 17,
+        ["ib-break-hyphen.boxes.txt"] = 1,
+        ["ib-break-hyphen.lines.txt"] = 5,
+        ["ib-break-hyphen.print.txt"] = 16,
+        ["ib-break-hyphen.words.txt"] = 10,
+        ["ib-break-justify.boxes.txt"] = 1,
+        ["ib-break-justify.lines.txt"] = 3,
+        ["ib-break-justify.print.txt"] = 28,
+        ["ib-break-justify.words.txt"] = 20,
         ["ib-break-nested.boxes.txt"] = 1,
         ["ib-break-nested.lines.txt"] = 14,
         ["ib-break-nested.print.txt"] = 32,
@@ -1817,6 +1825,59 @@ public class MeasuredReferenceFilesTests
         ["ib-kerning.lines.txt"] = 4,
         ["ib-kerning.print.txt"] = 18,
         ["ib-kerning.words.txt"] = 14,
+        ["ib-image-edges.boxes.txt"] = 1,
+        ["ib-image-edges.lines.txt"] = 3,
+        ["ib-image-edges.print.txt"] = 16,
+        ["ib-image-edges.words.txt"] = 9,
+        ["ib-image-span.boxes.txt"] = 1,
+        ["ib-image-span.lines.txt"] = 2,
+        ["ib-image-span.print.txt"] = 17,
+        ["ib-image-span.words.txt"] = 8,
+        ["ib-justify-padding.boxes.txt"] = 1,
+        ["ib-justify-padding.lines.txt"] = 6,
+        ["ib-justify-padding.print.txt"] = 40,
+        ["ib-justify-padding.words.txt"] = 33,
+        ["ib-justify-place.boxes.txt"] = 1,
+        ["ib-justify-place.lines.txt"] = 6,
+        ["ib-justify-place.print.txt"] = 50,
+        ["ib-justify-place.words.txt"] = 43,
+        ["ib-justify-two.boxes.txt"] = 1,
+        ["ib-justify-two.lines.txt"] = 5,
+        ["ib-justify-two.print.txt"] = 29,
+        ["ib-justify-two.words.txt"] = 23,
+        ["ib-link-button-break.boxes.txt"] = 1,
+        ["ib-link-button-break.lines.txt"] = 10,
+        ["ib-link-button-break.print.txt"] = 37,
+        ["ib-link-button-break.words.txt"] = 26,
+        ["ib-link-button-break.links.txt"] = 4,
+        ["ib-link-button-break.ink.txt"] = 4,
+        ["ib-link-button.boxes.txt"] = 1,
+        ["ib-link-button.lines.txt"] = 4,
+        ["ib-link-button.print.txt"] = 22,
+        ["ib-link-button.words.txt"] = 13,
+        ["ib-link-button.links.txt"] = 3,
+        ["ib-link-cell.boxes.txt"] = 4,
+        ["ib-link-cell.lines.txt"] = 3,
+        ["ib-link-cell.print.txt"] = 14,
+        ["ib-link-cell.words.txt"] = 10,
+        ["ib-link-cell.links.txt"] = 2,
+        ["ib-link-inside-span.boxes.txt"] = 1,
+        ["ib-link-inside-span.lines.txt"] = 4,
+        ["ib-link-inside-span.print.txt"] = 18,
+        ["ib-link-inside-span.words.txt"] = 9,
+        ["ib-link-inside-span.links.txt"] = 2,
+        ["ib-link-span-inside.boxes.txt"] = 1,
+        ["ib-link-span-inside.lines.txt"] = 11,
+        ["ib-link-span-inside.print.txt"] = 30,
+        ["ib-link-span-inside.words.txt"] = 14,
+        ["ib-link-span-inside.links.txt"] = 8,
+        ["ib-link-span-inside.ink.txt"] = 3,
+        ["ib-link-states.boxes.txt"] = 1,
+        ["ib-link-states.lines.txt"] = 2,
+        ["ib-link-states.print.txt"] = 12,
+        ["ib-link-states.words.txt"] = 9,
+        ["ib-link-states.links.txt"] = 2,
+        ["ib-link-states.ink.txt"] = 4,
         ["ib-margin.boxes.txt"] = 1,
         ["ib-margin.lines.txt"] = 2,
         ["ib-margin.print.txt"] = 16,
@@ -3217,7 +3278,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(785);
+        cases.Should().HaveCount(798);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

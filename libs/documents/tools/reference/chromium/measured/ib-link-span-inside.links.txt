@@ -1,0 +1,8 @@
+1 51.750 18.000 81.750 30.750 uri https://example.com/one
+1 81.750 18.000 109.500 30.750 uri https://example.com/one
+1 109.500 18.000 140.250 30.750 uri https://example.com/one
+1 54.750 36.750 84.750 49.500 uri https://example.com/two
+1 84.750 36.000 128.250 50.250 uri https://example.com/two
+1 128.250 36.750 159.000 49.500 uri https://example.com/two
+1 45.000 55.500 93.000 68.250 uri https://example.com/three
+1 93.000 55.500 123.750 68.250 uri https://example.com/three

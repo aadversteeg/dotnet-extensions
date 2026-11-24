@@ -1,0 +1,2 @@
+1 18.000 34.500 64.500 51.750 uri https://example.com/cell
+1 45.000 49.500 76.500 62.250 uri https://example.com/row

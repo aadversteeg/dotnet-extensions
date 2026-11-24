@@ -140,14 +140,16 @@ public class InlineBoxTests
     }
 
     [Fact]
-    public void A_box_over_two_lines_of_a_justified_paragraph_is_refused_at_the_group()
+    public void A_box_over_lines_of_a_justified_paragraph_is_justified_with_each_line_to_its_end()
     {
         var text = string.Join(" ", Enumerable.Repeat("word", 30));
-        var error = Refused(Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(2), Run(5, text))], BoxStyle.Initial with { TextAlign = TextAlign.Justify })));
+        List<Rect> Backgrounds(TextAlign align) => [.. Laid(Document(Line(1, [Run(2, "aa "), Boxed(3, Padded(2), Run(5, text))], BoxStyle.Initial with { TextAlign = align })))
+            .Pages[0].Items.OfType<FillRectangle>().Where(fill => fill.Color == Red).Select(fill => fill.Area)];
 
-        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
-        error.Message.Should().Contain("justified");
-        error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(3);
+        var (justified, start) = (Backgrounds(TextAlign.Justify), Backgrounds(TextAlign.Left));
+        justified.Count.Should().BeGreaterThanOrEqualTo(3, "one part per line");
+        (justified[0].Origin.X + justified[0].Size.Width).Should().BeApproximately(justified[1].Origin.X + justified[1].Size.Width, 1e-6, "the first line is widened to the line's end, as the second");
+        (start[0].Origin.X + start[0].Size.Width).Should().BeLessThan(justified[0].Origin.X + justified[0].Size.Width - 0.1, "aligned to the left it ends before");
     }
 
     [Fact]
@@ -251,11 +253,24 @@ public class InlineBoxTests
         Refused(Document(Line(1, [new InlineGroup(new NodeId(3), null, Text(), [Run(5, "x")], At(0))]))).Code.Should().Be(DocumentErrorCodes.Input.Invalid.InlineGroup);
         Refused(Document(Line(1, [Boxed(3, Padded(1) with { MarginLeft = (-1).Pt() }, Run(5, "x"))]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.NegativeMargin);
         Refused(Document(Line(1, [Boxed(3, Padded(-1), Run(5, "x"))]))).Code.Should().Be(DocumentErrorCodes.Input.Invalid.Length);
-        Refused(Document(Line(1, [Boxed(3, Padded(1), new InlineGroup(new NodeId(4), link, Text(), [Run(5, "x")], At(0)))]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
-        Refused(Document(Line(1, [new InlineGroup(new NodeId(3), link, Text(), [Boxed(4, Padded(1), Run(5, "x"))], At(0))]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
-        Refused(Document(Line(1, [Boxed(3, Padded(1), Run(5, "x")) with { Role = link }]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
         var image = new Box(new NodeId(6), SemanticRole.Figure("a square"), LayoutAlgorithmId.Image, BoxStyle.Initial,
             [new ImageNode(new NodeId(7), TestImages.Load("baseline-rgb.jpg"), 12.Pt(), 12.Pt(), At(0))], At(0));
-        Refused(Document(Line(1, [Boxed(3, Padded(1), Run(5, "x"), image)]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.AtomicInline);
+        Refused(Document(Line(1, [Boxed(3, Padded(1), new InlineGroup(new NodeId(4), link, Text(), [Run(5, "x"), image], At(0)))]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
+        Refused(Document(Line(1, [new InlineGroup(new NodeId(3), link, Text(), [Boxed(4, Padded(1), Run(5, "x"), image)], At(0))]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
+        Refused(Document(Line(1, [Boxed(3, Padded(1), Run(5, "x"), image) with { Role = link }]))).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
+    }
+
+    /// <summary>A link inside a box, a box inside a link, a link with a box of its own and an image inside a box are drawn;
+    /// only an image inside both a link and a box is refused (above).</summary>
+    [Fact]
+    public void Links_and_images_with_inline_boxes_are_laid_out()
+    {
+        var link = SemanticRole.Link(LinkTarget.Uri("https://example.com/a"), "the example");
+        var image = new Box(new NodeId(6), SemanticRole.Figure("a square"), LayoutAlgorithmId.Image, BoxStyle.Initial,
+            [new ImageNode(new NodeId(7), TestImages.Load("baseline-rgb.jpg"), 12.Pt(), 12.Pt(), At(0))], At(0));
+        Laid(Document(Line(1, [Boxed(3, Padded(1), new InlineGroup(new NodeId(4), link, Text(), [Run(5, "x")], At(0)))])));
+        Laid(Document(Line(1, [new InlineGroup(new NodeId(3), link, Text(), [Boxed(4, Padded(1), Run(5, "x"))], At(0))])));
+        Laid(Document(Line(1, [Boxed(3, Padded(1), Run(5, "x")) with { Role = link }])));
+        Laid(Document(Line(1, [Boxed(3, Padded(1), Run(5, "x"), image)])));
     }
 }

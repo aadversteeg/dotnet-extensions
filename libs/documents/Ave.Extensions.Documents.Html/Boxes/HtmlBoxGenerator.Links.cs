@@ -17,6 +17,8 @@ public static partial class HtmlBoxGenerator
         /// the link. The target is the URI by THE RULE FOR A LINK'S URL IN HTML (<see cref="LinkUrls"/>), checked by THE RULE
         /// FOR A LINK'S URI (<see cref="LinkUris"/>), which is the only rule on which URIs are accepted. A link that the rules
         /// refuse, and a link inside a link, is refused at the element's start tag with the <c>href</c> and the reason;
+        /// a link with a background, border, padding or margin of its own is a link group with that box (THE RULE FOR AN
+        /// INLINE BOX IN HTML), also inside another element's box;
         /// under <see cref="UnsupportedPolicy.Warn"/> its content is drawn as that of any inline element. An <c>a</c> without
         /// <c>href</c> is no link (Chromium 159 writes no annotation for it, measured: case <c>lk-empty</c>).
         /// </summary>
@@ -36,14 +38,6 @@ public static partial class HtmlBoxGenerator
             {
                 problem = "it lies inside another link, and a link leads to one target";
             }
-            else if (frame.InBox)
-            {
-                problem = "it lies inside an element with a background, border, padding or margin of its own, which is not drawn around a link in this version; put the link outside that element";
-            }
-            else if (InlineBoxOf(element) is not null)
-            {
-                problem = "the link has a background, border, padding or margin of its own, which is not drawn on a link in this version; give the box to an element inside or around the link";
-            }
 
             if (problem is not null)
             {
@@ -57,29 +51,41 @@ public static partial class HtmlBoxGenerator
             }
 
             var id = NewId();
+            var box = InlineBoxOf(element);
             List<Node> content = [new TextRun(NewId(), string.Empty, style, Source(position))];
-            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Link = new LinkFrame(frame.Target, id, uri!, fragment, style) { Language = LanguageOf(element, frame.Element) }, InLink = true, InBox = frame.InBox });
+            stack.Push(new InlineFrame(element, content, frame.Depth + 1)
+            {
+                Link = new LinkFrame(frame.Target, id, uri!, fragment, style) { Language = LanguageOf(element, frame.Element), Box = box },
+                InLink = true,
+                InBox = frame.InBox || box is not null,
+            });
             return true;
         }
 
         /// <summary>
         /// The link's group, once its content is built, with its description by THE RULE FOR A LINK'S DESCRIPTION
         /// (<see cref="LinkDescription"/>): the element's <c>title</c>, else the text of its runs, else the alternative text of
-        /// an image inside it, else the URI. A link whose content draws nothing (no character that does not collapse and no
-        /// image) is no link and its content goes on as written: Chromium 159 writes no annotation for an empty <c>a</c>
+        /// an image inside it, else the URI. A link whose content draws nothing (no character that does not collapse, no
+        /// image and no group, which always draws: case <c>ib-link-cell</c>, a link around a span with a box) is no link and its content goes on as written: Chromium 159 writes no annotation for an empty <c>a</c>
         /// (measured: case <c>lk-empty</c>). A description with a character that text may not hold
         /// (<see cref="TextCharacters"/>, from a <c>title</c>) is refused at the start tag.
         /// </summary>
         private void FinishLink(InlineFrame frame, LinkFrame link)
         {
             var content = frame.Target;
-            if (!content.Any(node => node is Box || (node is TextRun run && !run.Text.All(IsCollapsible))))
+            var html = frame.Element.Element;
+            if (!content.Any(node => node is Box or InlineGroup || (node is TextRun run && !run.Text.All(IsCollapsible))))
             {
+                if (link.Box is not null)
+                {
+                    Refuse(HtmlStyleErrorCodes.Unsupported.Link, $"The link of <a href=\"{InputQuote.Of(link.Uri)}\"> is not made: it has no content but a background, border, padding or margin of its own, which this version does not draw on an empty link; give the link a text, or leave out its box.",
+                        link.Uri, html.Position, "href");
+                }
+
                 link.Parent.AddRange(content);
                 return;
             }
 
-            var html = frame.Element.Element;
             var text = string.Concat(content.OfType<TextRun>().Select(run => run.Text));
             var alternative = content.OfType<Box>().Select(box => box.Role).OfType<SemanticRole.FigureRole>().Select(figure => figure.AlternativeText)
                 .FirstOrDefault(alt => !string.IsNullOrWhiteSpace(alt));
@@ -93,7 +99,11 @@ public static partial class HtmlBoxGenerator
             }
 
             var target = link.Fragment is { } fragment ? Inside(link.Id, fragment, link.Uri, html.Position) : LinkTarget.Uri(link.Uri);
-            link.Parent.Add(new InlineGroup(link.Id, SemanticRole.Link(target, description), link.Style, [.. content], Source(html.Position)) { Language = link.Language });
+            link.Parent.Add(new InlineGroup(link.Id, SemanticRole.Link(target, description), link.Style, [.. content], Source(html.Position) with { Column = html.Position.Column })
+            {
+                Language = link.Language,
+                Box = link.Box,
+            });
             Placed(frame.Element, link.Id);
         }
 

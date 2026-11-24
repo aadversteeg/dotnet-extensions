@@ -369,9 +369,10 @@ public class ProfileDocumentTests
         Line("- Document metadata: the first `title` is the title. The first `meta` in tree order whose `name` is `author`, in any");
         Line("  ASCII case, with a `content` that is not empty after stripping white space at both ends is the author; the same for");
         Line("  `description`, written as the PDF's subject and XMP description (`HtmlMetadata`). Such a content longer than 4 096");
-        Line("  characters, or with a control character (other than tab, line feed and carriage return) or a character XML does not");
-        Line("  allow, is refused at the `meta` (`Documents.Html.Unsupported.Metadata`) and left out, not cleaned. Every other `meta`");
-        Line("  name (`keywords`, `generator`, `date`, `application-name`, …) is ignored. Chromium writes neither into its PDF.");
+        Line("  characters, or a title or content with a control character (other than tab, line feed and carriage return) or a");
+        Line("  character XML does not allow (`MetadataTexts`), is refused at the `meta` or the `title`");
+        Line("  (`Documents.Html.Unsupported.Metadata`) and left out, not cleaned. Every other `meta` name (`keywords`, `generator`,");
+        Line("  `date`, `application-name`, …) is ignored. Chromium writes neither the author nor the description into its PDF.");
         Line();
         Line("Presentational attributes (HTML Standard §15.2–§15.4):");
         Line();

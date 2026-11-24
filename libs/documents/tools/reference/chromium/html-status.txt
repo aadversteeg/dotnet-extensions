@@ -439,13 +439,26 @@ ib-background equal
 ib-border equal
 ib-break-align equal
 ib-break-fraction equal
+ib-break-hyphen refused Documents.Input.Unsupported.InlineBox box: margin 0,0 padding 0,3,0,3 border none/none/none/none background #00a000 at 3:9
+ib-break-justify listed Where_an_inline_box_ends_on_a_justified_line_Chromium_may_shrink_the_page_and_justify_it_a_pixel_wider: page 1 'aa' x0 59.683, Chromium 59.927 (print.txt)
 ib-break-nested equal
 ib-break-page equal
 ib-break-space equal
 ib-code-kbd equal
 ib-empty-alone equal
 ib-fraction equal
+ib-image-edges equal
+ib-image-span equal
+ib-justify-padding equal
+ib-justify-place equal
+ib-justify-two equal
 ib-kerning equal
+ib-link-button equal
+ib-link-button-break equal
+ib-link-cell equal
+ib-link-inside-span equal
+ib-link-span-inside listed A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it: link 1 on page 1: x1 140.18, Chromium 81.75 (links.txt)
+ib-link-states equal
 ib-margin equal
 ib-nested equal
 ib-only-boxes equal

@@ -1,0 +1,37 @@
+page 1 199.920 300.000
+word 1 107.496 127.247 28.242 10.500 long #ffffff Lato-Regular
+word 1 129.935 160.626 28.242 10.500 button #ffffff Lato-Regular
+word 1 163.314 181.857 28.242 10.500 that #ffffff Lato-Regular
+word 1 18.000 48.277 28.500 10.500 Words #000000 Lato-Regular
+word 1 50.965 80.947 28.500 10.500 before #000000 Lato-Regular
+word 1 83.635 98.802 28.500 10.500 the #000000 Lato-Regular
+word 1 18.000 38.081 40.992 10.500 runs #ffffff Lato-Regular
+word 1 40.769 61.213 40.992 10.500 over #ffffff Lato-Regular
+word 1 63.680 81.572 40.992 10.500 two #ffffff Lato-Regular
+word 1 84.260 105.207 40.992 10.500 lines #ffffff Lato-Regular
+word 1 113.899 133.660 41.250 10.500 end. #000000 Lato-Regular
+word 1 18.000 51.820 60.000 10.500 Second #000000 Lato-Regular
+word 1 54.293 82.464 60.000 10.500 words #000000 Lato-Regular
+word 1 84.937 105.328 60.000 10.500 with #000000 Lato-Regular
+word 1 108.023 113.242 60.000 10.500 a #0000ee Lato-Regular
+word 1 115.930 132.121 60.000 10.500 link #0000ee Lato-Regular
+word 1 134.809 153.352 60.000 10.500 that #0000ee Lato-Regular
+word 1 156.034 171.658 60.000 10.500 has #0000ee Lato-Regular
+word 1 21.000 26.219 72.750 10.500 a #0000ee Lato-Regular
+word 1 28.906 45.733 72.750 10.500 box #0000ee Lato-Regular
+word 1 48.421 75.290 72.750 10.500 inside #0000ee Lato-Regular
+word 1 77.978 84.268 72.750 10.500 it #0000ee Lato-Regular
+word 1 89.958 106.915 72.750 10.500 and #0000ee Lato-Regular
+word 1 109.603 133.343 72.750 10.500 more #0000ee Lato-Regular
+word 1 135.816 163.987 72.750 10.500 words #0000ee Lato-Regular
+word 1 18.000 37.761 85.500 10.500 end. #000000 Lato-Regular
+rect 1 101.250 18.000 181.500 33.000 #0050a0
+rect 1 107.496 29.250 181.852 30.000 #ffffff
+rect 1 18.000 28.500 111.000 45.750 #0050a0
+rect 1 18.000 42.000 105.211 42.750 #ffffff
+rect 1 108.000 49.500 171.750 62.250 #ffd000
+rect 1 108.023 60.750 171.668 61.500 #0000ee
+rect 1 18.000 62.250 164.250 75.000 #ffd000
+rect 1 18.000 62.250 87.000 75.000 #a0d0ff
+rect 1 21.000 73.500 84.270 74.250 #0000ee
+rect 1 87.270 73.500 163.992 74.250 #0000ee

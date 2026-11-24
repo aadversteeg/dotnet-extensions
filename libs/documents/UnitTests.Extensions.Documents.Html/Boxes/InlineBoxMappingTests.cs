@@ -138,45 +138,65 @@ public class InlineBoxMappingTests
     }
 
     [Fact]
-    public void A_box_inside_a_link_is_refused_at_the_inner_element_and_drawn_without_its_box()
+    public void A_box_inside_a_link_is_a_span_group_inside_the_link_group()
     {
-        const string body = "<p>See <a href=\"https://example.com/\">the <span style=\"background-color: #ff0000\">site</span></a>.</p>";
-        Refusals(body).Should().ContainSingle().Which.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.InlineBox);
+        var link = Paragraph("<p>See <a href=\"https://example.com/\">the <span style=\"background-color: #ff0000\">site</span></a>.</p>").Children.OfType<InlineGroup>().Single();
 
-        var warned = Boxes(body, UnsupportedPolicy.Warn);
-        warned.IsSuccess.Should().BeTrue();
-    }
-
-    [Theory]
-    [InlineData("<p>See <span style=\"background-color: #ff0000\">the <a href=\"https://example.com/\">site</a></span>.</p>")]
-    [InlineData("<p>See <a href=\"https://example.com/\" style=\"background-color: #ff0000\">the site</a>.</p>")]
-    public void A_link_inside_a_box_or_with_a_box_of_its_own_is_refused_at_the_link(string body)
-    {
-        Refusals(body).Should().ContainSingle().Which.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Link);
+        link.Role.Should().BeOfType<SemanticRole.LinkRole>();
+        link.Box.Should().BeNull();
+        link.Children.OfType<InlineGroup>().Should().ContainSingle().Which.Box!.Background.Should().Be(new Color(255, 0, 0));
     }
 
     [Fact]
-    public void An_image_inside_a_box_is_refused_at_the_image()
+    public void A_link_inside_a_box_is_a_link_group_inside_the_span_group()
     {
-        Refusals("<p>See <span style=\"background-color: #ff0000\">the <img src=\"figure.png\" alt=\"a figure\"></span>.</p>")
+        var span = Paragraph("<p>See <span style=\"background-color: #ff0000\">the <a href=\"https://example.com/\">site</a></span>.</p>").Children.OfType<InlineGroup>().Single();
+
+        span.Box.Should().NotBeNull();
+        span.Children.OfType<InlineGroup>().Should().ContainSingle().Which.Role.Should().BeOfType<SemanticRole.LinkRole>();
+    }
+
+    [Fact]
+    public void A_link_with_a_box_of_its_own_is_a_link_group_with_that_box_and_its_column()
+    {
+        var link = Paragraph("<p>See <a href=\"https://example.com/\" style=\"background-color: #ff0000; padding: 0 3pt\">the site</a>.</p>").Children.OfType<InlineGroup>().Single();
+
+        link.Role.Should().BeOfType<SemanticRole.LinkRole>();
+        link.Box!.Padding.Left.Should().Be(3.Pt());
+        (link.Source.Line, link.Source.Column).Should().Be((1, 126), "the start tag's line and column, where a layout refusal of its box points");
+    }
+
+    [Fact]
+    public void An_empty_link_with_a_box_of_its_own_is_refused_at_the_link()
+    {
+        Refusals("<p>See <a href=\"https://example.com/\" style=\"padding: 0 3pt\"></a>.</p>").Should().ContainSingle().Which.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Link);
+    }
+
+    [Fact]
+    public void An_image_inside_a_box_is_drawn_and_one_inside_a_box_and_a_link_is_refused_at_the_image()
+    {
+        Boxes("<p>See <span style=\"background-color: #ff0000\">the <img src=\"figure.png\" alt=\"a figure\"></span>.</p>").IsSuccess.Should().BeTrue();
+        Refusals("<p>See <a href=\"https://example.com/\"><span style=\"background-color: #ff0000\">the <img src=\"figure.png\" alt=\"a figure\"></span></a>.</p>")
+            .Should().ContainSingle().Which.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.InlineBox);
+        Refusals("<p>See <a href=\"https://example.com/\" style=\"background-color: #ff0000\">the <img src=\"figure.png\" alt=\"a figure\"></a>.</p>")
             .Should().ContainSingle().Which.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.InlineBox);
     }
 
     [Fact]
-    public void A_box_over_two_lines_of_a_justified_paragraph_is_refused_by_layout_at_the_element()
+    public void A_box_over_lines_of_a_justified_paragraph_is_laid_out()
     {
         var boxes = Boxes($"<p style=\"text-align: justify\">Start <span style=\"background-color: #ff0000\">{string.Join(" ", Enumerable.Repeat("word", 200))}</span>.</p>");
 
         var laid = boxes.OnSuccessBind(value => DocumentLayout.Run(value.Document, value.Fonts));
 
-        laid.IsFailure.Should().BeTrue();
-        laid.Error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.InlineBox);
-        laid.Error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(1);
+        laid.IsSuccess.Should().BeTrue();
     }
 
     /// <summary>The inline box cases through the HTML path into a tagged PDF (PDF/A-3a and PDF/UA-1 together, each case with
-    /// a title and a language added): a badge, a mark, code and a key inside paragraphs, a box with a language, boxes alone,
-    /// boxes over lines and over a page break, and a box with a language over two lines. veraPDF passes both.</summary>
+    /// a title, a language and the images' alternative text added): a badge, a mark, code and a key inside paragraphs, a
+    /// box with a language, boxes alone,
+    /// boxes over lines and over a page break, a box with a language over two lines, boxes inside and around links, a link
+    /// with a box of its own over two lines, and images inside boxes. veraPDF passes both.</summary>
     [DockerTheory]
     [Trait("Category", "Reference")]
     [InlineData("3a")]
@@ -184,14 +204,16 @@ public class InlineBoxMappingTests
     public void The_inline_box_cases_as_tagged_PDF_pass_veraPDF(string flavour)
     {
         string[] names = ["ib-align", "ib-alone", "ib-background", "ib-border", "ib-break-align", "ib-break-fraction", "ib-break-nested", "ib-break-page", "ib-break-space", "ib-code-kbd",
-            "ib-empty-alone", "ib-fraction", "ib-margin", "ib-nested", "ib-only-boxes", "ib-origin-cell", "ib-origin-margin", "ib-origin-page", "ib-padding", "ib-space"];
+            "ib-empty-alone", "ib-fraction", "ib-image-edges", "ib-image-span", "ib-link-button", "ib-link-button-break", "ib-link-cell", "ib-link-inside-span",
+            "ib-link-span-inside", "ib-link-states", "ib-margin", "ib-nested", "ib-only-boxes", "ib-origin-cell", "ib-origin-margin", "ib-origin-page", "ib-padding", "ib-space"];
         var folder = Directory.CreateTempSubdirectory("ave-extensions-documents-html-inline-boxes-").FullName;
         try
         {
             foreach (var name in names.Append("badge-language").Append("broken-language"))
             {
                 var path = Path.Combine(HtmlCases.Folder(), (name switch { "badge-language" => "ib-background", "broken-language" => "ib-break-nested", _ => name }) + ".html");
-                var html = File.ReadAllText(path).Replace("<html>", "<html lang=\"en\">", StringComparison.Ordinal).Replace("<head>", "<head><title>Inline boxes</title>", StringComparison.Ordinal);
+                var html = File.ReadAllText(path).Replace("<html>", "<html lang=\"en\">", StringComparison.Ordinal).Replace("<head>", "<head><title>Inline boxes</title>", StringComparison.Ordinal)
+                    .Replace("<img ", "<img alt=\"a figure\" ", StringComparison.Ordinal);
                 if (name == "badge-language")
                 {
                     html = html.Replace("<span style=\"background-color: #ff0000\">red</span>", "<span lang=\"fr\" style=\"background-color: #ff0000\">rouge</span>", StringComparison.Ordinal);

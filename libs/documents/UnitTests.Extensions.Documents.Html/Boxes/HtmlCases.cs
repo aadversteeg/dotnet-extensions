@@ -115,6 +115,8 @@ internal static class HtmlCases
         ["fr-row-later-page-padding-overflows-three-cells"] = "Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again",
         ["fr-continued-pad-past-taller-than-page"] = "What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding",
         ["lk-header-row"] = "A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page",
+        ["ib-link-span-inside"] = "A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it",
+        ["ib-break-justify"] = "Where_an_inline_box_ends_on_a_justified_line_Chromium_may_shrink_the_page_and_justify_it_a_pixel_wider",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -136,8 +138,10 @@ internal static class HtmlCases
     /// <c>sz-height-forced</c>), or a list item's label that would start left of the sheet
     /// (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>, at the item's source line, where Chromium cuts the label at the
     /// sheet's edge or leaves it out), or a table with separated borders that would break over pages
-    /// (<see cref="LayoutErrorCodes.TableBreak"/>: the room it had, at the table's source line). Any other error, also
-    /// another code under the same parent, is a failure of the case.</summary>
+    /// (<see cref="LayoutErrorCodes.TableBreak"/>: the room it had, at the table's source line), or an inline box layout
+    /// does not draw where it stands (<see cref="DocumentErrorCodes.Input.Unsupported.InlineBox"/>, at the line and column
+    /// of the element that made it; the front-end's own <see cref="HtmlStyleErrorCodes.Unsupported.InlineBox"/> is in the
+    /// list as one of its codes). Any other error, also another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
         CssErrorCodes.Unsupported.Property.ToString(),
@@ -166,6 +170,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.Link.ToString(),
         HtmlStyleErrorCodes.Unsupported.Language.ToString(),
         HtmlStyleErrorCodes.Unsupported.Metadata.ToString(),
+        HtmlStyleErrorCodes.Unsupported.InlineBox.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         CssErrorCodes.Unsupported.GeneratedContent.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
@@ -174,6 +179,7 @@ internal static class HtmlCases
         LayoutErrorCodes.OverflowAcrossPages.ToString(),
         LayoutErrorCodes.MarkerOutsideSheet.ToString(),
         LayoutErrorCodes.TableBreak.ToString(),
+        DocumentErrorCodes.Input.Unsupported.InlineBox.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -492,7 +498,7 @@ internal static class HtmlCases
     /// front-end's refusals is a line and a column; layout's is the line of the box, the only place a box keeps
     /// (<see cref="SourceLocation"/>).
     /// </summary>
-    private static string Refusal(Error error)
+    internal static string Refusal(Error error)
     {
         var first = error.Parts().First();
         var metadata = first.Metadata;

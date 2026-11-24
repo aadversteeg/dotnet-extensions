@@ -51,9 +51,9 @@ public static partial class HtmlBoxGenerator
             }
 
             var refused = false;
-            if (frame.InBox)
+            if (frame.InBox && frame.InLink)
             {
-                Refuse(HtmlStyleErrorCodes.Unsupported.InlineBox, "An <img> inside an element with a background, border, padding or margin of its own is not drawn in this version; put the image outside that element.",
+                Refuse(HtmlStyleErrorCodes.Unsupported.InlineBox, "An <img> inside a link and inside an element with a background, border, padding or margin of its own is not drawn in this version; put the image outside that element or outside the link.",
                     "img", element.Element.Position, "display");
                 refused = true;
             }

@@ -86,7 +86,7 @@ public sealed record CounterRun(NodeId Id, PageCounter Counter, TextStyle Style,
 /// line height (CSS 2.1 §10.8 counts an inline box's line height; a front-end that needs it adds an empty run in the
 /// element's style, as for any inline element). With a box it is an inline box with its own horizontal margins, padding,
 /// border and background (<see cref="InlineBoxStyle"/>, CSS 2.1 §10.8 and §8). Groups nest, a link inside a link excepted,
-/// and only in the children of an inline box. Each part of a group on one line is one line part (the layout's
+/// and only in the children of an inline box; a link may have a box of its own. Each part of a group on one line is one line part (the layout's
 /// <c>LineGroupPart</c>); its structure element is opened around each line part, which tagged PDF joins into one
 /// element. A group with a box and no role opens no structure element: its content stays content of the element around
 /// it.

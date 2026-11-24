@@ -27,6 +27,38 @@ public class ModelCheckTests
     private static StyledDocument WithText(TextStyle text) =>
         Document(new Box(new NodeId(1), SemanticRole.Paragraph, LayoutAlgorithmId.Inline, BoxStyle.Initial, [new TextRun(new NodeId(2), "x", text, At(0))], At(0)));
 
+    /// <summary>THE RULE FOR A DOCUMENT'S METADATA TEXT on a model built by hand: a title, an author or a description it
+    /// does not accept is refused before layout, with the field and the offset of the character.</summary>
+    [Theory]
+    [InlineData("title")]
+    [InlineData("author")]
+    [InlineData("description")]
+    public void A_title_an_author_or_a_description_with_a_control_character_is_refused(string field)
+    {
+        var text = "Hours\u0085";
+        var metadata = field switch
+        {
+            "title" => new DocumentMetadata(text, null),
+            "author" => new DocumentMetadata(null, text),
+            _ => new DocumentMetadata(null, null) { Description = text },
+        };
+
+        var error = Refused(Document(Paragraph(1, "x")) with { Metadata = metadata });
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.MetadataText);
+        error.Metadata![ErrorMetadataKeys.Property].Should().Be(field);
+        error.Metadata![ErrorMetadataKeys.Offset].Should().Be(5);
+    }
+
+    [Fact]
+    public void A_description_longer_than_4096_characters_is_refused_and_a_long_title_is_not()
+    {
+        var document = Document(Paragraph(1, "x"));
+
+        Refused(document with { Metadata = new DocumentMetadata(null, null) { Description = new string('a', 4_097) } }).Code.Should().Be(DocumentErrorCodes.Input.Invalid.MetadataText);
+        DocumentLayout.Run(document with { Metadata = new DocumentMetadata(new string('a', 8_192), new string('a', 4_096)) }, TestFonts.Set).IsSuccess.Should().BeTrue();
+    }
+
     [Theory]
     [InlineData(0, 2)]
     [InlineData(-1, 2)]

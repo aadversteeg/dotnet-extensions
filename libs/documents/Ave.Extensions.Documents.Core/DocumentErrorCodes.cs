@@ -108,10 +108,13 @@ public static class DocumentErrorCodes
             /// and Value, Property, SourceFile, SourceLine when the front-end found it.</summary>
             public static readonly ErrorCode Text = _ / "Text";
 
-            /// <summary>Metadata text — the title, the author, an attachment's file name or description — with a
-            /// character XML 1.0 does not allow (§2.2, production [2] Char: a C0 control character other than tab, line
-            /// feed and carriage return, U+FFFE, U+FFFF or an unpaired surrogate). The XMP metadata is XML, so such
-            /// text cannot be written. Metadata: Property, Offset.</summary>
+            /// <summary>Metadata text that THE RULE FOR A DOCUMENT'S METADATA TEXT (<see cref="MetadataTexts"/>) does not
+            /// accept: a title, an author or a description with a control character other than tab, line feed and carriage
+            /// return or a character XML 1.0 does not allow, an author or a description longer than
+            /// <see cref="MetadataTexts.MaxLength"/>; or an attachment's file name or description with a character XML 1.0
+            /// does not allow (§2.2, production [2] Char: a C0 control character other than tab, line feed and carriage
+            /// return, U+FFFE, U+FFFF or an unpaired surrogate). The XMP metadata is XML, so such text cannot be written.
+            /// Metadata: Property, Offset (for a character).</summary>
             public static readonly ErrorCode MetadataText = _ / "MetadataText";
 
             /// <summary>Elements nested deeper than the front-end allows (<c>InputLimits.MaxNestingDepth</c> in
@@ -198,8 +201,9 @@ public static class DocumentErrorCodes
             /// table, whose lines are drawn solid by the table's layout, or on a box with inset and outset sides together
             /// (not measured). Metadata: Value, Property.</summary>
             public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
-            /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: inside
-            /// or around a link, around an image, broken over two lines of a justified paragraph or at a soft hyphen, alone with
+
+            /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: around an
+            /// image that lies inside a link too, broken over two lines at a soft hyphen, alone with
             /// a vertical edge only, or reaching above the page area of a later page. Metadata: Value, Property.</summary>
             public static readonly ErrorCode InlineBox = _ / "InlineBox";
         }

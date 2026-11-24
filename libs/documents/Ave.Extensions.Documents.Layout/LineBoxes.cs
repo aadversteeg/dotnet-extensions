@@ -258,14 +258,8 @@ internal static class LineBoxes
 
         var parts = groups.End();
 
-        // THE RULE FOR AN INLINE BOX OVER LINES, its limits, measured against Chromium's print: a justified line that a box goes
-        // on from is widened by more than its room (each space 0.244 pt wider, the line 0.73 pt past its end, where the engine
-        // widens nothing), and a line that ends at a shown soft hyphen inside a box is shaped again here without its hyphen.
-        if (align == TextAlign.Justify && !isLastLine && parts.FirstOrDefault(part => part is { Group.Box: not null, HoldsEnd: false }) is { } justified)
-        {
-            return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(justified.Group, "it breaks over two lines of a justified paragraph, which this version does not draw; keep its content on one line (white-space: nowrap) or align the paragraph to the start"));
-        }
-
+        // THE RULE FOR AN INLINE BOX OVER LINES, its limit, measured against Chromium's print: a line that ends at a shown soft
+        // hyphen inside a box is shaped again here without its hyphen.
         if (pieces.FirstOrDefault(piece => piece.Run is ShapedRun && piece.Segment.Glyphs.Count > 0 && piece.Segment.Glyphs[^1].Text.EndsWith('\u00AD') && piece.Run.Groups.Any(group => group.Node.Box is not null)) is { Run: { } hyphenated })
         {
             return Result<LineFragment, Error>.Failure(LayoutErrors.InlineBox(hyphenated.Groups.Last(group => group.Node.Box is not null).Node, "it breaks over two lines at a soft hyphen, which this version does not draw; leave out the soft hyphen or keep the word on one line"));
@@ -282,11 +276,16 @@ internal static class LineBoxes
     /// to the end of its last, so a space removed at the line's end is outside it and a space between two of its pieces
     /// inside it; in the block direction from the ascent of the group's own font above the group's own baseline to its
     /// descent below it, at the group's font size and under the profile's font metric rounding, whatever the sizes of the
-    /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller). The group's
-    /// own baseline is the line's, raised or lowered by the group's baseline shift: a link inside a <c>sup</c> or a
-    /// <c>sub</c>, or itself raised, has its area around its shifted text, as Chromium writes its rectangle (cases
-    /// <c>va-link</c>, <c>va-sub</c>, <c>va-decorated</c>), and so has the border box of an inline box on a raised element
-    /// (<c>va-box</c>). The edges are exact, not rounded to whole pixels as Chromium writes them: they are not printed.
+    /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller), and over
+    /// the border box of every box inside it on the line: one area per line part, the link being one thing to click,
+    /// where Chromium writes one rectangle before the box, one at its border box and one after it (case
+    /// <c>ib-link-span-inside</c>, a listed difference; ISO 32000-1 §12.5.6.5 lets a <c>/Rect</c> be any rectangle). A
+    /// link with a box of its own has the box's border box on the line as its area, as Chromium writes a link styled as a
+    /// button (cases <c>ib-link-button</c>, <c>ib-link-button-break</c>, <c>ib-link-cell</c>). The group's own baseline is
+    /// the line's, raised or lowered by the group's baseline shift: a link inside a <c>sup</c> or a <c>sub</c>, or itself
+    /// raised, has its area around its shifted text, as Chromium writes its rectangle (cases <c>va-link</c>, <c>va-sub</c>,
+    /// <c>va-decorated</c>), and so has the border box of an inline box on a raised element (<c>va-box</c>). The edges are
+    /// exact, not rounded to whole pixels as Chromium writes them: they are not printed.
     /// <para>THE RULE FOR AN INLINE BOX OVER LINES (<c>box-decoration-break: slice</c>, CSS Fragmentation 3 §5.4): a group with a
     /// box has a part on each line it lies on, its border box from its first to its last piece there; the start edge (left
     /// margin, border and padding) lies in the first part only and the end edge in the last only, each where the line
@@ -296,7 +295,9 @@ internal static class LineBoxes
     /// paints its start padding alone on that line, 82.5..87 pt after the word, and its text from the next line's start;
     /// one whose last character is a space there ends its background 3 pt (its padding) after the last glyph, the space
     /// carrying none (<c>ib-break-space</c>); centred and right-aligned lines place each part with the line
-    /// (<c>ib-break-align</c>); a fractional top padding moves the text of every part by its own rounding
+    /// (<c>ib-break-align</c>) and a justified line a box goes on from is widened by its room as any justified line, its
+    /// edges no expansion opportunity (<c>ib-justify-padding</c>, <c>ib-justify-two</c>, <c>ib-justify-place</c>; where a box
+    /// ends 1/64 px past the page area Chromium shrinks the page: <c>ib-break-justify</c>, listed); a fractional top padding moves the text of every part by its own rounding
     /// (<c>ib-break-fraction</c>); between two lines over a page break, a part on each page (<c>ib-break-page</c>).</para>
     /// </summary>
     private sealed class LineGroups(double baseline, FontMetricRounding rounding)
@@ -369,13 +370,31 @@ internal static class LineBoxes
                 open.RemoveAt(open.Count - 1);
                 var style = group.Node.Style;
                 var extent = InlineExtent.Of(group.Font, style.FontSize.Points, style.LineHeight, rounding);
-                parts[part] = new LineGroupPart(group.Node, new Rect(new Point(left, BaselineOf(group) - extent.Ascent), new Size(right - left, extent.Ascent + extent.Descent)), first, lastEnd - first)
+                Rect? own = group.Node.Box is { } box ? BorderBox(group, box, left, right, extent) : null;
+                parts[part] = new LineGroupPart(group.Node, own ?? Area(group, part, left, right, extent), first, lastEnd - first)
                 {
-                    Box = group.Node.Box is { } box ? BorderBox(group, box, left, right, extent) : null,
+                    Box = own,
                     HoldsStart = start,
                     HoldsEnd = end,
                 };
             }
+        }
+
+        /// <summary>The area of the part of a group without a box of its own (THE RULE FOR A LINK'S AREA): from its first to
+        /// its last piece, from its font's ascent above its own baseline to its descent below it, and in the block direction also over the border box of every
+        /// box inside it on the line, the parts after <paramref name="part"/> (they close before it).</summary>
+        private Rect Area(Group group, int part, double left, double right, InlineExtent extent)
+        {
+            var (top, bottom) = (BaselineOf(group) - extent.Ascent, BaselineOf(group) + extent.Descent);
+            for (var inner = part + 1; inner < parts.Count; inner++)
+            {
+                if (parts[inner].Box is { } box)
+                {
+                    (top, bottom) = (Math.Min(top, box.Origin.Y), Math.Max(bottom, box.Origin.Y + box.Size.Height));
+                }
+            }
+
+            return new Rect(new Point(left, top), new Size(right - left, bottom - top));
         }
 
         /// <summary>

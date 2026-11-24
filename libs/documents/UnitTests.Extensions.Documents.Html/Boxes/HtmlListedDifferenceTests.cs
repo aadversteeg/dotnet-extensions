@@ -62,6 +62,60 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// An inline box that ends on a justified line can end, in Chromium 159's layout, 1/64 px past the page area. Chromium
+    /// then shrinks the whole print as for any content wider than the page area (see
+    /// <see cref="Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page"/>), by 112/112.015625 on a
+    /// page area 112 px wide, lays the page out one pixel wider, 113 px, and clips it at the page area. Case
+    /// <c>ib-break-justify</c>: in its second paragraph "kk ll" in a box with 5 pt padding and a 1 px border ends on the
+    /// first line; every font size of the page prints at 10.499 pt, and the box's right border shows only 0.012 pt of its
+    /// 0.75 pt. Taken back through the scale, each justified line on the page, also the first paragraph's, ends 0.75 pt
+    /// past the engine's, each of its three spaces 0.25 pt wider. The engine justifies each line to the page area's end
+    /// and has no page scale. With those spaces and the clipped border taken as the engine's, the print is the engine's.
+    /// </summary>
+    [Fact]
+    public void Where_an_inline_box_ends_on_a_justified_line_Chromium_may_shrink_the_page_and_justify_it_a_pixel_wider()
+    {
+        const double left = 18, top = 18, end = 102;
+        var (engine, chromium) = (Engine("ib-break-justify"), Chromium("ib-break-justify").Pages.Single());
+        var ours = engine.Pages.Single();
+
+        var scale = (chromium.Words[0].X1 - left) / (ours.Words[0].X1 - left);
+        scale.Should().BeApproximately(112 / (112 + (1 / 64.0)), 2e-5, "Chromium shrinks the page by an overflow of 1/64 px");
+        chromium.Words.Should().OnlyContain(word => System.Math.Abs(word.FontSize - 10.499) < 0.0005, "every font size of the page is shrunk");
+        double Back(double at, double origin) => origin + ((at - origin) / scale);
+        var unscaled = chromium.Words.Select(word => word with { X0 = Back(word.X0, left), X1 = Back(word.X1, left), Baseline = Back(word.Baseline, top), FontSize = word.FontSize / scale }).ToList();
+
+        // The paragraphs' last lines are not justified; the first line of each is.
+        var lines = unscaled.GroupBy(word => System.Math.Round(word.Baseline, 1)).Where(line => line.First().Text is "Justified" or "Spread").ToList();
+        lines.Select(line => string.Join(" ", line.Select(word => word.Text))).Should().Equal(["Justified aa bb cc", "Spread out kk ll"], "the two justified lines");
+        (ours.Words.Single(word => word.Text == "cc").X1 - end).Should().BeApproximately(0, 0.01, "the engine justifies the first paragraph's first line to the page area's end");
+        (unscaled.Single(word => word.Text == "cc").X1 - (left + (113 * 0.75))).Should().BeApproximately(0, 0.02, "Chromium justifies it to 113 px");
+
+        var widened = new Dictionary<PrintedWord, double>();
+        foreach (var line in lines)
+        {
+            var words = line.OrderBy(word => word.X0).ToList();
+            var theirs = ours.Words.Where(word => System.Math.Abs(word.Baseline - words[0].Baseline) < HtmlCases.Bound).OrderBy(word => word.X0).ToList();
+            theirs.Select(word => word.Text).Should().Equal(words.Select(word => word.Text));
+            for (var space = 0; space < words.Count; space++)
+            {
+                (words[space].X0 - theirs[space].X0).Should().BeApproximately(0.25 * space, 0.02, "each space before '{0}' is 0.25 pt wider", words[space].Text);
+                widened[words[space]] = 0.25 * space;
+            }
+        }
+
+        var clipped = chromium.Rectangles.Single(box => box.Stroked && box.X1 - box.X0 < 0.1);
+        (clipped.X0, clipped.X1).Should().Be((101.988, 102.0), "the box's right border, clipped at the page area");
+        var back = new PrintedPages([chromium with
+        {
+            Words = [.. unscaled.Select(word => widened.TryGetValue(word, out var by) ? word with { X0 = word.X0 - by, X1 = word.X1 - by } : word)],
+            Rectangles = [.. chromium.Rectangles.Select(box => box == clipped ? box with { X0 = end - 0.75 } : box)
+                .Select(box => box with { X0 = Back(box.X0, left), Y0 = Back(box.Y0, top), X1 = System.Math.Min(end, Back(box.X1, left)), Y1 = Back(box.Y1, top) })],
+        }]);
+        HtmlCases.Difference(engine, back).Should().BeNull("the wider spaces, the clipped border and the scale are the whole difference");
+    }
+
+    /// <summary>
     /// A4 without margins (the default page): Chromium's page area is 794 x 1123 px (595.5 x 842.25 pt), the page size
     /// rounded up to whole pixels, and reaches past the sheet it prints, 594.96 x 841.92 pt; the model holds no page area
     /// larger than the sheet, so the engine's ends at the sheet. Text and backgrounds end 0.54 pt short on the right, and
@@ -855,5 +909,31 @@ public class HtmlListedDifferenceTests
         var first = chromium[0];
         chromium.Select(link => (link.X0, link.Y0, link.X1, link.Y1, link.Target)).Should().AllBeEquivalentTo((first.X0, first.Y0, first.X1, first.Y1, first.Target), "every copy at the same rectangle, to the same target");
         HtmlCases.LinkDifference(pages, [chromium[0]]).Should().BeNull("the engine's one link is Chromium's first");
+    }
+
+    /// <summary>
+    /// A link with a box inside it (a styled span with a background, padding or border) has one area per line part, over its
+    /// text and the boxes inside it (THE RULE FOR A LINK'S AREA): the link is one thing to click, described once. Chromium 159
+    /// writes three rectangles on such a line: one for the link's text before the box, one at the box's border box, one for
+    /// the text after it (case <c>ib-link-span-inside</c>: 51.75..81.75, 81.75..109.5 and 109.5..140.25 pt on the first line;
+    /// a box at the link's start leaves two). An annotation is not printed, so Chromium's split is a fact and not the rule:
+    /// ISO 32000-1 §12.5.6.5 lets a link annotation's <c>/Rect</c> be any rectangle. The print is the same, and each of the
+    /// engine's areas is the rectangle around Chromium's of that line, so no part of the link Chromium marks lies outside it.
+    /// </summary>
+    [Fact]
+    public void A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it()
+    {
+        const string name = "ib-link-span-inside";
+        var boxes = HtmlCases.Boxes(name).Value;
+        var pages = DocumentLayout.Run(boxes.Document, boxes.Fonts).Value;
+        var chromium = HtmlCases.Links(HtmlCases.Cases, name);
+        var around = chromium.GroupBy(link => link.Target)
+            .Select(line => new HtmlCases.PrintedLink(line.First().Page, line.Min(link => link.X0), line.Min(link => link.Y0), line.Max(link => link.X1), line.Max(link => link.Y1), line.Key)).ToList();
+
+        HtmlCases.Status(name).Should().EndWith("(links.txt)", "every fact of the print is the same, and the link areas are compared last");
+        chromium.GroupBy(link => link.Target).Select(line => line.Count()).Should().Equal([3, 3, 2], "Chromium splits each line part at the box");
+        HtmlCases.Links(pages).Should().HaveCount(3, "the engine writes one area per line part");
+        HtmlCases.LinkDifference(pages, around).Should().BeNull("each area is the rectangle around Chromium's of its line");
+        HtmlCases.LinkDifference(pages, chromium).Should().Be("link 1 on page 1: x1 140.18, Chromium 81.75 (links.txt)");
     }
 }

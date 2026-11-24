@@ -111,6 +111,34 @@ public class MetadataMappingTests
         (warned.Author, warned.Description).Should().Be((null, null), "under Warn the document has no author or description");
     }
 
+    /// <summary>A title with a control character is refused at the <c>title</c>'s start tag, as a <c>meta</c> is; it is not
+    /// cleaned (THE RULE FOR A DOCUMENT'S METADATA TEXT).</summary>
+    [Theory]
+    [InlineData("\u0001")]
+    [InlineData("\u007F")]
+    [InlineData("\u0085")]
+    public void A_title_with_a_control_character_is_refused_at_the_title(string control)
+    {
+        var html = $"<!doctype html><html lang=\"en\"><head>\n<title>Hours {control} week</title></head><body><p>Hours.</p></body></html>";
+        Result<HtmlBoxes, Error> Generated(UnsupportedPolicy policy) =>
+            HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
+                .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = HtmlCases.Letter, Unsupported = policy }))
+                .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Unsupported = policy }));
+
+        var error = Generated(UnsupportedPolicy.Refuse).Error.Parts().Single(part => part.Code == HtmlStyleErrorCodes.Unsupported.Metadata);
+
+        error.Message.Should().Contain($"U+{(int)control[0]:X4} at position 6");
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be("title");
+        error.Metadata![ErrorMetadataKeys.Property].Should().Be("text");
+        (error.Metadata![ErrorMetadataKeys.SourceLine], error.Metadata![ErrorMetadataKeys.SourceColumn]).Should().Be((2, 1), "the title's start tag");
+    }
+
+    [Fact]
+    public void A_title_without_a_control_character_is_taken()
+    {
+        Metadata(string.Empty).Title.Should().Be("Hours");
+    }
+
     [Fact]
     public void A_tab_and_a_line_break_inside_a_content_are_kept()
     {
@@ -120,7 +148,7 @@ public class MetadataMappingTests
     [Fact]
     public void A_content_up_to_the_limit_is_taken_and_a_longer_one_refused()
     {
-        var longest = new string('a', HtmlMetadata.MaxLength);
+        var longest = new string('a', MetadataTexts.MaxLength);
 
         Metadata($"<meta name=\"description\" content=\"  {longest}  \">").Description.Should().Be(longest, "the limit counts the stripped content");
         var error = Boxes($"<meta name=\"description\" content=\"{longest}a\">").Error.Parts().Single();

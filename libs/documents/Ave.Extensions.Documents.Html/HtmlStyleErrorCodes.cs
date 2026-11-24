@@ -112,16 +112,16 @@ public static class HtmlStyleErrorCodes
         public static readonly ErrorCode Link = _ / "Link";
 
         /// <summary>An inline element with its own background, border, padding or horizontal margin (an inline box) where this
-        /// version does not draw one: inside a link, around a link or an image, or a link with a box of its own. The element is
-        /// drawn without its box (a link inside a box or a link with a box: as plain inline content, an image: not drawn).
+        /// version does not draw one: around an image that lies inside a link too. The image is not drawn.
         /// Metadata: Property, Value, SourceFile, SourceLine, SourceColumn (the start tag).</summary>
         public static readonly ErrorCode InlineBox = _ / "InlineBox";
 
-        /// <summary>A <c>meta</c> element whose <c>content</c> the document's metadata does not take, by THE RULE FOR A
-        /// DOCUMENT'S METADATA IN HTML (<c>HtmlMetadata</c>): longer than its limit, or holding a control character or a
-        /// character XML does not allow. The document is drawn without that author or description. Metadata: Property
-        /// (<c>content</c>), Value (the <c>name</c>, <c>author</c> or <c>description</c>), SourceFile, SourceLine,
-        /// SourceColumn (the start tag).</summary>
+        /// <summary>A <c>meta</c> element whose <c>content</c>, or a <c>title</c> element whose text, the document's metadata
+        /// does not take, by THE RULE FOR A DOCUMENT'S METADATA IN HTML (<c>HtmlMetadata</c>) and THE RULE FOR A DOCUMENT'S
+        /// METADATA TEXT (<c>MetadataTexts</c>): an author or description longer than its limit, or a text holding a control
+        /// character or a character XML does not allow. The document is drawn without that title, author or description.
+        /// Metadata: Property (<c>content</c>, or <c>text</c> for a title), Value (the <c>name</c>, <c>author</c> or
+        /// <c>description</c>, or <c>title</c>), SourceFile, SourceLine, SourceColumn (the start tag).</summary>
         public static readonly ErrorCode Metadata = _ / "Metadata";
     }
 

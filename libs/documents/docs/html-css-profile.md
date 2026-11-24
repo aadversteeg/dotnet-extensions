@@ -647,9 +647,10 @@ U+200A in a face without them (case `gm-spaces-roboto`).
 - Document metadata: the first `title` is the title. The first `meta` in tree order whose `name` is `author`, in any
   ASCII case, with a `content` that is not empty after stripping white space at both ends is the author; the same for
   `description`, written as the PDF's subject and XMP description (`HtmlMetadata`). Such a content longer than 4 096
-  characters, or with a control character (other than tab, line feed and carriage return) or a character XML does not
-  allow, is refused at the `meta` (`Documents.Html.Unsupported.Metadata`) and left out, not cleaned. Every other `meta`
-  name (`keywords`, `generator`, `date`, `application-name`, …) is ignored. Chromium writes neither into its PDF.
+  characters, or a title or content with a control character (other than tab, line feed and carriage return) or a
+  character XML does not allow (`MetadataTexts`), is refused at the `meta` or the `title`
+  (`Documents.Html.Unsupported.Metadata`) and left out, not cleaned. Every other `meta` name (`keywords`, `generator`,
+  `date`, `application-name`, …) is ignored. Chromium writes neither the author nor the description into its PDF.
 
 Presentational attributes (HTML Standard §15.2–§15.4):
 
