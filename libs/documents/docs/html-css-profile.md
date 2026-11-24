@@ -45,7 +45,7 @@ names nothing.
 | `color` | yes | `rgb(0, 0, 0)` | `<color>` | CSS Color 4 §3.1; the initial value is black (HTML Standard §15.3.4) |
 | `color-scheme` | yes | `normal` | `normal \| light` | CSS Color Adjust 1 §2.1 |
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
-| `empty-cells` | yes | `show` | `show` | CSS 2.1 §17.6.1.1 |
+| `empty-cells` | yes | `show` | `show \| hide` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
 | `font-kerning` | yes | `auto` | `auto \| normal` | CSS Fonts 4 §6.3; normal prints as auto (Chromium 159 kerns with both, measured) |
 | `font-size` | yes | `12pt` | `<absolute-size> \| <relative-size> \| <length-percentage [0,∞]>` | CSS Fonts 4 §2.5 |

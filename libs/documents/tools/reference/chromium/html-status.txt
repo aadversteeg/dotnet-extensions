@@ -549,7 +549,7 @@ tj-top-edge equal
 tk-break-cut equal
 tk-break-stripe equal
 tk-collapsed equal
-tk-empty refused Documents.Css.Unsupported.Value empty-cells: hide at 15:32
+tk-empty equal
 tk-separated equal
 tk-span equal
 tk-table-break equal
@@ -558,6 +558,9 @@ tk-table-collapsed equal
 tk-thick equal
 tl-fixed-fill-wide-word listed A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 'c' x0 221.49, Chromium 200.238 (print.txt)
 tl-fixed-width-auto equal
+tm-collapse equal
+tm-empty equal
+tm-row equal
 tp-beside-auto equal
 tp-beside-length refused Documents.Html.Unsupported.Value width: 30% at 4:42
 tp-col-span equal

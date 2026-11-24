@@ -215,7 +215,7 @@ internal static class BoxProperties
         yield return new("border-collapse", "collapse and separate on a table; no effect on another box", (value, facts) => TableProperties.TableProperty("border-collapse", value, facts));
         yield return new("border-spacing", "whole CSS pixels on a table with separated borders; no effect with collapsed borders", (value, facts) => TableProperties.TableProperty("border-spacing", value, facts));
         yield return new("caption-side", "top and bottom: where a table draws its caption", (value, facts) => TableProperties.TableProperty("caption-side", value, facts));
-        yield return new("empty-cells", "show, its only value: draws every cell", (value, facts) => TableProperties.TableProperty("empty-cells", value, facts));
+        yield return new("empty-cells", "show draws every cell; hide, with separated borders, paints no border or background of an empty cell", (value, facts) => TableProperties.TableProperty("empty-cells", value, facts));
 
         yield return new("table-layout", "both values: read for the column widths of a table", (_, _) => null);
 

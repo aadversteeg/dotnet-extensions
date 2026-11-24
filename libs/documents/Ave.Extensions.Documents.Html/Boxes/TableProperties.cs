@@ -127,8 +127,8 @@ internal static class TableProperties
     /// HTML's (HTML Standard §15.3.8). <c>border-spacing</c> and <c>empty-cells</c> apply only in the separated borders
     /// model (CSS 2.1 §17.6.1, §17.6.1.1), so they have no effect with collapsed borders; with separated borders a
     /// spacing is drawn in whole CSS pixels, the spacings the cases measure (<c>ts-*</c>: 0, 2, 4, 8 and 12 px), and another
-    /// is refused, as Chromium's rounding of it is not measured; <c>empty-cells</c> takes only <c>show</c> (the registry),
-    /// which draws every cell. <c>caption-side</c> takes <c>top</c> and <c>bottom</c> (the registry), read on the caption;
+    /// is refused, as Chromium's rounding of it is not measured; <c>empty-cells</c> takes <c>show</c>, which draws every cell,
+    /// and <c>hide</c>, which hides an empty cell (the registry; <c>HtmlBoxGenerator</c>, IsHidden; cases <c>tm-*</c>). <c>caption-side</c> takes <c>top</c> and <c>bottom</c> (the registry), read on the caption;
     /// <c>table-layout</c> is read for the columns.
     /// </summary>
     public static string? TableProperty(string name, CssValue value, ElementFacts facts) =>

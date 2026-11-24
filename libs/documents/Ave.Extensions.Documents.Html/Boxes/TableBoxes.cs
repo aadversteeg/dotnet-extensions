@@ -430,19 +430,69 @@ public static partial class HtmlBoxGenerator
                 _cellWidths[box.Id] = html.Position;
             }
 
+            var style = box.Style with
+            {
+                Margin = Edges.Zero,
+                Span = new CellSpan(Span(html.Attribute("colspan"), TableSlots.MaxColumnSpan, zero: 1), rows),
+                VerticalAlign = align,
+                Width = width,
+                TableHeight = CellHeight(element, box.Style),
+            };
             return box with
             {
                 Role = html.LocalName == "th" ? SemanticRole.TableHeaderCell : SemanticRole.TableCell,
-                Style = box.Style with
-                {
-                    Margin = Edges.Zero,
-                    Span = new CellSpan(Span(html.Attribute("colspan"), TableSlots.MaxColumnSpan, zero: 1), rows),
-                    VerticalAlign = align,
-                    Width = width,
-                    TableHeight = CellHeight(element, box.Style),
-                },
+                Style = IsHidden(element) ? Hidden(style) : style,
             };
         }
+
+        /// <summary>
+        /// True for a cell that <c>empty-cells: hide</c> hides (CSS 2.1 §17.6.1.1, separated borders only): a cell without
+        /// content, of only white space that collapses, or of only comments, as Chromium prints it (case <c>tm-empty</c>: such
+        /// cells are not painted, a cell of a no-break space and a cell with an empty inline element are). With collapsed
+        /// borders the property has no effect (<c>tm-collapse</c>). A cell of white space that is preserved and a cell whose
+        /// elements are all not displayed are not measured, so refused.
+        /// </summary>
+        private bool IsHidden(StyledElement element)
+        {
+            if (Value(element, "empty-cells") is not CssKeyword { Name: "hide" } || Value(element, "border-collapse") is CssKeyword { Name: "collapse" })
+            {
+                return false;
+            }
+
+            var elements = element.Children.OfType<StyledElement>().ToList();
+            var texts = element.Children.OfType<StyledText>().Where(text => !IsDocumentWhiteSpace(text.Text.Data)).ToList();
+            if (texts.Count > 0 || elements.Any(child => Display(child) != "none"))
+            {
+                return false;
+            }
+
+            if (elements.Count > 0 || (element.Children.Count > 0 && CollapseOf(element.Style) != WhiteSpaceCollapse.Collapse))
+            {
+                Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'empty-cells: hide' on a <{element.Element.LocalName}> of only elements that are not displayed, or of white space that is preserved, is not drawn in this version: no case measures whether such a cell is empty. Leave the cell empty, or use empty-cells: show.", "hide", element.Element.Position, "empty-cells");
+            }
+
+            return elements.Count == 0;
+        }
+
+        /// <summary>True for a text of only document white space (CSS Text 3 §4.1: space, tab, line feed, carriage return,
+        /// form feed; not a no-break space).</summary>
+        private static bool IsDocumentWhiteSpace(string text) => text.All(character => character is ' ' or '\t' or '\n' or '\r' or '\f');
+
+        /// <summary>A hidden empty cell (<see cref="IsHidden"/>): it paints neither its border nor its background, and keeps
+        /// its size: its border widths become padding, which holds the same room without painting (case <c>tm-empty</c>: the
+        /// columns of hidden cells keep their widths; <c>tm-row</c>: a row of only hidden cells keeps its height, its padding
+        /// and border, and its spacings). A row's, a row group's, a column's or a column group's background is still painted
+        /// under it (<see cref="Backgrounds"/>; <c>tm-empty</c>, <c>tk-empty</c>).</summary>
+        private static BoxStyle Hidden(BoxStyle style) => style with
+        {
+            Border = Border.None,
+            Padding = new Edges(
+                style.Padding.Top + style.Border.Top.Width,
+                style.Padding.Right + style.Border.Right.Width,
+                style.Padding.Bottom + style.Border.Bottom.Width,
+                style.Padding.Left + style.Border.Left.Width),
+            Background = null,
+        };
 
         /// <summary>A computed <c>height</c> that is a length, or null (auto, or refused).</summary>
         private Length? HeightOf(StyledElement element) => Value(element, "height") is CssLength { Value: var length } ? length : null;

@@ -535,6 +535,53 @@ public class TableBoxTests
         cell.Style.VerticalAlign.Should().Be(VerticalAlign.Top);
     }
 
+    private const string Hide = "table { border-collapse: separate; empty-cells: hide } td { border: 0.75pt solid #0000ff; padding: 2pt; background: #00ff00 }";
+
+    /// <summary>Under <c>empty-cells: hide</c> with separated borders a cell without content, of white space or of a comment
+    /// paints no border and no background of its own and keeps its size, its border widths as padding; a no-break space and
+    /// an empty inline element are content (case <c>tm-empty</c>).</summary>
+    [Theory]
+    [InlineData("", true)]
+    [InlineData(" \n\t ", true)]
+    [InlineData("<!-- c -->", true)]
+    [InlineData("&nbsp;", false)]
+    [InlineData("<span></span>", false)]
+    public void Under_empty_cells_hide_an_empty_cell_paints_no_border_or_background_and_keeps_its_size(string content, bool hidden)
+    {
+        var cells = Parts(Parts(Parts(Table($"<table><tr><td>a</td><td>{content}</td></tr></table>", Collapsed + Hide)).First()).First()).ToList();
+        var (shown, cell) = (cells[0].Style, cells[1].Style);
+        var room = shown.Padding.Top + shown.Border.Top.Width;
+
+        (cell.Border == Border.None, cell.Background, cell.Padding).Should().Be(hidden
+            ? (true, null, Edges.All(room))
+            : (false, new Color(0, 255, 0), shown.Padding));
+    }
+
+    /// <summary>A hidden empty cell shows its row's background, not its own (cases <c>tk-empty</c>, <c>tm-empty</c>); with
+    /// collapsed borders <c>empty-cells</c> has no effect (<c>tm-collapse</c>).</summary>
+    [Fact]
+    public void A_hidden_empty_cell_shows_its_rows_background_and_collapsed_borders_hide_nothing()
+    {
+        var cell = Parts(Parts(Parts(Table("<table><tr style=\"background:#00ffff\"><td></td></tr></table>", Collapsed + Hide)).First()).First()).First();
+        cell.Style.Background.Should().Be(new Color(0, 255, 255));
+
+        var collapsed = Parts(Parts(Parts(Table("<table><tr><td></td></tr></table>", Collapsed + Hide + " table { border-collapse: collapse }")).First()).First()).First();
+        (collapsed.Style.Background, collapsed.Style.Border.Top.Width).Should().Be((new Color(0, 255, 0), Length.FromPoints(0.75)));
+    }
+
+    /// <summary>Under <c>empty-cells: hide</c> no case measures whether a cell of only elements that are not displayed, or of
+    /// white space that is preserved, is empty: both are refused at the cell.</summary>
+    [Theory]
+    [InlineData("<span style=\"display:none\">a</span>")]
+    [InlineData("<span style=\"white-space:pre\"></span>   ")]
+    public void Under_empty_cells_hide_a_cell_not_measured_is_refused(string content)
+    {
+        var cell = content.StartsWith("<span style=\"white-space", StringComparison.Ordinal) ? "<td style=\"white-space:pre\">   </td>" : $"<td>{content}</td>";
+        var error = FirstRefusal($"<table><tr>{cell}</tr></table>", Collapsed + Hide);
+
+        (error.Code, error.Metadata![ErrorMetadataKeys.Property]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "empty-cells"));
+    }
+
     /// <summary>The number of lines of a page.</summary>
     private static int LineCount(PageFragment page)
     {
