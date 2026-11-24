@@ -4,6 +4,8 @@ using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html;
 using Ave.Extensions.Documents.Html.Boxes;
 using Ave.Extensions.Documents.Html.Parsing;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
@@ -226,7 +228,7 @@ public class TextDecorationMappingTests
     {
         var boxes = HtmlCases.Boxes("dw-gap-fraction").Value;
         boxes.Document.Profile.InkGapBand.Should().Be(InkGapBand.AtUnroundedLine);
-        var pages = Ave.Extensions.Documents.Layout.DocumentLayout.Run(boxes.Document with { Profile = boxes.Document.Profile with { InkGapBand = band } }, boxes.Fonts).Value;
+        var pages = DocumentLayout.Run(boxes.Document with { Profile = boxes.Document.Profile with { InkGapBand = band } }, boxes.Fonts).Value;
         var engine = Lines(PrintedPages.Engine(pages).Pages[0].Rectangles);
         var chromium = Lines(HtmlCases.ChromiumPrint("dw-gap-fraction").Pages[0].Rectangles);
 
@@ -247,5 +249,30 @@ public class TextDecorationMappingTests
             .Where(box => box.Y1 - box.Y0 < 0.8 && box.X1 - box.X0 < 280)
             .GroupBy(box => ChromiumLayout.WholePixel(box.Y0))
             .ToDictionary(row => row.Key, row => row.OrderBy(box => box.X0).ToList()));
+    }
+
+    /// <summary>
+    /// The gaps cut again on the page can be more or fewer pieces than when the line was built: "gjpqy" in a 16 pt link on a
+    /// line whose top lies 0.5 px past a whole pixel is two pieces with the band at the text and three with the band at the
+    /// line's unrounded place. The link's part on the line still holds all of its text and all of its pieces, and nothing
+    /// after it.
+    /// </summary>
+    [Fact]
+    public void A_link_holds_its_text_and_every_piece_of_its_underline_when_the_gaps_are_cut_again_into_more_pieces()
+    {
+        var boxes = Boxes(Doc("<div style=\"height: 0.5px\"></div><p><a href=\"https://example.com/\">gjpqy</a> end</p>", "body { font-size: 16pt } p { margin: 0 }")).Value;
+        PageDocument Laid(InkGapBand band) =>
+            DocumentLayout.Run(boxes.Document with { Profile = boxes.Document.Profile with { InkGapBand = band } }, boxes.Fonts).Value;
+        Laid(InkGapBand.AtText).Pages[0].Items.OfType<FillRectangle>().Should().HaveCount(2);
+        var items = Laid(InkGapBand.AtUnroundedLine).Pages[0].Items;
+        items.OfType<FillRectangle>().Should().HaveCount(3);
+
+        var start = items.Select((item, index) => (item, index)).Single(pair => pair.item is StructureStart { Role: SemanticRole.LinkRole }).index;
+        var link = ((StructureStart)items[start]).Node;
+        var end = items.Select((item, index) => (item, index)).Single(pair => pair.item is StructureEnd { } closed && closed.Node == link).index;
+        var inside = items.Skip(start + 1).Take(end - start - 1).ToList();
+        string.Concat(inside.OfType<GlyphRun>().SelectMany(run => run.Glyphs).Select(glyph => glyph.Text)).Should().Be("gjpqy");
+        inside.OfType<FillRectangle>().Should().HaveCount(3, "every piece of the link's underline lies in the link's part");
+        string.Concat(items.Skip(end + 1).OfType<GlyphRun>().SelectMany(run => run.Glyphs).Select(glyph => glyph.Text)).Trim().Should().Be("end");
     }
 }
