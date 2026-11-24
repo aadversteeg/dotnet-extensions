@@ -112,7 +112,8 @@ public class TableLengthTests
     /// <c>twd-cell-row</c>, <c>width: 80pt</c> in the first row (a, collapsed: 88.734 pt, the width, 8 pt of padding and
     /// half of each 0.75 pt line) or the second (b, separated: 89.484 pt, with its own borders); case <c>twd-cell-two</c> a,
     /// 60 pt then 90 pt in one column: 98.742 pt; case <c>twd-cell-col</c> a, a column element of 60 pt beside a cell of
-    /// 90 pt: 98.742 pt.
+    /// 90 pt: 98.742 pt, and c, separated, a column element of 90 pt beside a cell of 60 pt: 90 pt, the column element's
+    /// length, a border box.
     /// </summary>
     [Fact]
     public void In_the_automatic_layout_the_widest_cell_width_of_a_column_counts_in_every_row()
@@ -127,6 +128,7 @@ public class TableLengthTests
         ShouldBe([CellWidths(Page(Separated(TwoRows(TwoAutos, null, 80))))[0]], 89.484);
         ShouldBe([CellWidths(Page(TwoRows(TwoAutos, 60, 90)))[0]], 98.742);
         ShouldBe([CellWidths(Page(TwoRows([new TrackSize.Preferred(60.Pt()), TrackSize.Auto.Instance], null, 90)))[0]], 98.742);
+        ShouldBe([CellWidths(Page(Separated(TwoRows([new TrackSize.Preferred(90.Pt()), TrackSize.Auto.Instance], 60, null))))[0]], 90);
     }
 
     /// <summary>
