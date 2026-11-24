@@ -36,6 +36,12 @@ public sealed record FlowBreakToken(int ChildIndex, BreakToken? ChildToken) : Br
     /// they come right after an unforced break"). Part of the position: two tokens differ when only this differs.
     /// </summary>
     public bool IsForced { get; init; }
+
+    /// <summary>For a box with a height (<c>BoxStyle.SpecifiedHeight</c>, <c>MinHeight</c>, <c>MaxHeight</c>): how much of
+    /// its border box's height the pages before showed, so that the next page shows the rest (Chromium's consumed block
+    /// size; cases <c>sz-height-break</c>, <c>sz-height-rest-short</c>, <c>sz-min-height-break</c>). 0 for every other box
+    /// and on a box's first fragment. Set by <see cref="SlicedBox"/>. Part of the position.</summary>
+    public double Consumed { get; init; }
 }
 
 /// <summary>The break token of <see cref="InlineLayout"/>: the first line of the next fragment.</summary>
@@ -50,6 +56,12 @@ public sealed record InlineBreakToken(int LineIndex) : BreakToken
     /// <summary>How many slices of the line earlier pages showed (at most <see cref="MonolithicSlices.MaxSlices"/>); 0 when
     /// the line starts on the next page.</summary>
     public int Slices { get; init; }
+
+    /// <summary>For a box with a height (<c>BoxStyle.SpecifiedHeight</c>, <c>MinHeight</c>, <c>MaxHeight</c>): how much of
+    /// its border box's height the pages before showed, so that the next page shows the rest (Chromium's consumed block
+    /// size; cases <c>sz-height-break</c>, <c>sz-height-rest-short</c>, <c>sz-min-height-break</c>). 0 for every other box
+    /// and on a box's first fragment. Set by <see cref="SlicedBox"/>. Part of the position.</summary>
+    public double Consumed { get; init; }
 }
 
 /// <summary>The break token of <see cref="ImageLayout"/>: the image is still to be placed, on the next page, after a

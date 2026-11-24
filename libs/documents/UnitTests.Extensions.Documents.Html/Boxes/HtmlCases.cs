@@ -91,6 +91,12 @@ internal static class HtmlCases
         ["a4-line-beside-lines"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["fr-f4-padding-page-start"] = "At_the_top_of_a_page_such_a_row_is_cut_where_Chromium_leaves_a_blank_page",
         ["fr-old-margin-at-row-cut"] = "A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height",
+        ["ii-hyphen"] = "A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case",
+        ["ii-joiners"] = "A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners",
+        ["ws-border"] = "Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
+        ["ws-image-border"] = "Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case",
+        ["ws-soft"] = "A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them",
+        ["sk-misc"] = "An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen",
     };
 
     /// <summary>The statuses the status test accepts, as the second field of a line, compared whole: <c>equal</c>,
@@ -104,7 +110,12 @@ internal static class HtmlCases
     /// and content layout cannot place on any page (<see cref="LayoutErrorCodes.DoesNotFit"/>: it names the room it had
     /// and the source line of the box, where Chromium prints the content past the page end) or that is wider than its
     /// page-margin box (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration,
-    /// where Chromium draws it over its box). Any other error, also
+    /// where Chromium draws it over its box), or a table whose columns do not fit the width it is given
+    /// (<see cref="LayoutErrorCodes.ColumnsDoNotFit"/>, at the table's source line, where Chromium lets the table pass its
+    /// container: case <c>tw-pref</c>, a table that needs 157.805 pt in a box of 150 pt), or a box with a height whose
+    /// content goes on past a page break after the height ended (<see cref="LayoutErrorCodes.OverflowAcrossPages"/>, at the
+    /// box's source line, where Chromium prints that content on the next page: cases <c>sz-height-overflow-page</c>,
+    /// <c>sz-height-forced</c>). Any other error, also
     /// another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
@@ -132,6 +143,8 @@ internal static class HtmlCases
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
+        LayoutErrorCodes.ColumnsDoNotFit.ToString(),
+        LayoutErrorCodes.OverflowAcrossPages.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -255,6 +268,17 @@ internal static class HtmlCases
         };
     }
 
+    /// <summary>Chromium's print of a case as <see cref="Status(CaseFolder, string, string?)"/> compares it: <c>print.txt</c>
+    /// with each line that Chromium clips around the glyphs' ink replaced by its pieces (<see cref="Clips"/>).</summary>
+    /// <param name="name">The case.</param>
+    /// <returns>The print.</returns>
+    public static PrintedPages ChromiumPrint(string name)
+    {
+        var clips = Clips(Cases, name);
+        var print = PrintedPages.Parse(File.ReadAllText(Measured(Cases, name) + ".print.txt"));
+        return new([.. print.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, clips)] })]);
+    }
+
     /// <summary>
     /// The lines Chromium cuts around the glyphs' ink (<c>text-decoration-skip-ink: auto</c>), from <c>&lt;case&gt;.ink.txt</c>
     /// (README of <c>tools/reference/chromium</c>, read back by <c>ink.py</c>): Chromium paints such a line whole inside clips,
@@ -332,7 +356,7 @@ internal static class HtmlCases
         return (line, column) switch
         {
             ({ }, { }) => $"refused {first.Code} {what} at {line}:{column}",
-            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit => $"refused {first.Code} {what} at {line}",
+            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages => $"refused {first.Code} {what} at {line}",
             _ => $"failed {first.Code} {what}: a refusal without its line and column",
         };
     }
@@ -654,7 +678,9 @@ internal static class HtmlCases
     /// <c>&lt;div&gt;&lt;table id="t"&gt;</c> on one line, the table's box is the line's one table box, not the div's box
     /// before it). A box carries its source line only, so where the line holds more or fewer boxes of the role than
     /// elements (an element of the role that makes no box, an inline element, an anonymous box of a block written on the
-    /// line) the place is not known, and that is the difference. Else the difference.
+    /// line) the place is not known, and that is the difference. Else the difference. Column elements and a <c>br</c>
+    /// are no peers: they never make a box of their own (a column is read by its table, a <c>br</c> is a line break in
+    /// the text; case <c>tw-col</c>: <c>&lt;div id="w"&gt;&lt;table&gt;&lt;colgroup&gt;&lt;col&gt;</c> on one line).
     /// </summary>
     internal static (Box? Box, string? Difference) IdBox(Box root, IReadOnlyList<HtmlElement> elements, string[] row, string label)
     {
@@ -667,12 +693,15 @@ internal static class HtmlCases
 
         var (element, role) = (named[0], RoleOf(named[0]));
         var line = element.Position.Line;
-        var peers = elements.Where(other => other.Position.Line == line && RoleOf(other) == role).ToList();
+        var peers = elements.Where(other => other.Position.Line == line && RoleOf(other) == role && !MakesNoBox(other)).ToList();
         var candidates = Boxes(root).Where(box => box.Source.Line == line && box.Role == role).ToList();
         return candidates.Count == peers.Count
             ? (candidates[peers.IndexOf(element)], null)
             : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role");
     }
+
+    /// <summary>An element the HTML front-end never makes a box for: a column, a column group, a line break.</summary>
+    private static bool MakesNoBox(HtmlElement element) => element.Namespace == ElementNamespace.Html && element.LocalName is "col" or "colgroup" or "br";
 
     /// <summary>The role the HTML front-end gives the box of an element by its tag, for <see cref="IdBox"/>: a table, a
     /// table cell, a paragraph, a heading, a row group or a row; any other element a generic box.</summary>

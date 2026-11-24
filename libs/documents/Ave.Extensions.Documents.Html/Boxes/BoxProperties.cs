@@ -46,8 +46,8 @@ internal static class BoxProperties
         "font-feature-settings", "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
         "font-variant-alternates", "font-variant-caps", "font-variant-east-asian", "font-variant-emoji",
         "font-variant-ligatures", "font-variant-numeric", "font-variant-position", "font-variation-settings", "hyphens",
-        "image-rendering", "isolation", "left", "letter-spacing", "line-break", "list-style-image", "max-height",
-        "min-height", "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
+        "image-rendering", "isolation", "left", "letter-spacing", "line-break", "list-style-image",
+        "mix-blend-mode", "object-fit", "opacity", "outline-style", "overflow-wrap", "page", "position",
         "quotes", "right", "row-gap", "tab-size", "text-align-last", "text-decoration-thickness", "text-indent",
         "text-justify", "text-overflow", "text-rendering", "text-shadow", "text-transform", "text-underline-offset",
         "text-underline-position", "text-wrap-style", "top",
@@ -113,11 +113,12 @@ internal static class BoxProperties
                 IsZero(facts.Style, $"border-{side}-width") || Alpha(Resolved(value, facts.Style)) == 1 ? null : "a border colour with an alpha other than 1 is not drawn");
         }
 
-        // CSS Box Model 3 §5.1; auto is 0 while width and height are auto (CSS 2.1 §10.3.3, §10.6.3; inline: §10.3.1).
+        // CSS Box Model 3 §5.1; a horizontal auto margin takes the width a block box with a width leaves (CSS 2.1 §10.3.3,
+        // BoxStyle.AutoMargins; case sz-margin-auto) and is 0 at width auto; a vertical one is 0 (§10.6.3; inline: §10.3.1).
         foreach (var side in Sides)
         {
             var vertical = side is "top" or "bottom";
-            yield return new($"margin-{side}", vertical ? "a length of 0 or more, auto (0); no effect on an inline box (CSS 2.1 §10.6.1) or an internal table part (§17.5)" : "a length of 0 or more, auto (0) on a block box; 0 or auto on an inline box; 0 on a table, or auto at width 100%; no effect on an internal table part (CSS 2.1 §17.5)",
+            yield return new($"margin-{side}", vertical ? "a length of 0 or more, auto (0); no effect on an inline box (CSS 2.1 §10.6.1) or an internal table part (§17.5)" : "a length of 0 or more, auto on a block box (the width its width leaves); 0 or auto on an inline box; 0 on a table, or auto at width 100%; no effect on an internal table part (CSS 2.1 §17.5)",
                 (value, facts) => value switch
                 {
                     _ when TableProperties.IsPart(facts) => TableProperties.Margin(side, value, facts),
@@ -138,13 +139,44 @@ internal static class BoxProperties
             });
         }
 
-        // CSS Sizing 3 §3.1–3.2: the sizes do not apply to an inline box (CSS 2.1 §10.3.1, §10.6.1).
-        yield return new("width", "auto; a positive length on an image; no effect on an inline box; on a table part what TableProperties.Width says", (value, facts) =>
-            TableProperties.IsPart(facts) ? TableProperties.Width(value, facts) : IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null : "sizes are not drawn in this version");
-        yield return new("height", "auto; a positive length on an image; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null : "sizes are not drawn in this version");
-        yield return new("min-width", "auto or 0; no effect on an inline box", (value, facts) => IsKeyword(value, "auto") || IsZero(value) || !facts.IsBlock ? null : "sizes are not drawn in this version");
-        yield return new("max-width", "none; no effect on an inline box", (value, facts) => IsKeyword(value, "none") || !facts.IsBlock ? null : "sizes are not drawn in this version");
-        yield return new("box-sizing", "both values: no effect while width and height are auto (every other width and height is refused)", (_, _) => null);
+        // CSS Sizing 3 §3.1–3.2: the sizes do not apply to an inline box (CSS 2.1 §10.3.1, §10.6.1). A block box takes a
+        // width, min-width and max-width of a length or a percentage (BoxStyle.SpecifiedWidth; cases sz-*); a table part
+        // its own (TableProperties.Width), an image a positive length; a calculated value is refused.
+        yield return new("width", "auto; a length or a percentage on a block box; a positive length on an image; no effect on an inline box; on a table part what TableProperties.Width says", (value, facts) =>
+            TableProperties.IsPart(facts) ? TableProperties.Width(value, facts)
+            : IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null
+            : facts.IsReplaced ? "an image is drawn at a positive length width in this version"
+            : BlockSize(value));
+        yield return new("min-width", "auto or 0; a length or a percentage on a block box; no effect on an inline box", (value, facts) =>
+            IsKeyword(value, "auto") || IsZero(value) || !facts.IsBlock ? null
+            : TableProperties.IsPart(facts) || facts.IsReplaced ? "a minimum width on a table part or an image is not drawn in this version"
+            : BlockSize(value));
+        yield return new("max-width", "none; a length or a percentage on a block box; no effect on an inline box", (value, facts) =>
+            IsKeyword(value, "none") || !facts.IsBlock ? null
+            : TableProperties.IsPart(facts) || facts.IsReplaced ? "a maximum width on a table part or an image is not drawn in this version"
+            : BlockSize(value));
+
+        // A block box takes a height of a length, and a percentage of a parent with a height of a length, which the box
+        // generator resolves (BoxStyle.SpecifiedHeight; cases sz-height*); min-height and max-height of a length
+        // (sz-min-height-break, sz-max-height, sz-min-max-height). A percentage minimum or maximum is not measured.
+        yield return new("height", "auto; a length or a percentage on a block box; a positive length on an image; no effect on an inline box", (value, facts) =>
+            IsKeyword(value, "auto") || !facts.IsBlock || IsImageSize(value, facts) ? null
+            : facts.IsReplaced ? "an image is drawn at a positive length height in this version"
+            : TableProperties.IsPart(facts) ? "a height on a table part is not drawn in this version"
+            : BlockSize(value));
+        yield return new("min-height", "auto or 0; a length on a block box; no effect on an inline box", (value, facts) =>
+            IsKeyword(value, "auto") || IsZero(value) || !facts.IsBlock ? null
+            : TableProperties.IsPart(facts) || facts.IsReplaced ? "a minimum height on a table part or an image is not drawn in this version"
+            : value is CssLength ? null : "a percentage or calculated minimum height is not drawn in this version");
+        yield return new("max-height", "none; a length on a block box; no effect on an inline box", (value, facts) =>
+            IsKeyword(value, "none") || !facts.IsBlock ? null
+            : TableProperties.IsPart(facts) || facts.IsReplaced ? "a maximum height on a table part or an image is not drawn in this version"
+            : value is CssLength ? null : "a percentage or calculated maximum height is not drawn in this version");
+
+        // CSS Box Model 3 §4.3: read for the width and the height of a block box; on an image its padding and border would change the
+        // image's size under border-box, which the image algorithm does not take.
+        yield return new("box-sizing", "both values on a block box (read for its width and height); content-box on an image with padding or a border", (value, facts) =>
+            facts.IsReplaced && IsKeyword(value, "border-box") && HasInsets(facts.Style) ? "border-box on an image with padding or a border is not drawn in this version" : null);
 
         // CSS Display 3 §2.
         yield return new("display", "block, inline, none, table and its parts but the caption", (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" } ? null : TableProperties.Display(value));
@@ -234,6 +266,13 @@ internal static class BoxProperties
 
     private static bool IsAutoAndRatio(CssValue value) =>
         value is CssList { Items: [CssKeyword { Name: "auto" }, CssRatio] or [CssRatio, CssKeyword { Name: "auto" }] };
+
+    /// <summary>A width, min-width or max-width a block box takes: a length or a percentage (CSS Sizing 3 §3.1).</summary>
+    private static string? BlockSize(CssValue value) => value is CssLength or CssPercentage ? null : "a calculated or intrinsic size is not drawn in this version";
+
+    /// <summary>Padding or a border on the box.</summary>
+    private static bool HasInsets(ComputedStyle style) =>
+        Sides.Any(side => !IsZero(style, $"border-{side}-width") || !IsZero(style, $"padding-{side}"));
 
     /// <summary>A size the image algorithm takes: a positive length on a replaced element.</summary>
     private static bool IsImageSize(CssValue value, ElementFacts facts) => facts.IsReplaced && value is CssLength { Value.Points: > 0 };

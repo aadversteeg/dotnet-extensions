@@ -1,0 +1,13 @@
+page 1 300.000 204.000
+word 1 12.000 30.118 22.500 10.500 first #000000 Lato-Regular
+word 1 12.000 41.983 35.250 10.500 before #000000 Lato-Regular
+word 1 44.671 59.838 35.250 10.500 the #000000 Lato-Regular
+word 1 62.526 88.109 35.250 10.500 break #000000 Lato-Regular
+word 1 12.000 33.667 141.000 10.500 after #000000 Lato-Regular
+word 1 36.134 51.301 141.000 10.500 the #000000 Lato-Regular
+word 1 53.989 70.816 141.000 10.500 box #000000 Lato-Regular
+rect 1 12.000 24.750 288.000 124.500 #dddddd
+page 2 300.000 204.000
+word 2 12.000 33.667 22.500 10.500 after #000000 Lato-Regular
+word 2 36.134 51.301 22.500 10.500 the #000000 Lato-Regular
+word 2 53.989 79.572 22.500 10.500 break #000000 Lato-Regular

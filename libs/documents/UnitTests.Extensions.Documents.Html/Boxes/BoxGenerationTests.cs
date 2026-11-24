@@ -194,7 +194,12 @@ public class BoxGenerationTests
     [Theory]
     // Each pair: a value without effect where it is (accepted), and the same value where it changes the print (refused).
     [InlineData("<div style=\"box-sizing:border-box\">a</div>", null)]
-    [InlineData("<div style=\"width:10pt\">a</div>", "width")]
+    [InlineData("<div style=\"width:10pt\">a</div>", null)]
+    [InlineData("<div style=\"height:10pt\">a</div>", null)]
+    [InlineData("<div style=\"min-height:10%\">a</div>", "min-height")]
+    [InlineData("<div style=\"max-height:10%\">a</div>", "max-height")]
+    [InlineData("<p><span style=\"height:10pt\">a</span></p>", null)]
+    [InlineData("<div style=\"min-width:fit-content\">a</div>", "min-width")]
     [InlineData("<p><span style=\"width:10pt\">a</span></p>", null)]
     [InlineData("<div style=\"border-collapse:collapse;list-style-type:square\">a</div>", null)]
     [InlineData("<p><span style=\"margin-top:5pt\">a</span></p>", null)]
@@ -267,6 +272,39 @@ public class BoxGenerationTests
             "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value",
             "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Rendering");
         Boxes(html).IsFailure.Should().BeTrue("the same document is refused by default");
+    }
+
+    [Fact]
+    public void A_block_box_takes_its_width_minimum_maximum_sizing_box_and_auto_margins_a_length_in_Chromium_s_layout_unit()
+    {
+        // sz-width-percent-parent: 200pt is laid out 266.65625 px (199.992 pt), cut toward zero to 1/64 px as a margin is.
+        var body = Body(Doc("<div style=\"width:200pt;min-width:0;max-width:50%;box-sizing:border-box;margin:0 auto\">a</div><div style=\"margin:0 auto\">b</div>"));
+        var (sized, plain) = ((Box)body.Children[0], (Box)body.Children[1]);
+
+        sized.Style.SpecifiedWidth.Should().Be(new SizeValue.Fixed((17066 * 0.75 / 64).Pt()));
+        (sized.Style.MinWidth, sized.Style.MaxWidth).Should().Be(((SizeValue?)null, (SizeValue?)new SizeValue.Percentage(50)));
+        (sized.Style.BoxSizing, sized.Style.AutoMargins).Should().Be((BoxSizing.BorderBox, AutoMargins.Both));
+        (plain.Style.SpecifiedWidth, plain.Style.AutoMargins).Should().Be(((SizeValue?)null, AutoMargins.None), "auto margins without a size are 0");
+    }
+
+    [Fact]
+    public void A_block_box_takes_its_height_minimum_and_maximum_in_Chromium_s_layout_unit_and_a_percentage_of_its_parent_s_height()
+    {
+        // sz-height-percent: 100pt is 133.328125 px (8533/64); 50% of it 66.65625 px, 33.3% 44.390625 px, floored to 1/64 px;
+        // of a parent whose height is auto a percentage is auto (CSS 2.1 §10.5).
+        const double Unit = 0.75 / 64;
+        var body = Body(Doc("<div style=\"height:100pt\"><div style=\"height:50%\">a</div><div style=\"height:33.3%;min-height:0;max-height:20pt\">b</div></div><div><div style=\"height:50%;min-height:10pt\">c</div></div>"));
+        var parent = (Box)body.Children[0];
+        var (half, third) = ((Box)parent.Children[0], (Box)parent.Children[1]);
+        var auto = (Box)((Box)body.Children[1]).Children[0];
+
+        parent.Style.SpecifiedHeight.Should().Be((8533 * Unit).Pt());
+        half.Style.SpecifiedHeight.Should().Be((4266 * Unit).Pt());
+        (third.Style.SpecifiedHeight, third.Style.MinHeight, third.Style.MaxHeight).Should().Be(((2841 * Unit).Pt(), (Length?)null, (1706 * Unit).Pt()));
+        (auto.Style.SpecifiedHeight, auto.Style.MinHeight).Should().Be(((Length?)null, (853 * Unit).Pt()));
+
+        var refused = Refusals(Doc("<div style=\"min-height:10pt\"><p style=\"height:50%\">a</p></div>")).Single();
+        (refused.Code, refused.Metadata![ErrorMetadataKeys.Property]).Should().Be((HtmlStyleErrorCodes.Unsupported.Value, "height"), "a percentage of a height its minimum decides is not measured");
     }
 
     [Fact]

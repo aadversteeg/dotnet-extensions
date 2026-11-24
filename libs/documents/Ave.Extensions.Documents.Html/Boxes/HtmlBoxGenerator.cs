@@ -307,7 +307,7 @@ public static partial class HtmlBoxGenerator
                         break;
                     case BlockFrame block when block.Next >= block.Element.Children.Count:
                         stack.Pop();
-                        var (box, forcedAfter) = Finish(block);
+                        var (box, forcedAfter) = Finish(block, stack.Count > 0 ? ((BlockFrame)stack.Peek()).Element : null);
                         if (stack.Count == 0)
                         {
                             // A forced break after the last box of the document has no page to start: Chromium prints no
@@ -525,12 +525,17 @@ public static partial class HtmlBoxGenerator
                 ? (LayoutAlgorithmId.Flow, [])
                 : (LayoutAlgorithmId.Inline, [.. runs]);
 
-        private (Box Box, bool ForcedAfter) Finish(BlockFrame block)
+        private (Box Box, bool ForcedAfter) Finish(BlockFrame block, StyledElement? parent)
         {
             CloseAnonymous(block);
             var element = block.Element;
             var (layout, children) = block.HasBlockChildren ? (LayoutAlgorithmId.Flow, (ValueList<Node>)[.. block.Nodes]) : Content(block.Nodes);
             var style = BoxStyleOf(element) with { Text = layout == LayoutAlgorithmId.Inline ? TextStyleOf(element) : null };
+            if (HtmlBoxGenerator.PartOf(element.Style[PropertyRegistry.Display]) == TablePart.None)
+            {
+                style = Sized(element, style, parent);
+            }
+
             if (block.ForcedBreakBefore)
             {
                 style = style with { BreakBefore = BreakBetween.Page };
@@ -593,6 +598,86 @@ public static partial class HtmlBoxGenerator
                 BreakAfter = Between(Value(element, "break-after")) == BreakBetween.Avoid ? BreakBetween.Avoid : BreakBetween.Auto,
                 BreakInside = Value(element, "break-inside") is CssKeyword { Name: "avoid" or "avoid-page" } ? BreakInside.Avoid : BreakInside.Auto,
             };
+        }
+
+        /// <summary>
+        /// The width, minimum and maximum width, sizing box and auto horizontal margins of a block box that is not a table
+        /// part (CSS Sizing 3 §3.1–3.2, CSS Box Model 3 §4.3, CSS 2.1 §10.3.3). A length is put on Chromium's layout unit of
+        /// 1/64 px, cut toward zero, as a margin is (<see cref="LayoutUnits"/>; measured: 200pt is 266.65625 px, 199.992 pt,
+        /// case <c>sz-width-percent-parent</c>; 100.3pt is 133.71875 px, 100.289 pt, case <c>sz-width-fraction</c>); a
+        /// percentage is resolved by layout. A <c>min-width</c> of 0 is its initial value for a block box. The auto margins
+        /// are set only beside a width: at width <c>auto</c> they are 0, which <see cref="BoxStyle.Margin"/> holds already.
+        /// A height, a minimum and a maximum height of a length are put on the layout unit as well (60pt is 79.9921875 px,
+        /// 59.994 pt; case <c>sz-height</c>, 10pt is 9.996 pt); a percentage height is resolved here
+        /// (<see cref="PercentageHeight"/>). A <c>min-height</c> of 0 is its initial value.
+        /// </summary>
+        private BoxStyle Sized(StyledElement element, BoxStyle style, StyledElement? parent)
+        {
+            SizeValue? Size(string name) => Value(element, name) switch
+            {
+                CssLength length => new SizeValue.Fixed(LayoutUnits(length.Value)),
+                CssPercentage percentage => new SizeValue.Percentage(percentage.Value),
+                _ => null,
+            };
+
+            Length? Height(string name) => Value(element, name) is CssLength { Value.Points: > 0 } length ? LayoutUnits(length.Value) : null;
+
+            var min = Value(element, "min-width") is CssLength { Value.Points: 0 } or CssPercentage { Value: 0 } ? null : Size("min-width");
+            var sized = style with { SpecifiedWidth = Size("width"), MinWidth = min, MaxWidth = Size("max-width") };
+            var hasWidth = sized.SpecifiedWidth is not null || sized.MinWidth is not null || sized.MaxWidth is not null;
+            var height = Value(element, "height") switch
+            {
+                CssLength length => LayoutUnits(length.Value),
+                CssPercentage percentage => PercentageHeight(element, percentage, parent),
+                _ => null,
+            };
+            var maxHeight = Value(element, "max-height") is CssLength maximum ? LayoutUnits(maximum.Value) : (Length?)null;
+            sized = sized with { SpecifiedHeight = height, MinHeight = Height("min-height"), MaxHeight = maxHeight };
+            if (!hasWidth && sized.SpecifiedHeight is null && sized.MinHeight is null && sized.MaxHeight is null)
+            {
+                return style;
+            }
+
+            var (left, right) = hasWidth
+                ? (Value(element, "margin-left") is CssKeyword { Name: "auto" }, Value(element, "margin-right") is CssKeyword { Name: "auto" })
+                : (false, false);
+            return sized with
+            {
+                BoxSizing = Value(element, "box-sizing") is CssKeyword { Name: "border-box" } ? BoxSizing.BorderBox : BoxSizing.ContentBox,
+                AutoMargins = (left, right) switch
+                {
+                    (true, true) => AutoMargins.Both,
+                    (true, false) => AutoMargins.Left,
+                    (false, true) => AutoMargins.Right,
+                    _ => AutoMargins.None,
+                },
+            };
+        }
+
+        /// <summary>
+        /// A percentage height (CSS 2.1 §10.5): of the height of the parent's content box where the parent's height is a
+        /// length in a content box, put on the layout unit, cut toward zero as Chromium floors it (case
+        /// <c>sz-height-percent</c>: 50% of 99.996 pt is 49.992 pt, 33.3% is 33.293 pt); <c>auto</c> where the parent's
+        /// height depends on its content (height <c>auto</c>, no minimum or maximum height), as §10.5 says and Chromium
+        /// prints it (the same case). Refused elsewhere: on the root, against a parent's percentage, border-box height,
+        /// minimum or maximum height, which no case measures.
+        /// </summary>
+        private Length? PercentageHeight(StyledElement element, CssPercentage percentage, StyledElement? parent)
+        {
+            if (parent is not null && Value(parent, "height") is CssLength height && Value(parent, "box-sizing") is not CssKeyword { Name: "border-box" })
+            {
+                return LayoutUnits(LayoutUnits(height.Value) * (percentage.Value / 100));
+            }
+
+            if (parent is not null && Value(parent, "height") is CssKeyword { Name: "auto" }
+                && Value(parent, "min-height") is CssKeyword { Name: "auto" } or CssLength { Value.Points: 0 } && Value(parent, "max-height") is CssKeyword { Name: "none" })
+            {
+                return null;
+            }
+
+            Refuse(HtmlStyleErrorCodes.Unsupported.Value, $"'height: {percentage}' on <{element.Element.LocalName}> is not drawn: a percentage height is drawn of a parent whose height is a length in a content box, or of one whose height is auto, in this version.",
+                percentage.ToString()!, element.Element.Position, "height");
+            return null;
         }
 
         private TextAlign TextAlignOf(StyledElement element) => Value(element, "text-align") switch

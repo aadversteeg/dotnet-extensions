@@ -67,6 +67,7 @@ public static class InlineLayout
     {
         not InlineBreakToken => "it is the token of another layout algorithm",
         InlineBreakToken { LineIndex: < 0 } line => $"line {line.LineIndex} is outside the paragraph",
+        InlineBreakToken line when !(line.Consumed >= 0 && double.IsFinite(line.Consumed)) => $"a box cannot have shown {InvariantNumber.Format(line.Consumed)}pt of its height",
         InlineBreakToken line when !(line.Shown >= 0 && double.IsFinite(line.Shown)) || line.Slices < 0 || (line.Shown > 0) != (line.Slices > 0) =>
             $"{line.Slices} slices cannot have shown {InvariantNumber.Format(line.Shown)}pt of a line",
         _ => null,

@@ -127,8 +127,6 @@ public static partial class PropertyRegistry
         yield return Keywords("font-synthesis-small-caps", inherited: true, "auto", ["auto", "none"], [], "all elements and text", "CSS Fonts 4 §7.3 (the engine never synthesises: a missing face is an error)");
 
         // Sizes and layout features outside the supported set.
-        yield return InitialKeyword("min-height", false, "auto", [], true, "all elements that accept width or height", "CSS Sizing 3 §3.2");
-        yield return InitialKeyword("max-height", false, "none", [], true, "all elements that accept width or height", "CSS Sizing 3 §3.2");
         // aspect-ratio: auto, and auto with a ratio, which the HTML width and height attributes of img make (HTML Standard
         // §15.4.3): a replaced element with a natural aspect ratio uses that, so auto w / h is auto for an image that
         // loads; a ratio without auto is refused.

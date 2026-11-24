@@ -457,6 +457,190 @@ public class HtmlListedDifferenceTests
         HtmlCases.Difference(moved, chromium).Should().BeNull("where what follows the sliced row starts is the whole difference");
     }
 
+    /// <summary>
+    /// A hyphen after an image or a space, before a letter (case <c>ii-hyphen</c>, 6 pt wide paragraphs, 18 pt lines):
+    /// UAX #14 LB20a allows no break between the hyphen and the letter there, so the engine keeps "-b" on one line;
+    /// Chromium breaks after the hyphen all the same, after an image as after a space, and prints "-" and "b" on lines of
+    /// their own (the code front-end's <c>InlineImageTests</c> pins the same lines). That break is the whole difference:
+    /// with each such "b" set after its hyphen on the hyphen's line and what follows moved up one line, Chromium's print
+    /// is the engine's.
+    /// </summary>
+    [Fact]
+    public void A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case()
+    {
+        var (engine, chromium) = (Engine("ii-hyphen"), HtmlCases.ChromiumPrint("ii-hyphen"));
+        engine.Pages[0].Lines.Select(line => line.Text).Should().Equal("a", "-b", "a", "-b", "a-", "b", "x");
+        chromium.Pages[0].Lines.Select(line => line.Text).Should().Equal("a", "-", "b", "a", "-", "b", "a-", "b", "x");
+        chromium.Pages[0].Images.Single().Y1.Should().Be(43.5, "the image is on a line of its own in both");
+
+        var joined = JoinedWithNextLine(JoinedWithNextLine(chromium, 115.5, 18), 61.5, 18);
+        HtmlCases.Difference(engine, joined).Should().BeNull("the break after the hyphen is the whole difference");
+    }
+
+    /// <summary>
+    /// A line break beside an image next to a word joiner (U+2060) or a zero width joiner (U+200D) (case <c>ii-joiners</c>,
+    /// a deliberate deviation from CSS Text 3 §5.5 that follows Chromium; the code front-end's <c>InlineImageTests</c> pins
+    /// it): the lines are Chromium's, and the text layer differs. Chromium's print keeps the joiners in the PDF's text, the
+    /// engine draws no glyph for them; and as for the non-joiner of <c>sr-zwnj</c> the read-back gives a joiner that ends
+    /// a word the PDF's default width (<c>/DW 256</c>, 3.072 pt at 12 pt), so such a word reads that much longer. With the
+    /// joiners taken out of Chromium's words and that width out of their ends, the case is equal.
+    /// </summary>
+    [Fact]
+    public void A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners()
+    {
+        var (engine, chromium) = (Engine("ii-joiners"), HtmlCases.ChromiumPrint("ii-joiners"));
+        static bool Joiner(char character) => character is '⁠' or '‍';
+        var ending = chromium.Pages[0].Words.Where(word => Joiner(word.Text[^1])).ToList();
+        ending.Select(word => word.Text).Should().Equal("abc⁠", "abc‍");
+        engine.Pages[0].Words.Where(word => word.Text == "abc").Take(2).Select(word => word.X1)
+            .Should().Equal(ending.Select(word => word.X1 - (DefaultWidth * word.FontSize)), (mine, theirs) => Math.Abs(mine - theirs) < 0.01);
+
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select(word => word with
+            {
+                Text = string.Concat(word.Text.Where(character => !Joiner(character))),
+                X1 = ending.Contains(word) ? word.X1 - (DefaultWidth * word.FontSize) : word.X1,
+            })],
+        })]);
+        HtmlCases.Difference(engine, read).Should().BeNull("the joiners in the text are the whole difference");
+    }
+
+    /// <summary>
+    /// Where an element that wraps differently from its parent ends (case <c>ws-border</c>, 18 pt lines): Chromium decides a
+    /// break at the end tag by the element (Blink <c>LineBreaker::HandleCloseTag</c>), the engine by the wrap mode of the
+    /// character before the opportunity (docs/architecture.md, the end-tag rule; the code front-end's
+    /// <c>WhiteSpaceTests</c> pins the same lines). So the engine keeps three lines whole that Chromium breaks: a nowrap
+    /// "aa-" before a wrapping "bb" (paragraph 8), a wrapping "aa" before the nowrap " bb" of its parent (paragraph 14), and
+    /// a wrapping "bb cc" before the parent's nowrap " dd" (paragraph 17). Those three breaks are the whole difference:
+    /// with each taken in the engine's print (the rest of the line moved to the start of the next, what follows one line
+    /// lower), the engine's print is Chromium's.
+    /// </summary>
+    [Fact]
+    public void Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case()
+    {
+        var (engine, chromium) = (Engine("ws-border"), HtmlCases.ChromiumPrint("ws-border"));
+        string Line(PrintedPages pages, double baseline) => string.Join(" ", pages.Pages[0].Words.Where(word => On(word.Baseline, baseline)).Select(word => word.Text));
+        (Line(engine, 187.5), Line(chromium, 187.5), Line(chromium, 205.5)).Should().Be(("aa- bb", "aa-", "bb"));
+        (Line(engine, 367.5), Line(chromium, 385.5), Line(chromium, 403.5)).Should().Be(("aa bb", "aa", "bb"));
+        (Line(engine, 457.5), Line(chromium, 493.5), Line(chromium, 511.5)).Should().Be(("cc dd", "cc", "dd"));
+
+        var broken = BrokenBefore(BrokenBefore(BrokenBefore(engine, 457.5, 26.427, 18), 367.5, 27.002, 18), 187.5, 28.395, 18);
+        HtmlCases.Difference(broken, chromium).Should().BeNull("the three breaks at the end tags are the whole difference");
+    }
+
+    /// <summary>
+    /// The end-tag rule beside an image (case <c>ws-image-border</c>, 18 pt lines; the code front-end's <c>WhiteSpaceTests</c>
+    /// pins the same lines): Chromium puts "ab", the image and "cd" on three lines in the first two paragraphs. The engine
+    /// keeps the image on the line of a nowrap "ab" before it (paragraph 1), and "cd" on the line of an image inside a
+    /// nowrap element (paragraph 2), as the character before each opportunity does not wrap. Those two breaks are the
+    /// whole difference: with each taken in the engine's print, the engine's print is Chromium's.
+    /// </summary>
+    [Fact]
+    public void Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case()
+    {
+        var (engine, chromium) = (Engine("ws-image-border"), HtmlCases.ChromiumPrint("ws-image-border"));
+        engine.Pages[0].Images[0].X0.Should().BeApproximately(24.691, 1e-3, "the image follows the nowrap \"ab\" on its line");
+        engine.Pages[0].Images[0].Y1.Should().BeApproximately(25.5, 1e-3);
+        (chromium.Pages[0].Images[0].X0, chromium.Pages[0].Images[0].Y1).Should().Be((12, 43.5), "Chromium breaks before it");
+        engine.Pages[0].Words.Single(word => On(word.Baseline, 79.5)).X0.Should().BeApproximately(20.4, 1e-3, "\"cd\" follows the nowrap image on its line");
+
+        var broken = BrokenBefore(BrokenBefore(engine, 79.5, 20.4, 18), 25.5, engine.Pages[0].Images[0].X0, 18);
+        HtmlCases.Difference(broken, chromium).Should().BeNull("the two breaks at the end tags are the whole difference");
+    }
+
+    /// <summary>
+    /// A soft hyphen and a zero width space in text of each white space mode (case <c>ws-soft</c>; the code front-end's
+    /// <c>WhiteSpaceTests</c> pins the same lines): the lines are Chromium's, the text layer differs (docs/architecture.md,
+    /// a listed difference of the text layer). Chromium's PDF text keeps every soft hyphen and zero width space and adds
+    /// U+2010 at a shown hyphen; the engine's keeps only a shown soft hyphen. And the read-back gives a zero width space
+    /// that ends a word the PDF's default width (<c>/DW 256</c>, 3.072 pt at 12 pt). With Chromium's words read as the
+    /// engine's text and that width out of their ends, the case is equal.
+    /// </summary>
+    [Fact]
+    public void A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them()
+    {
+        var (engine, chromium) = (Engine("ws-soft"), HtmlCases.ChromiumPrint("ws-soft"));
+        chromium.Pages[0].Words.Select(word => word.Text).Should().StartWith(["aa­bb​cc", "aa­‐", "bb​", "cc"]);
+        engine.Pages[0].Words.Select(word => word.Text).Should().StartWith(["aabbcc", "aa­", "bb", "cc"]);
+
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select(word => word with
+            {
+                Text = EngineText(word.Text),
+                X1 = word.Text.EndsWith('​') ? word.X1 - (DefaultWidth * word.FontSize) : word.X1,
+            })],
+        })]);
+        HtmlCases.Difference(engine, read).Should().BeNull("the text layer is the whole difference");
+    }
+
+    /// <summary>
+    /// Underlines that skip the ink of descenders, cut beside an image, at a shown soft hyphen and in ligatures (case
+    /// <c>sk-misc</c>; the code front-end's <c>SkipInkTests</c> pins the same pieces): the pieces are Chromium's, compared
+    /// as the status compares them (<see cref="HtmlCases.ChromiumPrint"/>); the text layer differs at the shown soft
+    /// hyphen, where Chromium's PDF text adds U+2010 after it and the engine's has the soft hyphen only. With that character
+    /// taken out of Chromium's words, the case is equal.
+    /// </summary>
+    [Fact]
+    public void An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen()
+    {
+        var (engine, chromium) = (Engine("sk-misc"), HtmlCases.ChromiumPrint("sk-misc"));
+        chromium.Pages[0].Words.Should().ContainSingle(word => word.Text.Contains('‐')).Which.Text.Should().Be("jump­‐");
+        engine.Pages[0].Words.Should().Contain(word => word.Text == "jump­");
+
+        HtmlCases.Difference(engine, Read(chromium, EngineText)).Should().BeNull("the hyphen in the text is the whole difference");
+    }
+
+    /// <summary>The width the read-back gives a glyph that Chromium's PDF lists no width for, per point of font size: the
+    /// font's default width, <c>/DW 256</c> in units of 1/1000 (case <c>sr-zwnj</c>).</summary>
+    private const double DefaultWidth = 0.256;
+
+    /// <summary>A word of Chromium's PDF text as the engine's text has it: without zero width spaces and without the U+2010
+    /// that Chromium adds at a shown soft hyphen; a soft hyphen only where it is shown, at the end of the word.</summary>
+    private static string EngineText(string text)
+    {
+        var kept = string.Concat(text.Where(character => character is not ('​' or '‐')));
+        return kept.EndsWith('­') ? kept[..^1].Replace("­", string.Empty, StringComparison.Ordinal) + "­" : kept.Replace("­", string.Empty, StringComparison.Ordinal);
+    }
+
+    /// <summary>Whether two positions are one, within the print files' precision.</summary>
+    private static bool On(double position, double other) => Math.Abs(position - other) < 0.01;
+
+    /// <summary>The only page with the line at <paramref name="baseline"/> broken before <paramref name="x"/>: its words and
+    /// images from there on start the next line at the line's left edge (that of its first word or image), one line of
+    /// <paramref name="lineHeight"/> lower, and everything below the line moves down by one line.</summary>
+    private static PrintedPages BrokenBefore(PrintedPages pages, double baseline, double x, double lineHeight)
+    {
+        var page = pages.Pages.Single();
+        var left = page.Words.Where(word => On(word.Baseline, baseline)).Select(word => word.X0).Concat(page.Images.Where(image => On(image.Y1, baseline)).Select(image => image.X0)).Min();
+        var moved = (double from) => from >= x - 0.001;
+        return new([page with
+        {
+            Words = [.. page.Words.Select(word => word.Baseline > baseline + 0.01 ? word with { Baseline = word.Baseline + lineHeight }
+                : On(word.Baseline, baseline) && moved(word.X0) ? word with { X0 = word.X0 - x + left, X1 = word.X1 - x + left, Baseline = word.Baseline + lineHeight } : word)
+                .OrderBy(word => word.Baseline).ThenBy(word => word.X0)],
+            Images = [.. page.Images.Select(image => image.Y0 >= baseline ? image with { Y0 = image.Y0 + lineHeight, Y1 = image.Y1 + lineHeight }
+                : On(image.Y1, baseline) && moved(image.X0) ? image with { X0 = image.X0 - x + left, X1 = image.X1 - x + left, Y0 = image.Y0 + lineHeight, Y1 = image.Y1 + lineHeight } : image)],
+            Rectangles = [.. page.Rectangles.Select(box => box.Y0 >= baseline ? box with { Y0 = box.Y0 + lineHeight, Y1 = box.Y1 + lineHeight } : box)],
+        }]);
+    }
+
+    /// <summary>The only page with the one word on the line below <paramref name="baseline"/> set after the line's one word,
+    /// as one word, and everything below moved up by one line of <paramref name="lineHeight"/>.</summary>
+    private static PrintedPages JoinedWithNextLine(PrintedPages pages, double baseline, double lineHeight)
+    {
+        var page = pages.Pages.Single();
+        var (first, next) = (page.Words.Single(word => On(word.Baseline, baseline)), page.Words.Single(word => On(word.Baseline, baseline + lineHeight)));
+        return new([page with
+        {
+            Words = [.. page.Words.Where(word => word != next).Select(word => word == first ? word with { Text = first.Text + next.Text, X1 = first.X1 + next.X1 - next.X0 }
+                : word.Baseline > baseline + 0.01 ? word with { Baseline = word.Baseline - lineHeight } : word)],
+            Images = [.. page.Images.Select(image => image.Y0 > baseline + lineHeight ? image with { Y0 = image.Y0 - lineHeight, Y1 = image.Y1 - lineHeight } : image)],
+            Rectangles = [.. page.Rectangles.Select(box => box.Y0 > baseline + lineHeight ? box with { Y0 = box.Y0 - lineHeight, Y1 = box.Y1 - lineHeight } : box)],
+        }]);
+    }
+
     /// <summary>Chromium's print with each word's text read through <paramref name="text"/>.</summary>
     private static PrintedPages Read(PrintedPages pages, Func<string, string> text) =>
         new([.. pages.Pages.Select(page => page with { Words = [.. page.Words.Select(word => word with { Text = text(word.Text) })] })]);

@@ -1,0 +1,19 @@
+page 1 300.000 400.080
+word 1 187.711 223.642 22.500 10.500 fraction #000000 Lato-Regular
+word 1 226.330 243.686 22.500 10.500 one #000000 Lato-Regular
+word 1 187.699 223.630 41.250 10.500 fraction #000000 Lato-Regular
+word 1 226.318 244.210 41.250 10.500 two #000000 Lato-Regular
+word 1 196.020 231.950 60.000 10.500 fraction #000000 Lato-Regular
+word 1 234.638 256.279 60.000 10.500 third #000000 Lato-Regular
+word 1 99.855 135.786 78.750 10.500 fraction #000000 Lato-Regular
+word 1 138.474 173.518 78.750 10.500 centred #000000 Lato-Regular
+word 1 44.883 79.937 97.500 10.500 percent #000000 Lato-Regular
+word 1 82.620 103.977 97.500 10.500 right #000000 Lato-Regular
+word 1 12.000 33.667 116.250 10.500 after #000000 Lato-Regular
+word 1 36.134 51.301 116.250 10.500 the #000000 Lato-Regular
+word 1 53.989 80.670 116.250 10.500 boxes #000000 Lato-Regular
+rect 1 187.500 12.000 288.000 24.750 #dddddd
+rect 1 187.500 30.750 288.000 43.500 #dddddd
+rect 1 195.750 49.500 288.000 62.250 #dddddd
+rect 1 99.750 68.250 200.250 81.000 #dddddd
+rect 1 12.000 87.000 104.250 99.750 #dddddd

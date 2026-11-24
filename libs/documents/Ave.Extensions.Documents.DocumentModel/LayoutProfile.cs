@@ -309,6 +309,17 @@ public enum LengthRounding
     /// 0.266 pt late), <c>ta-items-right</c> (right-aligned: the start of the line moves by the sum of the steps),
     /// <c>ta-items-fit</c> (in a block wider than the unrounded widths and narrower than the rounded ones the last word
     /// wraps) and <c>sk-size</c> (an underline gap's edge).</item>
+    /// <item>A percentage width of a block box (<see cref="BoxStyle.SpecifiedWidth"/>, <see cref="BoxStyle.MinWidth"/>,
+    /// <see cref="BoxStyle.MaxWidth"/>), resolved against its container's content width, rounded DOWN to 1/64 px. Cases
+    /// <c>sz-width-percent</c> (40 % of 368 px, 147.2 px, is 147.1875 px: 110.391 pt), <c>sz-width-percent-parent</c>
+    /// (30 % and 33.3 % of 266.65625 px, 79.996875 and 88.7965 px, are 79.984375 and 88.78125 px), <c>sz-width-fraction</c>
+    /// (33.33 % of 368 px, 122.6544 px, is 122.640625 px: 91.980 pt) and <c>sz-min-max</c> (a <c>min-width</c> of 60 %,
+    /// 220.8 px, is 220.796875 px).</item>
+    /// <item>The left margin of a block box whose two horizontal margins are <c>auto</c> (<see cref="AutoMargins.Both"/>):
+    /// half the width left over, rounded DOWN to 1/64 px; the right one is the rest. Case <c>sz-margin-auto</c> (a 121 pt
+    /// box, 161.328125 px, in 368 px leaves 206.671875 px; its left margin is 103.328125 px, where half is 103.3359375 px:
+    /// its text starts at 89.496 pt). A length width is not listed here: the HTML front-end puts it on the unit, cut toward
+    /// zero, as it does margins.</item>
     /// </list>
     /// </summary>
     SixtyFourthPixels,
