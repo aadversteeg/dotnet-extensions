@@ -32,13 +32,35 @@ public class CounterTests
             .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Unsupported = policy, Resources = resources ?? (_ => null), BaseUrl = "https://example.org/" }))
             .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Unsupported = policy }));
 
-    /// <summary>The generated runs of the document in order, joined by "|".</summary>
+    /// <summary>The generated texts of the document in order, joined by "|": the runs of one pseudo-element's items, which
+    /// follow each other, as one text.</summary>
     private static string Generated(string body, string css)
     {
         var result = Boxes(Doc(body, css));
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         result.Value.Diagnostics.Should().BeEmpty();
-        return string.Join("|", Runs(result.Value.Document.Root).Where(run => run.Generated).Select(run => run.Text));
+        return GeneratedTexts(result.Value.Document.Root);
+    }
+
+    private static string GeneratedTexts(Node root)
+    {
+        var texts = new List<string>();
+        var joining = false;
+        foreach (var run in Runs(root))
+        {
+            if (run.Generated && joining)
+            {
+                texts[^1] += run.Text;
+            }
+            else if (run.Generated)
+            {
+                texts.Add(run.Text);
+            }
+
+            joining = run.Generated;
+        }
+
+        return string.Join("|", texts);
     }
 
     /// <summary>The text runs of a box tree in document order.</summary>
@@ -177,7 +199,7 @@ public class CounterTests
             .Should().Be((HtmlStyleErrorCodes.Unsupported.Counter, 4, 3, "counter-increment"));
         refusal.ToString().Should().Contain("beyond a 32-bit integer");
         var warned = Boxes(html, UnsupportedPolicy.Warn);
-        string.Join("|", Runs(warned.Value.Document.Root).Where(run => run.Generated).Select(run => run.Text)).Should().Be("2147483647|2147483647");
+        GeneratedTexts(warned.Value.Document.Root).Should().Be("2147483647|2147483647");
     }
 
     [Fact]

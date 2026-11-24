@@ -76,11 +76,13 @@ public class GeneratedContentTests
     [InlineData("<p>text after</p>", "p::before { content: \"Note: \" }", "*Note: |text after")]
     [InlineData("<p>inline <span>span</span> tail</p>", "span::after { content: \" (end)\" }", "inline |span|* (end)| tail")]
     [InlineData("<p><b>bold</b> mid <i>it</i></p>", "p::before { content: \"[\" } p::after { content: \"]\" }", "*[|bold| mid |it|*]")]
-    // The one-colon forms (Selectors 4 §16) and several strings joined.
-    [InlineData("<p>x</p>", "p:before { content: \"a\" \"b\" } p:after { content: \"c\" }", "*ab|x|*c")]
+    // The one-colon forms (Selectors 4 §16); each item of the content a run of its own, an empty one none
+    // (gc-items-kern, gc-items-break).
+    [InlineData("<p>x</p>", "p:before { content: \"a\" \"b\" } p:after { content: \"c\" }", "*a|*b|x|*c")]
+    [InlineData("<p data-v=\"A\">x</p>", "p::before { content: \"a\" \"\" attr(data-none) attr(data-v) \"V\" }", "*a|*A|*V|x")]
     // gc-attr: an attribute's value, the empty string for a missing one; the name of an HTML element's attribute in any case.
-    [InlineData("<p data-x=\"seven\">days</p>", "p::before { content: attr(DATA-X) \" \" }", "*seven |days")]
-    [InlineData("<p>missing</p>", "p::before { content: \"[\" attr(data-missing) \"]\" }", "*[]|missing")]
+    [InlineData("<p data-x=\"seven\">days</p>", "p::before { content: attr(DATA-X) \" \" }", "*seven|* |days")]
+    [InlineData("<p>missing</p>", "p::before { content: \"[\" attr(data-missing) \"]\" }", "*[|*]|missing")]
     // gc-list-item, gc-cell: inside the item's body after the marker, inside the cell.
     [InlineData("<ol><li>item</li></ol>", "li::before { content: \"LI-\" }", "*LI-|item")]
     [InlineData("<table><tr><td>one</td></tr></table>", "table { border-collapse: collapse } td::before { content: \"Cell: \" }", "*Cell: |one")]

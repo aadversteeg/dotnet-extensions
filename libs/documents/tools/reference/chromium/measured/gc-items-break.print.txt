@@ -1,0 +1,10 @@
+page 1 300.000 300.000
+word 1 12.000 80.901 22.500 10.500 Unbrokenword #000000 Lato-Regular
+word 1 12.000 32.333 35.250 10.500 next #000000 Lato-Regular
+word 1 12.000 56.992 54.000 10.500 Wrapping #000000 Lato-Regular
+word 1 12.000 64.657 66.750 10.500 longerword #000000 Lato-Regular
+word 1 12.000 32.333 79.500 10.500 next #000000 Lato-Regular
+word 1 12.000 45.028 98.250 10.500 Spaced #000000 Lato-Regular
+word 1 47.716 65.928 98.250 10.500 text #000000 Lato-Regular
+word 1 12.000 43.122 111.000 10.500 ending #000000 Lato-Regular
+word 1 12.000 40.171 123.750 10.500 words #000000 Lato-Regular

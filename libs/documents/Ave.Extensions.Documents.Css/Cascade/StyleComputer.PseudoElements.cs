@@ -26,8 +26,9 @@ namespace Ave.Extensions.Documents.Css.Cascade;
 public sealed record GeneratedContent(string PseudoElement, ComputedStyle Style, string Text, string SourceName, TextPosition Position)
 {
     /// <summary>The items of the content in order: strings (an attribute's value read already) and the counters it
-    /// reads (<see cref="CssContentNamedCounter"/>, <see cref="CssContentNamedCounters"/>); empty when it reads none,
-    /// and <see cref="Text"/> is all of it.</summary>
+    /// reads (<see cref="CssContentNamedCounter"/>, <see cref="CssContentNamedCounters"/>). Each item is a text of its
+    /// own in the line, as Chromium 159 draws it (measured: cases <c>gc-counter-styles</c> and <c>gc-items-kern</c>);
+    /// without counters <see cref="Text"/> is the strings joined.</summary>
     public ValueList<CssContentItem> Items { get; init; } = [];
 }
 
@@ -259,12 +260,10 @@ public sealed partial class StyleComputer
 
         var text = new StringBuilder();
         var items = new List<CssContentItem>(parsed.Items.Count);
-        var counts = false;
         foreach (var item in parsed.Items)
         {
             if (item is CssContentNamedCounter or CssContentNamedCounters)
             {
-                counts = true;
                 items.Add(item);
                 continue;
             }
@@ -287,6 +286,6 @@ public sealed partial class StyleComputer
             text.Append(piece);
         }
 
-        return (text.ToString(), counts ? [.. items] : [], declaration);
+        return (text.ToString(), [.. items], declaration);
     }
 }

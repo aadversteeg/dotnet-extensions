@@ -332,8 +332,10 @@ gc-counter-list-item equal
 gc-counter-order equal
 gc-counter-scope equal
 gc-counter-set equal
-gc-counter-styles listed Each_item_of_generated_content_is_rounded_up_to_a_64th_pixel_in_Chromium: page 1 '-1' x0 133.9, Chromium 134.004 (print.txt)
+gc-counter-styles equal
 gc-counters-nested equal
+gc-items-break equal
+gc-items-kern equal
 gc-list-item equal
 gc-nothing equal
 gc-string-block equal

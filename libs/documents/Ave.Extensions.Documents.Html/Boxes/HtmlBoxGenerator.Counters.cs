@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css;
@@ -49,7 +50,7 @@ public static partial class HtmlBoxGenerator
 
     private sealed partial class Run
     {
-        private readonly Dictionary<StyledElement, string> _generatedTexts = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<StyledElement, string[]> _generatedTexts = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<StyledElement, List<Error>> _counterRefusals = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<string, List<Counter>> _live = new(System.StringComparer.Ordinal);
         private int _liveCount;
@@ -112,7 +113,7 @@ public static partial class HtmlBoxGenerator
             Change(frame, "counter-reset", (counter, value) => Make(frame, counter, value));
             Change(frame, "counter-increment", (counter, value) => Add(Innermost(counter) ?? Make(frame, counter, 0), value));
             Change(frame, "counter-set", (counter, value) => (Innermost(counter) ?? Make(frame, counter, 0)).Value = value);
-            if (element.Generated is { Items.Count: > 0 } generated)
+            if (element.Generated is { } generated && ReadsCounters(generated))
             {
                 Text(frame, generated);
             }
@@ -220,13 +221,16 @@ public static partial class HtmlBoxGenerator
         }
 
         /// <summary>The text of a pseudo-element's content with its counters read (CSS Lists 3 §4.7): <c>counter()</c> the
-        /// innermost counter of the name, <c>counters()</c> all of them, outermost first, joined by the string.</summary>
+        /// innermost counter of the name, <c>counters()</c> all of them, outermost first, joined by the string; one text per
+        /// item of the content.</summary>
         private void Text(CountFrame frame, Css.Cascade.GeneratedContent generated)
         {
             var text = new StringBuilder();
-            foreach (var item in generated.Items)
+            var pieces = new string[generated.Items.Count];
+            for (var index = 0; index < pieces.Length; index++)
             {
-                switch (item)
+                var start = text.Length;
+                switch (generated.Items[index])
                 {
                     case CssContentString literal:
                         text.Append(literal.Value);
@@ -267,10 +271,17 @@ public static partial class HtmlBoxGenerator
                         $"The content of ::{generated.PseudoElement} makes more than {CssInputLimits.MaxGeneratedTextLength} characters of text with its counters; it is not drawn: shorten the strings.");
                     return;
                 }
+
+                pieces[index] = text.ToString(start, text.Length - start);
             }
 
-            _generatedTexts[frame.Element] = text.ToString();
+            _generatedTexts[frame.Element] = pieces;
         }
+
+        /// <summary>Whether a pseudo-element's content reads a counter, so that its text is known only where the counters
+        /// are counted.</summary>
+        private static bool ReadsCounters(Css.Cascade.GeneratedContent generated) =>
+            generated.Items.Any(item => item is CssContentNamedCounter or CssContentNamedCounters);
 
         private void GeneratedRefusal(StyledElement element, Css.Cascade.GeneratedContent generated, string value, string message) =>
             CounterRefusal(element, new Error(HtmlStyleErrorCodes.Unsupported.Counter, message).With(ErrorMetadataKeys.Value, value).With(ErrorMetadataKeys.Property, "content")

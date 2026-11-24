@@ -78,7 +78,6 @@ internal static class HtmlCases
         ["tl-fixed-fill-wide-word"] = "A_fill_column_of_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow",
         ["tf-pages"] = "A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page",
         ["pm-family-unused"] = "A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face",
-        ["gc-counter-styles"] = "Each_item_of_generated_content_is_rounded_up_to_a_64th_pixel_in_Chromium",
         ["a4-image-in-cell"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
         ["a4-row-image-row"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",
         ["a4-two-image-rows"] = "What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices",

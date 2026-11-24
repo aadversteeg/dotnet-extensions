@@ -526,6 +526,38 @@ public static partial class HtmlBoxGenerator
             stack.Push(frame);
         }
 
+        /// <summary>The texts of a pseudo-element's content, one per item, or null when the counting refused it.</summary>
+        private string[]? Pieces(StyledElement element, Css.Cascade.GeneratedContent generated) =>
+            ReadsCounters(generated)
+                ? _generatedTexts.GetValueOrDefault(element)
+                : [.. generated.Items.Select(item => item is CssContentString literal ? literal.Value : string.Empty)];
+
+        /// <summary>
+        /// A text's runs: one, or for generated content one per item of its <c>content</c> that has text, as an element's
+        /// text nodes are runs. Chromium 159 rounds the width of each item up to a 64th of a pixel on its own, as it does
+        /// each text node (measured: cases <c>gc-counter-styles</c> and <c>gc-items-kern</c>; its shaping across the items
+        /// is the engine's shaping across runs). A content without any text keeps one empty run, which counts for the
+        /// line's height; a text whose characters were refused stays one run.
+        /// </summary>
+        private static IEnumerable<string> Split(string data, string[]? pieces)
+        {
+            if (pieces is null || pieces.Sum(piece => piece.Length) != data.Length || pieces.Count(piece => piece.Length > 0) < 2)
+            {
+                yield return data;
+                yield break;
+            }
+
+            var offset = 0;
+            foreach (var piece in pieces)
+            {
+                if (piece.Length > 0)
+                {
+                    yield return data.Substring(offset, piece.Length);
+                    offset += piece.Length;
+                }
+            }
+        }
+
         private static TextPosition Position(StyledNode node) => node is StyledElement element ? element.Element.Position : ((StyledText)node).Text.Position;
 
         /// <summary>One child of inline content: a text becomes a run in its parent's text style; an inline element's
@@ -542,19 +574,24 @@ public static partial class HtmlBoxGenerator
 
                     // The text of a ::before or ::after that reads counters is what the counting found; none when it
                     // was refused there.
-                    if (frame.Element.Generated is { Items.Count: > 0 } && !_generatedTexts.TryGetValue(frame.Element, out _))
+                    var pieces = frame.Element.Generated is { } content ? Pieces(frame.Element, content) : null;
+                    if (frame.Element.Generated is not null && pieces is null)
                     {
                         break;
                     }
 
-                    var counted = frame.Element.Generated is { Items.Count: > 0 } ? new StyledText(new HtmlText(_generatedTexts[frame.Element], text.Text.Position), text.Style) : text;
+                    var counted = pieces is not null ? new StyledText(new HtmlText(string.Concat(pieces), text.Text.Position), text.Style) : text;
                     var sourceName = frame.Element.Generated?.SourceName ?? _sourceName;
                     var preservedTab = RefusePreservedTab(counted, sourceName);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
                         var data = Characters(counted.Text, sourceName);
+                        data = preservedTab ? data.Replace('\t', ' ') : data;
                         var source = frame.Element.Generated is { } generated ? new SourceLocation(generated.SourceName, generated.Position.Line) : Source(text.Text.Position);
-                        frame.Target.Add(new TextRun(NewId(), preservedTab ? data.Replace('\t', ' ') : data, style, source) { Generated = frame.Element.Generated is not null });
+                        foreach (var piece in Split(data, pieces))
+                        {
+                            frame.Target.Add(new TextRun(NewId(), piece, style, source) { Generated = frame.Element.Generated is not null });
+                        }
                     }
 
                     break;
