@@ -37,7 +37,8 @@ public static class TimesheetHtml
         var period = $"{Day(data.PeriodStart)} - {Day(data.PeriodEnd)}";
         var total = data.TimeEntries.Sum(entry => entry.Duration);
         var rows = string.Join("\n", data.TimeEntries.Select(entry => Entry(entry, culture)));
-        return $$"""
+        // LF whatever the checkout: the raw strings (the style sheet's too) take the source file's line ends, the measured document has LF.
+        return LineFeeds($$"""
             <!DOCTYPE html>
             <html lang="{{Escape(culture.Name)}}">
             <head>
@@ -68,7 +69,7 @@ public static class TimesheetHtml
             </body>
             </html>
 
-            """;
+            """);
     }
 
     /// <summary>

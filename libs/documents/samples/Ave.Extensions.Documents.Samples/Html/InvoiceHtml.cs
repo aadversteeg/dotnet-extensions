@@ -26,7 +26,8 @@ public static class InvoiceHtml
         var culture = CultureInfo.GetCultureInfo(data.Language);
         var lines = string.Join("\n", data.Lines.Select(line =>
             $"""    <tr><td>{Escape(line.Item)}</td><td class="amount">{Escape(Amount(line.Amount, culture))}</td></tr>"""));
-        return $$"""
+        // LF whatever the checkout: the raw string takes the source file's line ends, the measured document has LF.
+        return LineFeeds($$"""
             <!DOCTYPE html>
             <html lang="{{Escape(data.Language)}}">
             <head>
@@ -54,7 +55,7 @@ public static class InvoiceHtml
             </body>
             </html>
 
-            """;
+            """);
     }
 
     private static string Amount(decimal amount, CultureInfo culture) => amount.ToString("N2", culture);

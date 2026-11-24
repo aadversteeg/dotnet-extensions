@@ -22,7 +22,7 @@ public static class HtmlText
     public static string Escape(string value)
     {
         var text = new StringBuilder(value.Length);
-        foreach (var character in Lines(value))
+        foreach (var character in LineFeeds(value))
         {
             text.Append(character switch
             {
@@ -45,11 +45,18 @@ public static class HtmlText
     /// </summary>
     /// <param name="value">The value.</param>
     /// <returns>The escaped value.</returns>
-    public static string CssString(string value) => Lines(value)
+    public static string CssString(string value) => LineFeeds(value)
         .Replace("\\", "\\\\", StringComparison.Ordinal)
         .Replace("\"", "\\\"", StringComparison.Ordinal)
         .Replace("<", "\\3C ", StringComparison.Ordinal)
         .Replace("\n", "\\A ", StringComparison.Ordinal);
 
-    private static string Lines(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+    /// <summary>
+    /// A text with every line end as LF: a CR LF or a lone CR becomes LF, as HTML's input stream reads it (HTML
+    /// §13.2.3.5). Each template's text goes through it as well as each value: a C# raw string takes its line ends from
+    /// the source file as it is checked out (CR LF in a Windows checkout), and the measured documents use LF.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>The text with LF line ends.</returns>
+    public static string LineFeeds(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
 }
