@@ -36,7 +36,13 @@ public sealed record Box(
     LayoutAlgorithmId Layout,
     BoxStyle Style,
     ValueList<Node> Children,
-    SourceLocation Source) : Node(Id, Source);
+    SourceLocation Source) : Node(Id, Source)
+{
+    /// <summary>The natural language of the box's content as a language tag (ISO 32000-1 §14.9.2; THE RULE FOR A LANGUAGE
+    /// TAG, <see cref="LanguageTags"/>), or null when it is that of its parent. A tagged PDF writes it on the box's
+    /// structure element where it differs from its parent's.</summary>
+    public string? Language { get; init; }
+}
 
 /// <summary>
 /// A piece of text in one style, laid out by its parent's inline algorithm: literal text
@@ -87,8 +93,9 @@ public sealed record CounterRun(NodeId Id, PageCounter Counter, TextStyle Style,
 /// <param name="Source">Where the group was written.</param>
 public sealed record InlineGroup(NodeId Id, SemanticRole Role, TextStyle Style, ValueList<Node> Children, SourceLocation Source) : Node(Id, Source)
 {
-    /// <summary>The natural language of the group's content as a language tag (ISO 32000-1 §14.9.2), or null when it is
-    /// that of its parent. Held in the model now; written to the PDF in a later version.</summary>
+    /// <summary>The natural language of the group's content as a language tag (ISO 32000-1 §14.9.2; THE RULE FOR A
+    /// LANGUAGE TAG, <see cref="LanguageTags"/>), or null when it is that of its parent. A tagged PDF writes it on the
+    /// group's structure element where it differs from its parent's.</summary>
     public string? Language { get; init; }
 }
 

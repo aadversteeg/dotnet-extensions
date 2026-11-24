@@ -64,6 +64,16 @@ public sealed record ParagraphElement(ValueList<Span> Spans, SemanticRole Role, 
     /// <returns>A copy with the anchor.</returns>
     public ParagraphElement Anchor(string name) => this with { AnchorName = name };
 
+    /// <summary>The language of this paragraph's text as a language tag, or null for the language around it.</summary>
+    public string? LanguageTag { get; internal init; }
+
+    /// <summary>Sets the language of this paragraph's or heading's text, where it differs from the document's: a
+    /// well-formed language tag (BCP 47 syntax, <see cref="LanguageTags"/>), written as given; a tagged PDF writes it on
+    /// the paragraph's structure element. Any other text is refused when the document is translated.</summary>
+    /// <param name="tag">The tag, for example <c>fr</c> or <c>en-GB</c>.</param>
+    /// <returns>A copy with the language.</returns>
+    public ParagraphElement Language(string tag) => this with { LanguageTag = tag };
+
     /// <inheritdoc/>
     ParagraphElement IFormatted<ParagraphElement>.WithFormat(Style format) => this with { Format = format };
 }
@@ -97,6 +107,17 @@ public sealed record Span(string Text, Style Format, Style Style, SourceLocation
     /// <summary>The anchor the span leads to when it is a link inside the document (<see cref="Elements.LinkTo"/>), or
     /// null. Set only by <see cref="Elements.LinkTo"/>.</summary>
     public string? LinkAnchor { get; internal init; }
+
+    /// <summary>The language of this span's text as a language tag, or null for the paragraph's.</summary>
+    public string? LanguageTag { get; internal init; }
+
+    /// <summary>Sets the language of this span's text, where it differs from the paragraph's: a well-formed language tag
+    /// (BCP 47 syntax, <see cref="LanguageTags"/>), written as given; the span becomes a span group (a link keeps its link
+    /// group), which a tagged PDF writes as a <c>Span</c> element with the language. Not on an image span. Any other text
+    /// is refused when the document is translated.</summary>
+    /// <param name="tag">The tag, for example <c>en</c>.</param>
+    /// <returns>A copy with the language.</returns>
+    public Span Language(string tag) => this with { LanguageTag = tag };
 
     /// <summary>Applies a shared style (its text part). The span's own modifier values still win over it.</summary>
     /// <param name="style">The style; replaces a style applied before.</param>

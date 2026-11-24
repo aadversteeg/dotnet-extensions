@@ -81,6 +81,9 @@ public sealed record StructureStart(NodeId Node, SemanticRole Role, SourceLocati
 {
     /// <summary>For a table cell, the columns and rows it covers; <see cref="CellSpan.Single"/> otherwise.</summary>
     public CellSpan Span { get; init; } = CellSpan.Single;
+
+    /// <summary>The natural language of the node's content (<see cref="LanguageTags"/>), or null when it is its parent's.</summary>
+    public string? Language { get; init; }
 }
 
 /// <summary>Ends the content started by the <see cref="StructureStart"/> with the same node id.</summary>

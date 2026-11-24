@@ -184,7 +184,7 @@ public static class DocumentTranslator
     };
 
     /// <summary>How many model nodes a span becomes: one run, an image's nodes, or a link's group and its run.</summary>
-    private static int SpanNodeCount(Span span) => span.Image is { } image ? NodeCount(image) : span.Link is null && span.LinkAnchor is null ? 1 : 2;
+    private static int SpanNodeCount(Span span) => span.Image is { } image ? NodeCount(image) : span.Link is null && span.LinkAnchor is null && span.LanguageTag is null ? 1 : 2;
 
     /// <summary>The computed box style of an element from its specified box values and the inherited paragraph
     /// properties it computes (its own <see cref="Inherited"/>).</summary>
@@ -259,6 +259,9 @@ public static class DocumentTranslator
             .Concat(InputChecks.Role(paragraph.Role, paragraph.Source))
             .Concat(paragraph.Spans.SelectMany(SpanProblems))
             .Concat(InternalLinks.Problems(paragraph, inherited.Links))
+            .Concat(paragraph.LanguageTag is { } tag ? InputChecks.Language(tag, paragraph.Source) : [])
+            .Concat(paragraph.Spans.SelectMany(span => span.LanguageTag is not { } spanTag ? []
+                : span.Image is not null ? [InputChecks.LanguageOnImageSpan(span.Source)] : InputChecks.Language(spanTag, span.Source)))
             .ToImmutableArray();
         if (!problems.IsEmpty)
         {
@@ -284,10 +287,15 @@ public static class DocumentTranslator
             ? Image(image, item.Id, pageBreakBefore: false)
             : Result<Node, Error>.Success(item.Span.Link is { } || item.Span.LinkAnchor is { }
                 ? LinkGroup(item.Span, item.Id, own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text, inherited.Links)
-                : Run(item.Span, item.Id, IsLineBreaks(item.Span) ? own.Text : own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)));
+                : item.Span.LanguageTag is { } language
+                    ? SpanGroup(item.Span, item.Id, own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text, language)
+                    : Run(item.Span, item.Id, IsLineBreaks(item.Span) ? own.Text : own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text)));
         // The paragraph's own font and line height make the strut of its lines (CSS 2.1 §10.8.1).
         return runs.OnSuccessMap(children => (Node)new Box(
-            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own) with { Text = own.Text }, children.ToValueList(), paragraph.Source));
+            id, paragraph.Role, LayoutAlgorithmId.Inline, BoxStyleOf(box, pageBreakBefore, own) with { Text = own.Text }, children.ToValueList(), paragraph.Source)
+        {
+            Language = paragraph.LanguageTag,
+        });
     }
 
     /// <summary>A span whose text is one or more forced line breaks: the line separator U+2028 that LineBreak() writes,
@@ -308,8 +316,16 @@ public static class DocumentTranslator
             SemanticRole.Link(target, LinkDescription.Of(null, span.Text, null, fallback)),
             style,
             [new TextRun(new NodeId(id.Value + 1), span.Text, style, span.Source)],
-            span.Source);
+            span.Source)
+        {
+            Language = span.LanguageTag,
+        };
     }
+
+    /// <summary>A span with a language of its own: a span group (<see cref="SemanticRole.Span"/>) with the language around one
+    /// run of its text, both in the span's text style.</summary>
+    private static Node SpanGroup(Span span, NodeId id, TextStyle style, string language) =>
+        new InlineGroup(id, SemanticRole.Span, style, [Run(span, new NodeId(id.Value + 1), style)], span.Source) { Language = language };
 
     private static Node Run(Span span, NodeId id, TextStyle style) =>
         span.Counter is { } counter ? new CounterRun(id, counter, style, span.Source) : new TextRun(id, span.Text, style, span.Source);

@@ -125,15 +125,45 @@ public static partial class HtmlBoxGenerator
         /// <returns>True when the span's frame is on the stack.</returns>
         private bool StartSpan(Stack<object> stack, InlineFrame frame, StyledElement element)
         {
-            if (!_targets.ContainsKey(element) || TextStyleOf(element) is not { } style || Deeper(frame.Depth + 1, element.Element.Position))
+            var language = LanguageOf(element, frame.Element);
+            if (!(_targets.ContainsKey(element) || language is not null) || TextStyleOf(element) is not { } style || Deeper(frame.Depth + 1, element.Element.Position))
             {
                 return false;
             }
 
             List<Node> content = [new TextRun(NewId(), string.Empty, style, Source(element.Element.Position))];
             var id = NewId();
-            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Span = new SpanFrame(frame.Target, id, style), InLink = frame.InLink });
+            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Span = new SpanFrame(frame.Target, id, style, language), InLink = frame.InLink });
             return true;
+        }
+
+        /// <summary>
+        /// THE RULE FOR AN ELEMENT'S LANGUAGE IN HTML: the language of an element (HTML Standard §3.2.6.2: its <c>xml:lang</c>
+        /// in the XML namespace, else its <c>lang</c>, else its parent's; the root's is the document's) is written on its
+        /// box or, for an inline element, on a span group made for it, where it differs from its parent's (compared without
+        /// regard to case). It is written as given when it is a well-formed tag (<see cref="LanguageTags"/>); a tag that is
+        /// not, and the empty tag (the language is unknown), is refused at the start tag and not written: the element keeps
+        /// its parent's language, as no language is guessed. Null when nothing is written.
+        /// </summary>
+        private string? LanguageOf(StyledElement element, StyledElement parent)
+        {
+            var language = element.Language;
+            if (language is null || string.Equals(language, parent.Language, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (LanguageTags.IsWellFormed(language))
+            {
+                return language;
+            }
+
+            var reason = language.Length == 0
+                ? "the empty tag says the language is unknown, which a tagged PDF cannot declare (PDF/UA-1 asks a language tag)"
+                : $"it is not a well-formed language tag (BCP 47 syntax, at most {LanguageTags.MaxLength} characters)";
+            Refuse(HtmlStyleErrorCodes.Unsupported.Language, $"The language '{InputQuote.Of(language)}' of <{element.Element.LocalName}> is not written: {reason}; the element keeps its parent's language.",
+                language, element.Element.Position, "lang");
+            return null;
         }
 
         /// <summary>The span group, once its content is built; a span whose content draws nothing has no line part to lead
@@ -147,7 +177,7 @@ public static partial class HtmlBoxGenerator
                 return;
             }
 
-            span.Parent.Add(new InlineGroup(span.Id, SemanticRole.Span, span.Style, [.. content], Source(frame.Element.Element.Position)));
+            span.Parent.Add(new InlineGroup(span.Id, SemanticRole.Span, span.Style, [.. content], Source(frame.Element.Element.Position)) { Language = span.Language });
             Placed(frame.Element, span.Id);
         }
 

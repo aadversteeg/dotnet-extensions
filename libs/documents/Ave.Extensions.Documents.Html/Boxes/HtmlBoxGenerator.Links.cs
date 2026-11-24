@@ -50,7 +50,7 @@ public static partial class HtmlBoxGenerator
 
             var id = NewId();
             List<Node> content = [new TextRun(NewId(), string.Empty, style, Source(position))];
-            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Link = new LinkFrame(frame.Target, id, uri!, fragment, style), InLink = true });
+            stack.Push(new InlineFrame(element, content, frame.Depth + 1) { Link = new LinkFrame(frame.Target, id, uri!, fragment, style) { Language = LanguageOf(element, frame.Element) }, InLink = true });
             return true;
         }
 
@@ -85,7 +85,7 @@ public static partial class HtmlBoxGenerator
             }
 
             var target = link.Fragment is { } fragment ? Inside(link.Id, fragment, link.Uri, html.Position) : LinkTarget.Uri(link.Uri);
-            link.Parent.Add(new InlineGroup(link.Id, SemanticRole.Link(target, description), link.Style, [.. content], Source(html.Position)));
+            link.Parent.Add(new InlineGroup(link.Id, SemanticRole.Link(target, description), link.Style, [.. content], Source(html.Position)) { Language = link.Language });
             Placed(frame.Element, link.Id);
         }
 

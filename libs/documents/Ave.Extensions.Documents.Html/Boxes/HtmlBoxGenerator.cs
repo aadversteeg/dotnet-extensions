@@ -143,11 +143,15 @@ public static partial class HtmlBoxGenerator
     /// <summary>A link being built: the content of its parent it goes into, its id, its URI (for a link inside the document
     /// the <c>href</c> without its white space, for the messages and the description), the fragment of a link inside the
     /// document or null, and its text style.</summary>
-    private sealed record LinkFrame(List<Node> Parent, NodeId Id, string Uri, string? Fragment, TextStyle Style);
+    private sealed record LinkFrame(List<Node> Parent, NodeId Id, string Uri, string? Fragment, TextStyle Style)
+    {
+        /// <summary>The link's language where it differs from its parent's, or null.</summary>
+        public string? Language { get; init; }
+    }
 
     /// <summary>An inline element a link leads to, being built as a span group: the content of its parent it goes into, its
     /// id and its text style.</summary>
-    private sealed record SpanFrame(List<Node> Parent, NodeId Id, TextStyle Style);
+    private sealed record SpanFrame(List<Node> Parent, NodeId Id, TextStyle Style, string? Language);
 
     private sealed partial class Run(StyledHtmlDocument styled, HtmlBoxOptions options)
     {
@@ -348,7 +352,7 @@ public static partial class HtmlBoxGenerator
                         else
                         {
                             var parent = (BlockFrame)stack.Peek();
-                            parent.Nodes.Add(box);
+                            parent.Nodes.Add(LanguageOf(block.Element, parent.Element) is { } language ? box with { Language = language } : box);
                             parent.ForcedBreakPending = forcedAfter;
                         }
 

@@ -216,6 +216,12 @@ public class ProfileDocumentTests
         Line("  (or of its first line part, for an inline element), the left edge and the zoom unchanged; no names are written.");
         Line("  Refused at the start tag: a name no element has (Chromium writes no link), and an element that makes no box or text");
         Line("  a link can lead to (not rendered, an inline element that draws nothing, an image).");
+        Line("- Languages: an element's language (`xml:lang` in the XML namespace, else `lang`, else its parent's) that differs from");
+        Line("  its parent's is written as `/Lang` on its structure element in a tagged PDF: a block's on its box's element, an inline");
+        Line("  element's on a `Span` element made for it (an `a href`: on its `Link` element). The tag is written as given when it is");
+        Line("  well-formed by BCP 47 (at most 64 characters); any other tag, and `lang=\"\"` (an unknown language, which a PDF/UA-1");
+        Line("  `/Lang` cannot say), is refused at the start tag (`Documents.Html.Unsupported.Language`) and the element keeps its");
+        Line("  parent's language. The root's language is the document's, in the catalog.");
         Line();
         Line("Presentational attributes (HTML Standard §15.2–§15.4):");
         Line();

@@ -132,6 +132,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
         HtmlStyleErrorCodes.Unsupported.Link.ToString(),
+        HtmlStyleErrorCodes.Unsupported.Language.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),

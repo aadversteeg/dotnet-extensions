@@ -75,7 +75,7 @@ public class LinkOutputTests
         SampleFiles.Pdf(document, profile is null ? null : SampleOutput.Options with { Profile = profile });
 
     /// <summary>The objects of a PDF, read back with PdfPig.</summary>
-    private sealed class ReadBack : IDisposable
+    internal sealed class ReadBack : IDisposable
     {
         private readonly UglyToad.PdfPig.PdfDocument _document;
 
@@ -101,6 +101,8 @@ public class LinkOutputTests
             Page(number).TryGet(NameToken.Create("Annots"), out var annots)
                 ? [.. ((ArrayToken)Resolve(annots)).Data.Select(item => ((IndirectReferenceToken)item).Data)]
                 : [];
+
+        public DictionaryToken Catalog => _document.Structure.Catalog.CatalogDictionary;
 
         public DictionaryToken? StructureTreeRoot =>
             _document.Structure.Catalog.CatalogDictionary.TryGet(NameToken.Create("StructTreeRoot"), out var root) ? Dictionary(root) : null;
@@ -130,7 +132,7 @@ public class LinkOutputTests
         public void Dispose() => _document.Dispose();
     }
 
-    private static string StringOf(ReadBack read, DictionaryToken dictionary, string key)
+    internal static string StringOf(ReadBack read, DictionaryToken dictionary, string key)
     {
         var token = read.Resolve(dictionary.Data[key]);
         return token is StringToken text ? text.Data : ((HexToken)token).Data;

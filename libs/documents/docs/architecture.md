@@ -635,6 +635,7 @@ Where each rule lives:
 | margins and padding in Chromium's layout unit (cut toward zero to 1/64 px) | `HtmlBoxGenerator.LayoutUnits` |
 | tables: the parts, their structure, column sizes, spans; what the model's table cannot show | `Html/Boxes/TableBoxes.cs`; the values in `Html/Boxes/TableProperties.cs` |
 | links inside the document: an `a href="#…"` leads to the element the HTML Standard's "indicated part of the document" names (an empty fragment and `top` in any case: the top of the document, the root's box; else the first element with that `id`, else the first `a` with that `name`, then both again with the fragment percent-decoded), also under a `base`; its node is the element's box, its link group, or for another inline element a span group made only for it; the links get their nodes when the tree is built (`LinkTargets`), so a link may come before its target; a name without a target is refused at the link | `Html/Boxes/HtmlBoxGenerator.Targets.cs` (THE RULE FOR A LINK INSIDE AN HTML DOCUMENT), `Html/LinkUrls.cs` (`Fragment`, `PercentDecoded`), `DocumentModel/LinkTargets.cs` |
+| languages: an element's language (HTML Standard §3.2.6.2: `xml:lang` in the XML namespace, else `lang`, else the parent's) where it differs from its parent's, without regard to case, goes on its box, or for an inline element on a span group made for it (an `a href`: its link group); written as given when THE RULE FOR A LANGUAGE TAG accepts it (BCP 47 well-formed, at most 64 characters), else, and for the empty tag, refused at the start tag (`Documents.Html.Unsupported.Language`) and not written: no language is guessed | `Html/Boxes/HtmlBoxGenerator.Targets.cs` (THE RULE FOR AN ELEMENT'S LANGUAGE IN HTML), `Core/LanguageTags.cs`, `Render.Pdf/Tagging/StructureObjects.cs` (`Languages`) |
 | links: an `a` with `href` inside a line is an inline group with the link role around its content, its empty run first (so the line height is as without the link); the URI by THE RULE FOR A LINK'S URL IN HTML (white space removed as the URL Standard's basic URL parser removes it, a relative URL resolved by RFC 3986 §5.2 only against an `http` or `https` base, the scheme in lower case, the C0 controls, space, `"`, `<`, `>`, U+007F and every character beyond ASCII percent-encoded as UTF-8, the shared part of the URL Standard's percent-encode sets, §1.3), then THE RULE FOR A LINK'S URI of the model, the only rule on schemes; the description by THE RULE FOR A LINK'S DESCRIPTION (`title`, text, an image's `alt`, the URI); refusals at the start tag (`Documents.Html.Unsupported.Link`) | `Html/LinkUrls.cs`, `Html/Boxes/HtmlBoxGenerator.Links.cs`; `Core/LinkUris.cs`, `DocumentModel/LinkDescription.cs` |
 
 **The refusal table.** `BoxProperties.Rows` holds one row per longhand of the property registry: what is drawn, and
@@ -1367,11 +1368,15 @@ Each is documented next to its code as well.
   text per glyph in a ToUnicode map (the text the glyph shows most often), every other text the glyph shows written as
   replacement text (`/ActualText`) where it is drawn.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
-  nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
-  language written (an inline group holds one, the PDF does not carry it yet), no List, Caption, Note, Formula or TOC
+  nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; the language of a
+  box or an inline group is written as `/Lang` on its structure element where it differs from its parent's (the
+  document's is in the catalog), never as marked content; an unknown language (HTML `lang=""`) cannot be written and is
+  refused, as veraPDF rule 7.2-29 asks every PDF/UA-1 `/Lang` to be a tag (its PDF/A-3 rule 6.7.4-1 allows the empty
+  one); no List, Caption, Note, Formula or TOC
   structure elements, no bookmarks; Link elements come from inline groups, which the code front-end (`Link`) and the
   HTML front-end (`a` with `href`) make, and Span elements from span groups, which the HTML front-end makes only around an
-  inline element a link leads to; a link inside the document leads to a box or an inline group (an HTML image, and an inline element that draws nothing, is no target, and a link to it is
+  inline element a link leads to or whose language differs from its parent's, and the code front-end around a span with
+  a language; a link inside the document leads to a box or an inline group (an HTML image, and an inline element that draws nothing, is no target, and a link to it is
   refused), never to a
   named destination (no `/Dests`, no names in the file); a link
   inside an artifact (a page header or footer, a repeated copy of a table's header rows, a later slice of a line taller

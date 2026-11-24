@@ -238,8 +238,14 @@ public static class ModelCheck
             ?? (box.Role is SemanticRole.LinkRole or SemanticRole.SpanRole
                 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, $"The role {box.Role} belongs to an inline group, not to a box.", box.Role.ToString()!, "role", box)
                 : null)
+            ?? (box.Language is { } language && !LanguageTags.IsWellFormed(language)
+                ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Language, LanguageMessage("a box"), language, "language", box)
+                : null)
             ?? (style.Text is { } strut ? Text(strut, box) : null);
     }
+
+    private static string LanguageMessage(string what) =>
+        $"The language of {what} is not a well-formed language tag (BCP 47 syntax, at most {LanguageTags.MaxLength} characters).";
 
     /// <summary>
     /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3, Appendix A), which this version accepts only when
@@ -377,7 +383,7 @@ public static class ModelCheck
 
         if (group.Language is { } language && !LanguageTags.IsWellFormed(language))
         {
-            return Problem(DocumentErrorCodes.Input.Invalid.Language, "The language of an inline group is not a language tag (letters, then subtags of letters and digits joined by hyphens).", language, "language", group);
+            return Problem(DocumentErrorCodes.Input.Invalid.Language, LanguageMessage("an inline group"), language, "language", group);
         }
 
         return group.Style is null

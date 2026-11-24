@@ -159,7 +159,7 @@ public static class PagePainter
         // table's /BBox (ElementBounds) encloses them. The painting order is the same either way.
         return
         [
-            new StructureStart(box.Box.Id, box.Box.Role, box.Box.Source) { Span = box.Box.Style.Span },
+            new StructureStart(box.Box.Id, box.Box.Role, box.Box.Source) { Span = box.Box.Style.Span, Language = box.Box.Language },
             .. anchors.At(box.Box.Id, origin),
             .. Decoration([.. Background(box, origin), .. Border(box, origin)], inArtifact: false),
             .. Children(box.Children, origin, inArtifact: false, pageWidth, anchors),
@@ -191,7 +191,7 @@ public static class PagePainter
             while (next < line.Groups.Count && line.Groups[next].First == index)
             {
                 var part = line.Groups[next++];
-                items.Add(new StructureStart(part.Group.Id, part.Group.Role, part.Group.Source));
+                items.Add(new StructureStart(part.Group.Id, part.Group.Role, part.Group.Source) { Language = part.Group.Language });
                 items.AddRange(anchors.At(part.Group.Id, origin + part.Area.Origin));
                 if (part.Group.Role is SemanticRole.LinkRole)
                 {

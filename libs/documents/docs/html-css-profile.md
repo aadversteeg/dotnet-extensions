@@ -494,6 +494,12 @@ the box whatever its vertical alignment, unclipped, under the body; the box keep
   (or of its first line part, for an inline element), the left edge and the zoom unchanged; no names are written.
   Refused at the start tag: a name no element has (Chromium writes no link), and an element that makes no box or text
   a link can lead to (not rendered, an inline element that draws nothing, an image).
+- Languages: an element's language (`xml:lang` in the XML namespace, else `lang`, else its parent's) that differs from
+  its parent's is written as `/Lang` on its structure element in a tagged PDF: a block's on its box's element, an inline
+  element's on a `Span` element made for it (an `a href`: on its `Link` element). The tag is written as given when it is
+  well-formed by BCP 47 (at most 64 characters); any other tag, and `lang=""` (an unknown language, which a PDF/UA-1
+  `/Lang` cannot say), is refused at the start tag (`Documents.Html.Unsupported.Language`) and the element keeps its
+  parent's language. The root's language is the document's, in the catalog.
 
 Presentational attributes (HTML Standard §15.2–§15.4):
 

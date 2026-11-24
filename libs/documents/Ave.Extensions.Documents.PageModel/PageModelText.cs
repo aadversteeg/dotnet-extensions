@@ -48,7 +48,7 @@ public static class PageModelText
         FillRectangle fill => $"fill {fill.Area} {fill.Color}",
         DrawImage image => $"image {image.Area} {image.Image.Describe()} id={image.Image.Id}",
         GlyphRun run => GlyphRunLine(run),
-        StructureStart start => $"start {start.Node} {start.Role}" + (start.Span == CellSpan.Single ? string.Empty : $" span={start.Span}"),
+        StructureStart start => $"start {start.Node} {start.Role}" + (start.Span == CellSpan.Single ? string.Empty : $" span={start.Span}") + (start.Language is { } language ? $" lang={language}" : string.Empty),
         StructureEnd end => $"end {end.Node}",
         ArtifactStart artifact => $"artifact {artifact.Kind}",
         ArtifactEnd => "end artifact",

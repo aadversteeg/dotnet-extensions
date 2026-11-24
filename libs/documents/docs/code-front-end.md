@@ -113,6 +113,7 @@ default, `null` for transparent). A page number the document does not have is `D
 | `Heading(level, text)` | a heading, level 1–6: bold and sized like HTML's h1–h6 |
 | `Text(text)`, `Bold(text)` | a span inside a paragraph (`Bold(text)` is `Text(text).Bold()`) |
 | `Link(uri, text)` | a link to a URI around text, used as a span: `Paragraph([Text("See "), Link("https://example.com", "our site"), Text(".")])`; see [Links](#links) |
+| `.Language(tag)` on a paragraph, heading or span | the language of its text where it differs from the document's, a tag such as `fr` or `en-GB` (BCP 47 syntax, at most 64 characters); a tagged PDF writes it on the element; a span becomes a `Span` element |
 | `LinkTo(anchor, text)` | a link inside the document to the paragraph or heading made with `.Anchor(anchor)`, used as a span: `Paragraph([Text("See "), LinkTo("results", "the results")])`; see [Links](#links) |
 | `LineBreak()` | a forced line break inside a paragraph (as HTML's `br`; U+2028), used as a span: `Paragraph([Text("a"), LineBreak(), Text("b")])` |
 | `PageBreak()` | starts the next element of the same list on a new page |

@@ -396,6 +396,11 @@ internal static class InputChecks
             ? []
             : [Problem(DocumentErrorCodes.Input.Invalid.Language, "The language is not a language tag such as nl-NL.", language, "language", source)];
 
+    /// <summary>A language set on an image span: an image has no text whose language could be set.</summary>
+    /// <param name="source">The span's source location.</param>
+    public static Error LanguageOnImageSpan(SourceLocation source) =>
+        Problem(DocumentErrorCodes.Input.Invalid.Language, "An image span has no text, so it takes no language; set the language on the paragraph.", "image", "language", source);
+
     /// <summary>A link's target by THE RULE FOR A LINK'S URI (<see cref="LinkUris"/>): an absolute URI of the schemes http,
     /// https, mailto or tel, printable ASCII, at most <see cref="LinkUris.MaxLength"/> characters. The message names the
     /// scheme and the reason.</summary>

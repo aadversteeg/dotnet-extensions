@@ -111,7 +111,7 @@ public static class PdfRenderer
                     .. pageParts.SelectMany(parts => parts),
                     .. metadataParts,
                     .. plan.HasOutputIntent ? [OutputIntentProfile(plan)] : ImmutableArray<IndirectObject>.Empty,
-                    .. tree is not null ? StructureObjects.Build(tree, ElementBounds.Of(tree, pages, document.Pages), plan) : [],
+                    .. tree is not null ? StructureObjects.Build(tree, ElementBounds.Of(tree, pages, document.Pages), plan, document.Metadata.Language) : [],
                     .. attachments.SelectMany((attachment, index) => AttachmentEmbedding.Build(attachment, plan.Attachment(index))),
                     .. annotations.SelectMany((onPage, page) => onPage.Select(annotation => (IndirectObject)new IndirectValue(
                         plan.Annotation(annotation.Index),

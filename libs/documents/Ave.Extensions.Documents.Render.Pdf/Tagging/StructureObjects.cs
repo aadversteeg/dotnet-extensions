@@ -31,7 +31,9 @@ internal static class StructureObjects
     /// <param name="bounds">Per element, its bounding box or null (<see cref="ElementBounds"/>).</param>
     /// <param name="plan">The object numbers.</param>
     /// <returns>The objects.</returns>
-    public static ImmutableArray<IndirectObject> Build(StructureTree tree, ImmutableArray<UserSpaceBox?> bounds, ObjectPlan plan) =>
+    /// <param name="documentLanguage">The document's language, written in the catalog, or null: what the top elements
+    /// inherit.</param>
+    public static ImmutableArray<IndirectObject> Build(StructureTree tree, ImmutableArray<UserSpaceBox?> bounds, ObjectPlan plan, string? documentLanguage) =>
     [
         new IndirectValue(plan.StructureTreeRoot, PdfDictionary.Of(
             ("Type", new PdfName("StructTreeRoot")),
@@ -44,15 +46,58 @@ internal static class StructureObjects
             .. tree.AnnotationOwners.Select((owner, annotation) =>
                 (tree.ParentTree.Length + annotation, (PdfObject)new PdfReference(plan.StructureElement(owner)))),
         ])),
-        .. tree.Elements.Select((element, index) => new IndirectValue(plan.StructureElement(index), Element(element, bounds[index], plan))),
+        .. Languages(tree, documentLanguage) is var languages ? tree.Elements.Select((element, index) => new IndirectValue(plan.StructureElement(index), Element(element, bounds[index], plan, languages[index]))) : [],
     ];
 
-    private static PdfDictionary Element(StructureElement element, UserSpaceBox? box, ObjectPlan plan) => PdfDictionary.Of(
+    /// <summary>
+    /// Per element the <c>/Lang</c> it writes (ISO 32000-1 §14.9.2: a structure element's <c>Lang</c> entry gives the
+    /// language of its content and of its descendants that give none), or null: its node's language where that differs
+    /// from the language it inherits, its parent element's, and at the top the document's in the catalog. Tags are
+    /// compared without regard to case, as language tags are (RFC 5646 §2.1.1).
+    /// </summary>
+    private static string?[] Languages(StructureTree tree, string? documentLanguage)
+    {
+        var inherited = new string?[tree.Elements.Length];
+        var known = new bool[tree.Elements.Length];
+        var written = new string?[tree.Elements.Length];
+        for (var index = 0; index < tree.Elements.Length; index++)
+        {
+            var element = tree.Elements[index];
+            var parent = element.Parent is { } at ? Effective(at) : documentLanguage;
+            var own = element.Start.Language;
+            written[index] = own is not null && !string.Equals(own, parent, System.StringComparison.OrdinalIgnoreCase) ? own : null;
+        }
+
+        return written;
+
+        // The language an element's content has: its own, else its parent's; walked up with a loop, kept once known.
+        string? Effective(int index)
+        {
+            var chain = new System.Collections.Generic.List<int>();
+            var at = (int?)index;
+            while (at is { } current && !known[current] && tree.Elements[current].Start.Language is null)
+            {
+                chain.Add(current);
+                at = tree.Elements[current].Parent;
+            }
+
+            var language = at is { } found ? (known[found] ? inherited[found] : tree.Elements[found].Start.Language) : documentLanguage;
+            foreach (var each in chain)
+            {
+                (inherited[each], known[each]) = (language, true);
+            }
+
+            return language;
+        }
+    }
+
+    private static PdfDictionary Element(StructureElement element, UserSpaceBox? box, ObjectPlan plan, string? language) => PdfDictionary.Of(
         ("Type", new PdfName("StructElem")),
         ("S", element.Type),
         ("P", new PdfReference(element.Parent is { } parent ? plan.StructureElement(parent) : plan.StructureTreeRoot)),
         ("Pg", new PdfReference(plan.Page(element.FirstPage).Page)),
         ("K", new PdfArray([.. element.Kids.Select(kid => Kid(kid, element.FirstPage, plan))])),
+        ("Lang", language is not null ? PdfString.FromText(language) : null),
         ("Alt", element.Start.Role is SemanticRole.FigureRole { AlternativeText: { } text } ? PdfString.FromText(text) : null),
         ("A", StructureTypes.Attributes(element.Start.Role, element.Start.Span, box)));
 

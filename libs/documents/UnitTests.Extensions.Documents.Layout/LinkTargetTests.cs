@@ -124,4 +124,14 @@ public class LinkTargetTests
         ((SemanticRole.LinkRole)((InlineGroup)line.Children[1]).Role).Target.Should().Be(LinkTarget.Node(new NodeId(1)));
         LinkTargets.Resolve(root, new Dictionary<NodeId, LinkTarget?>()).Should().BeSameAs(root);
     }
+
+    [Fact]
+    public void A_box_whose_language_is_not_a_well_formed_tag_is_refused_and_a_well_formed_one_reaches_its_marker()
+    {
+        var french = Paragraph(10, "Français") with { Language = "fr" };
+        var broken = Paragraph(10, "x") with { Language = "fr_FR" };
+
+        Laid(Document(french)).Pages[0].Items.OfType<StructureStart>().Single(start => start.Node == new NodeId(10)).Language.Should().Be("fr");
+        DocumentLayout.Run(Document(broken), TestFonts.Set).Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Language);
+    }
 }

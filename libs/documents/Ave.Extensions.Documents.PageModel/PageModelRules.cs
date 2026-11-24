@@ -199,6 +199,8 @@ public static class PageModelRules
             Invalid(code, $"A glyph on page {number} has no text; every shown glyph needs one for its ToUnicode entry (empty for a glyph that continues the text of the glyph before it).", Number(number)),
         DrawImage { Image: null } => Invalid(code, $"An image on page {number} has no image data.", Number(number)),
         StructureStart { Role: null } start => Invalid(code, $"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
+        StructureStart { Language: { } language } start when !LanguageTags.IsWellFormed(language) =>
+            Invalid(code, $"Node {start.Node} on page {number} has the language '{language}', which is not a well-formed language tag (BCP 47 syntax, at most {LanguageTags.MaxLength} characters).", language).WithSource(start.Source),
         StructureStart start when !TableSlots.IsValidSpan(start.Span) =>
             Invalid(code, $"Node {start.Node} on page {number} spans {start.Span}; a cell spans 1 to {TableSlots.MaxColumnSpan} columns and 1 to {TableSlots.MaxRowSpan} rows.", start.Span.ToString()).WithSource(start.Source),
         GlyphRun run when !InRange(run.Origin) || run.Glyphs.Any(glyph => !InRange(glyph.X) || !InRange(glyph.Y)) =>
