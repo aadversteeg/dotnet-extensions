@@ -1,0 +1,12 @@
+page 1 300.000 300.000
+word 1 18.000 48.812 28.500 10.500 Before #000000 Lato-Regular
+word 1 51.504 56.722 28.500 10.500 a #0000ee Lato-Regular
+word 1 59.410 81.371 28.500 10.500 plain #0000ee Lato-Regular
+word 1 84.059 100.250 28.500 10.500 link #0000ee Lato-Regular
+word 1 102.942 126.672 28.500 10.500 after. #000000 Lato-Regular
+word 1 18.000 51.820 47.250 10.500 Second #000000 Lato-Regular
+word 1 54.516 90.441 47.250 10.500 another #0000ee Lato-Regular
+word 1 92.909 109.100 47.250 10.500 link #0000ee Lato-Regular
+word 1 111.790 135.519 47.250 10.500 after. #000000 Lato-Regular
+rect 1 51.504 29.250 100.254 30.000 #0000ee
+rect 1 54.516 48.000 109.102 48.750 #0000ee

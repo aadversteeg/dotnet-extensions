@@ -14,11 +14,11 @@ public class MeasuredReferenceFilesTests
 {
     /// <summary>The cases whose print has an underline or overline cut around a glyph's ink, so that the read-back writes their
     /// gaps (<c>ink.py</c>, <c>&lt;case&gt;.ink.txt</c>).</summary>
-    private static readonly string[] InkCases = ["dl-skip", "lk-missing", "lk-same-page", "lk-top", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
+    private static readonly string[] InkCases = ["dl-skip", "ib-link-button-break", "ib-link-span-inside", "ib-link-states", "lk-missing", "lk-same-page", "lk-top", "sk-extreme", "sk-lato", "sk-lato-bold", "sk-lato-italic", "sk-misc", "sk-nest", "sk-part", "sk-size", "sk-space", "sk-theano", "sk-touch", "sk-whose"];
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = ["lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines"];
+    private static readonly string[] LinkCases = ["ib-link-button", "ib-link-button-break", "ib-link-cell", "ib-link-inside-span", "ib-link-span-inside", "ib-link-states", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -1624,6 +1624,47 @@ public class MeasuredReferenceFilesTests
         ["ib-fraction.lines.txt"] = 5,
         ["ib-fraction.print.txt"] = 21,
         ["ib-fraction.words.txt"] = 15,
+        ["ib-image-edges.boxes.txt"] = 1,
+        ["ib-image-edges.lines.txt"] = 3,
+        ["ib-image-edges.print.txt"] = 16,
+        ["ib-image-edges.words.txt"] = 9,
+        ["ib-image-span.boxes.txt"] = 1,
+        ["ib-image-span.lines.txt"] = 2,
+        ["ib-image-span.print.txt"] = 17,
+        ["ib-image-span.words.txt"] = 8,
+        ["ib-link-button-break.boxes.txt"] = 1,
+        ["ib-link-button-break.lines.txt"] = 10,
+        ["ib-link-button-break.print.txt"] = 37,
+        ["ib-link-button-break.words.txt"] = 26,
+        ["ib-link-button-break.links.txt"] = 4,
+        ["ib-link-button-break.ink.txt"] = 4,
+        ["ib-link-button.boxes.txt"] = 1,
+        ["ib-link-button.lines.txt"] = 4,
+        ["ib-link-button.print.txt"] = 22,
+        ["ib-link-button.words.txt"] = 13,
+        ["ib-link-button.links.txt"] = 3,
+        ["ib-link-cell.boxes.txt"] = 4,
+        ["ib-link-cell.lines.txt"] = 3,
+        ["ib-link-cell.print.txt"] = 14,
+        ["ib-link-cell.words.txt"] = 10,
+        ["ib-link-cell.links.txt"] = 2,
+        ["ib-link-inside-span.boxes.txt"] = 1,
+        ["ib-link-inside-span.lines.txt"] = 4,
+        ["ib-link-inside-span.print.txt"] = 18,
+        ["ib-link-inside-span.words.txt"] = 9,
+        ["ib-link-inside-span.links.txt"] = 2,
+        ["ib-link-span-inside.boxes.txt"] = 1,
+        ["ib-link-span-inside.lines.txt"] = 11,
+        ["ib-link-span-inside.print.txt"] = 30,
+        ["ib-link-span-inside.words.txt"] = 14,
+        ["ib-link-span-inside.links.txt"] = 8,
+        ["ib-link-span-inside.ink.txt"] = 3,
+        ["ib-link-states.boxes.txt"] = 1,
+        ["ib-link-states.lines.txt"] = 2,
+        ["ib-link-states.print.txt"] = 12,
+        ["ib-link-states.words.txt"] = 9,
+        ["ib-link-states.links.txt"] = 2,
+        ["ib-link-states.ink.txt"] = 4,
         ["ib-margin.boxes.txt"] = 1,
         ["ib-margin.lines.txt"] = 2,
         ["ib-margin.print.txt"] = 16,
@@ -2438,7 +2479,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(593);
+        cases.Should().HaveCount(601);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

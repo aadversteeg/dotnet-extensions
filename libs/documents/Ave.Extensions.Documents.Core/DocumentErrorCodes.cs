@@ -164,8 +164,8 @@ public static class DocumentErrorCodes
             /// the text to the next tab stop, and tab stops are not built. Metadata: Value, Property, Offset.</summary>
             public static readonly ErrorCode PreservedTab = _ / "PreservedTab";
 
-            /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: inside
-            /// or around a link, around an image, broken over two lines of a justified paragraph or at a soft hyphen, alone with
+            /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: around an
+            /// image that lies inside a link too, broken over two lines of a justified paragraph or at a soft hyphen, alone with
             /// a vertical edge only, or reaching above the page area of a later page. Metadata: Value, Property.</summary>
             public static readonly ErrorCode InlineBox = _ / "InlineBox";
         }

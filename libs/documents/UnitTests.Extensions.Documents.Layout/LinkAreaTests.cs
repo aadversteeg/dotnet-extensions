@@ -181,4 +181,55 @@ public class LinkAreaTests
         Refused(Document(Line(1, [new InlineGroup(new NodeId(3), SemanticRole.Span, Text(), [Run(4, "x")], At(0)) { Language = "not a tag" }]))).Code
             .Should().Be(DocumentErrorCodes.Input.Invalid.Language);
     }
+
+    private static InlineBoxStyle Padded(double side, double top) =>
+        new(Length.Zero, Length.Zero, new Edges(top.Pt(), side.Pt(), top.Pt(), side.Pt()), default, new Color(255, 0, 0));
+
+    /// <summary>A link with a box of its own has its border box as its area, on each line (THE RULE FOR A LINK'S AREA): as
+    /// Chromium 159 writes a link styled as a button, at its background (cases <c>ib-link-button</c>,
+    /// <c>ib-link-button-break</c>, <c>ib-link-cell</c>).</summary>
+    [Fact]
+    public void A_link_with_a_box_of_its_own_has_its_border_box_as_its_area()
+    {
+        var link = Link(3, Run(4, "here")) with { Box = Padded(3, 2) };
+        var page = Laid(Document(Line(1, [Run(2, "See "), link, Run(5, " now")]))).Pages[0];
+
+        Areas(page).Should().ContainSingle().Which.Area.Should().Be(page.Items.OfType<FillRectangle>().Single().Area);
+    }
+
+    /// <summary>A link around a box (a styled span inside it) keeps one area per line part, from its first to its last piece
+    /// as before, and as tall as the box's border box where that reaches above or below the link's font: the whole link is
+    /// one thing to click (case <c>ib-link-span-inside</c>, where Chromium writes three rectangles).</summary>
+    [Fact]
+    public void A_box_inside_a_link_makes_the_link_s_area_as_tall_as_the_box_and_does_not_split_it()
+    {
+        var page = Laid(Document(Line(1, [Run(2, "See "), Link(3, Run(4, "aa "), new InlineGroup(new NodeId(6), null, Text(), [Run(7, "bb")], At(0)) { Box = Padded(2, 3) }, Run(5, " cc"))]))).Pages[0];
+
+        var area = Areas(page).Should().ContainSingle().Which.Area;
+        var fill = page.Items.OfType<FillRectangle>().Single().Area;
+        area.Origin.X.Should().BeApproximately(RunWith(page, "aa ").Origin.X, 1e-9);
+        (area.Origin.X + area.Size.Width).Should().BeApproximately(End(RunWith(page, " cc")), 1e-9);
+        area.Origin.Y.Should().BeApproximately(fill.Origin.Y, 1e-9);
+        (area.Origin.Y + area.Size.Height).Should().BeApproximately(fill.Origin.Y + fill.Size.Height, 1e-9);
+    }
+
+    /// <summary>Under the body's clip a link's area is the part the clip shows: a box that reaches above the page area at
+    /// the top of the page gives an area from the page area's top, as Chromium 159 writes it (case <c>ib-link-button</c>);
+    /// without the clip the area is the whole border box.</summary>
+    [Theory]
+    [InlineData(BodyClip.BodyArea)]
+    [InlineData(BodyClip.None)]
+    public void Under_the_body_clip_a_link_s_area_is_what_the_clip_shows(BodyClip clip)
+    {
+        var link = Link(3, Run(4, "here")) with { Box = Padded(3, 4) };
+        var document = Document(Line(1, [Run(2, "See "), link])) with { Profile = LayoutProfile.Default with { BodyClip = clip } };
+        var page = Laid(document).Pages[0];
+
+        var fill = page.Items.OfType<FillRectangle>().Single().Area;
+        var area = Areas(page).Should().ContainSingle().Which.Area;
+        fill.Origin.Y.Should().BeLessThan(10, "the box reaches above the page area, which starts at the 10 pt margin");
+        area.Origin.Y.Should().BeApproximately(clip == BodyClip.BodyArea ? 10 : fill.Origin.Y, 1e-9);
+        (area.Origin.Y + area.Size.Height).Should().BeApproximately(fill.Origin.Y + fill.Size.Height, 1e-9);
+        (area.Origin.X, area.Size.Width).Should().Be((fill.Origin.X, fill.Size.Width));
+    }
 }

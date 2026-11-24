@@ -103,8 +103,7 @@ public static class HtmlStyleErrorCodes
         public static readonly ErrorCode Link = _ / "Link";
 
         /// <summary>An inline element with its own background, border, padding or horizontal margin (an inline box) where this
-        /// version does not draw one: inside a link, around a link or an image, or a link with a box of its own. The element is
-        /// drawn without its box (a link inside a box or a link with a box: as plain inline content, an image: not drawn).
+        /// version does not draw one: around an image that lies inside a link too. The image is not drawn.
         /// Metadata: Property, Value, SourceFile, SourceLine, SourceColumn (the start tag).</summary>
         public static readonly ErrorCode InlineBox = _ / "InlineBox";
 

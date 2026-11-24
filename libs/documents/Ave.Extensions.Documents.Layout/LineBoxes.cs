@@ -259,8 +259,13 @@ internal static class LineBoxes
     /// to the end of its last, so a space removed at the line's end is outside it and a space between two of its pieces
     /// inside it; in the block direction from the ascent of the group's own font above the line's baseline to its
     /// descent below it, at the group's font size and under the profile's font metric rounding, whatever the sizes of the
-    /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller). The edges
-    /// are exact, not rounded to whole pixels as Chromium writes them: they are not printed.
+    /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller), and over
+    /// the border box of every box inside it on the line: one area per line part, the link being one thing to click,
+    /// where Chromium writes one rectangle before the box, one at its border box and one after it (case
+    /// <c>ib-link-span-inside</c>, a listed difference; ISO 32000-1 §12.5.6.5 lets a <c>/Rect</c> be any rectangle). A
+    /// link with a box of its own has the box's border box on the line as its area, as Chromium writes a link styled as a
+    /// button (cases <c>ib-link-button</c>, <c>ib-link-button-break</c>, <c>ib-link-cell</c>). The edges are exact, not
+    /// rounded to whole pixels as Chromium writes them: they are not printed.
     /// <para>THE RULE FOR AN INLINE BOX OVER LINES (<c>box-decoration-break: slice</c>, CSS Fragmentation 3 §5.4): a group with a
     /// box has a part on each line it lies on, its border box from its first to its last piece there; the start edge (left
     /// margin, border and padding) lies in the first part only and the end edge in the last only, each where the line
@@ -338,13 +343,31 @@ internal static class LineBoxes
                 open.RemoveAt(open.Count - 1);
                 var style = group.Node.Style;
                 var extent = InlineExtent.Of(group.Font, style.FontSize.Points, style.LineHeight, rounding);
-                parts[part] = new LineGroupPart(group.Node, new Rect(new Point(left, baseline - extent.Ascent), new Size(right - left, extent.Ascent + extent.Descent)), first, lastEnd - first)
+                Rect? own = group.Node.Box is { } box ? BorderBox(group, box, left, right, extent) : null;
+                parts[part] = new LineGroupPart(group.Node, own ?? Area(part, left, right, extent), first, lastEnd - first)
                 {
-                    Box = group.Node.Box is { } box ? BorderBox(group, box, left, right, extent) : null,
+                    Box = own,
                     HoldsStart = start,
                     HoldsEnd = end,
                 };
             }
+        }
+
+        /// <summary>The area of the part of a group without a box of its own (THE RULE FOR A LINK'S AREA): from its first to
+        /// its last piece, from its font's ascent to its descent, and in the block direction also over the border box of every
+        /// box inside it on the line, the parts after <paramref name="part"/> (they close before it).</summary>
+        private Rect Area(int part, double left, double right, InlineExtent extent)
+        {
+            var (top, bottom) = (baseline - extent.Ascent, baseline + extent.Descent);
+            for (var inner = part + 1; inner < parts.Count; inner++)
+            {
+                if (parts[inner].Box is { } box)
+                {
+                    (top, bottom) = (Math.Min(top, box.Origin.Y), Math.Max(bottom, box.Origin.Y + box.Size.Height));
+                }
+            }
+
+            return new Rect(new Point(left, top), new Size(right - left, bottom - top));
         }
 
         /// <summary>

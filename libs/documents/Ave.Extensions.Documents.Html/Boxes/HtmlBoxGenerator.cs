@@ -152,6 +152,9 @@ public static partial class HtmlBoxGenerator
     {
         /// <summary>The link's language where it differs from its parent's, or null.</summary>
         public string? Language { get; init; }
+
+        /// <summary>The link's own box (THE RULE FOR AN INLINE BOX IN HTML), or null.</summary>
+        public InlineBoxStyle? Box { get; init; }
     }
 
     /// <summary>An inline element a link leads to, being built as a span group: the content of its parent it goes into, its

@@ -92,7 +92,7 @@ public static class ModelCheck
 
             var problem = node switch
             {
-                Box box when inBox => Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An image inside an inline group with a box of its own (InlineGroup.Box) is not drawn in this version; put the image outside the group.", box.Layout.ToString(), "layout", box),
+                Box box when inBox && inLink => Problem(DocumentErrorCodes.Input.Unsupported.InlineBox, "An image inside a link and inside an inline group with a box of its own (InlineGroup.Box) is not drawn in this version; put the image outside the group or outside the link.", box.Layout.ToString(), "layout", box),
                 Box box => Box(box),
                 TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
@@ -347,24 +347,14 @@ public static class ModelCheck
     /// description that is not blank and holds only characters text may hold (<see cref="TextCharacters"/>), a language,
     /// when it has one, of the form of a language tag (<see cref="LanguageTags"/>), and its text values as a run's. A group
     /// with a box of its own (<see cref="InlineGroup.Box"/>, <see cref="InlineBox"/>) may have no role; a group without one
-    /// means something, so it has one. In this version a link and a group with a box are not inside each other, and an
-    /// image is not inside a group with a box: neither is drawn yet.
+    /// means something, so it has one; a link may have a box, lie inside one and hold one. In this version an image inside
+    /// a group with a box is not inside a link as well: where Chromium writes the link's rectangles then is not measured.
     /// </summary>
     private static Error? Group(InlineGroup group, Place place, bool inLink, bool inBox)
     {
         if (place != Place.InLine)
         {
             return Problem(DocumentErrorCodes.Input.Invalid.InlineGroup, "An inline group stands only among the content of an inline box (its runs and images).", group.Role?.ToString() ?? "null", "place", group);
-        }
-
-        if (group.Box is { } box && (inLink || group.Role is SemanticRole.LinkRole))
-        {
-            return Problem(DocumentErrorCodes.Input.Unsupported.InlineBox, "An inline group with a box of its own inside a link, or a link with a box of its own, is not drawn in this version.", group.Role?.ToString() ?? "null", "box", group);
-        }
-
-        if (group.Role is SemanticRole.LinkRole && inBox)
-        {
-            return Problem(DocumentErrorCodes.Input.Unsupported.InlineBox, "A link inside an inline group with a box of its own is not drawn in this version; put the link outside the group.", group.Role.ToString()!, "role", group);
         }
 
         if (group.Box is { } own && InlineBox(own, group) is { } boxProblem)

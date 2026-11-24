@@ -72,7 +72,8 @@ public sealed record LineFragment(Size Size, ValueList<PlacedFragment> Children)
 /// <param name="Group">The group.</param>
 /// <param name="Area">Relative to the line's top-left corner: in the inline direction from the start of the group's first
 /// piece on the line to the end of its last (a space removed at the line's end is no piece), in the block direction from
-/// the group's own font's ascent above the line's baseline to its descent below it (THE RULE FOR A LINK'S AREA,
+/// the group's own font's ascent above the line's baseline to its descent below it and over the border box of every box
+/// inside it; for a group with a box, its border box (<see cref="Box"/>) (THE RULE FOR A LINK'S AREA,
 /// <see cref="LineBoxes"/>).</param>
 /// <param name="First">The index of its first child in <see cref="LineFragment.Children"/>.</param>
 /// <param name="Count">How many children it holds: one or more, or none for a group with a box (<see cref="InlineGroup.Box"/>)

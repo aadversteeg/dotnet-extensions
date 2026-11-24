@@ -486,4 +486,30 @@ public class HtmlListedDifferenceTests
         chromium.Select(link => (link.X0, link.Y0, link.X1, link.Y1, link.Target)).Should().AllBeEquivalentTo((first.X0, first.Y0, first.X1, first.Y1, first.Target), "every copy at the same rectangle, to the same target");
         HtmlCases.LinkDifference(pages, [chromium[0]]).Should().BeNull("the engine's one link is Chromium's first");
     }
+
+    /// <summary>
+    /// A link with a box inside it (a styled span with a background, padding or border) has one area per line part, over its
+    /// text and the boxes inside it (THE RULE FOR A LINK'S AREA): the link is one thing to click, described once. Chromium 159
+    /// writes three rectangles on such a line: one for the link's text before the box, one at the box's border box, one for
+    /// the text after it (case <c>ib-link-span-inside</c>: 51.75..81.75, 81.75..109.5 and 109.5..140.25 pt on the first line;
+    /// a box at the link's start leaves two). An annotation is not printed, so Chromium's split is a fact and not the rule:
+    /// ISO 32000-1 §12.5.6.5 lets a link annotation's <c>/Rect</c> be any rectangle. The print is the same, and each of the
+    /// engine's areas is the rectangle around Chromium's of that line, so no part of the link Chromium marks lies outside it.
+    /// </summary>
+    [Fact]
+    public void A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it()
+    {
+        const string name = "ib-link-span-inside";
+        var boxes = HtmlCases.Boxes(name).Value;
+        var pages = DocumentLayout.Run(boxes.Document, boxes.Fonts).Value;
+        var chromium = HtmlCases.Links(HtmlCases.Cases, name);
+        var around = chromium.GroupBy(link => link.Target)
+            .Select(line => new HtmlCases.PrintedLink(line.First().Page, line.Min(link => link.X0), line.Min(link => link.Y0), line.Max(link => link.X1), line.Max(link => link.Y1), line.Key)).ToList();
+
+        HtmlCases.Status(name).Should().EndWith("(links.txt)", "every fact of the print is the same, and the link areas are compared last");
+        chromium.GroupBy(link => link.Target).Select(line => line.Count()).Should().Equal([3, 3, 2], "Chromium splits each line part at the box");
+        HtmlCases.Links(pages).Should().HaveCount(3, "the engine writes one area per line part");
+        HtmlCases.LinkDifference(pages, around).Should().BeNull("each area is the rectangle around Chromium's of its line");
+        HtmlCases.LinkDifference(pages, chromium).Should().Be("link 1 on page 1: x1 140.18, Chromium 81.75 (links.txt)");
+    }
 }

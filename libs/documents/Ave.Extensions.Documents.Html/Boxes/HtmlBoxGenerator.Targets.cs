@@ -122,20 +122,13 @@ public static partial class HtmlBoxGenerator
 
         /// <summary>An inline element a link leads to, other than an <c>a href</c>, one with a language of its own, or one with
         /// a box of its own (THE RULE FOR AN INLINE BOX IN HTML): its content goes into a span group, first the empty run in its
-        /// style that every inline element adds for its line height. A box inside a link is refused at the element and the
-        /// element is drawn without it.</summary>
+        /// style that every inline element adds for its line height. A box inside a link is a span group inside the link's
+        /// group.</summary>
         /// <returns>True when the span's frame is on the stack.</returns>
         private bool StartSpan(Stack<object> stack, InlineFrame frame, StyledElement element)
         {
             var language = LanguageOf(element, frame.Element);
             var box = InlineBoxOf(element);
-            if (box is not null && frame.InLink)
-            {
-                Refuse(HtmlStyleErrorCodes.Unsupported.InlineBox, $"The background, border, padding or margin of <{element.Element.LocalName}> inside a link is not drawn in this version; give the box to an element around the link, or leave it out.",
-                    box.ToString(), element.Element.Position, "background-color");
-                box = null;
-            }
-
             var isTarget = _targets.ContainsKey(element);
             if (!(isTarget || language is not null || box is not null) || TextStyleOf(element) is not { } style || Deeper(frame.Depth + 1, element.Element.Position))
             {

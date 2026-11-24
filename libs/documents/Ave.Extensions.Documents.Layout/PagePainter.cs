@@ -91,7 +91,7 @@ public static class PagePainter
         [
             .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, page.PageSize.Width, anchors)) : [],
             .. page.BodyClip is { } body
-                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width, anchors))
+                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width, anchors).Select(item => item is LinkArea link ? link with { Area = Inside(link.Area, body) } : item))
                 : Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, page.PageSize.Width, anchors),
             .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, page.PageSize.Width, anchors)) : [],
         ]);
@@ -135,6 +135,18 @@ public static class PagePainter
         _ => throw new InvalidOperationException($"Unknown fragment type {fragment.GetType().Name}."),
     };
 
+    /// <summary>A link area under the body's clip (<see cref="BodyClip.BodyArea"/>): the part of it that the clip shows, so a
+    /// reader clicks only where the link is drawn. As Chromium 159 writes a link whose box reaches above the page area at
+    /// the top of a page: the rectangle starts at the page area's top, 18 pt, where the box's border box starts at 16.008 pt
+    /// (cases <c>ib-link-button</c>, <c>ib-link-button-break</c>). An area wholly outside the clip keeps no width or height.</summary>
+    private static Rect Inside(Rect area, Rect clip)
+    {
+        var (left, top) = (Math.Max(area.Origin.X, clip.Origin.X), Math.Max(area.Origin.Y, clip.Origin.Y));
+        var right = Math.Max(left, Math.Min(area.Origin.X + area.Size.Width, clip.Origin.X + clip.Size.Width));
+        var bottom = Math.Max(top, Math.Min(area.Origin.Y + area.Size.Height, clip.Origin.Y + clip.Size.Height));
+        return new Rect(new Point(left, top), new Size(right - left, bottom - top));
+    }
+
     /// <summary>The items between a clip start and end; nothing at all when there are no items.</summary>
     private static IEnumerable<DrawItem> Clipped(Rect area, IEnumerable<DrawItem> items)
     {
@@ -174,7 +186,8 @@ public static class PagePainter
     /// areas (<see cref="LinkArea"/>): the part's area, and the border box of every image in the part (Chromium's print
     /// writes a rectangle for the link's line part and one for an image inside it). Inside an artifact a group is drawn
     /// without markers and a link gets no area: a link in a page header or footer, or in a repeated copy of a table's
-    /// header rows, is only drawn (a known limit; the first, real occurrence of a header row keeps its links).
+    /// header rows, is only drawn (a known limit; the first, real occurrence of a header row keeps its links). A link with a
+    /// box of its own is drawn as a box with a link inside the link's marker: its area, then its background and border.
     /// <para>THE RULE FOR PAINTING AN INLINE BOX: a group with a box (<see cref="InlineGroup.Box"/>) paints its background
     /// and then its border where its part opens, after the line's children before it and before its own content, as a layout
     /// artifact (inside the group's marker when it has a role; a group without a role opens no marker, its content stays
