@@ -347,6 +347,41 @@ public class TableBoxTests
         cells[1].Style.TableHeight!.Value.Points.Should().BeApproximately(30 - 12 - 1.5, 1e-9);
     }
 
+    /// <summary>A row's height and a table's are floored to 1/64 px, as Chromium's print has them (case <c>tg-row</c> e:
+    /// 40.1 pt is 53.453125 px, 40.08984375 pt; <c>tg-fraction</c> c: a table of 100.1 pt is 100.08984375 pt), a cell's
+    /// content height too (<c>tg-fraction</c> b: 21.37 pt is 21.36328125 pt), below what the comparison of a print can tell
+    /// from the height as given.</summary>
+    [Theory]
+    [InlineData("<table><tr style=\"height:40.1pt\"><td>a</td></tr></table>", 40.08984375)]
+    [InlineData("<table><tr><td style=\"height:21.37pt\">a</td></tr></table>", 21.36328125)]
+    [InlineData("<table style=\"height:100.1pt\"><tr><td>a</td></tr></table>", 100.08984375)]
+    public void Heights_in_a_table_are_floored_to_a_sixty_fourth_pixel(string body, double expected)
+    {
+        var result = Boxes(Doc(body, "table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100% } td { padding: 0; border: none }"));
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        var pages = Paginator.Paginate(LayoutEnvironment.Create(result.Value.Fonts), result.Value.Document);
+        pages.IsSuccess.Should().BeTrue(pages.IsFailure ? pages.Error.ToString() : string.Empty);
+
+        var fragments = new List<BoxFragment>();
+        var pending = new Stack<Fragment>([pages.Value[0].Root.Fragment]);
+        while (pending.Count > 0)
+        {
+            if (pending.Pop() is BoxFragment box)
+            {
+                fragments.Add(box);
+                foreach (var child in box.Children)
+                {
+                    pending.Push(child.Fragment);
+                }
+            }
+        }
+
+        var height = body.Contains("<table style", StringComparison.Ordinal)
+            ? fragments.Single(box => box.Box.Role == SemanticRole.Table).Size.Height
+            : fragments.Single(box => box.Box.Style.TableDisplay == TableDisplay.Row).Size.Height;
+        height.Should().BeApproximately(expected, 1e-9);
+    }
+
     [Theory]
     [InlineData("left")]
     [InlineData("block-end")]
