@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- word-spacing at 10.5 pt and 11 pt: 4px on spaces, on a no-break space, on spaces that collapse, on a space inside and outside an element with its own value, negative, in em and 0.3pt (not a whole number of 1/64 px); a justified paragraph 90 pt wide with word-spacing; letter-spacing and word-spacing together. -->
+<style>@page { size: 300pt 600pt; margin: 12pt; } body { line-height: 18pt; } .a { font-size: 10.5pt; } .b { font-size: 11pt; } .nw { white-space: nowrap; }
+.w { word-spacing: 4px; } .n { word-spacing: -1pt; } .e { word-spacing: 0.25em; } .f { word-spacing: 0.3pt; } .r { color: #c00; }
+.j { text-align: justify; margin-right: 186pt; } .l { letter-spacing: 1px; }</style></head><body>
+<div class="a">
+<div class="nw">
+<p class="w">Word a b&nbsp;c d    e f&#x2003;g</p>
+<p>Word a<span class="w r"> b </span>c <span class="w">d</span> e</p>
+<p class="n">Word a b c d e</p>
+<p class="e">Word a b c d e</p>
+<p class="f">Word a b c d e f g h i j k l m n o p q r s t</p>
+<p class="w l">Word a b c d e</p>
+</div>
+<p class="w j">Word alpha beta gamma delta</p>
+</div>
+<div class="b">
+<div class="nw">
+<p class="w">Word a b&nbsp;c d    e f&#x2003;g</p>
+<p>Word a<span class="w r"> b </span>c <span class="w">d</span> e</p>
+<p class="n">Word a b c d e</p>
+<p class="e">Word a b c d e</p>
+<p class="f">Word a b c d e f g h i j k l m n o p q r s t</p>
+<p class="w l">Word a b c d e</p>
+</div>
+<p class="w j">Word alpha beta gamma delta</p>
+</div>
+</body></html>

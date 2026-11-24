@@ -1716,6 +1716,22 @@ public class MeasuredReferenceFilesTests
         ["kb-v9-padded-box-kept-table-row.lines.txt"] = 10,
         ["kb-v9-padded-box-kept-table-row.print.txt"] = 21,
         ["kb-v9-padded-box-kept-table-row.words.txt"] = 5,
+        ["ls-align.boxes.txt"] = 1,
+        ["ls-align.lines.txt"] = 0,
+        ["ls-align.print.txt"] = 41,
+        ["ls-align.words.txt"] = 40,
+        ["ls-letters.boxes.txt"] = 1,
+        ["ls-letters.lines.txt"] = 0,
+        ["ls-letters.print.txt"] = 49,
+        ["ls-letters.words.txt"] = 46,
+        ["ls-values.boxes.txt"] = 1,
+        ["ls-values.lines.txt"] = 0,
+        ["ls-values.print.txt"] = 31,
+        ["ls-values.words.txt"] = 30,
+        ["ls-word-spacing.boxes.txt"] = 1,
+        ["ls-word-spacing.lines.txt"] = 0,
+        ["ls-word-spacing.print.txt"] = 117,
+        ["ls-word-spacing.words.txt"] = 116,
         ["mf4-line-0.boxes.txt"] = 40,
         ["mf4-line-0.lines.txt"] = 106,
         ["mf4-line-0.print.txt"] = 169,
@@ -2281,7 +2297,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(559);
+        cases.Should().HaveCount(563);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), and the gaps of the cases whose print skips ink");

@@ -422,6 +422,10 @@ kb-t2-kept-row-group-after-a-row equal
 kb-t3-row-group-not-kept-control equal
 kb-v8-padded-box-kept-para equal
 kb-v9-padded-box-kept-table-row equal
+ls-align refused Documents.Css.Unsupported.Value letter-spacing: 1px at 4:5
+ls-letters refused Documents.Css.Unsupported.Value letter-spacing: 1px at 4:6
+ls-values refused Documents.Css.Unsupported.Value letter-spacing: -0.5pt at 4:6
+ls-word-spacing refused Documents.Css.Unsupported.Value word-spacing: 4px at 4:6
 mf4-line-0 equal
 mf4-line-075 equal
 mf4-line-150 equal
