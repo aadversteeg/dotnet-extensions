@@ -99,7 +99,7 @@ public static partial class HtmlBoxGenerator
         element.Namespace == ElementNamespace.Html && (part, element.LocalName) switch
         {
             (TablePart.Table, "table") or (TablePart.HeaderGroup, "thead") or (TablePart.RowGroup, "tbody") or (TablePart.FooterGroup, "tfoot")
-                or (TablePart.Row, "tr")
+                or (TablePart.Row, "tr") or (TablePart.Caption, "caption")
                 or (TablePart.Cell, "td" or "th") or (TablePart.Column, "col") or (TablePart.ColumnGroup, "colgroup") => true,
             _ => false,
         };
@@ -164,24 +164,15 @@ public static partial class HtmlBoxGenerator
             var host = block.Element.Element.LocalName;
             var belongs = parent switch
             {
-                TablePart.Table => part is TablePart.HeaderGroup or TablePart.RowGroup or TablePart.FooterGroup or TablePart.Column or TablePart.ColumnGroup,
+                TablePart.Table => part is TablePart.Caption or TablePart.HeaderGroup or TablePart.RowGroup or TablePart.FooterGroup or TablePart.Column or TablePart.ColumnGroup,
                 TablePart.Row => part == TablePart.Cell,
                 _ => part == TablePart.Row,
             };
             if (!belongs)
             {
                 var what = element is null ? "text" : $"<{element.Element.LocalName}> ({(part == TablePart.None ? "not a table part" : DisplayName(part))})";
-                var message = part switch
-                {
-                    TablePart.Caption => $"The table caption <{element!.Element.LocalName}> is not drawn in this version.",
-                    _ => $"The {what} directly inside the <{host}> ({DisplayName(parent)}) is not drawn in this version: CSS would wrap it in an anonymous table box (CSS 2.1 §17.2.1).",
-                };
-                var value = part switch
-                {
-                    TablePart.Caption => element!.Element.LocalName,
-                    _ => $"{element?.Element.LocalName ?? "text"} in {host}",
-                };
-                RefuseTable(message, value, position);
+                RefuseTable($"The {what} directly inside the <{host}> ({DisplayName(parent)}) is not drawn in this version: CSS would wrap it in an anonymous table box (CSS 2.1 §17.2.1).",
+                    $"{element?.Element.LocalName ?? "text"} in {host}", position);
                 return true;
             }
 
@@ -198,8 +189,18 @@ public static partial class HtmlBoxGenerator
                 return true;
             }
 
-            // CSS 2.1 §17.2: the header group is drawn before every other row group; the model's is its table's first child.
-            if (part == TablePart.HeaderGroup && block.Nodes.Count > 0)
+            // A table has one caption in the model, which tagged PDF allows (ISO 32000-1 Table 337); Chromium draws every
+            // caption element (case tc-two: the second above the grid too, below the first).
+            if (part == TablePart.Caption && block.Nodes.OfType<Box>().Any(IsCaption))
+            {
+                RefuseTable($"A second table caption <{element.Element.LocalName}> is not drawn in this version: a table has one caption. Put its text in the first caption.",
+                    $"second {element.Element.LocalName}", position);
+                return true;
+            }
+
+            // CSS 2.1 §17.2: the header group is drawn before every other row group; the model's is its table's first child
+            // after the caption.
+            if (part == TablePart.HeaderGroup && block.Nodes.OfType<Box>().Any(node => !IsCaption(node)))
             {
                 RefuseTable($"The header row group <{element.Element.LocalName}> after another row group is not drawn in this version: the document model's header rows come first.",
                     $"{element.Element.LocalName} after a row group", position);
@@ -296,10 +297,13 @@ public static partial class HtmlBoxGenerator
             return value == 0 ? zero : (int)value;
         }
 
+        private static bool IsCaption(Box box) => box.Style.TableDisplay == TableDisplay.Caption;
+
         /// <summary>The box of a finished block frame, made the table part its element is.</summary>
         private Box TablePartBox(BlockFrame block, Box box) => PartOf(block.Element) switch
         {
             TablePart.Table => TableBox(block.Element, box),
+            TablePart.Caption => CaptionBox(block.Element, box),
             TablePart.HeaderGroup or TablePart.RowGroup => GroupBox(block.Element, box),
             TablePart.FooterGroup => Footer(GroupBox(block.Element, box)),
             TablePart.Row => box with
@@ -311,6 +315,30 @@ public static partial class HtmlBoxGenerator
             TablePart.Cell => CellBox(block.Element, box),
             _ => box,
         };
+
+        /// <summary>
+        /// A table caption (CSS 2.1 §17.4): a block of text and inline elements, laid out by its table above or below the
+        /// grid at the table's width (<c>caption-side</c>), its own margins, padding, border, background and text alignment
+        /// drawn as a block's (cases <c>tc-*</c>). A caption with a block inside is refused: no case measures one.
+        /// </summary>
+        private Box CaptionBox(StyledElement element, Box box)
+        {
+            if (box.Layout != LayoutAlgorithmId.Inline && box.Children.Count > 0)
+            {
+                RefuseTable($"A block inside the table caption <{element.Element.LocalName}> is not drawn in this version: a caption holds text and inline elements.",
+                    $"block in {element.Element.LocalName}", element.Element.Position);
+            }
+
+            return box with
+            {
+                Role = SemanticRole.Caption,
+                Style = box.Style with
+                {
+                    TableDisplay = TableDisplay.Caption,
+                    CaptionSide = Value(element, "caption-side") is CssKeyword { Name: "bottom" } ? CaptionSide.Bottom : CaptionSide.Top,
+                },
+            };
+        }
 
         private Box CellBox(StyledElement element, Box box)
         {
@@ -420,7 +448,8 @@ public static partial class HtmlBoxGenerator
             var html = element.Element;
             // A row group without rows was refused (GroupBox); under Warn it is left out, and a table without rows is an
             // empty block.
-            var groups = DrawOrder([.. box.Children.OfType<Box>().Where(group => group.Children.Count > 0)]);
+            var caption = box.Children.OfType<Box>().FirstOrDefault(IsCaption);
+            var groups = DrawOrder([.. box.Children.OfType<Box>().Where(group => group.Children.Count > 0 && !IsCaption(group))]);
             if (groups.Count == 0)
             {
                 RefuseTable($"The table <{html.LocalName}> without rows is not drawn in this version.", "table without rows", html.Position);
@@ -465,7 +494,7 @@ public static partial class HtmlBoxGenerator
                     Padding = separated ? box.Style.Padding : Edges.Zero,
                     Text = null,
                 },
-                Children = [.. groups.Select(group => (Node)(group.Style.TableDisplay == TableDisplay.HeaderGroup && hasBody ? group with { Role = SemanticRole.TableHead } : group))],
+                Children = [.. caption is null ? [] : new[] { (Node)caption }, .. groups.Select(group => (Node)(group.Style.TableDisplay == TableDisplay.HeaderGroup && hasBody ? group with { Role = SemanticRole.TableHead } : group))],
             };
         }
 

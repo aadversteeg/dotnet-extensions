@@ -192,8 +192,11 @@ public class TableBoxTests
     /// <summary>One row per refusal of table structure: the body, extra CSS, the refused value (null: nothing refused).</summary>
     public static TheoryData<string, string, string?> StructureRefusals { get; } = new()
     {
-        // Structure the model's table does not have (CSS 2.1 §17.2.1 anonymous boxes; captions, footers).
-        { "<table><caption>c</caption><tr><td>a</td></tr></table>", "", "caption" },
+        // Structure the model's table does not have (CSS 2.1 §17.2.1 anonymous boxes; a second caption, a block in a
+        // caption, footers).
+        { "<table><caption>c</caption><caption>d</caption><tr><td>a</td></tr></table>", "", "second caption" },
+        { "<table><caption><p>c</p></caption><tr><td>a</td></tr></table>", "", "block in caption" },
+        { "<table><caption>c</caption><tr><td>a</td></tr><caption>d</caption></table>", "", "second caption" },
         { "<table><tbody><tr><td>a</td></tr></tbody><tfoot></tfoot></table>", "", "tfoot without rows" },
         { "<table><tfoot><tr><td>f</td></tr></tfoot><thead><tr><td>h</td></tr></thead><tr><td>a</td></tr></table>", "", "thead after a row group" },
         { "<table><tbody><tr><td>a</td></tr></tbody><thead><tr><td>h</td></tr></thead></table>", "", "thead after a row group" },
@@ -257,6 +260,8 @@ public class TableBoxTests
     [InlineData("<table><colgroup style=\"width:10pt\"><col></colgroup><tr><td>a</td></tr></table>", "", "width", "10pt")]
     [InlineData("<table><tr><td style=\"width:50%\">a</td></tr></table>", "", "width", "50%")]
     [InlineData("<table><tr><td style=\"vertical-align:baseline\">a</td></tr></table>", "", "vertical-align", "baseline")]
+    [InlineData("<table><caption style=\"width:40pt\">c</caption><tr><td>a</td></tr></table>", "", "width", "40pt")]
+    [InlineData("<table><caption style=\"margin-top:10%\">c</caption><tr><td>a</td></tr></table>", "", "margin-top", "10%")]
     public void Table_values_the_model_does_not_draw_are_refused(string body, string css, string property, string value)
     {
         var error = FirstRefusal(body, Collapsed + css);
@@ -264,7 +269,8 @@ public class TableBoxTests
     }
 
     [Theory]
-    // No effect with collapsed borders (CSS 2.1 §17.6.1, §17.6.1.1), without a caption, or on an internal part (§17.5).
+    // No effect with collapsed borders (CSS 2.1 §17.6.1, §17.6.1.1), on a box that is no caption, or on an internal part
+    // (§17.5).
     [InlineData("table { border-spacing: 5pt; empty-cells: show; caption-side: top }")]
     [InlineData("tr { width: 50pt; padding: 3pt } tbody { padding: 2pt; margin: 4pt }")]
     [InlineData("td { margin: 3pt }")]
@@ -289,12 +295,36 @@ public class TableBoxTests
         FirstRefusal("<table style=\"display:inline-table\"><tr><td>a</td></tr></table>").Metadata![ErrorMetadataKeys.Property].Should().Be("display");
 
     [Fact]
-    public void Under_warn_a_refused_caption_is_left_out_and_the_table_drawn()
+    public void Under_warn_a_second_caption_is_left_out_and_the_table_drawn_with_the_first()
     {
-        var result = Boxes(Doc("<table><caption>c</caption><tr><td>a</td></tr></table>"), UnsupportedPolicy.Warn);
+        var result = Boxes(Doc("<table><caption>c</caption><caption>d</caption><tr><td>a</td></tr></table>"), UnsupportedPolicy.Warn);
         result.IsSuccess.Should().BeTrue();
         result.Value.Diagnostics.Select(error => error.Code).Should().Contain(HtmlStyleErrorCodes.Unsupported.Table);
         var table = ((Box)result.Value.Document.Root.Children.Single()).Children.OfType<Box>().Single();
-        Parts(table).Select(group => group.Style.TableDisplay).Should().Equal(TableDisplay.RowGroup);
+        Parts(table).Select(group => group.Style.TableDisplay).Should().Equal(TableDisplay.Caption, TableDisplay.RowGroup);
     }
+
+    /// <summary>The caption is the table's first child with the caption role, wherever it stands among the row groups,
+    /// and draws on the side its <c>caption-side</c> or its <c>align</c> attribute gives.</summary>
+    [Theory]
+    [InlineData("<table><caption>c</caption><tr><td>a</td></tr></table>", "", CaptionSide.Top)]
+    [InlineData("<table><thead><tr><th>h</th></tr></thead><caption>c</caption><tr><td>a</td></tr></table>", "", CaptionSide.Top)]
+    [InlineData("<table><caption>c</caption><tr><td>a</td></tr></table>", "caption { caption-side: bottom }", CaptionSide.Bottom)]
+    [InlineData("<table style=\"caption-side: bottom\"><caption>c</caption><tr><td>a</td></tr></table>", "", CaptionSide.Bottom)]
+    [InlineData("<table><caption align=bottom>c</caption><tr><td>a</td></tr></table>", "", CaptionSide.Bottom)]
+    public void A_caption_is_the_tables_first_child_on_its_side(string body, string css, CaptionSide side)
+    {
+        var result = Boxes(Doc(body, Collapsed + css));
+        result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
+        var table = ((Box)result.Value.Document.Root.Children.Single()).Children.OfType<Box>().Single();
+        var caption = Parts(table).First();
+        (caption.Style.TableDisplay, caption.Role, caption.Style.CaptionSide).Should().Be((TableDisplay.Caption, SemanticRole.Caption, side));
+        Parts(table).Skip(1).Should().OnlyContain(group => group.Style.TableDisplay != TableDisplay.Caption);
+    }
+
+    [Theory]
+    [InlineData("left")]
+    [InlineData("block-end")]
+    public void A_caption_side_other_than_top_or_bottom_is_refused(string side) =>
+        FirstRefusal("<table><caption>c</caption><tr><td>a</td></tr></table>", $"{Collapsed}caption {{ caption-side: {side} }}").Metadata![ErrorMetadataKeys.Property].Should().Be("caption-side");
 }

@@ -366,7 +366,7 @@ internal static class MarkerNesting
 /// <summary>
 /// How tagged PDF's table structure nests (ISO 32000-1 §14.8.4.3.4, table elements, Table 337): a row (TR) is a child of a table or
 /// of one of its row groups; a header or data cell (TH, TD) is a child of a row; a row group is a child of a table.
-/// Seen from the parent, a table holds only rows and row groups, a row group only rows, a row only cells. veraPDF
+/// Seen from the parent, a table holds only its caption, rows and row groups, a row group only rows, a row only cells. veraPDF
 /// checks the same for PDF/UA-1 (rules 7.2-3 to 7.2-10, 7.2-36 to 7.2-38). Parent here means the nearest enclosing node
 /// that has a structure type; a decorative node (an artifact) is not one. The row groups are THead and TBody: there is no
 /// role for a table footer (TFoot, Core SemanticRole), so the rules have no case for it.
@@ -386,7 +386,7 @@ internal static class StructureNesting
 
     private static readonly ImmutableDictionary<string, ImmutableHashSet<string>> AllowedChildren = new Dictionary<string, ImmutableHashSet<string>>
     {
-        ["Table"] = ["TR", "THead", "TBody"],
+        ["Table"] = ["Caption", "TR", "THead", "TBody"],
         ["THead"] = ["TR"],
         ["TBody"] = ["TR"],
         ["TR"] = ["TH", "TD"],
@@ -424,9 +424,9 @@ internal static class StructureNesting
     /// The kids of every table, counted over all pages, where a node split over pages is one element. ISO 32000-1
     /// Table 337 says a table "contains either one or more table rows (structure type TR) as children; or an optional
     /// table head (structure type THead) followed by one or more table body elements (structure type TBody) and an
-    /// optional table footer (structure type TFoot)". (It may also have a caption as its first or last child; there is
-    /// no caption role, and no footer role either.) So a table holds rows or row groups, not both, and at most one THead,
-    /// which comes first. veraPDF checks the count for PDF/UA-1 (rule 7.2-11). Whether a head needs a body is a profile's
+    /// optional table footer (structure type TFoot)", and may have a caption as its first or last child (there is no footer
+    /// role). So a table holds rows or row groups, not both, at most one THead, which comes first, and at most one Caption,
+    /// first or last, in the order the pages show them. veraPDF checks the count for PDF/UA-1 (rules 7.2-11, 7.2-16, 7.2-39). Whether a head needs a body is a profile's
     /// rule (PDF/UA-1, rule 7.2-14). Linear in the number of structure markers, whatever their shape.
     /// </summary>
     /// <param name="pages">The pages; missing pages are reported elsewhere and skipped here.</param>
@@ -444,7 +444,7 @@ internal static class StructureNesting
                 if (item is StructureStart start)
                 {
                     var type = start.Role?.StandardStructureType;
-                    if (type is "TR" or "THead" or "TBody"
+                    if (type is "Caption" or "TR" or "THead" or "TBody"
                         && open.FirstOrDefault(entry => entry.Type is not null) is { Type: "Table" } table
                         && seen.Add((table.Node, start.Node)))
                     {
@@ -466,15 +466,19 @@ internal static class StructureNesting
     /// <summary>The first way a table's kids, in order, break the rule of <see cref="TableParts"/>, or null.</summary>
     private static Error? PartsBreach(NodeId table, List<(string Type, SourceLocation Source)> kids, ErrorCode code)
     {
-        var types = kids.Select(kid => kid.Type).ToList();
+        var all = kids.Select(kid => kid.Type).ToList();
+        var types = all.Where(type => type != "Caption").ToList();
+        var captions = all.Count(type => type == "Caption");
         var reason =
-            types.Contains("TR") && types.Exists(type => type != "TR") ? "holds rows beside row groups; it holds one or the other"
+            captions > 1 ? "has more than one Caption; it has at most one"
+            : captions == 1 && all[0] != "Caption" && all[^1] != "Caption" ? "has its Caption between other kids; the caption is the first or the last"
+            : types.Contains("TR") && types.Exists(type => type != "TR") ? "holds rows beside row groups; it holds one or the other"
             : types.Count(type => type == "THead") > 1 ? "has more than one THead; it has at most one"
             : types.IndexOf("THead") > 0 ? "has its THead after another row group; the head comes first"
             : null;
         return reason is null
             ? null
-            : PageModelRules.Invalid(code, $"Table node {table} {reason} (ISO 32000-1 Table 337).", string.Join(",", types)).WithSource(kids[0].Source);
+            : PageModelRules.Invalid(code, $"Table node {table} {reason} (ISO 32000-1 Table 337).", string.Join(",", all)).WithSource(kids[0].Source);
     }
 
     private static string? Breach(string type, string? parent) =>

@@ -18,12 +18,11 @@ internal static class TableProperties
     /// <summary>True for a table part (a table, a group, a row, a cell, a column or a column group).</summary>
     public static bool IsPart(ElementFacts facts) => Part(facts) != TablePart.None;
 
-    /// <summary>The table display types drawn (CSS Display 3 §2.4); a caption and the rest refused (style resolution
-    /// refuses <c>inline-table</c> already).</summary>
+    /// <summary>The table display types drawn (CSS Display 3 §2.4), the caption among them; the rest refused (style
+    /// resolution refuses <c>inline-table</c> already).</summary>
     public static string? Display(CssValue value) => HtmlBoxGenerator.PartOf(value) switch
     {
         TablePart.None => "this display type is not drawn in this version",
-        TablePart.Caption => "a table caption is not drawn in this version",
         _ => null,
     };
 
@@ -40,14 +39,23 @@ internal static class TableProperties
         TablePart.Column => value is CssLength or CssPercentage { Value: > 0 } ? null : "a column width other than a length or a positive percentage is not drawn in this version",
         TablePart.Cell => value is CssLength or CssPercentage { Value: > 0 } ? null : "a width on a cell other than a length or a positive percentage is not drawn in this version",
         TablePart.ColumnGroup => value is CssLength or CssPercentage { Value: > 0 } ? null : "a column group width other than a length or a positive percentage is not drawn in this version",
+        TablePart.Caption => "a width on a table caption is not drawn in this version: a caption is as wide as its table",
         _ => null,
     };
 
     /// <summary>Margins: internal table elements have none (CSS 2.1 §17.5: "Internal table elements do not have
     /// margins"); a table has no horizontal margin in this version (at width 100% it would pass its container, and auto
-    /// margins centre a narrower table), but <c>auto</c> on a table of width 100%, where it is 0 (CSS 2.1 §10.3.3).</summary>
+    /// margins centre a narrower table), but <c>auto</c> on a table of width 100%, where it is 0 (CSS 2.1 §10.3.3). A
+    /// caption's margins are a block's, inside the table's outer box (case <c>tc-box</c>).</summary>
     public static string? Margin(string side, CssValue value, ElementFacts facts) => Part(facts) switch
     {
+        TablePart.Caption => value switch
+        {
+            CssKeyword { Name: "auto" } => null,
+            CssLength { Value.Points: >= 0 } => null,
+            CssLength => "negative margins are not drawn in this version",
+            _ => "percentage and calculated margins are not drawn in this version",
+        },
         TablePart.Table when side is "left" or "right" => value is CssLength { Value.Points: 0 }
             || (value is CssKeyword { Name: "auto" } && facts.Style[PropertyRegistry.Find("width")!] is CssPercentage { Value: 100 })
             ? null
@@ -66,12 +74,12 @@ internal static class TableProperties
     /// table part, its table's, as the property is inherited (CSS 2.1 §17.6) and never set on a part in the cases.</summary>
     public static bool IsSeparated(ElementFacts facts) => facts.Style[PropertyRegistry.Find("border-collapse")!] is not CssKeyword { Name: "collapse" };
 
-    /// <summary>A background: a cell's is drawn, and a table's with separated borders, which paints it under its whole
+    /// <summary>A background: a cell's and a caption's are drawn (case <c>tc-box</c>), and a table's with separated borders, which paints it under its whole
     /// border box as a block box does (CSS 2.1 §17.6.1; case <c>ts-paint</c>); a group's, a row's and a column's are not in
     /// this version, nor a table's with collapsed borders.</summary>
     public static string? Background(ElementFacts facts) => Part(facts) switch
     {
-        TablePart.Cell or TablePart.None => null,
+        TablePart.Cell or TablePart.Caption or TablePart.None => null,
         TablePart.Table when IsSeparated(facts) => null,
         TablePart.Table => "a background on a table with collapsed borders is not drawn in this version: put it on the cells, or draw the table with border-collapse: separate",
         _ => "a background on a row group, a row or a column is not drawn in this version: put it on the cells",
@@ -100,8 +108,8 @@ internal static class TableProperties
     /// model (CSS 2.1 §17.6.1, §17.6.1.1), so they have no effect with collapsed borders; with separated borders a
     /// spacing is drawn in whole CSS pixels, the spacings the cases measure (<c>ts-*</c>: 0, 2, 4, 8 and 12 px), and another
     /// is refused, as Chromium's rounding of it is not measured; <c>empty-cells</c> takes only <c>show</c> (the registry),
-    /// which draws every cell. <c>caption-side</c> none without a caption (a caption is refused); <c>table-layout</c> is read
-    /// for the columns.
+    /// which draws every cell. <c>caption-side</c> takes <c>top</c> and <c>bottom</c> (the registry), read on the caption;
+    /// <c>table-layout</c> is read for the columns.
     /// </summary>
     public static string? TableProperty(string name, CssValue value, ElementFacts facts) =>
         name == "border-spacing" && Part(facts) == TablePart.Table && IsSeparated(facts)

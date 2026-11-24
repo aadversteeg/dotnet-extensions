@@ -79,6 +79,7 @@ public static class DocumentModelText
                 TableDisplay.HeaderGroup => "table-header-group",
                 TableDisplay.RowGroup => "table-row-group",
                 TableDisplay.Row => "table-row",
+                TableDisplay.Caption => "table-caption",
                 _ => box.Layout.ToString(),
             },
             box.Role.ToString(),
@@ -100,6 +101,7 @@ public static class DocumentModelText
             style.Span != initial.Span ? $"span={style.Span}" : null,
             style.BorderModel != initial.BorderModel ? $"border-collapse={style.BorderModel.ToString().ToLowerInvariant()}" : null,
             style.BorderSpacing != initial.BorderSpacing ? $"border-spacing={style.BorderSpacing}" : null,
+            style.CaptionSide != initial.CaptionSide ? $"caption-side={style.CaptionSide.ToString().ToLowerInvariant()}" : null,
             $"@{box.Source}",
         ];
         return string.Join(" ", parts.OfType<string>());

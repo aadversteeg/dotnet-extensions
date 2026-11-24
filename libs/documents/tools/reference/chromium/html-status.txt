@@ -493,6 +493,14 @@ ta-marks equal
 ta-px equal
 ta-right equal
 ta-sizes equal
+tc-box equal
+tc-break-bottom equal
+tc-break-first refused Documents.Layout.TableBreak 23.508 at 5
+tc-break-rows equal
+tc-side equal
+tc-two refused Documents.Html.Unsupported.Table second caption at 6:1
+tc-width equal
+tc-wrap equal
 te-bottom equal
 te-break equal
 te-left-first equal

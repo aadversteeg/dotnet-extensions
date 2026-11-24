@@ -43,6 +43,21 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
             .WithSource(table.Source);
 
+    /// <summary>A table caption that does not fit where it is drawn, with the table's first row below it or below the
+    /// table's last row (<see cref="LayoutErrorCodes.TableBreak"/>; <see cref="TableCaption"/>).</summary>
+    /// <param name="table">The tracks box.</param>
+    /// <param name="caption">The caption.</param>
+    /// <param name="available">The height the table had on the page.</param>
+    /// <param name="where">Where the caption is drawn.</param>
+    public static Error CaptionBreak(Box table, Box caption, double available, string where) =>
+        new Error(
+                LayoutErrorCodes.TableBreak,
+                $"{Describe(table)} has a caption that does not fit {where} in {Room(available)}: a table whose caption and first or last row "
+                + "do not fit on one page together is not drawn in this version. Give the table the room, for example with a page break before it, or move the caption's text out of the table.")
+            .With(ErrorMetadataKeys.Node, caption.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(available))
+            .WithSource(table.Source);
+
     /// <summary>A header or footer area's content that does not fit in the area: an area never breaks.</summary>
     /// <param name="content">The area's content.</param>
     /// <param name="height">The area's height: its fixed height, or the page area's.</param>

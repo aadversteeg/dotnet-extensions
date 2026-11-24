@@ -51,11 +51,17 @@ public static class TracksLayout
             : TableGrid.Build(box).OnSuccessBind(grid => Prepare(environment, box, grid, space.AvailableWidth));
         return preparation.OnSuccessBind(table => token is not null && InvalidToken(table.Grid, token) is { } reason
             ? Result<LayoutResult, Error>.Failure(LayoutErrors.InvalidBreakToken(box, token, reason))
-            : TablePage.LayOut(new TableGeometry(environment, box, table) { IsAtPageStart = space.IsAtPageStart, IsBelowStartInsets = space.IsBelowStartInsets, ContinuesFromPageBefore = token is not null }, space, token)
+            : TableCaption.Of(box) is { } caption
+                ? TableCaption.Layout(environment, box, caption, table.Width, table.Grid.HeaderRowCount, space, token is not null, gridSpace => Grid(environment, box, table, gridSpace, token))
+                : Grid(environment, box, table, space, token));
+    }
+
+    /// <summary>A page of the table's grid (<see cref="TablePage"/>), its continuation carrying the prepared grid.</summary>
+    private static Result<LayoutResult, Error> Grid(LayoutEnvironment environment, Box box, TablePreparation table, ConstraintSpace space, TracksBreakToken? token) =>
+        TablePage.LayOut(new TableGeometry(environment, box, table) { IsAtPageStart = space.IsAtPageStart, IsBelowStartInsets = space.IsBelowStartInsets, ContinuesFromPageBefore = token is not null }, space, token)
             .OnSuccessMap(result => result is LayoutResult.Placed { Continuation: TracksBreakToken next } placed
                 ? placed with { Continuation = next with { Prepared = table } }
-                : result));
-    }
+                : result);
 
     /// <summary>
     /// Why a table cannot resume from <paramref name="token"/>, or null when it can: the next row is a body row of the
@@ -109,19 +115,24 @@ public static class TracksLayout
     /// <param name="box">The tracks box.</param>
     /// <returns>The widths, or an error.</returns>
     public static Result<IntrinsicWidths, Error> Measure(LayoutEnvironment environment, Box box) =>
-        TableGrid.Build(box).OnSuccessBind(grid =>
+        TableGrid.Build(box).OnSuccessBind(grid => CaptionWidth(environment, box).OnSuccessBind(caption =>
         {
             var lines = VerticalLineWidths(box, grid);
             return ColumnRanges(environment, box, grid).OnSuccessMap(sized =>
             {
                 var least = sized.Ranges.Sum(range => range.MinContent);
                 var most = Math.Max(least, Math.Max(sized.Ranges.Sum(range => range.MaxContent), TrackSizing.PercentWidth(sized.Columns, sized.Ranges) ?? 0));
-                var widths = new IntrinsicWidths(least, most).Plus(Outer(box, lines, sized.Ranges.Length));
+                var grown = new IntrinsicWidths(least, most).Plus(Outer(box, lines, sized.Ranges.Length));
+                var widths = new IntrinsicWidths(Math.Max(grown.MinContent, caption), Math.Max(grown.MaxContent, caption));
                 return box.Style.Width is BoxWidth.Fixed { Width.Points: var given }
                     ? new IntrinsicWidths(Math.Max(given, widths.MinContent), Math.Max(given, widths.MinContent))
                     : widths;
             });
-        });
+        }));
+
+    /// <summary>The least width the table's caption gives it (<see cref="TableCaption.MinWidth"/>), or zero without one.</summary>
+    private static Result<double, Error> CaptionWidth(LayoutEnvironment environment, Box box) =>
+        TableCaption.Of(box) is { } caption ? TableCaption.MinWidth(environment, caption) : Result<double, Error>.Success(0);
 
     /// <summary>
     /// The box a cell is laid out as. In the collapsing border model a cell's border is not its own: it is half of
@@ -323,7 +334,7 @@ public static class TracksLayout
             return Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, tooWide, availableWidth));
         }
 
-        return ColumnRanges(environment, box, grid).OnSuccessBind(sized =>
+        return CaptionWidth(environment, box).OnSuccessBind(caption => ColumnRanges(environment, box, grid).OnSuccessBind(sized =>
         {
             var (columns, ranges) = sized;
             var mode = given is null ? box.Style.Width : BoxWidth.Stretch;
@@ -336,6 +347,12 @@ public static class TracksLayout
             }
 
             var (widths, needed) = TrackSizing.Resolve(columns, ranges, space, mode, Step(environment));
+            if (needed is null && widths.Sum() + outer < caption && Fitting.Fits(caption, availableWidth))
+            {
+                // The caption's min-content is the table's least width; the columns share it as any width above their
+                // maximum (TableCaption.MinWidth; cases tc-wrap b, c).
+                (widths, needed) = TrackSizing.Resolve(columns, ranges, caption - outer, BoxWidth.Stretch, Step(environment));
+            }
             if (needed is { } least && given is not null && Fitting.Fits(least + outer, availableWidth))
             {
                 // A table of a given width is never narrower than its columns' minimum (cases twd-table-narrow a, c: 40 pt
@@ -358,8 +375,10 @@ public static class TracksLayout
                 end = x[^1] + columnWidth;
             }
 
-            return Result<TablePreparation, Error>.Success(new TablePreparation(box, grid, x.MoveToImmutable(), widths, gap, start, end, lines, end + right, availableWidth));
-        });
+            return Fitting.Fits(caption, availableWidth)
+                ? Result<TablePreparation, Error>.Success(new TablePreparation(box, grid, x.MoveToImmutable(), widths, gap, start, end, lines, end + right, availableWidth))
+                : Result<TablePreparation, Error>.Failure(LayoutErrors.ColumnsDoNotFit(box, caption, availableWidth));
+        }));
     }
 }
 

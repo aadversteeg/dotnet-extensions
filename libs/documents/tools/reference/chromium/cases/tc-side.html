@@ -1,0 +1,24 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A table caption above and below the table: a, top, collapsed borders; b, top, separated; c, caption-side bottom, collapsed; d, bottom, separated. -->
+<style>@page { size: 300pt 500pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; } .b { caption-side: bottom; }</style></head><body>
+<table id="a">
+<caption id="caption-a">Caption</caption>
+<tr><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p>next 1</p>
+<table id="b" class="s">
+<caption id="caption-b">Caption</caption>
+<tr><td id="one-b">one</td><td>two</td></tr>
+</table>
+<p>next 2</p>
+<table id="c" class="b">
+<caption id="caption-c">Caption</caption>
+<tr><td id="one-c">one</td><td>two</td></tr>
+</table>
+<p>next 3</p>
+<table id="d" class="s b">
+<caption id="caption-d">Caption</caption>
+<tr><td id="one-d">one</td><td>two</td></tr>
+</table>
+<p>after</p>
+</body></html>

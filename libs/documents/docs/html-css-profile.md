@@ -41,7 +41,7 @@ names nothing.
 | `break-after` | no | `auto` | `auto \| avoid \| avoid-page \| page` | CSS Fragmentation 3 §3.1 |
 | `break-before` | no | `auto` | `auto \| avoid \| avoid-page \| page` | CSS Fragmentation 3 §3.1 |
 | `break-inside` | no | `auto` | `auto \| avoid \| avoid-page` | CSS Fragmentation 3 §3.2 |
-| `caption-side` | yes | `top` | `top` | CSS 2.1 §17.4.1 |
+| `caption-side` | yes | `top` | `top \| bottom` | CSS 2.1 §17.4.1 |
 | `color` | yes | `rgb(0, 0, 0)` | `<color>` | CSS Color 4 §3.1; the initial value is black (HTML Standard §15.3.4) |
 | `color-scheme` | yes | `normal` | `normal \| light` | CSS Color Adjust 1 §2.1 |
 | `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
@@ -498,7 +498,7 @@ Presentational attributes (HTML Standard §15.2–§15.4):
 | html, head |  | align |
 | body | bgcolor, text, link (the colour of a elements that are links), marginheight/topmargin and marginwidth/leftmargin (the last of each pair in the tag) | align, background |
 | table | width, height, bgcolor, bordercolor, border (outset, or solid with a bordercolor that is not empty), cellspacing, align=center | align=left/right/inline-start/inline-end (float), background, frame, rules |
-| caption | align=top | align=bottom |
+| caption | align=top, align=bottom (caption-side: bottom) |  |
 | col, colgroup | width, align (-webkit-left/right/center, or one text-align value) |  |
 | thead, tbody, tfoot, tr | height, bgcolor, align (-webkit-left/right/center, absmiddle as center, or one text-align value), valign | background |
 | td, th | width, height, bgcolor, align, valign, nowrap; the table's cellpadding (1px without one; the integer it starts with, at least 0, at most 65,535; 0 when that integer is beyond 2,147,483,647) and border (1px inset, or solid with bordercolor) | background; a td or th with no table around it (only a tree made in code has one) |

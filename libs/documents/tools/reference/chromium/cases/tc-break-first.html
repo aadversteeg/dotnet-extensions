@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A caption that fits at the end of the page while the first row of its table does not: a, collapsed, the caption on top; b, separated; c, the caption below a table whose one row fits but its caption does not. -->
+<style>@page { size: 300pt 200pt; margin: 12pt; } body { font-size: 10.5pt; } .s { border-collapse: separate; border-spacing: 3pt; border: 1.5pt solid #ff0000; padding: 1.5pt; } td, th { border-color: #0000ff; } .b { caption-side: bottom; }</style></head><body>
+<p id="first" style="padding-top: 140pt">first</p>
+<table id="a">
+<caption id="caption-a">Caption</caption>
+<tr><td id="one-a">one</td><td>two</td></tr>
+</table>
+<p id="second" style="padding-top: 130pt">second</p>
+<table id="b" class="s">
+<caption id="caption-b">Caption</caption>
+<tr><td id="one-b">one</td><td>two</td></tr>
+</table>
+<p id="third" style="padding-top: 130pt">third</p>
+<table id="c" class="b">
+<caption id="caption-c">Caption</caption>
+<tr><td id="one-c">one</td><td>two</td></tr>
+</table>
+<p>after</p>
+</body></html>

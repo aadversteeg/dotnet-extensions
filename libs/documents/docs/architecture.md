@@ -627,7 +627,7 @@ start tag, with the property and the value) only where it would change the print
 
 | Properties | Drawn | Refused |
 | --- | --- | --- |
-| `display` | `block`, `inline`, `none`, `table` and its parts | `table-caption`; every other type (lists, …: the next packages) |
+| `display` | `block`, `inline`, `none`, `table` and its parts, the caption among them | every other type (lists, …: the next packages) |
 | `border-collapse` | `collapse` and `separate` (the initial value, and HTML's) on a table; a table with separated borders breaks over pages, sliced | a table with separated borders that breaks with a cell over several rows across the break, content sliced in a cell, `box-decoration-break: clone`, or past the page end (by layout, `Documents.Layout.TableBreak`, at the table's line): see **Tables** |
 | `border-spacing` | whole CSS pixels on a table with separated borders; any value with collapsed borders (no effect) | other lengths on a table with separated borders |
 | table width, column widths, `table-layout` | the table at `auto`, a length and a percentage; lengths and percentages of column elements, of cells and of column groups without column elements; `table-layout: fixed` at a width other than `auto` (at width `auto` the table is laid out automatically, as Chromium does) | some percentages beside other widths, a width on a column group with column elements, a cell width over several columns in the fixed layout: see **Tables** |
@@ -636,7 +636,8 @@ start tag, with the property and the value) only where it would change the print
 | border styles and colours | `none`, `hidden`, `solid`; colours of alpha 1; anything where the width is 0 | `inset`, `outset`; other alphas |
 | `background-color` | alpha 1 on a block box, a table with separated borders included; transparent anywhere | on the root or body element (`CanvasBackground`: Chromium paints it on the page, the model has no page background); on an inline box; other alphas |
 | `width`, `height`, `min-width`, `max-width`, `aspect-ratio`, `overflow-*` | their initial value; any on an inline box (they do not apply); on an image a positive length for `width` and `height`, `auto` with a ratio (the natural one) and any `overflow` | other values on a block box |
-| `box-sizing`, `empty-cells`, `caption-side`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, `empty-cells: show` the only value the registry takes, which draws every cell, no caption, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
+| `caption-side` | `top` and `bottom` on a caption; no effect on another box | other values (by the registry) |
+| `box-sizing`, `empty-cells`, list properties, outline properties, `color-scheme`, `print-color-adjust`, `unicode-bidi`, font synthesis | every value: no effect here (sizes auto, `empty-cells: show` the only value the registry takes, which draws every cell, no list item, outline-style none, light print, backgrounds printed, left-to-right, no synthesis) | — |
 | `color` | alpha 1; any on an element without text of its own | other alphas where text is drawn |
 | `white-space` and its longhands `white-space-collapse`, `text-wrap-mode` | `collapse`, `preserve`, `preserve-breaks`, `break-spaces`, `wrap`, `nowrap`, as the text style of the element's text (`TextStyle.WhiteSpaceCollapse`, `TextStyle.TextWrapMode`; the text goes to the model as written, line feeds and all) | `preserve-spaces`, `discard` (by the registry); a tab where spaces are preserved (`preserve`, `break-spaces`: tab stops are not built), at its text with its offset; white space between block boxes that its mode preserves |
 | `text-decoration-line`, `text-decoration-color`, `text-decoration-style`, `text-decoration-skip-ink` | every line and combination, applied to the element's text and the text of every element inside it, through block boxes, not into an image: the parent's lines, then the element's own in the order underline, overline, line-through, each in the element's font and its decoration colour (`currentcolor` its `color`; `TextStyle.Decorations`); `solid`; `auto`, `none` from the element the text lies in (`TextStyle.DecorationSkipInk`) | a decoration colour of another alpha than 1; a text with more than 16 lines (at the start tag of the element it lies in); `blink`, `spelling-error`, `grammar-error`, other styles, a thickness, an underline offset or position other than `auto` and `skip-ink: all` (refused by the registry) |
@@ -732,12 +733,30 @@ over several columns beside a percent column; a percentage on a cell in the fixe
 column elements (one table of `tpa-colgroup` shows it unused, not enough for a rule). A percent column, like a fill column, is never narrower than its
 content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
-(§17.2.1); a table part on another element than its HTML element; captions, a header group after a row
-group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
+(§17.2.1); a table part on another element than its HTML element; a second caption, a block inside a caption, a width on
+a caption, a header group after a row group; a group or table without rows or cells; overlapping cells; `rowspan=0`; more column elements than columns;
 a column in which no cell starts; the percentages and cell lengths named above, a width on a column group with column
 elements, a table width other than `auto`, a length and a positive percentage, a horizontal margin on a table (but `auto` at width `100%`, where it is 0); backgrounds of the table, groups, rows and columns; column borders. Under
 `Warn` the refused part is left out, refused columns share the width equally, overlapping spans become single cells,
 and a table without cells is an empty block.
+
+**Captions.** A table's `caption` element (CSS 2.1 §17.4) is the first child of the table's box in the model
+(`TableDisplay.Caption`, role `Caption`), wherever it stands among the row groups, and the table lays it out
+(`TableCaption`): a block as wide as the table's border box, with its own margins, padding, border, background and text
+alignment (the user agent centres it), its margins inside the table's outer box and never collapsing with the table's.
+It is drawn above the grid on the table's first page, or below it on the table's last page (`caption-side: bottom`, or
+HTML's `align=bottom`), and is not repeated on the pages between. The table's own border, padding and background lie
+around the grid alone. The caption's min-content width with its margins is the least width of the table, also of a table
+of a length or a percentage: a longer word widens the table and its columns share the width as any width above their
+maximum, while a longer text wraps at the table's width. Cases `tc-side`, `tc-wrap`, `tc-box`, `tc-width`,
+`tc-break-rows`, `tc-break-bottom`, both border models. In a tagged PDF the caption is the table's Caption element, its
+first kid also where it is drawn below the rows (ISO 32000-1 Table 337 allows the first or the last kid, and veraPDF's
+PDF/UA-1 rules 7.2-16 and 7.2-39 accept either and one at most); Chromium's print is untagged. Refused: a second caption
+(Chromium draws every caption element, `tc-two`), a block inside a caption, a width on a caption; and, by layout
+(`Documents.Layout.TableBreak`, at the table's line), a caption that does not fit on the page with the first body row
+below it whole (case `tc-break-first`: with collapsed borders Chromium leaves the caption alone at the page end and moves
+the grid, with separated borders it moves both, a rule the cases do not settle), and a caption below the table that does
+not fit below the last row.
 
 **Separated borders.** A table of `border-collapse: separate` (CSS 2.1 §17.6.1, the initial value and HTML's) is the same
 tracks box with `BoxStyle.BorderModel` `Separate` and its `border-spacing` (`BoxStyle.BorderSpacing`, horizontal then
@@ -1439,7 +1458,7 @@ Each is documented next to its code as well.
   replacement text (`/ActualText`) where it is drawn.
 - **Tagging and PDF/UA:** header cells come only from header rows (Scope Column; no row headers, no Headers/IDs for
   nested headers); a block and a row of blocks are Div, so a row of blocks nests three Divs per column; no per-element
-  language, no Span, Link, List, Caption, Note, Formula or TOC structure elements, no bookmarks; ActualText only on the
+  language, no Span, Link, List, Note, Formula or TOC structure elements, a Caption only for a table, no bookmarks; ActualText only on the
   marked-content spans of glyphs whose text differs from their ToUnicode entry (see PDF above); empty structure elements are
   written for empty cells; the XMP packet has no padding; everything in page headers and footers is an artifact.
   Figures and tables wholly on one page carry their `/BBox` (ISO 32000-1 Table 344); a table that continues on

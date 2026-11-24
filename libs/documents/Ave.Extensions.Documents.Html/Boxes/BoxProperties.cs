@@ -147,7 +147,7 @@ internal static class BoxProperties
         yield return new("box-sizing", "both values: no effect while width and height are auto (every other width and height is refused)", (_, _) => null);
 
         // CSS Display 3 §2.
-        yield return new("display", "block, inline, none, table and its parts but the caption", (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" } ? null : TableProperties.Display(value));
+        yield return new("display", "block, inline, none, table and its parts", (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" } ? null : TableProperties.Display(value));
 
         // CSS Color 4 §3.1: the colour of the element's own text; a border in currentcolor is checked in its row.
         yield return new("color", "a colour of alpha 1; any colour on an element without text of its own",
@@ -213,10 +213,8 @@ internal static class BoxProperties
         // Tables (CSS 2.1 §17.6): both border models; the rest has no effect with collapsed borders, or is read for the columns.
         yield return new("border-collapse", "collapse and separate on a table; no effect on another box", (value, facts) => TableProperties.TableProperty("border-collapse", value, facts));
         yield return new("border-spacing", "whole CSS pixels on a table with separated borders; no effect with collapsed borders", (value, facts) => TableProperties.TableProperty("border-spacing", value, facts));
-        foreach (var name in new[] { "caption-side", "empty-cells" })
-        {
-            yield return new(name, "every value: no effect without a caption (captions are refused); empty-cells show draws every cell", (value, facts) => TableProperties.TableProperty(name, value, facts));
-        }
+        yield return new("caption-side", "top and bottom: where a table draws its caption", (value, facts) => TableProperties.TableProperty("caption-side", value, facts));
+        yield return new("empty-cells", "show, its only value: draws every cell", (value, facts) => TableProperties.TableProperty("empty-cells", value, facts));
 
         yield return new("table-layout", "both values: read for the column widths of a table", (_, _) => null);
 

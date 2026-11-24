@@ -28,7 +28,7 @@ internal sealed record StructureTree(
 {
     /// <summary>
     /// Builds the tree. Reading order is document order (the order of the markers), which is also the order of the
-    /// kids of every element (§14.8.2.3.1: "the logical structure order defined by a depth-first traversal of the
+    /// kids of every element but a table's caption, which is its table's first kid (<see cref="IsTableCaption"/>) (§14.8.2.3.1: "the logical structure order defined by a depth-first traversal of the
     /// page's logical structure hierarchy"). A node split over pages is ONE
     /// element: it is reopened on the next page and its content there is added after its earlier content. Every
     /// content run outside an artifact gets the next MCID of its page and becomes a kid of the innermost open element.
@@ -75,9 +75,14 @@ internal sealed record StructureTree(
                         var index = elements.Count;
                         elements.Add(new ElementUnderConstruction(opened.Start, type, parent, page));
                         indexOfNode[opened.Start.Node] = index;
-                        if (parent is { } parentIndex)
+                        if (parent is { } parentIndex && IsTableCaption(type, elements[parentIndex].Type))
                         {
-                            elements[parentIndex].Kids.Add(new ElementKid(index));
+                            // A table's caption is its first kid wherever it is drawn (IsTableCaption).
+                            elements[parentIndex].Kids.Insert(0, new ElementKid(index));
+                        }
+                        else if (parent is { } other)
+                        {
+                            elements[other].Kids.Add(new ElementKid(index));
                         }
                         else
                         {
@@ -115,6 +120,14 @@ internal sealed record StructureTree(
             parentTree.ToImmutable(),
             marks.ToImmutable()));
     }
+
+    /// <summary>
+    /// True for a Caption element of a Table. ISO 32000-1 Table 337 lets a table's caption be its first or its last kid,
+    /// and veraPDF's PDF/UA-1 rule 7.2-16 accepts either; the tree makes it the first, also for a caption drawn below the
+    /// table, after the rows on the table's last page: a reader then meets the caption before the rows, whatever page each
+    /// is on, as an HTML caption element is the first child of its table (HTML Standard §4.9.1, the content model of the table element).
+    /// </summary>
+    private static bool IsTableCaption(PdfName type, PdfName parent) => type.Value == "Caption" && parent.Value == "Table";
 
     /// <summary>The marks of untagged output: every run unmarked.</summary>
     /// <param name="pages">The events of every page.</param>

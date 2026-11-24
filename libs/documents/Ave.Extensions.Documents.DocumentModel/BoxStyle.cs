@@ -78,6 +78,10 @@ public sealed record BoxStyle
     /// of a box laid out by <see cref="LayoutAlgorithmId.Tracks"/>.</summary>
     public TableDisplay TableDisplay { get; init; }
 
+    /// <summary>Where a table's caption (<see cref="TableDisplay.Caption"/>) is drawn, named after <c>caption-side</c> (CSS
+    /// 2.1 §17.4.1); <see cref="CaptionSide.Top"/>, the CSS initial value, unless set. Ignored for every other box.</summary>
+    public CaptionSide CaptionSide { get; init; }
+
     /// <summary>How many columns and rows a table cell covers (HTML <c>colspan</c> / <c>rowspan</c>, HTML §4.9.11; CSS 2.1 §17.5);
     /// <see cref="CellSpan.Single"/> for every other box.</summary>
     public CellSpan Span { get; init; } = CellSpan.Single;

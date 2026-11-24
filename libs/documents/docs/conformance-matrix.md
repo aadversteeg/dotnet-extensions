@@ -195,7 +195,7 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 7.1-11 | PDF/UA-1 | The logical structure of the conforming file shall be described by a structure hierarchy rooted in the StructTreeRoot entry of the … | by construction | /StructTreeRoot. |
 | 7.1-12 | PDF/UA-1 | A structure element dictionary shall contain the P (parent) entry according to ISO 32000-1:2008, 14.7.2, Table 355 | by construction | Every structure element has /P. |
 | 7.2-2 | PDF/UA-1 | Natural language in the Outline entries shall be determined | cannot occur | No outlines. |
-| 7.2-3 | PDF/UA-1 | Table element may contain only TR, THead, TBody, TFoot and Caption elements | checked | Table kids other than rows and row groups: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
+| 7.2-3 | PDF/UA-1 | Table element may contain only TR, THead, TBody, TFoot and Caption elements | checked | Table kids other than its caption, rows and row groups: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
 | 7.2-4 | PDF/UA-1 | TR element should be contained in Table, THead, TBody or TFoot element | checked | A TR outside a table or row group: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
 | 7.2-5 | PDF/UA-1 | THead element should be contained in Table element | checked | A THead outside a table: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
 | 7.2-6 | PDF/UA-1 | TBody element should be contained in Table element | checked | A TBody outside a table: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
@@ -208,7 +208,7 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 7.2-13 | PDF/UA-1 | If Table element contains TFoot kid, Table element should contain one or more TBody kids | cannot occur | No TFoot role. |
 | 7.2-14 | PDF/UA-1 | If Table element contains THead kid, Table element should contain one or more TBody kids | checked | The front-end makes header rows a THead only when the table has body rows (the tagged-PDF test A_table_of_header_rows_only_is_tagged_as_a_body_of_header_cells); a hand-made THead without TBody is `Pdf.Conformance.PdfUa1.TableHeadWithoutBody` (Render.Pdf PageModelContractTests). Found by the generated-documents test. |
 | 7.2-15 | PDF/UA-1 | A table cell shall not have intersection with other cells | checked | Overlapping cells: `Pdf.Conformance.PdfUa1.IrregularTable` (TableSlots Overlap; Render.Pdf PageModelValidationTests). |
-| 7.2-16 | PDF/UA-1 | Table element may contain a Caption element as its first or last kid | cannot occur | No Caption role. |
+| 7.2-16 | PDF/UA-1 | Table element may contain a Caption element as its first or last kid | checked | A Caption between other kids of a table: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). The structure tree makes a table's caption its first kid, also one drawn below the rows (Html TableCaptionTests, veraPDF PDF/UA-1). |
 | 7.2-17 | PDF/UA-1 | LI element should be contained in L element | cannot occur | No list roles. |
 | 7.2-18 | PDF/UA-1 | LBody element should be contained in LI element | cannot occur | No list roles. |
 | 7.2-19 | PDF/UA-1 | L element may contain only L, LI and Caption elements | cannot occur | No list roles. |
@@ -230,7 +230,7 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 7.2-36 | PDF/UA-1 | THead element may contain only TR elements | checked | THead kids other than rows: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
 | 7.2-37 | PDF/UA-1 | TBody element may contain only TR elements | checked | TBody kids other than rows: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
 | 7.2-38 | PDF/UA-1 | TFoot element may contain only TR elements | cannot occur | No TFoot role. |
-| 7.2-39 | PDF/UA-1 | Table element may contain only one Caption element | cannot occur | No Caption role. |
+| 7.2-39 | PDF/UA-1 | Table element may contain only one Caption element | checked | A table with two Caption kids: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests); the HTML front-end refuses a second caption element. |
 | 7.2-40 | PDF/UA-1 | L element may contain a Caption element only as its first kid | cannot occur | No list roles. |
 | 7.2-41 | PDF/UA-1 | Table columns shall have the same number of rows (taking into account row spans) | checked | Irregular grid, filled as wide as the first row: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests); a grid of more than 4 194 304 slots is not filled: `Pdf.Conformance.PdfUa1.TableTooLarge` (Render.Pdf PageModelContractTests). |
 | 7.2-42 | PDF/UA-1 | Table rows shall have the same number of columns (taking into account column spans) | checked | Irregular grid, filled as wide as the first row: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests); a grid of more than 4 194 304 slots is not filled: `Pdf.Conformance.PdfUa1.TableTooLarge` (Render.Pdf PageModelContractTests). |

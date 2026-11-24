@@ -690,11 +690,12 @@ internal static class HtmlCases
             : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role");
     }
 
-    /// <summary>The role the HTML front-end gives the box of an element by its tag, for <see cref="IdBox"/>: a table, a
-    /// table cell, a paragraph, a heading, a row group or a row; any other element a generic box.</summary>
+    /// <summary>The role the HTML front-end gives the box of an element by its tag, for <see cref="IdBox"/>: a table, its
+    /// caption, a table cell, a paragraph, a heading, a row group or a row; any other element a generic box.</summary>
     private static SemanticRole RoleOf(HtmlElement element) => element.Namespace != ElementNamespace.Html ? SemanticRole.Generic : element.LocalName switch
     {
         "table" => SemanticRole.Table,
+        "caption" => SemanticRole.Caption,
         "td" => SemanticRole.TableCell,
         "th" => SemanticRole.TableHeaderCell,
         "p" => SemanticRole.Paragraph,
