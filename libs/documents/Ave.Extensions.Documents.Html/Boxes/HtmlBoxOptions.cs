@@ -15,6 +15,10 @@ public sealed record HtmlBoxOptions
     /// these; there are no system fonts and no fallback per character.</summary>
     public FontSet Fonts { get; init; } = new([]);
 
+    /// <summary>The families the generic families and the initial value of <c>font-family</c> stand for; a generic
+    /// family they do not map is refused (<see cref="Boxes.GenericFamilies"/>).</summary>
+    public GenericFamilies GenericFamilies { get; init; } = GenericFamilies.None;
+
     /// <summary>Gives the font files <c>@font-face</c> rules name; null for none (each one needed is then refused).</summary>
     public ResourceResolver? Resources { get; init; }
 

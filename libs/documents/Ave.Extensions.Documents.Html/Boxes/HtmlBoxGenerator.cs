@@ -80,6 +80,12 @@ public static partial class HtmlBoxGenerator
     {
         ArgumentNullException.ThrowIfNull(styled);
         ArgumentNullException.ThrowIfNull(options);
+        var problems = (options.GenericFamilies ?? GenericFamilies.None).Problems().ToList();
+        if (problems.Count > 0)
+        {
+            return Result<HtmlBoxes, Error>.Failure(Combined(problems));
+        }
+
         var run = new Run(styled, options);
         var document = run.Generate();
         if (run.Failures.Count > 0)

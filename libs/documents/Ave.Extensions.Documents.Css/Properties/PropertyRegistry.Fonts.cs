@@ -17,6 +17,12 @@ public static partial class PropertyRegistry
         "ui-rounded", "math", "emoji", "fangsong", "generic(fangsong)", "generic(kai)", "generic(khmer-mul)", "generic(nastaliq)",
     ];
 
+    /// <summary>Whether a name, written without quotes, is a generic font family keyword of CSS Fonts 4 §2.1 (ASCII case
+    /// insensitive).</summary>
+    /// <param name="name">The name.</param>
+    /// <returns>Whether it is one.</returns>
+    public static bool IsGenericFamily(string name) => name is not null && GenericFamilies.Contains(InfraAscii.ToLower(name));
+
     /// <summary>The absolute-size keywords of CSS Fonts 4 §2.5 with their size at medium = 16px, in pixels.</summary>
     private static readonly Dictionary<string, double> AbsoluteSizes = new(StringComparer.Ordinal)
     {

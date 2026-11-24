@@ -25,6 +25,11 @@ public sealed record HtmlRenderOptions
     /// <summary>The fonts the document may use, besides those its <c>@font-face</c> rules name.</summary>
     public FontSet Fonts { get; init; } = new([]);
 
+    /// <summary>The families the generic families and the initial value of <c>font-family</c> stand for, looked up as a
+    /// written family name is; a generic family they do not map is refused, as there are no system fonts
+    /// (<see cref="Html.Boxes.GenericFamilies"/>).</summary>
+    public GenericFamilies GenericFamilies { get; init; } = GenericFamilies.None;
+
     /// <summary>The style options: the page without <c>@page</c> rules, media, values, the resolver of style sheets and
     /// font files, the base URL and the policy for what is not supported; one set for style resolution and for box
     /// generation.</summary>
@@ -66,6 +71,7 @@ public static class HtmlRendering
             .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions
             {
                 Fonts = options.Fonts,
+                GenericFamilies = options.GenericFamilies,
                 Resources = style.Resources,
                 BaseUrl = style.BaseUrl,
                 Unsupported = style.Unsupported,

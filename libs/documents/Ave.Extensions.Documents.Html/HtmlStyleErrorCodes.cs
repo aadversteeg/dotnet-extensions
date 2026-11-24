@@ -73,7 +73,8 @@ public static class HtmlStyleErrorCodes
 
         /// <summary>Text or a box whose font no family of its <c>font-family</c> list gives at its weight and style: no
         /// <c>@font-face</c> rule and no font of the caller's set (there are no system fonts and no fallback per
-        /// character). Metadata: Value (the family list), SourceFile, SourceLine, SourceColumn.</summary>
+        /// character); or a generic family, or the initial value, the caller's <c>GenericFamilies</c> do not map, or map
+        /// to a name no face answers. Metadata: Value (the family list), SourceFile, SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode Font = _ / "Font";
 
         /// <summary>Boxes nested deeper than the document model allows (<c>ModelLimits.MaxNestingDepth</c>). Metadata:
@@ -87,6 +88,10 @@ public static class HtmlStyleErrorCodes
         /// the text holds), SourceFile, SourceLine, SourceColumn (where the text starts).</summary>
         public static readonly ErrorCode Character = _ / "Character";
     }
+
+    /// <summary>Options that cannot be used, a caller's error: a family name of <c>GenericFamilies</c> that is empty, holds a
+    /// control character, is too long or is itself a generic family keyword. Metadata: Property (the option), Value.</summary>
+    public static readonly ErrorCode InvalidOptions = _ / "InvalidOptions";
 
     /// <summary>A document with no element (made in code; the parser always makes the html element): there is nothing to
     /// style, and the resolution fails. Metadata: SourceFile.</summary>
