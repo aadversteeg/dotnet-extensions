@@ -106,8 +106,9 @@ internal static class HtmlCases
     /// and content layout cannot place on any page (<see cref="LayoutErrorCodes.DoesNotFit"/>: it names the room it had
     /// and the source line of the box, where Chromium prints the content past the page end) or that is wider than its
     /// page-margin box (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration,
-    /// where Chromium draws it over its box). Any other error, also
-    /// another code under the same parent, is a failure of the case.</summary>
+    /// where Chromium draws it over its box), and an inline box layout does not draw where it stands
+    /// (<see cref="DocumentErrorCodes.Input.Unsupported.InlineBox"/>, at the line and column of the element that made it).
+    /// Any other error, also another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
         CssErrorCodes.Unsupported.Property.ToString(),
@@ -137,6 +138,7 @@ internal static class HtmlCases
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
+        DocumentErrorCodes.Input.Unsupported.InlineBox.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -444,7 +446,7 @@ internal static class HtmlCases
     /// front-end's refusals is a line and a column; layout's is the line of the box, the only place a box keeps
     /// (<see cref="SourceLocation"/>).
     /// </summary>
-    private static string Refusal(Error error)
+    internal static string Refusal(Error error)
     {
         var first = error.Parts().First();
         var metadata = first.Metadata;

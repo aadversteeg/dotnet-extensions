@@ -814,7 +814,8 @@ file does not load.
 A line reads `<case> equal`; `<case> refused <code> <property: value or element> at <line>:<column>` (the first
 refusal, counted as one by its exact code: the next packages' work list; for content layout cannot place on any page,
 `Documents.Layout.DoesNotFit`, the value is the room it had in points and the place only the line, the one a box
-keeps); `<case> listed <test>: <difference>` for a
+keeps; for an inline box layout does not draw where it stands, `Documents.Input.Unsupported.InlineBox`, the line and
+column of the element that made it); `<case> listed <test>: <difference>` for a
 difference of layout already listed and pinned by that test of the code front-end, which must stay the same
 difference; or `<case> open <difference>` for a known difference, engine against Chromium, that is not fixed yet (no
 pull request while one is open). The status is the line's second field. A case that lays out and differs otherwise

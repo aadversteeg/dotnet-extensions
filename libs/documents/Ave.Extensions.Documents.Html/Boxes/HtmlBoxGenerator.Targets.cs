@@ -185,7 +185,9 @@ public static partial class HtmlBoxGenerator
         /// <summary>The span group, once its content is built; a span without a box whose content draws nothing has no line
         /// part to lead to, so its content goes on as written and the element is no target. A span with a box is a group also
         /// when it is empty: its box is drawn and takes its room (case <c>ib-space</c>). The group has the role of a span when a
-        /// link leads to it or it has a language of its own; else it has no role and opens no structure element.</summary>
+        /// link leads to it or it has a language of its own; else it has no role and opens no structure element. Its source
+        /// is the element's start tag, line and column, where a layout refusal of its box
+        /// (<c>Documents.Input.Unsupported.InlineBox</c>) points.</summary>
         private void FinishSpan(InlineFrame frame, SpanFrame span)
         {
             var content = frame.Target;
@@ -196,7 +198,8 @@ public static partial class HtmlBoxGenerator
             }
 
             var role = span.IsTarget || span.Language is not null ? SemanticRole.Span : null;
-            span.Parent.Add(new InlineGroup(span.Id, role, span.Style, [.. content], Source(frame.Element.Element.Position)) { Language = span.Language, Box = span.Box });
+            var position = frame.Element.Element.Position;
+            span.Parent.Add(new InlineGroup(span.Id, role, span.Style, [.. content], Source(position) with { Column = position.Column }) { Language = span.Language, Box = span.Box });
             if (role is not null)
             {
                 Placed(frame.Element, span.Id);

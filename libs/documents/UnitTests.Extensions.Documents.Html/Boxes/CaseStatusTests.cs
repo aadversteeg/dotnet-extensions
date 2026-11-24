@@ -1,5 +1,7 @@
 using System.IO;
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.ErrorPaths;
 using Xunit.Abstractions;
 
 namespace UnitTests.Extensions.Documents.Html.Boxes;
@@ -67,6 +69,23 @@ public class CaseStatusTests(ITestOutputHelper output)
         lines.Count(line => line.StartsWith("stroke ", StringComparison.Ordinal)).Should().Be(4);
         HtmlCases.Difference(filled, chromium).Should().BeNull();
         HtmlCases.Difference(without, chromium).Should().Contain("Chromium paints it and the engine does not");
+    }
+
+    /// <summary>An inline box that layout does not draw where it stands is a refusal at the element that made it, as the
+    /// HTML front-end's refusals are; another code under the same parent, or the same code without its place, still fails
+    /// the case.</summary>
+    [Fact]
+    public void An_inline_box_refused_by_layout_reads_refused_and_another_code_still_fails()
+    {
+        var at = new SourceLocation("case.html", 3) { Column = 14 };
+        var refused = new Error(DocumentErrorCodes.Input.Unsupported.InlineBox, "The inline box made at case.html:3 is not drawn in this version.")
+            .With(ErrorMetadataKeys.Property, "box").With(ErrorMetadataKeys.Value, "box").WithSource(at);
+        var sibling = new Error(DocumentErrorCodes.Input.Unsupported.AtomicInline, "A box among the runs is not set in a line.").WithSource(at);
+        var placeless = new Error(DocumentErrorCodes.Input.Unsupported.InlineBox, "The inline box is not drawn in this version.");
+
+        HtmlCases.Refusal(refused).Should().Be("refused Documents.Input.Unsupported.InlineBox box: box at 3:14");
+        HtmlCases.Refusal(sibling).Should().StartWith("failed Documents.Input.Unsupported.AtomicInline ");
+        HtmlCases.Refusal(placeless).Should().StartWith("failed Documents.Input.Unsupported.InlineBox ").And.EndWith("a refusal without its line and column");
     }
 
     [Theory]
