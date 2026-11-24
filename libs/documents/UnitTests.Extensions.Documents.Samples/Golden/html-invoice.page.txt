@@ -1,0 +1,78 @@
+document title="Invoice 2026-042" language=en
+page 1 size=594.96x841.92
+  clip (57, 57) 481.91x728.52
+  start #0 document
+  start #1 generic
+  start #2 generic
+  start #3 heading-1
+  glyphs Lato-Bold 18pt #1a1a2e at (63, 81) "Invoice " g17@0 g109@5.202 g136@15.147 g111@24.363 g98@34.704 g49@39.276 g59@47.79 g2@57.402
+  glyphs Lato-Bold 18pt #bb0000 at (124.781, 81) "2026-042" g401@0 g399@10.44 g401@20.88 g1141@31.32 g330@41.76 g399@48.474 g403@58.914 g401@69.355
+  end #3
+  end #2
+  start #7 paragraph
+  glyphs Lato-Regular 10pt #666666 at (63, 106.5) "Payable within 30 days." g30@0 g45@5.843 g139@10.691 g45@15.744 g48@20.712 g1140@26.31 g59@28.669 g2@33.947 g137@36.301 g98@44.153 g124@46.552 g95@50.135 g98@55.713 g109@58.112 g2@63.69 g402@66.249 g399@72.047 g2@77.844 g55@80.403 g45@86.001 g139@90.849 g118@95.912 g314@100.24
+  end #7
+  start #9 table
+  start #10 table-head
+  start #11 table-row
+  start #12 table-header-cell
+  artifact Layout
+  fill (63, 118.746) 320.181x20.367 #eef1f6
+  end artifact
+  glyphs Lato-Bold 10pt #1a1a2e at (69, 132.492) "Item" g17@0 g124@2.824 g59@6.502 g108@11.84
+  end #12
+  start #14 table-header-cell
+  artifact Layout
+  fill (383.181, 118.746) 150.069x20.367 #eef1f6
+  end artifact
+  glyphs Lato-Bold 10pt #1a1a2e at (389.181, 132.492) "Amount" g3@0 g108@6.932 g111@15.304 g134@21.047 g109@26.684 g124@32.252
+  end #14
+  end #11
+  end #10
+  start #16 table-body
+  start #17 table-row
+  start #18 table-cell
+  glyphs Lato-Regular 10pt #1a1a2e at (69, 153.234) "Consulting, November" g7@0 g111@6.577 g109@12.245 g118@17.823 g134@22.151 g1140@27.724 g2462@30.083 g109@36.241 g93@41.819 g311@47.016 g2@49.286 g25@51.845 g111@59.322 g136@64.849 g59@69.867 g108@75.145 g48@83.367 g59@88.965 g117@94.243
+  end #18
+  start #20 table-cell
+  glyphs Lato-Regular 10pt #1a1a2e at (487.828, 153.234) "4,200.00" g403@0 g311@5.798 g401@8.067 g399@13.865 g399@19.662 g314@25.46 g399@27.819 g399@33.617
+  end #20
+  end #17
+  start #22 table-row
+  start #23 table-cell
+  glyphs Lato-Regular 10pt #1a1a2e at (69, 173.977) "Travel" g36@0 g117@4.803 g45@8.362 g136@13.225 g59@18.243 g1140@23.521
+  end #23
+  start #25 table-cell
+  glyphs Lato-Regular 10pt #1a1a2e at (495.902, 173.977) "130.50" g400@0 g402@5.798 g399@11.595 g314@17.393 g404@19.752 g399@25.55
+  end #25
+  end #22
+  end #16
+  start #27 table-body
+  start #28 table-row
+  start #29 table-cell
+  glyphs Lato-Bold 10pt #1a1a2e at (69, 194.719) "Total" g36@0 g111@4.793 g124@10.436 g45@14.154 g1140@19.227
+  end #29
+  start #31 table-cell
+  glyphs Lato-Bold 10pt #1a1a2e at (487.746, 194.719) "4,330.50" g403@0 g311@5.798 g402@8.137 g402@13.935 g399@19.732 g314@25.53 g404@27.904 g399@33.702
+  end #31
+  end #28
+  end #27
+  artifact Layout
+  fill (63, 138.738) 470.25x0.75 #cccccc
+  end artifact
+  artifact Layout
+  fill (63, 159.48) 470.25x0.75 #cccccc
+  end artifact
+  artifact Layout
+  fill (63, 180.223) 470.25x0.75 #cccccc
+  end artifact
+  artifact Layout
+  fill (63, 200.965) 470.25x0.75 #cccccc
+  end artifact
+  end #9
+  start #33 paragraph
+  glyphs Lato-Regular 10pt #1a1a2e at (422.531, 221.461) "Thank you for your order." g36@0 g95@5.818 g45@11.395 g109@16.364 g104@21.941 g2@27.019 g139@29.328 g111@34.341 g134@40.009 g2@45.582 g61@48.141 g111@51.48 g117@57.147 g2@60.576 g139@62.885 g111@67.898 g134@73.566 g117@79.139 g2@82.567 g111@85.126 g117@90.794 g55@94.238 g59@99.835 g117@105.113 g314@108.357
+  end #33
+  end #1
+  end #0
+  end clip

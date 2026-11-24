@@ -1,0 +1,22 @@
+Document
+  Div
+    Div
+      H1 "Invoice 2026-042"
+    P "Payable within 30 days."
+    Table
+      THead
+        TR
+          TH Scope=Column "Item"
+          TH Scope=Column "Amount"
+      TBody
+        TR
+          TD "Consulting, November"
+          TD "4,200.00"
+        TR
+          TD "Travel"
+          TD "130.50"
+      TBody
+        TR
+          TD "Total"
+          TD "4,330.50"
+    P "Thank you for your order."
