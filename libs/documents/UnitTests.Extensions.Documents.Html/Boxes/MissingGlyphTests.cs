@@ -116,6 +116,18 @@ public class MissingGlyphTests
     }
 
     [Fact]
+    public void Every_item_of_a_pseudo_element_s_content_and_a_counter_s_text_are_checked_at_its_content_declaration()
+    {
+        // One text run per item: the check reads the items and the counter's text the counting found, as they are drawn.
+        var html = Document("<p class=\"g\">a</p>", "body { font-family: Lato } .g { counter-reset: c 2 } .g::before { content: \"x\" counter(c, square) \" \\2714\" }");
+
+        var refusals = Refusals(html).ToList();
+
+        refusals.Select(refusal => (refusal.Code, refusal.Metadata![ErrorMetadataKeys.CodePoint])).Should().Equal((FontErrorCodes.GlyphMissing, "U+25A0"), (FontErrorCodes.GlyphMissing, "U+2714"));
+        refusals.Select(Place).Should().AllBeEquivalentTo(((object?)PlaceOf(html, "content").Line, (object?)PlaceOf(html, "content").Column));
+    }
+
+    [Fact]
     public void A_document_is_refused_for_at_most_the_bound_of_characters_in_source_order()
     {
         // 80 distinct CJK characters Lato does not have.
