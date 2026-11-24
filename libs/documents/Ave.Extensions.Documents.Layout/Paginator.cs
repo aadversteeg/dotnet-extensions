@@ -180,9 +180,10 @@ public static class Paginator
                 return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.InlineBox(above, "it starts a later page and reaches above its page area, where Chromium paints it on both pages; give it no vertical padding or border, or keep its line off the page start"));
             }
 
-            // Inline boxes go on whole pixels of the page only here, where every line's place on the page is known.
-            var pixels = environment.Profile.InlineBoxSnapping == InlineBoxSnapping.WholePixels;
-            PlacedFragment OnPage(PlacedFragment fragment, Point by) => pixels ? InlineBoxPixels.Snap(Moved(fragment, by)) : Moved(fragment, by);
+            // Inline boxes and bullets go on whole pixels of the page only here, where every line's place on the page is known.
+            var boxes = environment.Profile.InlineBoxSnapping == InlineBoxSnapping.WholePixels;
+            var bullets = environment.Profile.MarkerSnapping == MarkerSnapping.WholePixels;
+            PlacedFragment OnPage(PlacedFragment fragment, Point by) => boxes || bullets ? InlineBoxPixels.Snap(Moved(fragment, by), boxes, bullets) : Moved(fragment, by);
             pages.Add(new PageFragment(
                 pageSize,
                 OnPage(placement.Fragment, body),

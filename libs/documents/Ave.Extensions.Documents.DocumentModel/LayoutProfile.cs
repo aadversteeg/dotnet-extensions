@@ -13,8 +13,8 @@ public sealed record LayoutProfile
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
     /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
     /// <see cref="CellsBesideSlices.GoOn"/>, <see cref="RepeatedHeaderRows.AboveEverySlice"/>,
-    /// <see cref="SliceRestEnd.InsideCell"/>, <see cref="CutRowAlignment.RestAlignedInItsPart"/> and
-    /// <see cref="InlineBoxSnapping.Exact"/>.</summary>
+    /// <see cref="SliceRestEnd.InsideCell"/>, <see cref="CutRowAlignment.RestAlignedInItsPart"/>,
+    /// <see cref="InlineBoxSnapping.Exact"/> and <see cref="MarkerSnapping.Exact"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -65,6 +65,34 @@ public sealed record LayoutProfile
     /// <summary>Whether the painted edges of an inline box and the text inside it are put on whole pixels
     /// (<see cref="DocumentModel.InlineBoxSnapping"/>).</summary>
     public InlineBoxSnapping InlineBoxSnapping { get; init; } = InlineBoxSnapping.Exact;
+
+    /// <summary>Whether a list item's bullet is drawn where it lies or on whole pixels of the page
+    /// (<see cref="DocumentModel.MarkerSnapping"/>).</summary>
+    public MarkerSnapping MarkerSnapping { get; init; } = MarkerSnapping.Exact;
+}
+
+/// <summary>
+/// Where a list item's bullet (a disc, a circle or a square, <see cref="MarkerSymbol"/>) is drawn. It takes no room in the
+/// flow under either value, and a number label is text, drawn on its line as any text.
+/// </summary>
+public enum MarkerSnapping
+{
+    /// <summary>The bullet is drawn where its item places it.</summary>
+    Exact,
+
+    /// <summary>
+    /// As Chromium prints it: the bullet's box, whose size is whole pixels already, has its left and top edges on the
+    /// nearest whole pixel of the page (a half pixel goes down and right), in the page's coordinates, so a list that starts
+    /// between pixels draws a bullet that covers whole pixels. Measured against Chromium's print
+    /// (<c>tools/reference/chromium</c>): after a collapsed table whose cell padding is in points the item's baseline lies at
+    /// 55.125 px and its bullet at 48.125 px, which Chromium paints at 48 px (case <c>li-after-table</c>, with a separated
+    /// table, circle, square and a number list); after a paragraph with a line height in points, a box with a border in
+    /// points and an image, one at 226.5 px is painted at 227 (<c>li-after-block</c>); with a padding of 20 pt before the
+    /// content edge the left edge at 26.656 px is painted at 27, in a table cell with padding in points at 32.047 px at 32,
+    /// and the same rounding for items with a line height in points (<c>li-after-edge</c>); on the second page
+    /// (<c>li-after-page</c>).
+    /// </summary>
+    WholePixels,
 }
 
 /// <summary>

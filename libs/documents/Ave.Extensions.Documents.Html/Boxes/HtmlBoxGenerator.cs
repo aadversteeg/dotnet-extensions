@@ -76,6 +76,7 @@ public static partial class HtmlBoxGenerator
         RepeatedHeaderRows = RepeatedHeaderRows.WhereContentIsLaidOut,
         SliceRestEnd = SliceRestEnd.AtLineCentre,
         InlineBoxSnapping = InlineBoxSnapping.WholePixels,
+        MarkerSnapping = MarkerSnapping.WholePixels,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>

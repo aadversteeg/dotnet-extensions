@@ -6,6 +6,7 @@ using Ave.Extensions.Documents.Html;
 using Ave.Extensions.Documents.Html.Boxes;
 using Ave.Extensions.Documents.Html.Parsing;
 using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.Pdf;
 using Ave.Extensions.Documents.Render.Pdf;
 using Ave.Extensions.Documents.TestSupport;
@@ -192,6 +193,35 @@ public class ListMappingTests
         pages.IsFailure.Should().BeTrue();
         var error = pages.Error.Parts().Single();
         (error.Code, error.Metadata![ErrorMetadataKeys.SourceLine], error.Metadata[ErrorMetadataKeys.Value]).Should().Be((LayoutErrorCodes.MarkerOutsideSheet, 2, "-1.5"));
+    }
+
+    [Theory]
+    [InlineData("disc", "")]
+    [InlineData("square", "")]
+    [InlineData("disc", "table { border-collapse: collapse } td { padding: 2.3pt 4pt; border: 0.75pt solid }")]
+    public void A_bullet_lies_on_whole_pixels_of_the_page_where_the_list_starts_between_pixels(string type, string css)
+    {
+        // li-after-block, li-after-table, li-after-edge: a line 13 pt high (17.33 px), or a table with padding in points,
+        // ends between pixels, and a padding of 20 pt puts the content edge at 26.67 px. Chromium paints the bullet's box from
+        // the nearest whole pixel of the page; the same document under MarkerSnapping.Exact has it where its item puts it.
+        var before = css.Length == 0 ? "<p style=\"line-height: 13pt\">x</p>" : "<table><tr><td>x</td></tr></table>";
+        var html = Doc($"{before}<ul style=\"padding-left: 20pt; list-style-type: {type}\"><li>a</li></ul>",
+            "@page { size: 300pt 300pt; margin: 12pt } body { font-size: 10.5pt } ul { margin: 0 } p { margin: 0 } " + css);
+        var boxes = Boxes(html).Value;
+        boxes.Document.Profile.MarkerSnapping.Should().Be(MarkerSnapping.WholePixels);
+
+        var snapped = Bullet(DocumentLayout.Run(boxes.Document, boxes.Fonts).Value);
+        var exact = Bullet(DocumentLayout.Run(boxes.Document with { Profile = boxes.Document.Profile with { MarkerSnapping = MarkerSnapping.Exact } }, boxes.Fonts).Value);
+
+        (Math.Abs(exact.Y / 0.75 - Math.Round(exact.Y / 0.75)) > 0.1).Should().BeTrue($"the bullet's top {exact.Y} lies between pixels where its item puts it");
+        (Math.Abs(exact.X / 0.75 - Math.Round(exact.X / 0.75)) > 0.1).Should().BeTrue($"the bullet's left edge {exact.X} lies between pixels where its item puts it");
+        snapped.X.Should().BeApproximately(Math.Round(exact.X / 0.75, MidpointRounding.AwayFromZero) * 0.75, 1e-9);
+        snapped.Y.Should().BeApproximately(Math.Round(exact.Y / 0.75, MidpointRounding.AwayFromZero) * 0.75, 1e-9);
+
+        // The top-left corner of the bullet's box (5 px, 3.75 pt): a disc's path starts at its right end, on its centre line.
+        static Point Bullet(PageDocument pages) => pages.Pages[0].Items.OfType<FillPath>().Select(path => path.Contours[0].Start).Select(start => new Point(start.X - 3.75, start.Y - 1.875))
+            .Concat(pages.Pages[0].Items.OfType<FillRectangle>().Where(fill => Math.Abs(fill.Area.Size.Width - 3.75) < 1e-9 && Math.Abs(fill.Area.Size.Height - 3.75) < 1e-9).Select(fill => fill.Area.Origin))
+            .Single();
     }
 
     [DockerTheory]

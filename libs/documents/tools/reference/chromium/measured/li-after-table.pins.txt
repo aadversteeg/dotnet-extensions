@@ -1,0 +1,4 @@
+li-after-table.boxes.txt 8
+li-after-table.lines.txt 9
+li-after-table.print.txt 46
+li-after-table.words.txt 24

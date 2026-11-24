@@ -25,7 +25,10 @@ namespace Ave.Extensions.Documents.Layout;
 /// metric rounding gives it (whole pixels, half away from zero, under <see cref="FontMetricRounding.WholePixels"/>),
 /// o = ⌊2A/3⌋ and w = ⌊(o + 1)/2⌋; the bullet is w × w pixels, its left edge o + 7 pixels left of the item's content edge,
 /// its top ⌊3(A − o)/2⌋ − A pixels from the baseline. Lato at 10, 14 and 21.33 px gives w 3, 5, 7 at −13, −16, −21 px;
-/// Theano Didot at 14 and 21.33 px w 4 and 5 (its typographic ascent).</item>
+/// Theano Didot at 14 and 21.33 px w 4 and 5 (its typographic ascent). That place is relative to the item; under
+/// <see cref="MarkerSnapping.WholePixels"/> the bullet's box is then put on whole pixels of the page, once the page is known
+/// (<see cref="InlineBoxPixels"/>; cases <c>li-after-table</c>, <c>li-after-block</c>, <c>li-after-edge</c>,
+/// <c>li-after-page</c>).</item>
 /// <item>A text label: laid out on one line at its max-content width, right-aligned so that its advance (the space after
 /// the number included) ends on the item's content edge; under <see cref="LengthRounding.SixtyFourthPixels"/> that width
 /// is on the 1/64 px step, as each text item's (Lato 14 px "1. " starts 11.262 pt left of the edge, "10. " 17.355 pt).</item>

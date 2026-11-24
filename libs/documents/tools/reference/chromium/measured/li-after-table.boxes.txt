@@ -1,0 +1,8 @@
+table 276.000 18.844 Alpha
+td 275.250 18.094 Alpha cell
+table 276.000 21.844 Beta
+td 273.000 18.844 Beta cell
+table 276.000 18.246 Gamma
+td 275.250 17.496 Gamma cell
+table 276.000 22.641 Delta
+td 273.000 19.641 Delta cell

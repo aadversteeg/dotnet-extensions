@@ -6,10 +6,11 @@ using Ave.Extensions.Documents.DocumentModel;
 namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
-/// Puts the inline boxes of a page on whole pixels of the page (<see cref="InlineBoxSnapping.WholePixels"/>), once the page
-/// is laid out: layout builds a line before it knows where the line lies on its page (a paragraph in a table cell is placed
-/// only after the cell is laid out), so it keeps each box exact (<see cref="LineGroupPart.Box"/>) and this pass, which walks
-/// the page with every fragment's place on it, rounds them.
+/// Puts the inline boxes of a page on whole pixels of the page (<see cref="InlineBoxSnapping.WholePixels"/>), and the
+/// bullets of its list items (<see cref="MarkerSnapping.WholePixels"/>), once the page is laid out: layout builds a line
+/// before it knows where the line lies on its page (a paragraph in a table cell is placed only after the cell is laid out),
+/// so it keeps each box and each bullet exact (<see cref="LineGroupPart.Box"/>, <see cref="ListItemLayout"/>) and this
+/// pass, which walks the page with every fragment's place on it, rounds them.
 /// </summary>
 /// <remarks>
 /// THE RULE FOR AN INLINE BOX ON WHOLE PIXELS: each edge of the box's border box lies on the nearest whole pixel of the page,
@@ -41,14 +42,18 @@ internal static class InlineBoxPixels
         public bool Changed { get; set; }
     }
 
-    /// <summary>A fragment of a page with every inline box in it on whole pixels of the page.</summary>
+    /// <summary>A fragment of a page with every inline box in it on whole pixels of the page, and every bullet, each as the
+    /// policies ask.</summary>
     /// <param name="placed">The fragment, its offset relative to the page's top-left corner.</param>
-    /// <returns>The fragment with its lines that hold a box rebuilt; the same fragment when it holds none.</returns>
-    public static PlacedFragment Snap(PlacedFragment placed)
+    /// <param name="boxes">Whether inline boxes go on whole pixels (<see cref="InlineBoxSnapping.WholePixels"/>).</param>
+    /// <param name="bullets">Whether bullets go on whole pixels (<see cref="MarkerSnapping.WholePixels"/>).</param>
+    /// <returns>The fragment with its lines that hold a box and its bullets rebuilt; the same fragment when it holds
+    /// neither.</returns>
+    public static PlacedFragment Snap(PlacedFragment placed, bool boxes, bool bullets)
     {
         if (placed.Fragment is LineFragment top)
         {
-            return placed with { Fragment = Line(top, placed.Offset) };
+            return boxes ? placed with { Fragment = Line(top, placed.Offset) } : placed;
         }
 
         // Without recursion: fragments nest as deep as the document's boxes.
@@ -63,9 +68,17 @@ internal static class InlineBoxPixels
                 var at = frame.Origin + child.Offset;
                 if (child.Fragment is LineFragment line)
                 {
-                    var snapped = Line(line, at);
+                    var snapped = boxes ? Line(line, at) : line;
                     frame.Changed |= !ReferenceEquals(snapped, line);
                     frame.Done.Add(ReferenceEquals(snapped, line) ? child : child with { Fragment = snapped });
+                }
+                else if (bullets && child.Fragment is BoxFragment { Box.Role: SemanticRole.ListLabelRole, Children: [{ Fragment: MarkerFragment }] })
+                {
+                    // THE RULE FOR A BULLET ON WHOLE PIXELS (MarkerSnapping.WholePixels): its box's left and top edges on
+                    // the nearest whole pixel of the page; its size is whole pixels already (ListItemLayout).
+                    var shift = new Point(CssPixels.Round(at.X) - at.X, CssPixels.Round(at.Y) - at.Y);
+                    frame.Changed |= shift != new Point(0, 0);
+                    frame.Done.Add(shift == new Point(0, 0) ? child : child with { Offset = child.Offset + shift });
                 }
                 else if (ChildrenOf(child.Fragment) is { Count: > 0 } children)
                 {
