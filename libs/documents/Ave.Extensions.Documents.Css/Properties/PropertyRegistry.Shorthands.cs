@@ -283,7 +283,7 @@ public static partial class PropertyRegistry
         foreach (var item in reader.Remaining)
         {
             var single = new ValueReader([item]);
-            if (style is null && Find("border-top-style")!.Parse(single) is var styleValue && (styleValue.IsValid || styleValue.Unsupported))
+            if (style is null && Find($"border-{sides[0]}-style")!.Parse(single) is var styleValue && (styleValue.IsValid || styleValue.Unsupported))
             {
                 if (!styleValue.IsValid)
                 {

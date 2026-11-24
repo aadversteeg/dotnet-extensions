@@ -141,6 +141,14 @@ public class DiagnosticTextTests
         error.Message.Should().Contain("border-radius").And.NotContain("border-top-left-radius");
     }
     [Fact]
+    public void A_border_side_the_engine_refuses_is_named_by_the_side_as_written()
+    {
+        var error = Refused("<!DOCTYPE html><p style='border-bottom: 1px dotted #999999'>x");
+
+        error.Message.Should().Contain("border-bottom-style").And.NotContain("border-top");
+    }
+
+    [Fact]
     public void A_declaration_the_engine_ignores_is_reported_once_however_many_elements_it_applies_to()
     {
         // 10,001 paragraphs and one ignored declaration: one diagnostic, so the document is not refused for having
