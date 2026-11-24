@@ -172,10 +172,8 @@ public class BoxGenerationTests
     }
 
     [Theory]
-    [InlineData("<ul><li>a</li></ul>", "display")]
     [InlineData("<table><tr><td>a</td></tr></table>", "border-collapse")]
     [InlineData("<pre>a\tb</pre>", "white-space-collapse")]
-    [InlineData("<hr>", "border-top-style")]
     [InlineData("<p><span style=\"vertical-align:top\">a</span></p>", "vertical-align")]
     public void An_element_whose_user_agent_rendering_is_not_drawn_is_refused_through_its_values(string body, string property) =>
         Refusals(Doc(body)).Select(Property).Should().Contain(property);
@@ -222,13 +220,44 @@ public class BoxGenerationTests
     [InlineData("<p><span style=\"background-color:transparent\">a</span></p>", null)]
     [InlineData("<p><span style=\"background-color:red\">a</span></p>", "background-color")]
     [InlineData("<div style=\"background-color:rgba(255,0,0,0.5)\">a</div>", "background-color")]
-    [InlineData("<div style=\"border-top:2pt inset red\">a</div>", "border-top-style")]
+    [InlineData("<div style=\"border-top:2pt inset red\">a</div>", null)]
+    [InlineData("<table style=\"border-collapse:collapse\"><tr><td style=\"border-top:1px inset red\">a</td></tr></table>", "border-top-style")]
+    [InlineData("<hr>", null)]
+    [InlineData("<div style=\"overflow:hidden;border-top:1px solid\"></div>", null)]
+    [InlineData("<div style=\"overflow:hidden;height:1px\"></div>", null)]
     [InlineData("<div style=\"border-top-style:inset;border-top-width:0\">a</div>", null)]
     [InlineData("<div style=\"border-top:2pt solid rgba(0,0,0,0.5)\">a</div>", "border-top-color")]
     [InlineData("<div style=\"white-space-collapse:preserve\"><p style=\"white-space-collapse:collapse\">a</p></div>", null)]
     [InlineData("<p style=\"font-kerning:normal\">a</p>", null)]
     public void A_value_is_refused_only_where_it_changes_the_print(string body, string? refused) =>
         Refusals(Doc(body)).Select(Property).Should().Equal(refused is null ? [] : [refused], string.Join("; ", Refusals(Doc(body)).Select(error => error.Message)));
+
+    [Theory]
+    [InlineData("<div style=\"overflow:hidden;border-top:1px solid\">a</div>")]
+    [InlineData("<div style=\"overflow:hidden\"></div>")]
+    [InlineData("<div style=\"overflow:hidden;margin:4px\"></div>")]
+    public void Hidden_overflow_is_refused_on_a_box_with_children_or_one_its_margins_collapse_through(string body) =>
+        Refusals(Doc(body)).Select(Property).Should().Equal("overflow-x", "overflow-y");
+
+    [Fact]
+    public void Inset_and_outset_sides_on_one_box_are_refused() =>
+        Refusals(Doc("<div style=\"border-top:2px inset red;border-left:2px outset red\">a</div>")).Select(Property).Should().Equal("border-top-style", "border-left-style");
+
+    [Fact]
+    public void An_inset_or_outset_side_keeps_its_style_and_its_colour_and_currentcolor_is_taken_as_eeeeee()
+    {
+        // Chromium 159 shades a currentcolor side from #eeeeee whatever the colour is, a given colour from itself
+        // (cases bs-widths, bs-colours, hr-default; the shades are the layout's: BorderShades).
+        var body = Body(Doc("<div style=\"border:3px inset\">a</div><div style=\"color:red;border:3px outset\">b</div><div style=\"border:3px outset black\">c</div><hr>"));
+        var sides = body.Children.Cast<Box>().Select(box => box.Style.Border.Top).ToArray();
+
+        sides.Should().Equal(
+            new BorderSide(2.25.Pt(), new Color(0xee, 0xee, 0xee), BorderStyle.Inset),
+            new BorderSide(2.25.Pt(), new Color(0xee, 0xee, 0xee), BorderStyle.Outset),
+            new BorderSide(2.25.Pt(), Color.Black, BorderStyle.Outset),
+            new BorderSide(0.75.Pt(), new Color(0xee, 0xee, 0xee), BorderStyle.Inset));
+        ((Box)body.Children[3]).Style.Border.Top.ToString().Should().Be("0.75pt inset #eeeeee");
+    }
 
     [Theory]
     [InlineData("html")]
@@ -257,20 +286,21 @@ public class BoxGenerationTests
     }
 
     [Fact]
-    public void Under_warn_a_refused_value_takes_the_model_s_initial_value_a_refused_display_is_a_block_and_an_element_refused_by_its_own_rule_is_left_out()
+    public void Under_warn_a_refused_value_takes_the_model_s_initial_value_and_an_element_refused_by_its_own_rule_is_left_out()
     {
-        var html = Doc("<div style=\"padding:5%;background-color:rgba(0,0,0,0.5)\">a</div><ul><li>b</li></ul><p>c<wbr>d</p>");
+        var html = Doc("<div style=\"padding:5%;background-color:rgba(0,0,0,0.5)\">a</div><ol><li value=9999999999>b</li></ol><p>c<wbr>d</p>");
         var warned = Boxes(html, UnsupportedPolicy.Warn);
         warned.IsSuccess.Should().BeTrue(warned.IsFailure ? warned.Error.ToString() : string.Empty);
         var body = (Box)warned.Value.Document.Root.Children.Single();
         var div = (Box)body.Children[0];
         (div.Style.Padding, div.Style.Background).Should().Be((default(Edges), (Color?)null));
         var li = (Box)((Box)body.Children[1]).Children.Single();
-        (li.Layout, Texts(li)).Should().Be((LayoutAlgorithmId.Inline, "b"));
+        var label = (Box)li.Children[0];
+        (li.Layout, Texts(label), Texts((Box)((Box)li.Children[1]).Children.Single())).Should().Be((LayoutAlgorithmId.ListItem, "1. ", "b"), "a value beyond 32 bits is not taken");
         Texts((Box)body.Children[2]).Should().Be("c|d");
         Refusals(html, UnsupportedPolicy.Warn).Select(error => error.Code.ToString()).Should().Equal(
             "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value",
-            "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Rendering");
+            "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.Value", "Documents.Html.Unsupported.List", "Documents.Html.Unsupported.Rendering");
         Boxes(html).IsFailure.Should().BeTrue("the same document is refused by default");
     }
 

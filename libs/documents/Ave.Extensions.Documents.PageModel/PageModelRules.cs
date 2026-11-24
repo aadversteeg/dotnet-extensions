@@ -36,16 +36,27 @@ public static class PageModelRules
     public const int MaxClipDepth = 27;
 
     /// <summary>
+    /// The most segments of one filled path (<see cref="FillPath"/>), its contours together: 4 096. It bounds what one
+    /// item costs before any back-end's own limit is reached: the PDF back-end writes one operator per segment, and the
+    /// raster back-end flattens each curve into at most 4 096 straight pieces before it charges the fill against the
+    /// canvas's work limit, so a path flattens to at most 2^24 edges, below the 2^27 units of work one fill may take
+    /// (<c>Canvas.MaxFillWork</c>, which charges at least one unit per edge). A list marker has 4 or 8 segments.
+    /// </summary>
+    public const int MaxPathSegments = 4_096;
+
+    /// <summary>
     /// Checks the page model and reports every breach together, under the code the back-end passes
     /// (<c>Documents.Pdf.Write.InvalidPageModel</c>, <c>Documents.Raster.InvalidPageModel</c>):
     /// <list type="bullet">
     /// <item>metadata and at least one page: a document without a page has nothing to show; every
     /// page of positive width and height;</item>
     /// <item>every number is a number PDF can hold: finite and within ±<see cref="MaxNumber"/> (page sizes, font sizes,
-    /// positions and sizes of glyph runs, glyphs, filled rectangles, images and clips), and so is every edge computed
-    /// from them: x + width and y + height of a rectangle, the place of a glyph (run origin + glyph), and their height
-    /// above the foot of the page;</item>
-    /// <item>no missing page, item, glyph, font, image, role or attachment;</item>
+    /// positions and sizes of glyph runs, glyphs, filled rectangles, images and clips, the points of filled paths), and
+    /// so is every edge computed from them: x + width and y + height of a rectangle, the place of a glyph (run origin +
+    /// glyph), and their height above the foot of the page (for a filled path, each point's);</item>
+    /// <item>no missing page, item, glyph, font, image, role, contour, segment or attachment;</item>
+    /// <item>a filled path has at least one contour, each with at least one segment (<c>f</c> needs a current path, ISO
+    /// 32000-1 §8.5.3.1), at most <see cref="MaxPathSegments"/> segments in all, and a fill rule of its enum;</item>
     /// <item>every glyph is a glyph of its font (below maxp.numGlyphs), since the font program is embedded from those
     /// glyphs, and has a text, which its ToUnicode entry needs (the empty text for a glyph that continues the text of
     /// the one before it, as the later glyphs of a one-to-many substitution do); every font size is a positive
@@ -177,6 +188,17 @@ public static class PageModelRules
         GlyphRun run when run.Glyphs.Any(glyph => glyph.Text is null) =>
             Invalid(code, $"A glyph on page {number} has no text; every shown glyph needs one for its ToUnicode entry (empty for a glyph that continues the text of the glyph before it).", Number(number)),
         DrawImage { Image: null } => Invalid(code, $"An image on page {number} has no image data.", Number(number)),
+        FillPath { Contours.Count: 0 } => Invalid(code, $"A filled path on page {number} has no contour; it needs at least one to enclose an area.", Number(number)),
+        FillPath path when path.Contours.Any(contour => contour is null || contour.Segments.Any(segment => segment is null)) =>
+            Invalid(code, $"A filled path on page {number} has a missing contour or segment.", Number(number)),
+        FillPath path when path.Contours.Any(contour => contour.Segments.Count == 0) =>
+            Invalid(code, $"A filled path on page {number} has a contour without a segment; a contour has at least one.", Number(number)),
+        FillPath path when SegmentCount(path) > MaxPathSegments =>
+            Invalid(code, $"A filled path on page {number} has {SegmentCount(path)} segments; a filled path has at most {MaxPathSegments}.", SegmentCount(path).ToString(CultureInfo.InvariantCulture)),
+        FillPath path when !Enum.IsDefined(path.Rule) =>
+            Invalid(code, $"A filled path on page {number} has the fill rule {(int)path.Rule}, which is not a fill rule.", ((int)path.Rule).ToString(CultureInfo.InvariantCulture)),
+        FillPath path when OutOfRange(path, pageHeight) is { } point =>
+            Invalid(code, $"A filled path on page {number} has a point that is not a number within ±{Number(MaxNumber)}, or whose height above the foot of the page is not.", $"{point}"),
         StructureStart { Role: null } start => Invalid(code, $"Node {start.Node} on page {number} has no role.", start.Node.ToString()).WithSource(start.Source),
         StructureStart start when !TableSlots.IsValidSpan(start.Span) =>
             Invalid(code, $"Node {start.Node} on page {number} spans {start.Span}; a cell spans 1 to {TableSlots.MaxColumnSpan} columns and 1 to {TableSlots.MaxRowSpan} rows.", start.Span.ToString()).WithSource(start.Source),
@@ -194,6 +216,22 @@ public static class PageModelRules
             Invalid(code, $"An artifact on page {number} has the kind {(int)artifact.Kind}, which is not an artifact kind.", ((int)artifact.Kind).ToString(CultureInfo.InvariantCulture)),
         _ => null,
     };
+
+    /// <summary>The segments of a filled path, all contours together, counted in 64 bits.</summary>
+    private static long SegmentCount(FillPath path) => path.Contours.Sum(contour => (long)contour.Segments.Count);
+
+    /// <summary>Every point of a filled path: each contour's start, and each segment's control points and end.</summary>
+    private static IEnumerable<Point> Points(FillPath path) =>
+        path.Contours.SelectMany(contour => contour.Segments.SelectMany(segment => segment switch
+        {
+            PathCubic cubic => new[] { cubic.Control1, cubic.Control2, cubic.End },
+            _ => new[] { segment.End },
+        }).Prepend(contour.Start));
+
+    /// <summary>The first point of a filled path that is out of range, or whose height above the foot of the page (the y a
+    /// PDF content stream writes for it) is; null when every point is in range.</summary>
+    private static Point? OutOfRange(FillPath path, double pageHeight) =>
+        Points(path).Where(point => !InRange(point) || !InRange(pageHeight - point.Y)).Select(point => (Point?)point).FirstOrDefault();
 
     /// <summary>Finite and within ±<see cref="MaxNumber"/> (NaN fails both comparisons).</summary>
     private static bool InRange(double value) => value is >= -MaxNumber and <= MaxNumber;
@@ -368,7 +406,9 @@ internal static class MarkerNesting
 /// of one of its row groups; a header or data cell (TH, TD) is a child of a row; a row group is a child of a table.
 /// Seen from the parent, a table holds only rows and row groups, a row group only rows, a row only cells. veraPDF
 /// checks the same for PDF/UA-1 (rules 7.2-3 to 7.2-10, 7.2-36 to 7.2-38). Parent here means the nearest enclosing node
-/// that has a structure type; a decorative node (an artifact) is not one. The row groups are THead and TBody: there is no
+/// that has a structure type; a decorative node (an artifact) is not one. Lists nest the same way (§14.8.4.3.3, Table 336):
+/// a list item (LI) is a child of a list (L), a label (Lbl) and a list body (LBody) of a list item; a list holds only list
+/// items and lists, a list item only a label and a body (veraPDF rules 7.2-17 to 7.2-20; there is no Caption role). The row groups are THead and TBody: there is no
 /// role for a table footer (TFoot, Core SemanticRole), so the rules have no case for it.
 /// </summary>
 internal static class StructureNesting
@@ -382,6 +422,9 @@ internal static class StructureNesting
         ["TD"] = ["TR"],
         ["THead"] = ["Table"],
         ["TBody"] = ["Table"],
+        ["LI"] = ["L"],
+        ["Lbl"] = ["LI"],
+        ["LBody"] = ["LI"],
     }.ToImmutableDictionary();
 
     private static readonly ImmutableDictionary<string, ImmutableHashSet<string>> AllowedChildren = new Dictionary<string, ImmutableHashSet<string>>
@@ -390,6 +433,8 @@ internal static class StructureNesting
         ["THead"] = ["TR"],
         ["TBody"] = ["TR"],
         ["TR"] = ["TH", "TD"],
+        ["L"] = ["L", "LI"],
+        ["LI"] = ["Lbl", "LBody"],
     }.ToImmutableDictionary();
 
     /// <summary>Every structure start on the page whose parent or own type breaks the table rules.</summary>

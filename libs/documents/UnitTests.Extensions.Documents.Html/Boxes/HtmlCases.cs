@@ -115,8 +115,9 @@ internal static class HtmlCases
     /// container: case <c>tw-pref</c>, a table that needs 157.805 pt in a box of 150 pt), or a box with a height whose
     /// content goes on past a page break after the height ended (<see cref="LayoutErrorCodes.OverflowAcrossPages"/>, at the
     /// box's source line, where Chromium prints that content on the next page: cases <c>sz-height-overflow-page</c>,
-    /// <c>sz-height-forced</c>). Any other error, also
-    /// another code under the same parent, is a failure of the case.</summary>
+    /// <c>sz-height-forced</c>), or a list item's label that would start left of the sheet
+    /// (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>, at the item's source line, where Chromium cuts the label at the
+    /// sheet's edge or leaves it out). Any other error, also another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
         CssErrorCodes.Unsupported.Property.ToString(),
@@ -140,11 +141,13 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.TooDeep.ToString(),
         HtmlStyleErrorCodes.Unsupported.Character.ToString(),
         HtmlStyleErrorCodes.Unsupported.Table.ToString(),
+        HtmlStyleErrorCodes.Unsupported.List.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
         LayoutErrorCodes.ColumnsDoNotFit.ToString(),
         LayoutErrorCodes.OverflowAcrossPages.ToString(),
+        LayoutErrorCodes.MarkerOutsideSheet.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>
@@ -356,7 +359,7 @@ internal static class HtmlCases
         return (line, column) switch
         {
             ({ }, { }) => $"refused {first.Code} {what} at {line}:{column}",
-            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages => $"refused {first.Code} {what} at {line}",
+            ({ }, null) when first.Code == LayoutErrorCodes.DoesNotFit || first.Code == LayoutErrorCodes.ColumnsDoNotFit || first.Code == LayoutErrorCodes.OverflowAcrossPages || first.Code == LayoutErrorCodes.MarkerOutsideSheet => $"refused {first.Code} {what} at {line}",
             _ => $"failed {first.Code} {what}: a refusal without its line and column",
         };
     }
@@ -377,7 +380,8 @@ internal static class HtmlCases
     /// colour and face (<see cref="PrintedWord.Colour"/>, <see cref="PrintedWord.Face"/>: the PostScript name, which names
     /// the font file and with it the weight and the style); the same area painted in each colour by the rectangles,
     /// filled or stroked (<see cref="PaintedDifference"/>); the same image areas in drawing order, each edge after
-    /// <see cref="WholePixel"/> within <see cref="Bound"/>.
+    /// <see cref="WholePixel"/> within <see cref="Bound"/>; the same areas painted by paths that are not rectangles
+    /// (<see cref="PathDifference"/>).
     /// </summary>
     public static string? Difference(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null)
     {
@@ -412,7 +416,11 @@ internal static class HtmlCases
                 }
             }
 
-            if ((PaintedDifference(ours, ours.Rectangles, theirs.Rectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images)) is { } area)
+            var shapes = ShapesOfRectangles(ours, theirs);
+            var (ourRectangles, theirRectangles) = (Outside(ours.Rectangles, shapes, ours: true), Outside(theirs.Rectangles, shapes, ours: false));
+            var (ourPaths, theirPaths) = (ours with { Paths = [.. ours.Paths.Where(path => !shapes.Exists(shape => shape.InOurs && ReferenceEquals(shape.Path, path)))] },
+                theirs with { Paths = [.. theirs.Paths.Where(path => !shapes.Exists(shape => !shape.InOurs && ReferenceEquals(shape.Path, path)))] });
+            if ((PaintedDifference(ours, ourRectangles, theirRectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images) ?? PathDifference(ourPaths, theirPaths)) is { } area)
             {
                 return area + " (print.txt)";
             }
@@ -437,14 +445,82 @@ internal static class HtmlCases
         static PrintedBox Colourless(PrintedBox box) => box with { Colour = null, Stroked = false };
         foreach (var (page, print) in engine.Pages.Zip(chromium.Pages))
         {
-            var filled = measured.Where(box => box.Page == page.Number).Concat(print.Rectangles.Where(box => box.Stroked).Select(Colourless));
-            if (PaintedDifference(page, [.. page.Rectangles.Select(Colourless)], [.. filled]) is { } found)
+            // A shape one side paints with rectangles and the other with a path (ShapesOfRectangles) is compared in its
+            // path's box by print.txt; lines.txt holds no colour, so Chromium's rectangles there are cut whatever colour.
+            var shapes = ShapesOfRectangles(page, print);
+            var filled = Outside(measured.Where(box => box.Page == page.Number).Concat(print.Rectangles.Where(box => box.Stroked).Select(Colourless)), shapes, ours: false);
+            if (PaintedDifference(page, [.. Outside(page.Rectangles, shapes, ours: true).Select(Colourless)], [.. filled]) is { } found)
             {
                 return found + " (lines.txt)";
             }
         }
 
         return null;
+    }
+
+    /// <summary>A path of one side whose area the other side paints with rectangles of its colour (<see cref="ShapesOfRectangles"/>).</summary>
+    /// <param name="Path">The path; its box of whole pixels is where the rectangles were compared with it.</param>
+    /// <param name="InOurs">Whether the path is the engine's (the rectangles Chromium's), else Chromium's.</param>
+    private sealed record ShapeOfRectangles(PrintedPath Path, bool InOurs);
+
+    /// <summary>
+    /// The paths of a page that the other side paints with rectangles instead: a path that no path of the other side paints
+    /// the same (<see cref="PrintedPath.Paints"/>), and whose rows are the rows the other side's rectangles of its colour
+    /// give its box (<see cref="PathSampler.Rows"/>: the same sample points; a rectangle's part outside the box not
+    /// counted). Case <c>bs-solid-one-colour</c>: Chromium fills a border of one colour and unequal widths as one shape, the
+    /// border box with the padding box cut out of it, where the engine fills four rectangles of the same pixels. Such a
+    /// path is compared with those rectangles only, in its box: the path leaves the comparison of paths, and the
+    /// rectangles of its colour on the other side are cut to what lies outside the box (<see cref="Outside"/>) for the
+    /// comparison of rectangles, so each pixel is compared once, in one of the two. A path against a path and rectangles
+    /// against rectangles are compared as before.
+    /// </summary>
+    private static List<ShapeOfRectangles> ShapesOfRectangles(PrintedPage ours, PrintedPage theirs)
+    {
+        static bool Overlaps(PrintedBox box, PrintedPath path) => box.X0 < path.X1 && path.X0 < box.X1 && box.Y0 < path.Y1 && path.Y0 < box.Y1;
+        IEnumerable<ShapeOfRectangles> Of(PrintedPage side, PrintedPage other, bool inOurs) =>
+            side.Paths.Where(path => !other.Paths.Any(path.Paints))
+                .Where(path => PathSampler.Rows([.. other.Rectangles.Where(box => box.Colour == path.Colour && Overlaps(box, path))], path).SequenceEqual(path.Rows))
+                .Select(path => new ShapeOfRectangles(path, inOurs));
+        return [.. Of(ours, theirs, inOurs: true), .. Of(theirs, ours, inOurs: false)];
+    }
+
+    /// <summary>Rectangles of one side without their parts inside the boxes of the paths the other side's shapes were
+    /// compared with (<see cref="ShapesOfRectangles"/>): a rectangle of the path's colour (any colour where the rectangle has
+    /// none, as in <c>lines.txt</c>) that reaches into a box is cut to its parts above, below, left and right of it.</summary>
+    private static List<PrintedBox> Outside(IEnumerable<PrintedBox> boxes, List<ShapeOfRectangles> shapes, bool ours)
+    {
+        var kept = boxes.ToList();
+        foreach (var shape in shapes.Where(shape => shape.InOurs != ours))
+        {
+            var path = shape.Path;
+            kept = [.. kept.SelectMany(box => box.Colour is not null && box.Colour != path.Colour || box.X1 <= path.X0 || path.X1 <= box.X0 || box.Y1 <= path.Y0 || path.Y1 <= box.Y0
+                ? [box]
+                : new[]
+                {
+                    box with { Y1 = Math.Min(box.Y1, path.Y0) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y1) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y0), Y1 = Math.Min(box.Y1, path.Y1), X1 = Math.Min(box.X1, path.X0) },
+                    box with { Y0 = Math.Max(box.Y0, path.Y0), Y1 = Math.Min(box.Y1, path.Y1), X0 = Math.Max(box.X0, path.X1) },
+                }.Where(piece => piece.X0 < piece.X1 && piece.Y0 < piece.Y1))];
+        }
+
+        return kept;
+    }
+
+    /// <summary>The first difference between the areas the paths that are not rectangles (curves: a list marker's disc or
+    /// circle) paint on a page (<see cref="PrintedPath"/>): the same number, and each in drawing order the same box of
+    /// whole pixels, colour and painted share per pixel. Both sides are sampled by one rule: the engine's filled paths by
+    /// <see cref="PathSampler"/>, Chromium's curves by <c>paths.py</c>.</summary>
+    private static string? PathDifference(PrintedPage ours, PrintedPage theirs)
+    {
+        if (ours.Paths.Length != theirs.Paths.Length)
+        {
+            return $"page {ours.Number} has {ours.Paths.Length} painted paths, Chromium {theirs.Paths.Length}";
+        }
+
+        return ours.Paths.Zip(theirs.Paths).Where(pair => !pair.First.Paints(pair.Second)).Select(pair =>
+            $"page {ours.Number} path at ({Of(pair.First.X0)}, {Of(pair.First.Y0)}) paints {string.Join('/', pair.First.Rows)} {pair.First.Colour}, " +
+            $"Chromium at ({Of(pair.Second.X0)}, {Of(pair.Second.Y0)}) {string.Join('/', pair.Second.Rows)} {pair.Second.Colour}").FirstOrDefault();
     }
 
     /// <summary>

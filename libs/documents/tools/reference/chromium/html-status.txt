@@ -158,6 +158,18 @@ b3-keep-group equal
 b4-row-span equal
 b4-row-span-6pt equal
 b5-row-span-kept-cell equal
+bs-break equal
+bs-colour-bands equal
+bs-colours equal
+bs-corners equal
+bs-sides equal
+bs-solid-break equal
+bs-solid-colours equal
+bs-solid-one-colour equal
+bs-solid-order equal
+bs-solid-pairs equal
+bs-solid-widths equal
+bs-widths equal
 c-cell-first-line refused Documents.Html.Unsupported.Value width: 50% at 3:58
 c-cell-orphan equal
 c-cell-orphan-moves equal
@@ -379,6 +391,9 @@ hb-white-space equal
 hi-attributes equal
 hi-inline equal
 hi-stretch refused Documents.Html.Unsupported.Value width: 40pt 10pt at 4:10
+hr-attrs equal
+hr-default equal
+hr-sizes equal
 hw-nowrap listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aa' x1 23.928, Chromium 21.335 (print.txt)
 hw-pre refused Documents.Html.Unsupported.Value white-space-collapse: preserve at 3:28
 hw-pre-line equal
@@ -422,6 +437,22 @@ kb-t2-kept-row-group-after-a-row equal
 kb-t3-row-group-not-kept-control equal
 kb-v8-padded-box-kept-para equal
 kb-v9-padded-box-kept-table-row equal
+li-bare equal
+li-counter-styles equal
+li-div-list-item equal
+li-first-line equal
+li-font equal
+li-inside refused Documents.Css.Unsupported.Value list-style-position: inside at 12:25
+li-marker-clip equal
+li-marker-sheet refused Documents.Layout.MarkerOutsideSheet -1.5 at 13
+li-none equal
+li-ol-12 equal
+li-ol-attrs equal
+li-ol-nested equal
+li-page-break equal
+li-symbol-sizes equal
+li-types refused Documents.Layout.MarkerOutsideSheet -32.461 at 13
+li-ul-levels equal
 mf4-line-0 equal
 mf4-line-075 equal
 mf4-line-150 equal

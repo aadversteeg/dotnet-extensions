@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Fluent;
@@ -236,8 +237,51 @@ internal static class InputChecks
             .SelectMany(part => part is RowGroupElement group ? group.Rows.AsEnumerable() : [(TableRowElement)part])
             .SelectMany(row => row.Cells)
             .SelectMany(cell => cell.Content),
+        ListElement list => list.Items.SelectMany(item => item.Content),
         _ => [],
     };
+
+    /// <summary>A list's own rules: at least one item and at most <see cref="InputLimits.MaxListItems"/>, nested at most
+    /// <see cref="ModelLimits.MaxListDepth"/> deep (<paramref name="level"/>: 1 for a list in no other list), a start number
+    /// only on a numbered list and a bullet only on a bulleted one, a bullet of its enum, and numbers that stay inside a
+    /// 32-bit integer.</summary>
+    public static IEnumerable<Error> List(ListElement list, int level)
+    {
+        if (list.Items.Count == 0 || list.Items.Count > InputLimits.MaxListItems)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, $"A list has 1 to {InputLimits.MaxListItems} items.",
+                list.Items.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), "items", list.Source);
+        }
+
+        if (level > ModelLimits.MaxListDepth)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, $"Lists may nest at most {ModelLimits.MaxListDepth} levels deep.",
+                level.ToString(System.Globalization.CultureInfo.InvariantCulture), "nesting", list.Source);
+        }
+
+        if (!list.IsNumbered && list.StartNumber is { } start)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, "A start number belongs on a numbered list (NumberedList); a bulleted list has no numbers.",
+                start.ToString(System.Globalization.CultureInfo.InvariantCulture), "start", list.Source);
+        }
+
+        if (list.IsNumbered && list.BulletShape is { } bullet)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, "A bullet belongs on a bulleted list (BulletedList); a numbered list shows numbers.",
+                bullet.ToString(), "bullet", list.Source);
+        }
+
+        if (list.BulletShape is { } shape && !System.Enum.IsDefined(shape))
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, "A bullet is a disc, a circle, a square or none.", shape.ToString(), "bullet", list.Source);
+        }
+
+        if (list.IsNumbered && (long)(list.StartNumber ?? 1) + list.Items.Count - 1 > int.MaxValue)
+        {
+            yield return Problem(DocumentErrorCodes.Input.Invalid.List, "The numbers of a list stay at most 2147483647: start lower.",
+                (list.StartNumber ?? 1).ToString(System.Globalization.CultureInfo.InvariantCulture), "start", list.Source);
+        }
+    }
 
     /// <summary>The document names no font family: fonts are explicit input, so there is no default family.</summary>
     public static Error MissingFontFamily(SourceLocation source) =>

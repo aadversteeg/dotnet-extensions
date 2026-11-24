@@ -1,0 +1,21 @@
+page 1 300.000 300.000
+word 1 12.000 27.818 22.500 10.500 Div #000000 Lato-Regular
+word 1 30.254 55.239 22.500 10.500 items #000000 Lato-Regular
+word 1 42.000 61.966 35.250 10.500 Disc #000000 Lato-Regular
+word 1 64.648 78.466 35.250 10.500 div #000000 Lato-Regular
+word 1 30.738 39.306 48.000 10.500 2. #000000 Lato-Regular
+word 1 42.000 79.322 48.000 10.500 Decimal #000000 Lato-Regular
+word 1 82.010 95.828 48.000 10.500 div #000000 Lato-Regular
+word 1 30.738 39.306 60.750 10.500 3. #000000 Lato-Regular
+word 1 42.000 75.820 60.750 10.500 Second #000000 Lato-Regular
+word 1 78.508 113.799 60.750 10.500 decimal #000000 Lato-Regular
+word 1 12.000 32.312 73.500 10.500 Para #000000 Lato-Regular
+word 1 35.000 55.444 73.500 10.500 item #000000 Lato-Regular
+word 1 42.000 73.768 86.250 10.500 Square #000000 Lato-Regular
+word 1 76.456 96.516 86.250 10.500 para #000000 Lato-Regular
+rect 1 42.000 24.750 288.000 37.500 #eeeeee
+rect 1 42.000 37.500 288.000 50.250 #eeeeee
+rect 1 42.000 50.250 288.000 63.000 #eeeeee
+rect 1 42.000 75.750 288.000 88.500 #eeeeee
+path 1 30.000 30.000 33.750 33.750 #000000 2cfc2/cfffc/fffff/cfffc/2cfc2
+rect 1 30.000 81.000 33.750 84.750 #000000

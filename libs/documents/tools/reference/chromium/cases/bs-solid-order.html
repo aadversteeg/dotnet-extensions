@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- The order of solid sides beside inset and outset sides: a solid bottom, a solid left, a solid top and bottom of two colours, a solid top 2 px wide beside outset sides 6 px wide; which side covers the corner. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } div { padding: 3pt; margin-bottom: 6pt; }</style></head><body>
+<p>top</p>
+<div id="sb" style="border:6px inset;border-bottom-style:solid;border-bottom-color:#ff0000">sb</div>
+<div id="sl" style="border:6px inset;border-left-style:solid;border-left-color:#ff0000">sl</div>
+<div id="tb" style="border:6px inset;border-top-style:solid;border-top-color:#ff0000;border-bottom-style:solid;border-bottom-color:#0000ff">tb</div>
+<div id="tw" style="border:6px outset;border-top:2px solid #008000">tw</div>
+<p>end</p>
+</body></html>

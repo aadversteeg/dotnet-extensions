@@ -92,16 +92,71 @@ internal static class ElementBounds
     private static Extent? InkOf(IEnumerable<DrawItem> items) => Union(items.Select(InkOf));
 
     /// <summary>
-    /// The extent of one item: the rectangle of an image or a fill; for glyphs, the union of each glyph's outline box,
+    /// The extent of one item: the rectangle of an image or a fill, the box of a filled path; for glyphs, the union of each glyph's outline box,
     /// placed where the content stream draws the glyph.
     /// </summary>
     private static Extent? InkOf(DrawItem item) => item switch
     {
         DrawImage image => Extent.Of(image.Area),
         FillRectangle fill => Extent.Of(fill.Area),
+        FillPath path => PathExtent(path),
         GlyphRun run => Union(run.Glyphs.Select(glyph => InkOf(run, glyph))),
         _ => throw new System.InvalidOperationException($"No extent for the draw item {item.GetType().Name}."),
     };
+
+    /// <summary>
+    /// The extent of a filled path: the smallest rectangle that holds every contour, its curves included. A cubic curve
+    /// lies inside the box of its ends and of the points where its derivative is zero in x or in y (ISO 32000-1 §8.5.2.2
+    /// gives the curve as a polynomial of degree 3 in t; its derivative is a quadratic, solved for t in (0, 1) per axis).
+    /// </summary>
+    private static Extent PathExtent(FillPath path)
+    {
+        var (left, top, right, bottom) = (double.PositiveInfinity, double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity);
+        void Add(Point point) => (left, top, right, bottom) = (System.Math.Min(left, point.X), System.Math.Min(top, point.Y), System.Math.Max(right, point.X), System.Math.Max(bottom, point.Y));
+        foreach (var contour in path.Contours)
+        {
+            Add(contour.Start);
+            var from = contour.Start;
+            foreach (var segment in contour.Segments)
+            {
+                if (segment is PathCubic cubic)
+                {
+                    foreach (var t in Extrema(from.X, cubic.Control1.X, cubic.Control2.X, cubic.End.X).Concat(Extrema(from.Y, cubic.Control1.Y, cubic.Control2.Y, cubic.End.Y)))
+                    {
+                        Add(At(from, cubic, t));
+                    }
+                }
+
+                Add(segment.End);
+                from = segment.End;
+            }
+        }
+
+        return new Extent(left, top, right, bottom);
+    }
+
+    /// <summary>The t in (0, 1) where one coordinate of the cubic curve p0 p1 p2 p3 has a zero derivative: the roots of
+    /// a t² + b t + c with a = 3(−p0 + 3p1 − 3p2 + p3), b = 6(p0 − 2p1 + p2), c = 3(p1 − p0).</summary>
+    private static IEnumerable<double> Extrema(double p0, double p1, double p2, double p3)
+    {
+        var (a, b, c) = (3 * (-p0 + (3 * p1) - (3 * p2) + p3), 6 * (p0 - (2 * p1) + p2), 3 * (p1 - p0));
+        double[] roots = a == 0
+            ? b == 0 ? [] : [-c / b]
+            : (b * b) - (4 * a * c) is var discriminant && discriminant >= 0
+                ? [(-b + System.Math.Sqrt(discriminant)) / (2 * a), (-b - System.Math.Sqrt(discriminant)) / (2 * a)]
+                : [];
+        return roots.Where(t => t is > 0 and < 1);
+    }
+
+    /// <summary>The point of a cubic curve from <paramref name="from"/> at t (§8.5.2.2).</summary>
+    private static Point At(Point from, PathCubic cubic, double t)
+    {
+        var u = 1 - t;
+        var (a, b, c, d) = (u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t);
+        return new Point(
+            (a * from.X) + (b * cubic.Control1.X) + (c * cubic.Control2.X) + (d * cubic.End.X),
+            (a * from.Y) + (b * cubic.Control1.Y) + (c * cubic.Control2.Y) + (d * cubic.End.Y));
+    }
 
     /// <summary>
     /// The box of a glyph's outline (<see cref="Fonts.TrueTypeFont.GlyphBounds"/>) on the page: the font's y grows up

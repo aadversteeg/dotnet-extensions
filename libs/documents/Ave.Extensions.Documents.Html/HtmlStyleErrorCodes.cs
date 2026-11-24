@@ -61,6 +61,14 @@ public static class HtmlStyleErrorCodes
         /// SourceLine, SourceColumn.</summary>
         public static readonly ErrorCode Table = _ / "Table";
 
+        /// <summary>A list whose structure or numbering the document model's list does not have in the same form
+        /// (<c>Boxes/HtmlBoxGenerator.Lists.cs</c>): a child of a list element that is not a list item; a <c>start</c> or
+        /// <c>value</c> beyond a 32-bit integer, or a number that leaves it; a <c>value</c> in a reversed list, or outside an
+        /// <c>ol</c> where the list shows numbers; an item outside a list element that a list's numbering, or an item of
+        /// another parent, would number; the marker of a decorated item; lists deeper or longer than the model allows
+        /// (these fail under every policy). Metadata: Value (what is refused), SourceFile, SourceLine, SourceColumn.</summary>
+        public static readonly ErrorCode List = _ / "List";
+
         /// <summary>A background on the root or body element, which Chromium paints on the page canvas (CSS Backgrounds 3
         /// §2.11.2); the document model has no page background. Metadata: Property, Value, SourceFile, SourceLine,
         /// SourceColumn.</summary>

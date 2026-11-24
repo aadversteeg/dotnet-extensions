@@ -46,6 +46,7 @@ public static class PageModelText
     private static string ItemLine(DrawItem item) => item switch
     {
         FillRectangle fill => $"fill {fill.Area} {fill.Color}",
+        FillPath path => FilledPathLine(path),
         DrawImage image => $"image {image.Area} {image.Image.Describe()} id={image.Image.Id}",
         GlyphRun run => GlyphRunLine(run),
         StructureStart start => $"start {start.Node} {start.Role}" + (start.Span == CellSpan.Single ? string.Empty : $" span={start.Span}"),
@@ -56,6 +57,16 @@ public static class PageModelText
         ClipEnd => "end clip",
         _ => $"unknown {item.GetType().Name}",
     };
+
+    /// <summary>A filled path: its rule and colour, then each contour as <c>M</c> and its start, each segment as <c>L</c>
+    /// and its end or <c>C</c> and its two control points and end, and <c>Z</c> where the contour closes.</summary>
+    private static string FilledPathLine(FillPath path) =>
+        $"path {path.Rule} {path.Color} " + string.Join(" ", path.Contours.Select(contour =>
+            $"M {contour.Start} " + string.Concat(contour.Segments.Select(segment => segment switch
+            {
+                PathCubic cubic => $"C {cubic.Control1} {cubic.Control2} {cubic.End} ",
+                _ => $"L {segment.End} ",
+            })) + "Z"));
 
     private static string GlyphRunLine(GlyphRun run)
     {

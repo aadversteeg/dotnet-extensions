@@ -66,6 +66,9 @@ public static class DocumentErrorCodes
             /// with more decorations than <c>ModelLimits.MaxDecorations</c>. Metadata: Value, Property.</summary>
             public static readonly ErrorCode TextDecoration = _ / "TextDecoration";
 
+            /// <summary>A border side with a style its enum does not have. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
+
             /// <summary>An <c>orphans</c> value that is not a positive whole number (CSS Fragmentation 3 §3.3: "Only
             /// positive integers are allowed"). Metadata: Value, Property.</summary>
             public static readonly ErrorCode Orphans = _ / "Orphans";
@@ -120,6 +123,14 @@ public static class DocumentErrorCodes
             /// place, or a box with a place in a row outside one. Metadata: Value, Property.</summary>
             public static readonly ErrorCode MarginBoxes = _ / "MarginBoxes";
 
+            /// <summary>A list that is not valid (ISO 32000-1 §14.8.4.3.3): a list whose children are not all list items, or
+            /// more than <c>ModelLimits.MaxListItems</c> of them; an item outside a list, or not laid out as a list item, or
+            /// with other children than an optional label and then its body; a label or a marker symbol outside one; a
+            /// label longer than <c>ModelLimits.MaxLabelLength</c>; lists nested more than <c>ModelLimits.MaxListDepth</c>
+            /// deep; in the code front-end, a start number on a bulleted list, a bullet on a numbered list, or numbers past
+            /// the range of a 32-bit integer. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode List = _ / "List";
+
             /// <summary>An image size that is not a positive finite length. Metadata: Value, Property.</summary>
             public static readonly ErrorCode ImageSize = _ / "ImageSize";
 
@@ -159,6 +170,11 @@ public static class DocumentErrorCodes
             /// boxes, whose columns are sized by the intrinsic widths of their content (a sized box's share in them is not
             /// built). Metadata: Value, Property.</summary>
             public static readonly ErrorCode Size = _ / "Size";
+
+            /// <summary>An inset or outset border side where this version does not draw it: on a table or a part of a
+            /// table, whose lines are drawn solid by the table's layout, or on a box with inset and outset sides together
+            /// (not measured). Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
         }
     }
 }

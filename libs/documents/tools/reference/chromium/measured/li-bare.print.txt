@@ -1,0 +1,20 @@
+page 1 300.000 300.000
+word 1 12.000 33.073 22.500 10.500 Bare #000000 Lato-Regular
+word 1 35.761 56.205 22.500 10.500 item #000000 Lato-Regular
+word 1 42.000 68.922 35.250 10.500 Alone #000000 Lato-Regular
+word 1 71.610 79.989 35.250 10.500 in #000000 Lato-Regular
+word 1 82.677 97.844 35.250 10.500 the #000000 Lato-Regular
+word 1 100.532 123.663 35.250 10.500 body #000000 Lato-Regular
+word 1 42.000 75.820 48.000 10.500 Second #000000 Lato-Regular
+word 1 78.508 103.561 48.000 10.500 alone #000000 Lato-Regular
+word 1 42.000 50.720 66.750 10.500 In #000000 Lato-Regular
+word 1 53.408 58.627 66.750 10.500 a #000000 Lato-Regular
+word 1 61.315 75.133 66.750 10.500 div #000000 Lato-Regular
+word 1 12.000 35.404 85.500 10.500 After #000000 Lato-Regular
+word 1 37.872 62.857 85.500 10.500 items #000000 Lato-Regular
+rect 1 42.000 24.750 288.000 37.500 #eeeeee
+rect 1 42.000 37.500 288.000 50.250 #eeeeee
+rect 1 42.000 56.250 288.000 69.000 #eeeeee
+path 1 30.000 30.000 33.750 33.750 #000000 2cfc2/cfffc/fffff/cfffc/2cfc2
+path 1 30.000 42.750 33.750 46.500 #000000 2cfc2/cfffc/fffff/cfffc/2cfc2
+path 1 30.000 61.500 33.750 65.250 #000000 2cfc2/cfffc/fffff/cfffc/2cfc2

@@ -169,10 +169,19 @@ internal sealed class PageRules(string sourceName, List<Error> refusals)
     /// <c>MakePdfDocument</c>, printing/common/metafile_utils.cc, sets; the media box is those pixels again in points).
     /// Measured: A4 (595.28 pt) prints 594.96, A5's 419.53 pt prints 420 (1/300 inch alone gives 419.52), 595.5 pt prints
     /// 595.92 (case <c>h-page-size-fraction</c>), 100.5 px (75.375 pt) prints 75.12 (case <c>h-page-size-hundred-px</c>).
+    /// <para>The pixels are computed in single precision, the whole points times the scale 300/72 as a float, rounded half
+    /// up, as two measured ties show: 75 pt is 312.5 pixels exactly, and the float product 312.4999883 is the float 312.5,
+    /// so 313 (75.12 pt, case <c>h-page-size-hundred-px</c>); 201 pt is 837.5 pixels exactly, and the float product
+    /// 837.4999685 is the float 837.49994, so 837 (200.88 pt, case <c>li-page-break</c>). In double precision both would
+    /// round up, and the second would print 201.12 pt.</para>
     /// </summary>
     /// <param name="points">The side in points, from the page box in units of 1/64 px.</param>
-    internal static Length Printed(double points) =>
-        Length.FromPoints(System.Math.Round(System.Math.Round(points, System.MidpointRounding.AwayFromZero) * 300 / 72, System.MidpointRounding.AwayFromZero) * 72 / 300);
+    internal static Length Printed(double points)
+    {
+        var whole = (float)System.Math.Round(points, System.MidpointRounding.AwayFromZero);
+        var pixels = System.MathF.Floor((whole * (300f / 72f)) + 0.5f);
+        return Length.FromPoints(pixels * 72.0 / 300);
+    }
 
     /// <summary>
     /// Declarations in an <c>@page</c> rule that are not the page box's: the inherited properties (they reach only the

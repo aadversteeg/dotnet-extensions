@@ -1,3 +1,4 @@
+using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.PageModel;
@@ -21,5 +22,7 @@ public static class DocumentLayout
     /// <param name="environment">The fonts and algorithms.</param>
     /// <returns>The page document, or the layout error.</returns>
     public static Result<PageDocument, Error> Run(StyledDocument document, LayoutEnvironment environment) =>
-        Paginator.Paginate(environment, document).OnSuccessMap(pages => PagePainter.Paint(document.Metadata, pages));
+        Paginator.Paginate(environment, document)
+            .OnSuccessBind(pages => ListMarkers.OutsideSheet(pages) is { } outside ? Result<ValueList<PageFragment>, Error>.Failure(outside) : Result<ValueList<PageFragment>, Error>.Success(pages))
+            .OnSuccessMap(pages => PagePainter.Paint(document.Metadata, pages));
 }

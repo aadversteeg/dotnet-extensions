@@ -18,6 +18,10 @@ public static class InputLimits
     /// </summary>
     public const int MaxNestingDepth = ModelLimits.MaxNestingDepth;
 
+    /// <summary>The most items one list may have: 10 000 (<see cref="ModelLimits.MaxListItems"/>, which layout holds every
+    /// model to). More is <c>Documents.Input.Invalid.List</c>.</summary>
+    public const int MaxListItems = ModelLimits.MaxListItems;
+
     /// <summary>
     /// The longest length the front-end accepts, in every profile: 14 400 pt (200 inches), the largest page side
     /// ISO 32000-1 names (Annex C, the limit on page size). It holds for a page side, a page margin, a margin, a padding,

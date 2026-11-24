@@ -38,6 +38,39 @@ public static class ContentOperators
     /// <returns>The operation.</returns>
     public static ContentOperation Fill() => new("f", []);
 
+    /// <summary><c>f*</c>: fill the current path with the even-odd rule (§8.5.3.1, Table 60; the rule §8.5.3.3.3).</summary>
+    /// <returns>The operation.</returns>
+    public static ContentOperation FillEvenOdd() => new("f*", []);
+
+    /// <summary><c>m</c>: begin a new subpath at (x, y), the new current point (§8.5.2.1, Table 59).</summary>
+    /// <param name="x">The x coordinate.</param>
+    /// <param name="y">The y coordinate.</param>
+    /// <returns>The operation.</returns>
+    public static ContentOperation MoveTo(double x, double y) => new("m", [PdfNumber.From(x), PdfNumber.From(y)]);
+
+    /// <summary><c>l</c>: append a straight line from the current point to (x, y), the new current point (§8.5.2.1,
+    /// Table 59).</summary>
+    /// <param name="x">The end's x coordinate.</param>
+    /// <param name="y">The end's y coordinate.</param>
+    /// <returns>The operation.</returns>
+    public static ContentOperation LineTo(double x, double y) => new("l", [PdfNumber.From(x), PdfNumber.From(y)]);
+
+    /// <summary><c>c</c>: append a cubic Bézier curve from the current point to (x3, y3), with control points (x1, y1)
+    /// and (x2, y2) (§8.5.2.1, Table 59; the curve §8.5.2.2).</summary>
+    /// <param name="x1">The first control point's x coordinate.</param>
+    /// <param name="y1">The first control point's y coordinate.</param>
+    /// <param name="x2">The second control point's x coordinate.</param>
+    /// <param name="y2">The second control point's y coordinate.</param>
+    /// <param name="x3">The end's x coordinate.</param>
+    /// <param name="y3">The end's y coordinate.</param>
+    /// <returns>The operation.</returns>
+    public static ContentOperation CurveTo(double x1, double y1, double x2, double y2, double x3, double y3) =>
+        new("c", [PdfNumber.From(x1), PdfNumber.From(y1), PdfNumber.From(x2), PdfNumber.From(y2), PdfNumber.From(x3), PdfNumber.From(y3)]);
+
+    /// <summary><c>h</c>: close the current subpath with a straight line back to its start (§8.5.2.1, Table 59).</summary>
+    /// <returns>The operation.</returns>
+    public static ContentOperation ClosePath() => new("h", []);
+
     /// <summary>
     /// <c>W</c>: intersect the current clipping path with the current path, by the non-zero winding rule (§8.5.4,
     /// Table 61). It comes between the path and the painting operator that ends it, and takes effect once that operator

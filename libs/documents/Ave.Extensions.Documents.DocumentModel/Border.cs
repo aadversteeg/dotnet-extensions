@@ -3,13 +3,34 @@ using Ave.Extensions.Documents.Core;
 namespace Ave.Extensions.Documents.DocumentModel;
 
 /// <summary>
-/// One side of a box's border: a solid line of a width and a colour (CSS Backgrounds 3 §3: <c>border-width</c>,
-/// <c>border-color</c>; <c>border-style</c> is always <c>solid</c> in this version). A width of zero is the
-/// initial <c>border-style: none</c>: no border, and the side takes no space.
+/// The style of a border side (CSS Backgrounds 3 §3.2, <c>border-style</c>): the values this model draws.
+/// </summary>
+public enum BorderStyle
+{
+    /// <summary>A single line in the side's colour.</summary>
+    Solid,
+
+    /// <summary>The box looks pressed in: the top and left sides are painted in a darker colour, the bottom and right
+    /// sides in a lighter one, both taken from the side's colour (CSS Backgrounds 3 §3.2: "the colors of the bottom and
+    /// right borders are lighter, the top and left darker"; the colours are the layout's, measured with Chromium).</summary>
+    Inset,
+
+    /// <summary>The box looks raised: the top and left sides lighter, the bottom and right sides darker, the other way
+    /// round from <see cref="Inset"/>.</summary>
+    Outset,
+}
+
+/// <summary>
+/// One side of a box's border: a line of a width, a colour and a style (CSS Backgrounds 3 §3: <c>border-width</c>,
+/// <c>border-color</c>, <c>border-style</c> of <c>solid</c>, <c>inset</c> or <c>outset</c>). A width of zero is the
+/// initial <c>border-style: none</c>: no border, and the side takes no space. The colour is the one the box asks for; for
+/// <see cref="BorderStyle.Inset"/> and <see cref="BorderStyle.Outset"/> the layout paints the darker and the lighter
+/// colour taken from it.
 /// </summary>
 /// <param name="Width">The line width; zero or more.</param>
-/// <param name="Color">The line colour.</param>
-public readonly record struct BorderSide(Length Width, Color Color)
+/// <param name="Color">The line colour; for inset and outset the colour the two shades are taken from.</param>
+/// <param name="Style">The line style; <see cref="BorderStyle.Solid"/> unless given.</param>
+public readonly record struct BorderSide(Length Width, Color Color, BorderStyle Style = BorderStyle.Solid)
 {
     /// <summary>No border on this side.</summary>
     public static BorderSide None => default;
@@ -17,9 +38,10 @@ public readonly record struct BorderSide(Length Width, Color Color)
     /// <summary>True when the side draws a line (a positive width).</summary>
     public bool IsVisible => Width.Points > 0;
 
-    /// <summary>Formats as <c>1pt #d3d3d3</c>, or <c>none</c>.</summary>
+    /// <summary>Formats as <c>1pt #d3d3d3</c> for a solid side, <c>1pt inset #d3d3d3</c> for another style, or
+    /// <c>none</c>.</summary>
     /// <returns>The text form.</returns>
-    public override string ToString() => IsVisible ? $"{Width} {Color}" : "none";
+    public override string ToString() => !IsVisible ? "none" : Style == BorderStyle.Solid ? $"{Width} {Color}" : $"{Width} {Style.ToString().ToLowerInvariant()} {Color}";
 }
 
 /// <summary>

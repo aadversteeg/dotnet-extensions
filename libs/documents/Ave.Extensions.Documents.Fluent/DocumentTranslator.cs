@@ -14,7 +14,7 @@ namespace Ave.Extensions.Documents.Fluent;
 /// Translates a code-front-end <see cref="Fluent.Document"/> into the engine's <see cref="StyledDocument"/>. This
 /// is the front-end's cascade: specified values become computed values (CSS Cascade 4 §4), and every value is
 /// validated. The front-end contains no layout code. Tables and rows of blocks are translated by
-/// <see cref="TableTranslator"/>.
+/// <see cref="TableTranslator"/>, lists by <see cref="ListTranslator"/>.
 /// </summary>
 public static class DocumentTranslator
 {
@@ -84,6 +84,9 @@ public static class DocumentTranslator
     /// <param name="Widows">The <c>widows</c> value (initial 2).</param>
     internal sealed record Inherited(TextStyle Text, TextAlign Align, int Orphans, int Widows)
     {
+        /// <summary>How many lists the element is in (0 outside every list): a list's bullet follows its level.</summary>
+        public int Lists { get; init; }
+
         /// <summary>CSS inheritance (CSS Cascade 4 §7.2): what an element does not specify is its parent's value. A line
         /// height the element specifies is computed with its own font size (CSS 2.1 §10.8.1).</summary>
         public Inherited With(TextFormat format)
@@ -105,7 +108,7 @@ public static class DocumentTranslator
                 },
                 format.TextAlign ?? Align,
                 format.Orphans ?? Orphans,
-                format.Widows ?? Widows).Decorated(format);
+                format.Widows ?? Widows) { Lists = Lists }.Decorated(format);
         }
 
         /// <summary>The decorations an element applies (CSS Text Decoration 3 §2: "When specified on or propagated to a
@@ -175,6 +178,7 @@ public static class DocumentTranslator
         ImageElement => 2,
         TableElement table => TableTranslator.NodeCount(table),
         RowElement row => TableTranslator.NodeCount(row),
+        ListElement list => ListTranslator.NodeCount(list),
         _ => 0,
     };
 
@@ -222,6 +226,7 @@ public static class DocumentTranslator
         ImageElement image => Image(image, id, pageBreakBefore),
         TableElement table => TableTranslator.Table(table, id, pageBreakBefore, inherited),
         RowElement row => TableTranslator.Row(row, id, pageBreakBefore, inherited),
+        ListElement list => ListTranslator.List(list, id, pageBreakBefore, inherited),
         _ => throw new System.InvalidOperationException($"No translation for {element.GetType().Name}."),
     };
 

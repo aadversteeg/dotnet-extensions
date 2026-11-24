@@ -16,7 +16,7 @@ A rule that PDF/A-3a adds to PDF/A-3b lists only PDF/A-3a. The generated-documen
 fixed seed (100 per profile: borders, backgrounds, spans, nested and broken tables, page areas, images with alpha,
 font sizes, lengths at and past the limits, long words) are refused, with a code of an expected family, or pass veraPDF.
 
-109 rules by construction, 42 checked, 110 cannot occur (261 rules).
+109 rules by construction, 47 checked, 105 cannot occur (261 rules).
 
 | Rule | Profiles | veraPDF rule text | Class | How |
 | --- | --- | --- | --- | --- |
@@ -209,11 +209,11 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 7.2-14 | PDF/UA-1 | If Table element contains THead kid, Table element should contain one or more TBody kids | checked | The front-end makes header rows a THead only when the table has body rows (the tagged-PDF test A_table_of_header_rows_only_is_tagged_as_a_body_of_header_cells); a hand-made THead without TBody is `Pdf.Conformance.PdfUa1.TableHeadWithoutBody` (Render.Pdf PageModelContractTests). Found by the generated-documents test. |
 | 7.2-15 | PDF/UA-1 | A table cell shall not have intersection with other cells | checked | Overlapping cells: `Pdf.Conformance.PdfUa1.IrregularTable` (TableSlots Overlap; Render.Pdf PageModelValidationTests). |
 | 7.2-16 | PDF/UA-1 | Table element may contain a Caption element as its first or last kid | cannot occur | No Caption role. |
-| 7.2-17 | PDF/UA-1 | LI element should be contained in L element | cannot occur | No list roles. |
-| 7.2-18 | PDF/UA-1 | LBody element should be contained in LI element | cannot occur | No list roles. |
-| 7.2-19 | PDF/UA-1 | L element may contain only L, LI and Caption elements | cannot occur | No list roles. |
-| 7.2-20 | PDF/UA-1 | LI element may contain only Lbl and LBody elements | cannot occur | No list roles. |
-| 7.2-21 | PDF/UA-1 | Natural language for text in ActualText attribute shall be determined | cannot occur | No /ActualText on structure elements; replacement text is written on marked-content spans only (7.2-30). |
+| 7.2-17 | PDF/UA-1 | LI element should be contained in L element | checked | An LI outside an L: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests); the code front-end makes items only in lists (Fluent ListTaggingTests). |
+| 7.2-18 | PDF/UA-1 | LBody element should be contained in LI element | checked | An LBody outside an LI: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests; Fluent ListTaggingTests). |
+| 7.2-19 | PDF/UA-1 | L element may contain only L, LI and Caption elements | checked | L kids other than lists and list items: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests; Fluent ListTaggingTests). No Caption role. |
+| 7.2-20 | PDF/UA-1 | LI element may contain only Lbl and LBody elements | checked | LI kids other than Lbl and LBody: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests; Fluent ListTaggingTests). |
+| 7.2-21 | PDF/UA-1 | Natural language for text in ActualText attribute shall be determined | checked | The bullet's character on the Lbl of a drawn list bullet takes the catalog's language, which PDF/UA-1 requires: `Pdf.Conformance.PdfUa1.MissingLanguage` (Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests). |
 | 7.2-22 | PDF/UA-1 | Natural language for text in Alt attribute shall be determined | checked | Alternative text takes the catalog's language, which PDF/UA-1 requires: `Pdf.Conformance.PdfUa1.MissingLanguage` (Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests). |
 | 7.2-23 | PDF/UA-1 | Natural language for text in E attribute shall be determined | cannot occur | No /E entries. |
 | 7.2-24 | PDF/UA-1 | Natural language in the Contents entry for annotations shall be determined | cannot occur | No annotations. |
@@ -231,7 +231,7 @@ font sizes, lengths at and past the limits, long words) are refused, with a code
 | 7.2-37 | PDF/UA-1 | TBody element may contain only TR elements | checked | TBody kids other than rows: `Pdf.Write.InvalidPageModel` (Render.Pdf PageModelContractTests). |
 | 7.2-38 | PDF/UA-1 | TFoot element may contain only TR elements | cannot occur | No TFoot role. |
 | 7.2-39 | PDF/UA-1 | Table element may contain only one Caption element | cannot occur | No Caption role. |
-| 7.2-40 | PDF/UA-1 | L element may contain a Caption element only as its first kid | cannot occur | No list roles. |
+| 7.2-40 | PDF/UA-1 | L element may contain a Caption element only as its first kid | cannot occur | No Caption role. |
 | 7.2-41 | PDF/UA-1 | Table columns shall have the same number of rows (taking into account row spans) | checked | Irregular grid, filled as wide as the first row: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests); a grid of more than 4 194 304 slots is not filled: `Pdf.Conformance.PdfUa1.TableTooLarge` (Render.Pdf PageModelContractTests). |
 | 7.2-42 | PDF/UA-1 | Table rows shall have the same number of columns (taking into account column spans) | checked | Irregular grid, filled as wide as the first row: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests); a grid of more than 4 194 304 slots is not filled: `Pdf.Conformance.PdfUa1.TableTooLarge` (Render.Pdf PageModelContractTests). |
 | 7.2-43 | PDF/UA-1 | Table rows shall have the same number of columns (taking into account column spans) | checked | Irregular grid, filled as wide as the first row: `Pdf.Conformance.PdfUa1.IrregularTable` (TableRegularity; Fluent ConformanceRefusalTests; Render.Pdf PageModelValidationTests); a grid of more than 4 194 304 slots is not filled: `Pdf.Conformance.PdfUa1.TableTooLarge` (Render.Pdf PageModelContractTests). |

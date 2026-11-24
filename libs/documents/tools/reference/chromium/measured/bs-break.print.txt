@@ -1,0 +1,22 @@
+page 1 300.000 174.000
+word 1 12.000 27.582 23.250 10.500 top #000000 Lato-Regular
+word 1 17.250 28.674 43.500 10.500 k0 #000000 Lato-Regular
+word 1 17.250 28.674 58.500 10.500 k1 #000000 Lato-Regular
+word 1 17.250 28.674 73.500 10.500 k2 #000000 Lato-Regular
+word 1 17.250 28.674 88.500 10.500 k3 #000000 Lato-Regular
+word 1 17.250 28.674 103.500 10.500 k4 #000000 Lato-Regular
+word 1 17.250 28.674 118.500 10.500 k5 #000000 Lato-Regular
+word 1 17.250 28.674 133.500 10.500 k6 #000000 Lato-Regular
+word 1 17.250 28.674 148.500 10.500 k7 #000000 Lato-Regular
+rect 1 12.000 27.000 288.000 29.250 #9a9a9a
+path 1 285.750 27.000 288.000 162.000 #eeeeee 008/08f/8ff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff
+rect 1 12.000 27.000 14.250 162.000 #9a9a9a
+page 2 300.000 174.000
+word 2 17.250 28.674 23.250 10.500 k8 #000000 Lato-Regular
+word 2 17.250 28.674 38.250 10.500 k9 #000000 Lato-Regular
+word 2 17.250 34.764 53.250 10.500 k10 #000000 Lato-Regular
+word 2 17.250 34.764 68.250 10.500 k11 #000000 Lato-Regular
+word 2 12.000 29.283 88.500 10.500 end #000000 Lato-Regular
+rect 2 12.000 75.000 288.000 77.250 #eeeeee
+rect 2 285.750 12.000 288.000 77.250 #eeeeee
+path 2 12.000 12.000 14.250 77.250 #9a9a9a fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/fff/ff7/f70/700

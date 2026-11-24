@@ -9,9 +9,9 @@ namespace Ave.Extensions.Documents.PageModel;
 /// </summary>
 /// <remarks>
 /// How this grows to "everything PDF can draw" without breaking existing users: new cases are ADDED next to
-/// these — a filled or stroked path with a paint (of which <see cref="FillRectangle"/> stays the common special
-/// case) and a group with a transform, a clip and compositing (opacity, blend mode, soft mask) that
-/// holds its own items. Existing cases keep their meaning; a back-end that meets a case it does not know
+/// these — a filled path (<see cref="FillPath"/>, of which <see cref="FillRectangle"/> stays the common special case),
+/// later a stroked path and other paints, and a group with a transform, a clip and compositing (opacity, blend mode,
+/// soft mask) that holds its own items. Existing cases keep their meaning; a back-end that meets a case it does not know
 /// reports it instead of skipping it.
 /// <para><b>THE NESTING RULE FOR MARKERS</b>, for all three kinds — structure (<see cref="StructureStart"/>,
 /// <see cref="StructureEnd"/>), artifact (<see cref="ArtifactStart"/>, <see cref="ArtifactEnd"/>) and clip
@@ -44,6 +44,70 @@ public sealed record DrawImage(Rect Area, ImageData Image) : DrawItem;
 /// <param name="Area">The rectangle.</param>
 /// <param name="Color">The fill colour.</param>
 public sealed record FillRectangle(Rect Area, Color Color) : DrawItem;
+
+/// <summary>
+/// A shape filled with one colour: closed contours of straight lines and cubic Bézier curves (ISO 32000-1 §8.5.2.1, the
+/// <c>m</c>, <c>l</c>, <c>c</c> and <c>h</c> operators), filled by a fill rule (§8.5.3.3), such as the disc of a list
+/// marker. Every contour is closed: filling closes an open subpath with a straight line back to its start (§8.5.3.1), so
+/// the page model holds only closed ones. A ring is two contours, the outer and the inner circle, under
+/// <see cref="PathFillRule.EvenOdd"/>, which leaves the inside of the inner one empty whichever way each is drawn. A
+/// rectangle is a <see cref="FillRectangle"/>. The item is content or an artifact as the markers around it say, like
+/// any other drawn item, and is drawn inside the clips open around it.
+/// </summary>
+/// <param name="Contours">The contours, at least one, together at most <see cref="PageModelRules.MaxPathSegments"/>
+/// segments (<see cref="PageModelRules"/>).</param>
+/// <param name="Rule">Which points the contours enclose.</param>
+/// <param name="Color">The fill colour.</param>
+public sealed record FillPath(ValueList<PathContour> Contours, PathFillRule Rule, Color Color) : DrawItem;
+
+/// <summary>One closed contour of a <see cref="FillPath"/>: a start and the segments from it, each from the end of the one
+/// before; the contour closes with a straight line from the last segment's end back to the start (ISO 32000-1 §8.5.2.1,
+/// <c>h</c>), which is no segment of its own.</summary>
+/// <param name="Start">Where the contour starts (<c>m</c>).</param>
+/// <param name="Segments">The segments in order, at least one.</param>
+public sealed record PathContour(Point Start, ValueList<PathSegment> Segments);
+
+/// <summary>A segment of a <see cref="PathContour"/>, from the end of the segment before it (or the contour's start).
+/// Only the cases in this assembly exist.</summary>
+public abstract record PathSegment
+{
+    private protected PathSegment()
+    {
+    }
+
+    /// <summary>Where the segment ends.</summary>
+    public abstract Point End { get; }
+}
+
+/// <summary>A straight line (ISO 32000-1 §8.5.2.1, <c>l</c>).</summary>
+/// <param name="End">Where it ends.</param>
+public sealed record PathLine(Point End) : PathSegment
+{
+    /// <inheritdoc/>
+    public override Point End { get; } = End;
+}
+
+/// <summary>A cubic Bézier curve (ISO 32000-1 §8.5.2.2, <c>c</c>).</summary>
+/// <param name="Control1">The first control point.</param>
+/// <param name="Control2">The second control point.</param>
+/// <param name="End">Where it ends.</param>
+public sealed record PathCubic(Point Control1, Point Control2, Point End) : PathSegment
+{
+    /// <inheritdoc/>
+    public override Point End { get; } = End;
+}
+
+/// <summary>Which points a <see cref="FillPath"/> covers (ISO 32000-1 §8.5.3.3).</summary>
+public enum PathFillRule
+{
+    /// <summary>A point is inside where the contours wind around it a number of times other than zero (§8.5.3.3.2; PDF
+    /// <c>f</c>).</summary>
+    NonZero,
+
+    /// <summary>A point is inside where the contours wind around it an odd number of times (§8.5.3.3.3; PDF
+    /// <c>f*</c>).</summary>
+    EvenOdd,
+}
 
 /// <summary>
 /// Glyphs of one font, size and colour on one baseline. Glyphs are referenced by glyph id in a font program,

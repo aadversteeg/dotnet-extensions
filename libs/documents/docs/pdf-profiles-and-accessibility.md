@@ -137,7 +137,7 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 09-002 | structure nested in a meaningless way | Mostly met: the front-end cannot put a table inside a heading or paragraph. A table inside a table cell is allowed and tagged as written. |
 | 11-007 | the declared language is wrong | **Your part:** one language per document. Open: no language per paragraph or span yet, so a quote in another language is read in the document's language. |
 | 12-001 | stretched characters not represented | Not possible: justification stretches spaces, never glyphs. |
-| 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. |
+| 13-001 | a graphic that is not text or artifact is not a Figure | Met: images are Figure or decorative; filled rectangles are always decoration. A filled path of the page model is content or an artifact as its producer marks it, as any drawn item; the layout draws none yet. |
 | 13-002 | a link with a meaningful background | Not possible: no links yet. |
 | 13-003 | a caption not tagged as Caption | **Open:** there is no caption element; a caption is a paragraph. |
 | 13-005 | ActualText used where Alt fits better | Met: images and figures get Alt. ActualText is written only on the marked content of a glyph whose text differs from its ToUnicode entry (a ligature, a shared hyphen glyph), to give that glyph's own text, where Alt does not apply. |
@@ -151,7 +151,7 @@ whether the condition cannot occur, is met by the design, or is left to you or s
 | 15-002 | a column header not tagged as header | Met when you use `HeaderRow`; **your part** to use it. |
 | 15-004 | a table used for non-tabular content | Met for `Row(...)`: a row of blocks is a layout, tagged as Div, not Table. **Your part** for `Table(...)`. |
 | 15-005 | a cell's header cannot be determined | Met for simple tables: every header cell has Scope Column and its spans. **Open** for header rows that nest (a header spanning two sub-headers): no Headers/IDs attributes yet. |
-| 16-001, 16-002, 16-003 | lists without list tags or numbering | **Open (limit):** there is no list element; a list written as paragraphs is tagged as paragraphs. |
+| 16-001, 16-002, 16-003 | lists without list tags or numbering | Met when you use `BulletedList` and `NumberedList`: each list is `L` with its `ListNumbering` attribute (`Disc`, `Circle`, `Square`, `Decimal`, `None` for a list without labels), each item `LI` with `Lbl` and `LBody` (no `Lbl` without a label), a list inside an item in that item's `LBody`; a drawn bullet's `Lbl` carries the bullet's character as `/ActualText`, so the text of the page has no bullet character, as in Chromium's print. The page model's rules refuse an `LI` outside an `L` and an `L` or `LI` with other kids (veraPDF 7.2-17 to 7.2-20). From HTML the same for `ul`, `ol`, `menu`, `dir` and every element of `display: list-item`; items outside a list element are an `L` of their own (veraPDF PDF/A-3a and PDF/UA-1 pass on cases `li-ol-nested` and `li-bare`, `ListMappingTests`). **Your part** for a list written as paragraphs. |
 | 17-001 | a formula not tagged as Formula | **Open (limit):** no formula element. |
 | 18-001 | headers and footers not pagination artifacts | Met. |
 | 18-002 | header and footer artifacts without Header/Footer subtype | Met. |
