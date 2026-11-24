@@ -954,4 +954,23 @@ public class HtmlListedDifferenceTests
         HtmlCases.LinkDifference(pages, around).Should().BeNull("each area is the rectangle around Chromium's of its line");
         HtmlCases.LinkDifference(pages, chromium).Should().Be("link 1 on page 1: x1 140.18, Chromium 81.75 (links.txt)");
     }
+
+    /// <summary>
+    /// A list item's bullet against a rounded box in the item (case <c>br-boxes-inside</c>): Chromium paints the marker as
+    /// content of the line, after the backgrounds and borders of every block box in the flow (CSS 2.1 Appendix E, step 4
+    /// before step 7), so its two discs come after the four rounded paths of the page; the engine paints a list item's label
+    /// before the item's body, inside the label's structure element. Paths are compared in drawing order, so that order is
+    /// the whole difference: Chromium's print with each disc moved to where the engine paints it is the engine's.
+    /// </summary>
+    [Fact]
+    public void A_list_bullet_is_painted_before_the_rounded_box_in_its_item_where_Chromium_paints_it_after_every_box()
+    {
+        var (engine, chromium) = (Engine("br-boxes-inside"), Chromium("br-boxes-inside"));
+        var theirs = chromium.Pages.Single();
+        theirs.Paths.Select(path => path.Colour).Should().Equal("#e0f0ff", "#2050a0", "#e0f0ff", "#2050a0", "#000000", "#000000");
+
+        var moved = theirs with { Paths = [theirs.Paths[0], theirs.Paths[1], theirs.Paths[4], theirs.Paths[2], theirs.Paths[3], theirs.Paths[5]] };
+        HtmlCases.Difference(engine, new PrintedPages([moved])).Should().BeNull("the order of the bullet is the whole difference");
+        HtmlCases.Difference(engine, chromium).Should().StartWith("page 1 path at (30, 70.5) paints 2cfc2/cfffc/fffff/cfffc/2cfc2 #000000, Chromium at (42, 62.25) ");
+    }
 }

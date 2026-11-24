@@ -256,6 +256,7 @@ public static class ModelCheck
             ?? Sides(style.Padding, "padding", box, DocumentErrorCodes.Input.Invalid.Length)
             ?? Sides(style.Border.Widths, "border", box, DocumentErrorCodes.Input.Invalid.Length)
             ?? BorderStyles(box)
+            ?? Radius(box)
             ?? (style.Orphans < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Orphans, "Orphans must be at least 1 line.", Number(style.Orphans), "orphans", box) : null)
             ?? (style.Widows < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Widows, "Widows must be at least 1 line.", Number(style.Widows), "widows", box) : null)
             ?? Columns(box)
@@ -374,6 +375,11 @@ public static class ModelCheck
             {
                 return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An inline-block's width, min-width or max-width is a length in this version: a percentage of the line is not measured.",
                     $"{sized.Style.SpecifiedWidth}/{sized.Style.MinWidth}/{sized.Style.MaxWidth}", "width", sized);
+            }
+
+            if (child is Box { Style.BorderRadius.IsZero: false } rounded && rounded.Layout != LayoutAlgorithmId.Image)
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.BorderRadius, "Rounded corners on an inline-block are not drawn yet.", rounded.Style.BorderRadius.ToString(), "border-radius", rounded);
             }
 
             if (child is Box box && (box.Style.BreakBefore != initial.BreakBefore || box.Style.BreakAfter != initial.BreakAfter || box.Style.BreakInside != initial.BreakInside))
@@ -815,6 +821,47 @@ public static class ModelCheck
             ? Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "An inset or outset border on a table or a part of a table is not drawn in this version: its lines are drawn solid.",
                 shaded.Style.Border.ToString(), "border-style", shaded)
             : null;
+    }
+
+    /// <summary>Rounded corners (<see cref="BoxStyle.BorderRadius"/>, CSS Backgrounds 3 §5): each radius a finite length
+    /// of zero or more, at most <see cref="ModelLimits.MaxLength"/>, and a finite percentage of zero or more (else
+    /// Input.Invalid.Length); drawn only on a box laid out by <see cref="LayoutAlgorithmId.Flow"/> or
+    /// <see cref="LayoutAlgorithmId.Inline"/> that is no table part (a cell checked with its row) and no page-margin box, whose visible border sides are
+    /// all four solid, of one width and one colour (else Input.Unsupported.BorderRadius): the shapes measured with
+    /// Chromium (cases <c>br-*</c>).</summary>
+    private static Error? Radius(Box box)
+    {
+        // A table's cells are the children of its rows; they are checked with their row, as their border styles are.
+        if (box.Style.TableDisplay == TableDisplay.Row && box.Children.OfType<Box>().FirstOrDefault(cell => !cell.Style.BorderRadius.IsZero) is { } cell)
+        {
+            return Problem(DocumentErrorCodes.Input.Unsupported.BorderRadius, "Rounded corners on a table cell are not drawn in this version.", cell.Style.BorderRadius.ToString(), "border-radius", cell);
+        }
+
+        var radius = box.Style.BorderRadius;
+        if (radius.IsZero)
+        {
+            return null;
+        }
+
+        foreach (var corner in new[] { radius.TopLeft, radius.TopRight, radius.BottomRight, radius.BottomLeft })
+        {
+            if (!IsBounded(corner.Length) || corner.Length.Points < 0 || !double.IsFinite(corner.Percent) || corner.Percent < 0)
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Length, $"A corner radius must be a length of 0 or more, at most {ModelLimits.MaxLength}, plus a percentage of 0 or more.", corner.ToString(), "border-radius", box);
+            }
+        }
+
+        var border = box.Style.Border;
+        BorderSide[] sides = [border.Top, border.Right, border.Bottom, border.Left];
+        var oneLine = sides.All(side => !side.IsVisible) || sides.All(side => side == border.Top && side.Style == BorderStyle.Solid);
+        var where = box.Layout != LayoutAlgorithmId.Flow && box.Layout != LayoutAlgorithmId.Inline ? $"a box laid out by {box.Layout}"
+            : box.Style.TableDisplay != TableDisplay.None ? "a part of a table"
+            : box.Style.MarginBoxPlace != MarginBoxPlace.None ? "a page-margin box"
+            : !oneLine ? "a box whose border sides are not all solid, of one width and one colour"
+            : null;
+        return where is null
+            ? null
+            : Problem(DocumentErrorCodes.Input.Unsupported.BorderRadius, $"Rounded corners on {where} are not drawn in this version.", radius.ToString(), "border-radius", box);
     }
 
     /// <summary>A border model and a caption side the model has (else Input.Invalid.Table), a table height of zero or more,

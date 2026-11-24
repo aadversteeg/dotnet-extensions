@@ -227,7 +227,7 @@ internal static class SlicedBox
                 {
                     // The last fragment: the rest of the height; taller content overflows it (sz-height, sz-max-height).
                     var last = Wrap(box, space, incoming is null, topInset, bottomInset, content);
-                    return LayoutResult.Place(new BoxFragment(box, last.Size with { Height = height }, last.Children, last.Border), null, content.Appeal, content.BestBreak);
+                    return LayoutResult.Place(new BoxFragment(box, last.Size with { Height = height }, last.Children, last.Border) { ContinuesBefore = last.ContinuesBefore }, null, content.Appeal, content.BestBreak);
                 }
 
                 if (height > natural || Fitting.Fits(natural, space.AvailableHeight))
@@ -305,7 +305,8 @@ internal static class SlicedBox
     /// inset plus the content plus the bottom inset on the last fragment, or the whole remaining page on a fragment
     /// that breaks (§5.3) — except where the page ends before its own bottom padding and border or before those of a box
     /// inside it (<paramref name="fillsPage"/> false), where it ends right below its content, as Chromium prints it. The fragment paints the left and right border always, the
-    /// top one on the first fragment and the bottom one on the last (slice, §5.4).
+    /// top one on the first fragment and the bottom one on the last (slice, §5.4); a fragment says which of its edges a break
+    /// cuts (<see cref="BoxFragment.ContinuesBefore"/>, <see cref="BoxFragment.ContinuesAfter"/>).
     /// </summary>
     private static BoxFragment Wrap(Box box, ConstraintSpace space, bool isFirst, double topInset, double bottomInset, Content content, bool fillsPage = true)
     {
@@ -320,6 +321,6 @@ internal static class SlicedBox
             Top = isFirst ? style.Border.Top : BorderSide.None,
             Bottom = isLast ? style.Border.Bottom : BorderSide.None,
         };
-        return new BoxFragment(box, new Size(space.AvailableWidth, height), children, painted);
+        return new BoxFragment(box, new Size(space.AvailableWidth, height), children, painted) { ContinuesBefore = !isFirst, ContinuesAfter = !isLast };
     }
 }

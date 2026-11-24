@@ -40,6 +40,16 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(rest))
             .WithSource(box.Source);
 
+    /// <summary>A box with rounded corners and a border that a page break cuts
+    /// (<see cref="LayoutErrorCodes.RoundedBorderBreak"/>).</summary>
+    /// <param name="box">The box.</param>
+    public static Error RoundedBorderBreak(Box box) =>
+        new Error(
+                LayoutErrorCodes.RoundedBorderBreak,
+                $"{Describe(box)} has rounded corners and a border, and a page break cuts it; such a border is not drawn in this version. Keep the box on one page (break-inside: avoid), or leave out its border or its radius.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .WithSource(box.Source);
+
     /// <summary>A list item's label that would start left of the sheet (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>).</summary>
     /// <param name="label">The label; its source is the item's.</param>
     /// <param name="left">The label's left edge on the sheet, in points (negative).</param>

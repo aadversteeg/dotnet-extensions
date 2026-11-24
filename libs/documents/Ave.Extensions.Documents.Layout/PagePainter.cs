@@ -344,8 +344,14 @@ public static class PagePainter
         return content.IsEmpty ? [] : [new ArtifactStart(kind), .. content, ArtifactEnd.Instance];
     }
 
-    private static IEnumerable<DrawItem> Background(BoxFragment box, Point origin) =>
-        box.Box.Style.Background is { } color ? [new FillRectangle(new Rect(origin, box.Size), color)] : [];
+    /// <summary>The background of a box under its border box; along the rounded border box where it has rounded corners
+    /// (<see cref="RoundedBox"/>).</summary>
+    private static IEnumerable<DrawItem> Background(BoxFragment box, Point origin) => box.Box.Style.Background switch
+    {
+        null => [],
+        var color when !box.Box.Style.BorderRadius.IsZero => [RoundedBox.Background(box, origin, color.Value)],
+        var color => [new FillRectangle(new Rect(origin, box.Size), color.Value)],
+    };
 
     /// <summary>
     /// The border sides the fragment paints. A border of solid sides is painted as four filled rectangles along the edges
@@ -353,9 +359,11 @@ public static class PagePainter
     /// the height between them. A border with an inset or outset side, or with a corner where two visible solid sides of
     /// different colours meet, is painted as Chromium 159 paints it, with the sides cut at the corners where two colours
     /// meet (CSS Backgrounds 3 §4.4, colour transitions at corners; <see cref="CutBorder"/>); a border of one colour stays
-    /// four rectangles (<c>bs-solid-one-colour</c>: Chromium fills the same pixels as one shape).
+    /// four rectangles (<c>bs-solid-one-colour</c>: Chromium fills the same pixels as one shape). A box with rounded corners
+    /// paints its border as one ring (<see cref="RoundedBox"/>).
     /// </summary>
-    private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin) => Sides(box.Border, origin, box.Size);
+    private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin) =>
+        box.Box.Style.BorderRadius.IsZero ? Sides(box.Border, origin, box.Size) : RoundedBox.Border(box, origin);
 
     private static IEnumerable<DrawItem> Sides(Border border, Point origin, Size size)
     {

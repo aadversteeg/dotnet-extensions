@@ -136,7 +136,7 @@ public class DiagnosticTextTests
     [Fact]
     public void A_shorthand_the_engine_refuses_is_named_as_written()
     {
-        var error = Refused("<!DOCTYPE html><p style='border-radius: 4px'>x");
+        var error = Refused("<!DOCTYPE html><p style='border-radius: 4px / 2px'>x");
 
         error.Message.Should().Contain("border-radius").And.NotContain("border-top-left-radius");
     }

@@ -40,7 +40,6 @@ internal static class BoxProperties
     [
         "backdrop-filter", "background-attachment", "background-clip", "background-image", "background-origin",
         "background-position-x", "background-position-y", "background-repeat", "background-size",
-        "border-bottom-left-radius", "border-bottom-right-radius", "border-top-left-radius", "border-top-right-radius",
         "bottom", "box-shadow", "clear", "clip-path", "column-count", "column-gap", "column-width", "contain", "content",
         "content-visibility", "direction", "filter", "float",
         "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
@@ -100,6 +99,17 @@ internal static class BoxProperties
                 1 => null,
                 _ => "a colour with an alpha other than 0 or 1 is not drawn",
             });
+
+        // CSS Backgrounds 3 §5: rounded corners on a block box with a background and a border of one solid line, as Chromium
+        // 159 prints them (Layout's RoundedBox, cases br-*). The first corner that is not 0 carries the refusal, so a
+        // border-radius the engine does not draw is one error.
+        string[] corners = ["top-left", "top-right", "bottom-right", "bottom-left"];
+        for (var index = 0; index < corners.Length; index++)
+        {
+            var before = corners[..index];
+            yield return new($"border-{corners[index]}-radius", "a length or a percentage on a block box with a border of one width, one colour and solid on all four sides, or none, and overflow visible; 0 everywhere",
+                (value, facts) => IsZero(value) || before.Any(corner => !IsZero(facts.Style, $"border-{corner}-radius")) ? null : RadiusRefusal(facts));
+        }
 
         foreach (var side in Sides)
         {
@@ -287,6 +297,42 @@ internal static class BoxProperties
 
         yield return new("list-style-type", "disc, circle, square, decimal, decimal-leading-zero, lower-roman, upper-roman, lower-alpha, upper-alpha, lower-latin, upper-latin, none (the twelve the style sheet accepts)", (_, _) => null);
         yield return new("list-style-position", "outside, the only value the style sheet accepts", (_, _) => null);
+    }
+
+    /// <summary>Why rounded corners are not drawn on this element, or null where they are: a block box (display: block)
+    /// that is no image, whose overflow is visible, and whose visible border sides are all four solid, of one width and
+    /// one colour.</summary>
+    private static string? RadiusRefusal(ElementFacts facts)
+    {
+        var display = facts.Style[PropertyRegistry.Display] is CssKeyword keyword ? keyword.Name : string.Empty;
+        var where = display switch
+        {
+            _ when facts.IsReplaced => "an image",
+            _ when TableProperties.IsPart(facts) => "a table or a part of a table",
+            "inline" => "an inline element",
+            "inline-block" => "an inline-block",
+            "list-item" => "a list item",
+            "block" => null,
+            _ => $"a box of display: {display}",
+        };
+        if (where is not null)
+        {
+            return $"rounded corners (border-radius) on {where} are not drawn yet; leave the radius out";
+        }
+
+        if (!IsKeyword(facts.Style[PropertyRegistry.Find("overflow-x")!], "visible") || !IsKeyword(facts.Style[PropertyRegistry.Find("overflow-y")!], "visible"))
+        {
+            return "rounded corners (border-radius) that clip the content (overflow other than visible) are not drawn in this version; use overflow: visible";
+        }
+
+        string Line(string side) =>
+            IsZero(facts.Style, $"border-{side}-width") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "none") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "hidden")
+                ? "none"
+                : $"{facts.Style[PropertyRegistry.Find($"border-{side}-width")!]} {facts.Style[PropertyRegistry.Find($"border-{side}-style")!]} {Resolved(facts.Style[PropertyRegistry.Find($"border-{side}-color")!], facts.Style)}";
+        var lines = Sides.Select(Line).Distinct(StringComparer.Ordinal).ToArray();
+        return lines is ["none"] || (lines is [var one] && IsKeyword(facts.Style[PropertyRegistry.Find("border-top-style")!], "solid") && one != "none")
+            ? null
+            : "rounded corners (border-radius) beside border sides of different widths, colours or styles, or not solid, are not drawn in this version; give all four sides one solid border, or none";
     }
 
     /// <summary>The alpha of a colour value; NaN for anything else.</summary>

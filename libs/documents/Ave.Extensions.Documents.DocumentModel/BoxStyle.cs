@@ -24,6 +24,12 @@ public sealed record BoxStyle
     /// <c>transparent</c>). Painted under the border box (initial <c>background-clip: border-box</c>).</summary>
     public Color? Background { get; init; }
 
+    /// <summary>The rounded corners of the border box (CSS Backgrounds 3 §5, <c>border-radius</c>);
+    /// <see cref="BorderRadius.None"/>, the CSS initial value, unless set. The background and the border are drawn along
+    /// the rounded border box; the content is not clipped by it. Only on a box that is no table part, no page-margin box
+    /// and no list item, whose visible border sides are solid sides of one width and one colour (<see cref="ModelCheck"/>).</summary>
+    public BorderRadius BorderRadius { get; init; }
+
     /// <summary>Whether a page break before the box is forced or to be avoided (CSS Fragmentation 3 §3.1).</summary>
     public BreakBetween BreakBefore { get; init; }
 

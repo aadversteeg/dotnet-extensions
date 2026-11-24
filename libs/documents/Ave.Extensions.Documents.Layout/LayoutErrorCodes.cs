@@ -42,6 +42,11 @@ public static class LayoutErrorCodes
     /// room it had, in points), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode TableBreak = _ / "TableBreak";
 
+    /// <summary>A box with rounded corners and a border that a page break cuts (<c>BoxStyle.BorderRadius</c>): Chromium 159
+    /// draws such a border's sides under clipping paths, which are not drawn in this version. Metadata: Node, SourceFile,
+    /// SourceLine.</summary>
+    public static readonly ErrorCode RoundedBorderBreak = _ / "RoundedBorderBreak";
+
     /// <summary>Computed content (the page count) that does not settle: every layout pass gives a different
     /// number of pages, up to the pass limit. Metadata: Node, Value (the page counts per pass), SourceFile,
     /// SourceLine of the first page-count reference.</summary>

@@ -111,16 +111,16 @@ public class InlineBoxMappingTests
     [InlineData("background-color: rgba(255, 0, 0, 0.5)", "background-color")]
     [InlineData("padding: 0 10%", "padding-right")]
     [InlineData("margin: 0 5%", "margin-right")]
+    [InlineData("background-color: #ff0000; border-radius: 3pt", "border-top-left-radius")]
     public void An_inline_box_value_that_is_not_drawn_is_refused_at_the_start_tag(string style, string property)
     {
         Refusals($"<p>Plain <span style=\"{style}\">box</span> text.</p>")
             .Should().Contain(error => error.Code == HtmlStyleErrorCodes.Unsupported.Value && Property(error) == property);
     }
 
-    /// <summary>The style sheet itself refuses these: a rounded corner and a negative margin are taken only at their initial
-    /// value, a dashed border not at all.</summary>
+    /// <summary>The style sheet itself refuses these: a negative margin is taken only at its initial value, a dashed border
+    /// not at all.</summary>
     [Theory]
-    [InlineData("background-color: #ff0000; border-radius: 3pt", "border-radius")]
     [InlineData("margin-left: -3pt", "margin-left")]
     [InlineData("border: 1.5pt dashed #000000", "border-top-style")]
     public void An_inline_box_value_the_style_sheet_does_not_take_is_refused_there(string style, string property)

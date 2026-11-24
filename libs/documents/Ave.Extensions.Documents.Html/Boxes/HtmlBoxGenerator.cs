@@ -1085,6 +1085,13 @@ public static partial class HtmlBoxGenerator
                         var shaded => new BorderSide(width.Value, color is CssKeyword { Name: "currentcolor" } ? new Color(0xee, 0xee, 0xee) : drawn, shaded == "inset" ? BorderStyle.Inset : BorderStyle.Outset),
                     }
                     : BorderSide.None;
+            // A corner radius as computed: a length or a percentage of the border box, resolved by layout (RoundedBox).
+            CornerRadius Radius(string corner) => Value(element, $"border-{corner}-radius") switch
+            {
+                CssLength length => new CornerRadius(length.Value),
+                CssPercentage percentage => CornerRadius.OfPercent(percentage.Value),
+                _ => CornerRadius.Zero,
+            };
             static BreakBetween Between(CssValue? value) => value switch
             {
                 CssKeyword { Name: "page" } => BreakBetween.Page,
@@ -1098,6 +1105,7 @@ public static partial class HtmlBoxGenerator
                 Padding = new Edges(Side("padding-top"), Side("padding-right"), Side("padding-bottom"), Side("padding-left")),
                 Border = new Border(Border("top"), Border("right"), Border("bottom"), Border("left")),
                 Background = Value(element, "background-color") is { } background && BoxProperties.Alpha(background) == 1 ? ColorOf(background) : null,
+                BorderRadius = new BorderRadius(Radius("top-left"), Radius("top-right"), Radius("bottom-right"), Radius("bottom-left")),
                 BreakBefore = Between(Value(element, "break-before")),
 
                 // A forced break after the box is a forced break before the next one (Finish); here only avoid.

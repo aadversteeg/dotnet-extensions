@@ -35,7 +35,16 @@ public sealed record PlacedFragment(Point Offset, Fragment Fragment);
 /// <param name="IsRepeated">True for a copy of content that already appeared on an earlier page: the header rows a
 /// table repeats (CSS 2.1 §17.2). The painter marks such content as decoration, not as document structure.</param>
 public sealed record BoxFragment(Box Box, Size Size, ValueList<PlacedFragment> Children, Border Border = default, bool IsRepeated = false)
-    : Fragment(Size);
+    : Fragment(Size)
+{
+    /// <summary>True when the box began on an earlier page: a page break cuts this fragment's top edge, which has no
+    /// rounded corners (<see cref="BoxStyle.BorderRadius"/>; case <c>br-break</c>). Set by block layout.</summary>
+    public bool ContinuesBefore { get; init; }
+
+    /// <summary>True when the box goes on on a later page: a page break cuts this fragment's bottom edge, which has no
+    /// rounded corners (case <c>br-break</c>). Set by block layout.</summary>
+    public bool ContinuesAfter { get; init; }
+}
 
 /// <summary>The fragment of an <see cref="ImageNode"/>: the image scaled to its used size.</summary>
 /// <param name="Image">The document node.</param>

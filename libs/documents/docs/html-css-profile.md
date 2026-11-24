@@ -23,6 +23,8 @@ names nothing.
 | --- | --- | --- | --- | --- |
 | `background-color` | no | `rgba(0, 0, 0, 0)` | `<color>` | CSS Backgrounds 3 §2.1 |
 | `border-bottom-color` | no | `currentcolor` | `<color>` | CSS Backgrounds 3 §3.1 |
+| `border-bottom-left-radius` | no | `0pt` | `<length-percentage [0,∞]> (one value)` | CSS Backgrounds 3 §5.1 |
+| `border-bottom-right-radius` | no | `0pt` | `<length-percentage [0,∞]> (one value)` | CSS Backgrounds 3 §5.1 |
 | `border-bottom-style` | no | `none` | `none \| hidden \| solid \| inset \| outset` | CSS Backgrounds 3 §3.2 |
 | `border-bottom-width` | no | `2.25pt` | `<length [0,∞]> \| thin \| medium \| thick` | CSS Backgrounds 3 §3.3 |
 | `border-collapse` | yes | `separate` | `separate \| collapse` | CSS 2.1 §17.6 |
@@ -34,6 +36,8 @@ names nothing.
 | `border-right-width` | no | `2.25pt` | `<length [0,∞]> \| thin \| medium \| thick` | CSS Backgrounds 3 §3.3 |
 | `border-spacing` | yes | `0pt 0pt` | `<length [0,∞]>{1,2}` | CSS 2.1 §17.6.1 |
 | `border-top-color` | no | `currentcolor` | `<color>` | CSS Backgrounds 3 §3.1 |
+| `border-top-left-radius` | no | `0pt` | `<length-percentage [0,∞]> (one value)` | CSS Backgrounds 3 §5.1 |
+| `border-top-right-radius` | no | `0pt` | `<length-percentage [0,∞]> (one value)` | CSS Backgrounds 3 §5.1 |
 | `border-top-style` | no | `none` | `none \| hidden \| solid \| inset \| outset` | CSS Backgrounds 3 §3.2 |
 | `border-top-width` | no | `2.25pt` | `<length [0,∞]> \| thin \| medium \| thick` | CSS Backgrounds 3 §3.3 |
 | `box-decoration-break` | no | `slice` | `slice \| clone` | CSS Fragmentation 3 §5.4 |
@@ -185,10 +189,6 @@ a percentage is the same value and accepted too: `background-position-x: 0` and 
 | `background-position-y` | `0%` | `0%` | CSS Backgrounds 4 §2.6 |
 | `background-repeat` | `repeat` | `repeat` | CSS Backgrounds 3 §2.3 |
 | `background-size` | `auto` | `auto` | CSS Backgrounds 3 §2.9 |
-| `border-bottom-left-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
-| `border-bottom-right-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
-| `border-top-left-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
-| `border-top-right-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
 | `bottom` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
 | `box-shadow` | `none` | `none` | CSS Backgrounds 3 §6.1 |
 | `clear` | `none` | `none` | CSS 2.1 §9.5.2 |

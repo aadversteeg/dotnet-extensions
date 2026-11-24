@@ -202,6 +202,11 @@ public static class DocumentErrorCodes
             /// (not measured). Metadata: Value, Property.</summary>
             public static readonly ErrorCode BorderStyle = _ / "BorderStyle";
 
+            /// <summary>Rounded corners (<c>BoxStyle.BorderRadius</c>) where this version does not draw them: on a table or a
+            /// part of a table, a page-margin box or a list item, beside border sides that are not all solid of one width and
+            /// one colour, or on a box with a border that a page break cuts. Metadata: Value, Property.</summary>
+            public static readonly ErrorCode BorderRadius = _ / "BorderRadius";
+
             /// <summary>An inline group with a box of its own (<c>InlineGroup.Box</c>) where this version does not draw it: around an
             /// image that lies inside a link too, broken over two lines at a soft hyphen, alone with
             /// a vertical edge only, or reaching above the page area of a later page. Metadata: Value, Property.</summary>
