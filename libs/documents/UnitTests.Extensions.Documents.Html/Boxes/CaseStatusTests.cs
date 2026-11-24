@@ -1,5 +1,6 @@
 using System.IO;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.Html;
 using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
 using Xunit.Abstractions;
@@ -86,6 +87,20 @@ public class CaseStatusTests(ITestOutputHelper output)
         HtmlCases.Refusal(refused).Should().Be("refused Documents.Input.Unsupported.InlineBox box: box at 3:14");
         HtmlCases.Refusal(sibling).Should().StartWith("failed Documents.Input.Unsupported.AtomicInline ");
         HtmlCases.Refusal(placeless).Should().StartWith("failed Documents.Input.Unsupported.InlineBox ").And.EndWith("a refusal without its line and column");
+    }
+
+    /// <summary>The HTML front-end's own refusal of an inline box (an image inside both a link and a box) is a refusal at the
+    /// element, as the layout refusal of an inline box is; the same code without its place still fails the case.</summary>
+    [Fact]
+    public void The_front_end_s_refusal_of_an_inline_box_reads_refused_and_without_its_place_fails()
+    {
+        var at = new SourceLocation("case.html", 2) { Column = 30 };
+        var refused = new Error(HtmlStyleErrorCodes.Unsupported.InlineBox, "An <img> inside a link and inside an element with a background is not drawn in this version.")
+            .With(ErrorMetadataKeys.Property, "img").With(ErrorMetadataKeys.Value, "img").WithSource(at);
+        var placeless = new Error(HtmlStyleErrorCodes.Unsupported.InlineBox, "An <img> inside a link and a box is not drawn in this version.");
+
+        HtmlCases.Refusal(refused).Should().Be("refused Documents.Html.Unsupported.InlineBox img: img at 2:30");
+        HtmlCases.Refusal(placeless).Should().StartWith("failed Documents.Html.Unsupported.InlineBox ").And.EndWith("a refusal without its line and column");
     }
 
     [Theory]

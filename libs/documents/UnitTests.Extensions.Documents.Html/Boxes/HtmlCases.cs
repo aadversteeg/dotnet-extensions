@@ -109,7 +109,8 @@ internal static class HtmlCases
     /// and the source line of the box, where Chromium prints the content past the page end) or that is wider than its
     /// page-margin box (<see cref="LayoutErrorCodes.MarginBoxOverflow"/>, at the margin box's <c>content</c> declaration,
     /// where Chromium draws it over its box), and an inline box layout does not draw where it stands
-    /// (<see cref="DocumentErrorCodes.Input.Unsupported.InlineBox"/>, at the line and column of the element that made it).
+    /// (<see cref="DocumentErrorCodes.Input.Unsupported.InlineBox"/>, at the line and column of the element that made it;
+    /// the front-end's own <see cref="HtmlStyleErrorCodes.Unsupported.InlineBox"/> is in the list as one of its codes).
     /// Any other error, also another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
@@ -137,6 +138,7 @@ internal static class HtmlCases
         HtmlStyleErrorCodes.Unsupported.Link.ToString(),
         HtmlStyleErrorCodes.Unsupported.Language.ToString(),
         HtmlStyleErrorCodes.Unsupported.Metadata.ToString(),
+        HtmlStyleErrorCodes.Unsupported.InlineBox.ToString(),
         CssErrorCodes.Unsupported.PageRule.ToString(),
         LayoutErrorCodes.DoesNotFit.ToString(),
         LayoutErrorCodes.MarginBoxOverflow.ToString(),
