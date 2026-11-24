@@ -280,10 +280,13 @@ internal static class LineBoxes
     /// the groups do. THE RULE FOR A LINK'S AREA (as Chromium 159's print writes a link: one rectangle per line part of
     /// it): in the inline direction from the start of the group's first piece on the line
     /// to the end of its last, so a space removed at the line's end is outside it and a space between two of its pieces
-    /// inside it; in the block direction from the ascent of the group's own font above the line's baseline to its
+    /// inside it; in the block direction from the ascent of the group's own font above the group's own baseline to its
     /// descent below it, at the group's font size and under the profile's font metric rounding, whatever the sizes of the
-    /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller). The edges
-    /// are exact, not rounded to whole pixels as Chromium writes them: they are not printed.
+    /// runs inside it (Chromium: a 14 pt run inside a link of 10.5 pt text does not make its rectangle taller). The group's
+    /// own baseline is the line's, raised or lowered by the group's baseline shift: a link inside a <c>sup</c> or a
+    /// <c>sub</c>, or itself raised, has its area around its shifted text, as Chromium writes its rectangle (cases
+    /// <c>va-link</c>, <c>va-sub</c>, <c>va-decorated</c>), and so has the border box of an inline box on a raised element
+    /// (<c>va-box</c>). The edges are exact, not rounded to whole pixels as Chromium writes them: they are not printed.
     /// <para>THE RULE FOR AN INLINE BOX OVER LINES (<c>box-decoration-break: slice</c>, CSS Fragmentation 3 §5.4): a group with a
     /// box has a part on each line it lies on, its border box from its first to its last piece there; the start edge (left
     /// margin, border and padding) lies in the first part only and the end edge in the last only, each where the line
@@ -337,13 +340,18 @@ internal static class LineBoxes
         public void Edge(Edge edge) =>
             open[^1] = edge.Side == InlineBoxEdge.Start ? open[^1] with { Start = true } : open[^1] with { End = true };
 
-        /// <summary>The top of a group's border box below the line's top: its font's ascent above the baseline, then its top
-        /// padding and border.</summary>
+        /// <summary>The group's own baseline below the line's top: the line's baseline, raised or lowered by the group's
+        /// <see cref="TextStyle.BaselineShift"/> (THE RULE FOR A SHIFTED RUN ON THE LINE). A group on a raised or lowered
+        /// element, or inside one, has the element's shift in its style, as its text has.</summary>
+        private double BaselineOf(Group group) => baseline - group.Node.Style.BaselineShift.Points;
+
+        /// <summary>The top of a group's border box below the line's top: its font's ascent above its own baseline, then its
+        /// top padding and border.</summary>
         private double BorderTop(Group group)
         {
             var (style, box) = (group.Node.Style, group.Node.Box!);
             var extent = InlineExtent.Of(group.Font, style.FontSize.Points, style.LineHeight, rounding);
-            return baseline - extent.Ascent - box.Padding.Top.Points - box.Border.Top.Width.Points;
+            return BaselineOf(group) - extent.Ascent - box.Padding.Top.Points - box.Border.Top.Width.Points;
         }
 
         /// <summary>Closes every part still open after the last piece.</summary>
@@ -361,7 +369,7 @@ internal static class LineBoxes
                 open.RemoveAt(open.Count - 1);
                 var style = group.Node.Style;
                 var extent = InlineExtent.Of(group.Font, style.FontSize.Points, style.LineHeight, rounding);
-                parts[part] = new LineGroupPart(group.Node, new Rect(new Point(left, baseline - extent.Ascent), new Size(right - left, extent.Ascent + extent.Descent)), first, lastEnd - first)
+                parts[part] = new LineGroupPart(group.Node, new Rect(new Point(left, BaselineOf(group) - extent.Ascent), new Size(right - left, extent.Ascent + extent.Descent)), first, lastEnd - first)
                 {
                     Box = group.Node.Box is { } box ? BorderBox(group, box, left, right, extent) : null,
                     HoldsStart = start,
@@ -382,7 +390,7 @@ internal static class LineBoxes
         private Rect BorderBox(Group group, InlineBoxStyle box, double left, double right, InlineExtent extent)
         {
             var top = BorderTop(group);
-            var bottom = baseline + extent.Descent + box.Padding.Bottom.Points + box.Border.Bottom.Width.Points;
+            var bottom = BaselineOf(group) + extent.Descent + box.Padding.Bottom.Points + box.Border.Bottom.Width.Points;
             return new Rect(new Point(left, top), new Size(right - left, bottom - top));
         }
     }

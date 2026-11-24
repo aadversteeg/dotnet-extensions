@@ -1,0 +1,24 @@
+page 1 300.000 300.000
+word 1 55.043 60.115 21.000 8.745 1 #0000ee Lato-Regular
+word 1 100.348 105.420 21.000 8.745 2 #0000ee Lato-Regular
+word 1 12.000 34.995 25.242 10.500 Note #000000 Lato-Regular
+word 1 37.683 55.039 25.242 10.500 one #000000 Lato-Regular
+word 1 62.805 79.763 25.242 10.500 and #000000 Lato-Regular
+word 1 82.451 100.343 25.242 10.500 two #000000 Lato-Regular
+word 1 108.110 127.871 25.242 10.500 end. #000000 Lato-Regular
+word 1 12.000 34.349 44.250 10.500 Plain #000000 Lato-Regular
+word 1 37.043 53.234 44.250 10.500 link #0000ee Lato-Regular
+word 1 55.922 74.134 44.250 10.500 text #0000ee Lato-Regular
+word 1 76.821 99.852 44.250 10.500 here. #000000 Lato-Regular
+word 1 39.469 62.322 61.500 8.745 raised #0000ee Lato-Regular
+word 1 64.559 78.041 61.500 8.745 link #0000ee Lato-Regular
+word 1 12.000 36.780 65.742 10.500 Wide #000000 Lato-Regular
+word 1 80.735 100.496 65.742 10.500 end. #000000 Lato-Regular
+word 1 12.000 54.058 138.000 10.500 Footnote #000000 Lato-Regular
+word 1 56.746 74.102 138.000 10.500 one #000000 Lato-Regular
+word 1 76.790 83.856 138.000 10.500 is #000000 Lato-Regular
+word 1 86.544 109.576 138.000 10.500 here. #000000 Lato-Regular
+rect 1 55.043 21.750 60.117 22.500 #0000ee
+rect 1 100.348 21.750 105.422 22.500 #0000ee
+rect 1 37.043 45.000 74.133 45.750 #0000ee
+rect 1 39.469 62.250 78.047 63.000 #0000ee

@@ -18,7 +18,7 @@ public class MeasuredReferenceFilesTests
 
     /// <summary>The cases whose print has link annotations, so that the read-back writes them (<c>links.py</c>,
     /// <c>&lt;case&gt;.links.txt</c>).</summary>
-    private static readonly string[] LinkCases = ["dw-half", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "va-decorated"];
+    private static readonly string[] LinkCases = ["dw-half", "lk-cell", "lk-fragment", "lk-header-row", "lk-image", "lk-javascript", "lk-larger-run", "lk-later-heading", "lk-mail-tel", "lk-one-line", "lk-page-break", "lk-relative", "lk-same-page", "lk-top", "lk-two-lines", "va-decorated", "va-link", "va-sub"];
 
     /// <summary>Every measured file and its number of lines (a line ends with a line feed).</summary>
     private static readonly Dictionary<string, int> Lines = new()
@@ -3003,6 +3003,10 @@ public class MeasuredReferenceFilesTests
         ["twd-table-wide.lines.txt"] = 14,
         ["twd-table-wide.print.txt"] = 66,
         ["twd-table-wide.words.txt"] = 27,
+        ["va-box.boxes.txt"] = 1,
+        ["va-box.lines.txt"] = 7,
+        ["va-box.print.txt"] = 46,
+        ["va-box.words.txt"] = 30,
         ["va-decorated.boxes.txt"] = 1,
         ["va-decorated.lines.txt"] = 3,
         ["va-decorated.links.txt"] = 1,
@@ -3016,6 +3020,11 @@ public class MeasuredReferenceFilesTests
         ["va-length.lines.txt"] = 0,
         ["va-length.print.txt"] = 45,
         ["va-length.words.txt"] = 44,
+        ["va-link.boxes.txt"] = 1,
+        ["va-link.lines.txt"] = 4,
+        ["va-link.links.txt"] = 4,
+        ["va-link.print.txt"] = 24,
+        ["va-link.words.txt"] = 19,
         ["va-nested.boxes.txt"] = 1,
         ["va-nested.lines.txt"] = 5,
         ["va-nested.print.txt"] = 47,
@@ -3028,6 +3037,11 @@ public class MeasuredReferenceFilesTests
         ["va-sizes.lines.txt"] = 0,
         ["va-sizes.print.txt"] = 43,
         ["va-sizes.words.txt"] = 42,
+        ["va-sub.boxes.txt"] = 1,
+        ["va-sub.lines.txt"] = 4,
+        ["va-sub.links.txt"] = 2,
+        ["va-sub.print.txt"] = 20,
+        ["va-sub.words.txt"] = 15,
         ["versions.txt"] = 5,
         ["wg-cell-gap.boxes.txt"] = 14,
         ["wg-cell-gap.lines.txt"] = 49,
@@ -3152,7 +3166,7 @@ public class MeasuredReferenceFilesTests
         var cases = Directory.GetFiles(Path.Combine(Chromium(), "cases"), "*.html").Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal).ToList();
         var measured = Directory.GetFiles(Path.Combine(Chromium(), "measured")).Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
 
-        cases.Should().HaveCount(771);
+        cases.Should().HaveCount(774);
         measured.Should().Equal(cases.SelectMany(name => new[] { "boxes", "lines", "print", "words" }.Select(kind => $"{name}.{kind}.txt")).Append("versions.txt")
             .Append("a2-row-end-family.tsv").Concat(InkCases.Select(name => $"{name}.ink.txt")).Concat(LinkCases.Select(name => $"{name}.links.txt")).Order(StringComparer.Ordinal),
             "four files per case, the versions, Chromium's words of the generated a2-row-end family (RowEndTests), the gaps of the cases whose print skips ink, and the link annotations of the cases whose print has any");

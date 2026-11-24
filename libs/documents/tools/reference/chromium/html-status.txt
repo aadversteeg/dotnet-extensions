@@ -735,12 +735,15 @@ twd-fraction equal
 twd-sum equal
 twd-table-narrow listed A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow: page 1 reads 'one text with more words next 1 one text with more words next 2 one text with more words next 3 one text with more words after', Chromium 'one text with more words next 1 one text with more words next 2 one text with more words next 3 onetext with more words after' (print.txt)
 twd-table-wide equal
-va-decorated open link 1 on page 1: y0 45.082, Chromium 40.5 (links.txt)
+va-box equal
+va-decorated equal
 va-elements equal
 va-length equal
+va-link equal
 va-nested refused Documents.Html.Unsupported.Value vertical-align: super at 4:31
 va-shift equal
 va-sizes equal
+va-sub equal
 wg-cell-gap equal
 wg-spacing-gap equal
 widths refused Documents.Css.Unsupported.Property grid-template-columns: 1fr 2fr 1fr at 8:48
