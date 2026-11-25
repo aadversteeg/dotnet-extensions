@@ -247,13 +247,17 @@ front-end lays it out as Chromium prints it.
 | `timesheet-one-page` | the samples' timesheet (`samples/Ave.Extensions.Documents.Samples`, `Timesheet/Timesheet.cs`) as HTML, in Dutch, with the edge-case data set (`data/sample-edge.json`) | 1 page |
 | `timesheet-normal` | the same with the normal month (`data/sample-normal.json`), the data set of the samples' golden pictures (`UnitTests.Extensions.Documents.Samples/Golden/timesheet-normal.nl.page*.png`), so the two can be laid side by side | 2 pages |
 | `timesheet-pages` | the same with the long month (`data/sample-long.json`): the header row repeats, entries with a description stay together | 5 pages |
-| `invoice` | the invoice of the HtmlStyles sample (`samples/Ave.Extensions.Documents.Samples.HtmlStyles/data/invoice.html`) as an author keeps it for print: `invoice.html` with `invoice.css` and `invoice-theme.css` | 1 page |
+| `invoice` | the invoice of the HtmlStyles sample (`samples/Ave.Extensions.Documents.Samples.HtmlStyles/data/invoice.html`) as an author keeps it for print, written by the samples app from its `data/invoice.json`: `invoice.html` with `invoice.css` and `invoice-theme.css` | 1 page |
 
-The timesheet HTML is made from the samples' synthetic data by `timesheet-html.py` (in this folder; `python3
-timesheet-html.py` writes the three files): the engine takes finished HTML, and filling a template with data is the
-caller's job, so the script is that caller. It drops what Lato cannot show as the sample does (`FontCoverage`). The
-documents load their fonts with `@font-face` from `assets/fonts/lato` and the logo from the samples' `assets/`, by
-paths relative to this folder.
+The four documents are written by the samples app (`samples/Ave.Extensions.Documents.Samples`) from its synthetic
+data: the timesheets by `Html/TimesheetHtml.cs` from `data/sample-*.json`, the invoice by `Html/InvoiceHtml.cs` from
+`data/invoice.json`. The engine takes finished HTML, and filling a template with data is the caller's job, so the
+sample is that caller; `HtmlSampleTests` (`UnitTests.Extensions.Documents.Samples`) checks that what it writes is these
+files byte for byte. To change a document, change its template or data, run the samples app, copy
+`html-timesheet-{edge,normal,long}.nl.html` and `html-invoice.html` here as `timesheet-one-page.html`,
+`timesheet-normal.html`, `timesheet-pages.html` and `invoice.html`, and measure again. The timesheet drops what Lato
+cannot show as the code sample does (`FontCoverage`). The documents load their fonts with `@font-face` from
+`assets/fonts/lato` and the logo from the samples' `assets/`, by paths relative to this folder.
 
 The timesheet's header is page furniture, in the `@page` margin boxes of every page, as in the sample. A margin box
 holds no element, so the logo is generated content, and generated content shows an image at its own size (the

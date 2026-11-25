@@ -1,0 +1,10 @@
+{
+  "number": "2026-042",
+  "language": "en",
+  "note": "Payable within 30 days.",
+  "lines": [
+    { "item": "Consulting, November", "amount": 4200.00 },
+    { "item": "Travel", "amount": 130.50 }
+  ],
+  "closing": "Thank you for your order."
+}

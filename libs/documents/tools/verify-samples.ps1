@@ -6,15 +6,17 @@
     1. Publishes the samples app (Release, framework-dependent, no native app host) to out/publish.
     2. Scans the publish folder: every .dll must be an IL-only managed assembly; no other binaries may exist.
     3. Runs the samples app, which writes the sample PDFs (letter, long text, and the timesheet for three data sets in
-       Dutch and English) and their text serialisations to out/samples.
+       Dutch and English; then the HTML samples: the timesheet from HTML for the three data sets in Dutch and an
+       invoice, named html-*) and their text serialisations to out/samples.
     4. In a throw-away container of the reference tools image: qpdf --check on every PDF, pdftotext for the text, pdffonts for the
        embedded subset fonts, pdfimages -list for the embedded images (and their soft masks), every embedded font
        program extracted (mutool extract) and opened with fontTools, and PNG renderings with two independent renderers
        (poppler's pdftoppm and MuPDF's mutool) to out/samples/png.
     5. veraPDF 1.30.4 (Docker image pinned by digest) on every sample for PDF/A-3b, PDF/A-3a and PDF/UA-1. The gate:
        PDF/A-3b must pass for every sample; a failing PDF/A-3a or PDF/UA-1 rule is listed rule by rule and also fails
-       the script, because the samples claim all three. Then qpdf extracts every timesheet's XML attachment, and the
-       bytes are compared with the file the samples app wrote next to the PDF.
+       the script, because the samples claim all three. Then qpdf extracts the XML attachment of every timesheet-*.pdf
+       (the code-built ones; the html-* samples carry no attachment), and the bytes are compared with the file the
+       samples app wrote next to the PDF.
     6. Only with -TypstPdfs: side-by-side PNGs of every timesheet page, ours on the left and the same page of the Typst
        version of the report on the right, both rendered by poppler at 100 dpi, to out/samples/sbs.
     Tools run in Docker only; nothing here is part of the engine. Needs PowerShell 7, the .NET 10 SDK, Docker with Linux
@@ -65,7 +67,7 @@ dotnet publish (Join-Path $root 'samples/Ave.Extensions.Documents.Samples') -c R
 if ($LASTEXITCODE -ne 0) { throw 'publish failed' }
 
 Write-Host '== 2. scan the publish folder for native code'
-$allowedData = '.json', '.pdb', '.xml', '.ttf', '.txt', '.png'
+$allowedData = '.json', '.pdb', '.xml', '.ttf', '.txt', '.png', '.css'
 $problems = @()
 foreach ($file in Get-ChildItem $publish -Recurse -File) {
     if ($file.Extension -eq '.dll') {

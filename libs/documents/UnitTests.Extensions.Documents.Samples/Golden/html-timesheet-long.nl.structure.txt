@@ -1,0 +1,865 @@
+Document
+  Div
+    Div
+      Table
+        TBody
+          TR
+            TD
+              P "Bakkerij De Gouden Korenaar B.V."
+              P "2026-11-03"
+            TD
+              P "Platformteam Q3"
+              P "Periode: 2026-09-01 - 2026-09-30"
+      Table
+        THead
+          TR
+            TH Scope=Column "Uitgevoerd op"
+            TH Scope=Column "Taak"
+            TH Scope=Column "Titel"
+            TH Scope=Column "Duur (uur)"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-01"
+            TD "Ontwikkeling"
+            TD "Ondersteuning gebruikers – vragen over export"
+            TD RowSpan=2 "8,16"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-01"
+            TD "Documentatie"
+            TD "API endpoint voor weekoverzicht"
+            TD RowSpan=2 "12,94"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-01"
+            TD "Documentatie"
+            TD "Overleg met Jansen & Zn. over factuurflow"
+            TD RowSpan=2 "8,95"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD "2026-09-01"
+            TD "Overleg"
+            TD "Documentatie *deploy* procedure"
+            TD "12,55"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-01"
+            TD "Ontwikkeling"
+            TD "Documentatie *deploy* procedure"
+            TD RowSpan=2 "11,97"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD "2026-09-02"
+            TD "Overleg"
+            TD "Datamodel facturatie (fase 2)"
+            TD "4,79"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-02"
+            TD "Overleg"
+            TD "API endpoint voor weekoverzicht"
+            TD RowSpan=2 "11,69"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-02"
+            TD "Ontwikkeling"
+            TD "Code review PR #128 & #131"
+            TD RowSpan=2 "6,14"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD "2026-09-02"
+            TD "Review"
+            TD "API endpoint voor weekoverzicht"
+            TD "6,01"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-02"
+            TD "Documentatie"
+            TD "Documentatie *deploy* procedure"
+            TD RowSpan=2 "11,11"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD "2026-09-02"
+            TD "Beheer"
+            TD "API endpoint voor weekoverzicht"
+            TD "14,09"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-02"
+            TD "Review"
+            TD "Logging naar OTLP-collector"
+            TD RowSpan=2 "5,97"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD "2026-09-02"
+            TD "Review"
+            TD "Documentatie *deploy* procedure"
+            TD "13,64"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-03"
+            TD "Analyse"
+            TD "Performance-analyse rapportage"
+            TD RowSpan=2 "11,16"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-03"
+            TD "Ontwikkeling"
+            TD "Performance-analyse rapportage"
+            TD RowSpan=2 "9,24"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD "2026-09-03"
+            TD "Ontwikkeling"
+            TD "Migratie naar Aspire 13.6"
+            TD "12,70"
+        TBody
+          TR
+            TD "2026-09-03"
+            TD "Review"
+            TD "API endpoint voor weekoverzicht"
+            TD "10,23"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-03"
+            TD "Documentatie"
+            TD "Security review: Entra ID-rollen"
+            TD RowSpan=2 "5,96"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD "2026-09-03"
+            TD "Ontwikkeling"
+            TD "Overleg met Jansen & Zn. over factuurflow"
+            TD "13,30"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-03"
+            TD "Overleg"
+            TD "Code review PR #128 & #131"
+            TD RowSpan=2 "6,44"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-03"
+            TD "Documentatie"
+            TD "Datamodel facturatie (fase 2)"
+            TD RowSpan=2 "10,40"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-04"
+            TD "Overleg"
+            TD "Code review PR #128 & #131"
+            TD RowSpan=2 "10,96"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-04"
+            TD "Analyse"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD RowSpan=2 "13,11"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD "2026-09-04"
+            TD "Documentatie"
+            TD "Prijsberekening 50% korting = $x? (onderzoek)"
+            TD "8,96"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-07"
+            TD "Ontwikkeling"
+            TD "Logging naar OTLP-collector"
+            TD RowSpan=2 "10,23"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-07"
+            TD "Review"
+            TD "Migratie naar Aspire 13.6"
+            TD RowSpan=2 "12,18"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-08"
+            TD "Analyse"
+            TD "Logging naar OTLP-collector"
+            TD RowSpan=2 "6,90"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD "2026-09-08"
+            TD "Review"
+            TD "Azure Container Apps scaling"
+            TD "5,90"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-08"
+            TD "Beheer"
+            TD "Refinement sprint 42"
+            TD RowSpan=2 "10,72"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-08"
+            TD "Overleg"
+            TD "Security review: Entra ID-rollen"
+            TD RowSpan=2 "13,77"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD "2026-09-08"
+            TD "Review"
+            TD "Logging naar OTLP-collector"
+            TD "7,35"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-08"
+            TD "Ontwikkeling"
+            TD "Overleg met Jansen & Zn. over factuurflow"
+            TD RowSpan=2 "8,84"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-08"
+            TD "Documentatie"
+            TD "Documentatie *deploy* procedure"
+            TD RowSpan=2 "6,29"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-09"
+            TD "Review"
+            TD "Back-up en restore test"
+            TD RowSpan=2 "8,80"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD "2026-09-09"
+            TD "Review"
+            TD "Documentatie *deploy* procedure"
+            TD "7,93"
+        TBody
+          TR
+            TD "2026-09-09"
+            TD "Documentatie"
+            TD "Refinement sprint 42"
+            TD "4,88"
+        TBody
+          TR
+            TD "2026-09-09"
+            TD "Review"
+            TD "Azure Container Apps scaling"
+            TD "13,34"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-09"
+            TD "Review"
+            TD "Performance-analyse rapportage"
+            TD RowSpan=2 "10,19"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-09"
+            TD "Overleg"
+            TD "Overleg met Jansen & Zn. over factuurflow"
+            TD RowSpan=2 "4,96"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-09"
+            TD "Documentatie"
+            TD "Ondersteuning gebruikers – vragen over export"
+            TD RowSpan=2 "9,10"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-09"
+            TD "Ontwikkeling"
+            TD "Prijsberekening 50% korting = $x? (onderzoek)"
+            TD RowSpan=2 "9,45"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-09"
+            TD "Review"
+            TD "Azure Container Apps scaling"
+            TD RowSpan=2 "8,18"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-09"
+            TD "Beheer"
+            TD "Refinement sprint 42"
+            TD RowSpan=2 "13,12"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-10"
+            TD "Overleg"
+            TD "Documentatie *deploy* procedure"
+            TD RowSpan=2 "13,06"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD "2026-09-10"
+            TD "Ontwikkeling"
+            TD "Back-up en restore test"
+            TD "7,81"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-10"
+            TD "Ontwikkeling"
+            TD "Security review: Entra ID-rollen"
+            TD RowSpan=2 "5,06"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-10"
+            TD "Beheer"
+            TD "Migratie naar Aspire 13.6"
+            TD RowSpan=2 "7,77"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-10"
+            TD "Overleg"
+            TD "Prijsberekening 50% korting = $x? (onderzoek)"
+            TD RowSpan=2 "14,09"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-10"
+            TD "Analyse"
+            TD "Datamodel facturatie (fase 2)"
+            TD RowSpan=2 "4,70"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-10"
+            TD "Review"
+            TD "Azure Container Apps scaling"
+            TD RowSpan=2 "11,15"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-10"
+            TD "Analyse"
+            TD "Refinement sprint 42"
+            TD RowSpan=2 "5,19"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-10"
+            TD "Ontwikkeling"
+            TD "Documentatie *deploy* procedure"
+            TD RowSpan=2 "9,29"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD "2026-09-11"
+            TD "Review"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD "13,11"
+        TBody
+          TR
+            TD "2026-09-11"
+            TD "Analyse"
+            TD "Code review PR #128 & #131"
+            TD "4,59"
+        TBody
+          TR
+            TD "2026-09-14"
+            TD "Analyse"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD "4,92"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-14"
+            TD "Analyse"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD RowSpan=2 "13,54"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-14"
+            TD "Beheer"
+            TD "Migratie naar Aspire 13.6"
+            TD RowSpan=2 "8,43"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-14"
+            TD "Analyse"
+            TD "Back-up en restore test"
+            TD RowSpan=2 "8,58"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-14"
+            TD "Overleg"
+            TD "Overleg met Jansen & Zn. over factuurflow"
+            TD RowSpan=2 "5,29"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD "2026-09-14"
+            TD "Ontwikkeling"
+            TD "Performance-analyse rapportage"
+            TD "4,94"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-15"
+            TD "Review"
+            TD "Performance-analyse rapportage"
+            TD RowSpan=2 "5,48"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD "2026-09-15"
+            TD "Ontwikkeling"
+            TD "Refinement sprint 42"
+            TD "4,61"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-15"
+            TD "Overleg"
+            TD "Azure Container Apps scaling"
+            TD RowSpan=2 "9,34"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-15"
+            TD "Ontwikkeling"
+            TD "Refinement sprint 42"
+            TD RowSpan=2 "13,09"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-16"
+            TD "Documentatie"
+            TD "Prijsberekening 50% korting = $x? (onderzoek)"
+            TD RowSpan=2 "11,34"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-17"
+            TD "Overleg"
+            TD "Logging naar OTLP-collector"
+            TD RowSpan=2 "6,75"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-17"
+            TD "Documentatie"
+            TD "Security review: Entra ID-rollen"
+            TD RowSpan=2 "7,59"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-17"
+            TD "Ontwikkeling"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD RowSpan=2 "12,42"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-17"
+            TD "Beheer"
+            TD "Logging naar OTLP-collector"
+            TD RowSpan=2 "12,56"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD "2026-09-17"
+            TD "Beheer"
+            TD "Prijsberekening 50% korting = $x? (onderzoek)"
+            TD "8,32"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-17"
+            TD "Review"
+            TD "Datamodel facturatie (fase 2)"
+            TD RowSpan=2 "13,73"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-17"
+            TD "Overleg"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD RowSpan=2 "6,70"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD "2026-09-17"
+            TD "Ontwikkeling"
+            TD "Refinement sprint 42"
+            TD "6,44"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-17"
+            TD "Analyse"
+            TD "Documentatie *deploy* procedure"
+            TD RowSpan=2 "5,62"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-17"
+            TD "Analyse"
+            TD "Prijsberekening 50% korting = $x? (onderzoek)"
+            TD RowSpan=2 "8,29"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-18"
+            TD "Analyse"
+            TD "API endpoint voor weekoverzicht"
+            TD RowSpan=2 "7,98"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-18"
+            TD "Beheer"
+            TD "Security review: Entra ID-rollen"
+            TD RowSpan=2 "7,86"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-21"
+            TD "Overleg"
+            TD "API endpoint voor weekoverzicht"
+            TD RowSpan=2 "7,52"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD "2026-09-21"
+            TD "Review"
+            TD "Documentatie *deploy* procedure"
+            TD "9,80"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-21"
+            TD "Overleg"
+            TD "Ondersteuning gebruikers – vragen over export"
+            TD RowSpan=2 "11,61"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD "2026-09-22"
+            TD "Documentatie"
+            TD "Migratie naar Aspire 13.6"
+            TD "6,77"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-22"
+            TD "Overleg"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD RowSpan=2 "6,11"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD "2026-09-22"
+            TD "Ontwikkeling"
+            TD "Performance-analyse rapportage"
+            TD "7,51"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-23"
+            TD "Beheer"
+            TD "Logging naar OTLP-collector"
+            TD RowSpan=2 "13,73"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-23"
+            TD "Documentatie"
+            TD "Back-up en restore test"
+            TD RowSpan=2 "13,45"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-23"
+            TD "Documentatie"
+            TD "Migratie naar Aspire 13.6"
+            TD RowSpan=2 "7,14"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-23"
+            TD "Analyse"
+            TD "Overleg met Jansen & Zn. over factuurflow"
+            TD RowSpan=2 "5,65"
+          TR
+            TD ColSpan=2 "Café-overleg met Zoë en René over de planning voor Q1 — besluit: €-bedragen altijd met twee decimalen."
+        TBody
+          TR
+            TD "2026-09-23"
+            TD "Ontwikkeling"
+            TD "Logging naar OTLP-collector"
+            TD "8,20"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-23"
+            TD "Ontwikkeling"
+            TD "Back-up en restore test"
+            TD RowSpan=2 "8,55"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-23"
+            TD "Analyse"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD RowSpan=2 "13,75"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD "2026-09-23"
+            TD "Analyse"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD "6,49"
+        TBody
+          TR
+            TD "2026-09-23"
+            TD "Overleg"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD "6,52"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-23"
+            TD "Analyse"
+            TD "Security review: Entra ID-rollen"
+            TD RowSpan=2 "9,90"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-23"
+            TD "Overleg"
+            TD "Code review PR #128 & #131"
+            TD RowSpan=2 "4,68"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD "2026-09-23"
+            TD "Review"
+            TD "Prijsberekening 50% korting = $x? (onderzoek)"
+            TD "12,27"
+        TBody
+          TR
+            TD "2026-09-24"
+            TD "Ontwikkeling"
+            TD "Documentatie *deploy* procedure"
+            TD "5,72"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-24"
+            TD "Beheer"
+            TD "Datamodel facturatie (fase 2)"
+            TD RowSpan=2 "9,65"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-25"
+            TD "Overleg"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD RowSpan=2 "14,08"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-25"
+            TD "Review"
+            TD "Overleg met Jansen & Zn. over factuurflow"
+            TD RowSpan=2 "11,09"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD "2026-09-25"
+            TD "Ontwikkeling"
+            TD "Datamodel facturatie (fase 2)"
+            TD "5,66"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-28"
+            TD "Overleg"
+            TD "Azure Container Apps scaling"
+            TD RowSpan=2 "9,93"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD "2026-09-28"
+            TD "Ontwikkeling"
+            TD "Azure Container Apps scaling"
+            TD "7,71"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-28"
+            TD "Beheer"
+            TD "Overleg met Jansen & Zn. over factuurflow"
+            TD RowSpan=2 "12,83"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-29"
+            TD "Ontwikkeling"
+            TD "Refinement sprint 42"
+            TD RowSpan=2 "5,19"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-30"
+            TD "Review"
+            TD "Performance-analyse rapportage"
+            TD RowSpan=2 "6,79"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-30"
+            TD "Documentatie"
+            TD "API endpoint voor weekoverzicht"
+            TD RowSpan=2 "9,13"
+          TR
+            TD ColSpan=2 "Tekens die in Typst-markup iets betekenen: #let x = 1; *vet*; _cursief_; $a+b$; <label> @ref [haakjes] \ backslash."
+        TBody
+          TR
+            TD "2026-09-30"
+            TD "Overleg"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD "11,50"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-30"
+            TD "Documentatie"
+            TD "Security review: Entra ID-rollen"
+            TD RowSpan=2 "13,36"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-30"
+            TD "Beheer"
+            TD "Performance-analyse rapportage"
+            TD RowSpan=2 "8,38"
+          TR
+            TD ColSpan=2 "Inclusief unit tests en een integratietest tegen PostgreSQL. Twee randgevallen gevonden rond zomertijd."
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-30"
+            TD "Overleg"
+            TD "Code review PR #128 & #131"
+            TD RowSpan=2 "12,99"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TD "2026-09-30"
+            TD "Documentatie"
+            TD "Security review: Entra ID-rollen"
+            TD "5,75"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-30"
+            TD "Beheer"
+            TD "Migratie naar Aspire 13.6"
+            TD RowSpan=2 "10,32"
+          TR
+            TD ColSpan=2 "Lange omschrijving om het afbreken van tekst te testen: de rapportage moet over meerdere regels netjes doorlopenzonder dat de kolom voor de duur in de knel komt, ook als iemand een hele alinea typt."
+        TBody
+          TR
+            TD "2026-09-30"
+            TD "Analyse"
+            TD "Performance-analyse rapportage"
+            TD "8,79"
+        TBody
+          TR
+            TD RowSpan=2 "2026-09-30"
+            TD "Overleg"
+            TD "Bugfix: urenstaat telt weekend dubbel"
+            TD RowSpan=2 "8,80"
+          TR
+            TD ColSpan=2 "Afgestemd met de product owner; vervolgactie ingepland."
+        TBody
+          TR
+            TH Scope=Row ColSpan=3 "Totaal:"
+            TD "1.039,56"

@@ -8,7 +8,7 @@ namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
 /// The reference checks of the conformance profiles, with tools that run in Docker (skipped with a message when Docker is absent; leave
-/// them out with <c>--filter Category!=Reference</c>): veraPDF 1.30.4 on every sample for PDF/A-3b, PDF/A-3a and
+/// them out with <c>--filter Category!=Reference</c>): veraPDF 1.30.4 on every sample (the HTML samples too) for PDF/A-3b, PDF/A-3a and
 /// PDF/UA-1, a negative control that proves the validator and the profile both matter, and the attachment extracted
 /// by qpdf byte for byte. A failure message lists every failed rule with its clause and description.
 /// </summary>
@@ -19,7 +19,7 @@ public sealed class ReferenceValidationTests : IClassFixture<ReferenceValidation
 
     public ReferenceValidationTests(SampleFolder samples) => _samples = samples;
 
-    /// <summary>The eight samples written once for all tests of this class, deleted afterwards.</summary>
+    /// <summary>Every sample, the HTML samples too, written once for all tests of this class, deleted afterwards.</summary>
     public sealed class SampleFolder : IDisposable
     {
         public string Path { get; } = Docker.UnavailableReason is null ? SampleFiles.WriteAll() : string.Empty;
@@ -41,7 +41,7 @@ public sealed class ReferenceValidationTests : IClassFixture<ReferenceValidation
     {
         var results = VeraPdf.Validate(_samples.Path, flavour);
 
-        results.Should().HaveCount(SampleFiles.Documents.Length);
+        results.Should().HaveCount(SampleFiles.PdfCount);
         results.Should().OnlyContain(result => result.IsCompliant && result.PassedChecks > 0, VeraPdf.Describe(results));
     }
 
