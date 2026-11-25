@@ -1,0 +1,4 @@
+sr-counter.boxes.txt 1
+sr-counter.lines.txt 0
+sr-counter.print.txt 23
+sr-counter.words.txt 22

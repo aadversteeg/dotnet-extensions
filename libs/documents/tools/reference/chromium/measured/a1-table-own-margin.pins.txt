@@ -1,0 +1,4 @@
+a1-table-own-margin.boxes.txt 1
+a1-table-own-margin.lines.txt 0
+a1-table-own-margin.print.txt 3
+a1-table-own-margin.words.txt 1

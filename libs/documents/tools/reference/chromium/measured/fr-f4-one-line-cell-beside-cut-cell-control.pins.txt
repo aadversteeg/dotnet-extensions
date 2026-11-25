@@ -1,0 +1,4 @@
+fr-f4-one-line-cell-beside-cut-cell-control.boxes.txt 2
+fr-f4-one-line-cell-beside-cut-cell-control.lines.txt 10
+fr-f4-one-line-cell-beside-cut-cell-control.print.txt 17
+fr-f4-one-line-cell-beside-cut-cell-control.words.txt 5

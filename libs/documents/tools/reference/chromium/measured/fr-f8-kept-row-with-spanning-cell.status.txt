@@ -1,0 +1,1 @@
+fr-f8-kept-row-with-spanning-cell equal

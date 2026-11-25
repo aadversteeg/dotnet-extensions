@@ -23,18 +23,22 @@ names nothing.
 | --- | --- | --- | --- | --- |
 | `background-color` | no | `rgba(0, 0, 0, 0)` | `<color>` | CSS Backgrounds 3 §2.1 |
 | `border-bottom-color` | no | `currentcolor` | `<color>` | CSS Backgrounds 3 §3.1 |
-| `border-bottom-style` | no | `none` | `none \| hidden \| solid \| inset \| outset` | CSS Backgrounds 3 §3.2 |
+| `border-bottom-left-radius` | no | `0pt` | `<length-percentage [0,∞]> (one value)` | CSS Backgrounds 3 §5.1 |
+| `border-bottom-right-radius` | no | `0pt` | `<length-percentage [0,∞]> (one value)` | CSS Backgrounds 3 §5.1 |
+| `border-bottom-style` | no | `none` | `none \| hidden \| solid \| inset \| outset \| dashed` | CSS Backgrounds 3 §3.2 |
 | `border-bottom-width` | no | `2.25pt` | `<length [0,∞]> \| thin \| medium \| thick` | CSS Backgrounds 3 §3.3 |
 | `border-collapse` | yes | `separate` | `separate \| collapse` | CSS 2.1 §17.6 |
 | `border-left-color` | no | `currentcolor` | `<color>` | CSS Backgrounds 3 §3.1 |
-| `border-left-style` | no | `none` | `none \| hidden \| solid \| inset \| outset` | CSS Backgrounds 3 §3.2 |
+| `border-left-style` | no | `none` | `none \| hidden \| solid \| inset \| outset \| dashed` | CSS Backgrounds 3 §3.2 |
 | `border-left-width` | no | `2.25pt` | `<length [0,∞]> \| thin \| medium \| thick` | CSS Backgrounds 3 §3.3 |
 | `border-right-color` | no | `currentcolor` | `<color>` | CSS Backgrounds 3 §3.1 |
-| `border-right-style` | no | `none` | `none \| hidden \| solid \| inset \| outset` | CSS Backgrounds 3 §3.2 |
+| `border-right-style` | no | `none` | `none \| hidden \| solid \| inset \| outset \| dashed` | CSS Backgrounds 3 §3.2 |
 | `border-right-width` | no | `2.25pt` | `<length [0,∞]> \| thin \| medium \| thick` | CSS Backgrounds 3 §3.3 |
 | `border-spacing` | yes | `0pt 0pt` | `<length [0,∞]>{1,2}` | CSS 2.1 §17.6.1 |
 | `border-top-color` | no | `currentcolor` | `<color>` | CSS Backgrounds 3 §3.1 |
-| `border-top-style` | no | `none` | `none \| hidden \| solid \| inset \| outset` | CSS Backgrounds 3 §3.2 |
+| `border-top-left-radius` | no | `0pt` | `<length-percentage [0,∞]> (one value)` | CSS Backgrounds 3 §5.1 |
+| `border-top-right-radius` | no | `0pt` | `<length-percentage [0,∞]> (one value)` | CSS Backgrounds 3 §5.1 |
+| `border-top-style` | no | `none` | `none \| hidden \| solid \| inset \| outset \| dashed` | CSS Backgrounds 3 §3.2 |
 | `border-top-width` | no | `2.25pt` | `<length [0,∞]> \| thin \| medium \| thick` | CSS Backgrounds 3 §3.3 |
 | `box-decoration-break` | no | `slice` | `slice \| clone` | CSS Fragmentation 3 §5.4 |
 | `box-sizing` | no | `content-box` | `content-box \| border-box` | CSS Box Model 3 §4.3 |
@@ -47,7 +51,7 @@ names nothing.
 | `counter-increment` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.3 |
 | `counter-reset` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.2 |
 | `counter-set` | no | `none` | `none \| [<custom-ident> <integer>?]+ (a name other than list-item, within 32 bits, at most 16 names)` | CSS Lists 3 §4.4 |
-| `display` | no | `inline` | `block \| inline \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
+| `display` | no | `inline` | `block \| inline \| inline-block \| list-item \| none \| table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-cell \| table-column-group \| table-column \| table-caption` | CSS Display 3 §2 |
 | `empty-cells` | yes | `show` | `show \| hide` | CSS 2.1 §17.6.1.1 |
 | `font-family` | yes | `"Times New Roman"` | `[ <family-name> \| <generic-family> ]#` | CSS Fonts 4 §2.1; the initial value is the user agent's (Chromium: Times New Roman) |
 | `font-feature-settings` | yes | `normal` | `normal \| <feature-tag-value># (the tags "lnum", "onum", "pnum", "tnum" and "ordn", each with 0, 1, on or off)` | CSS Fonts 4 §7.1 |
@@ -113,6 +117,24 @@ one box. Solid sides of more than one colour on a block box are split at the cor
 its `color`, `noshade`, `size`, `width` and `align` attributes:
 `overflow: hidden` is accepted on a block box with no children and a border, padding or height that is not 0 at its
 top or bottom, where it clips nothing.
+
+`border-radius` and its longhands: one length or percentage per corner on a block box, an inline box, an inline-block,
+a list item, a table and a table cell, with a background, a solid border of one width and one colour, or both. A
+block box, an inline-block, a list item, a cell and a table in the separate border model fill the background to the
+middle of the border; an inline box fills it to the border's outer edge, as Chromium does (cases `br-*`, `bri-*`).
+An inline box broken over lines has its left corners on its first line and its right ones on its last; with a border
+it is refused at layout. In the collapsed border model the table's own radius has no effect, as in Chromium: its
+corners stay square and nothing is refused (case `bri-collapse`); a cell there keeps its rounded background, and its
+lines stay square. A collapsed table with a radius and a background is refused (not measured). Refused: elliptical
+corners, a radius on an image, a row, a row group, a column or a caption, with `overflow` other than `visible`, and
+beside border sides of different widths, colours or styles.
+
+`border-style: dashed` on a block box: each dashed side a row of dashes three times the width long below 3 px and
+twice the width from 3 px, flush with both ends of the side, the gaps evened out, as Chromium prints them (cases
+`bd-*`); beside it solid sides of the same width and colour or none. Refused: dashed on an inline box, an
+inline-block, a list item and a table or a part of one, beside sides of another width or colour, with a radius, and a
+dashed side shorter than two dashes and a gap (Chromium draws it as a solid line). `dotted`, `double`, `groove` and
+`ridge` are refused: they are not drawn yet.
 
 `width` on a table part: a table is drawn at `auto`, a length or a percentage of its container (its border box; never
 narrower than its content needs, and refused where wider than its container); a cell (`td`, `th`) takes a length, of
@@ -185,10 +207,6 @@ a percentage is the same value and accepted too: `background-position-x: 0` and 
 | `background-position-y` | `0%` | `0%` | CSS Backgrounds 4 §2.6 |
 | `background-repeat` | `repeat` | `repeat` | CSS Backgrounds 3 §2.3 |
 | `background-size` | `auto` | `auto` | CSS Backgrounds 3 §2.9 |
-| `border-bottom-left-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
-| `border-bottom-right-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
-| `border-top-left-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
-| `border-top-right-radius` | `0pt` | `0` | CSS Backgrounds 3 §5.1 |
 | `bottom` | `auto` | `auto` | CSS Positioned Layout 3 §3.1 |
 | `box-shadow` | `none` | `none` | CSS Backgrounds 3 §6.1 |
 | `clear` | `none` | `none` | CSS 2.1 §9.5.2 |

@@ -1,0 +1,5 @@
+lk-javascript.boxes.txt 1
+lk-javascript.lines.txt 1
+lk-javascript.links.txt 1
+lk-javascript.print.txt 5
+lk-javascript.words.txt 3

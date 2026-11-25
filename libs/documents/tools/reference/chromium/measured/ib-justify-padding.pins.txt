@@ -1,0 +1,4 @@
+ib-justify-padding.boxes.txt 1
+ib-justify-padding.lines.txt 6
+ib-justify-padding.print.txt 40
+ib-justify-padding.words.txt 33

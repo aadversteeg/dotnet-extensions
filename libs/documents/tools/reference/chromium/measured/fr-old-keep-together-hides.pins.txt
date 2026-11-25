@@ -1,0 +1,4 @@
+fr-old-keep-together-hides.boxes.txt 1
+fr-old-keep-together-hides.lines.txt 0
+fr-old-keep-together-hides.print.txt 7
+fr-old-keep-together-hides.words.txt 5

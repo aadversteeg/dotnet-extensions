@@ -1,0 +1,4 @@
+ws-tab.boxes.txt 1
+ws-tab.lines.txt 0
+ws-tab.print.txt 10
+ws-tab.words.txt 9

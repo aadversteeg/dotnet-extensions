@@ -1,0 +1,4 @@
+fr-f9-cell-orphans3.boxes.txt 1
+fr-f9-cell-orphans3.lines.txt 6
+fr-f9-cell-orphans3.print.txt 17
+fr-f9-cell-orphans3.words.txt 9

@@ -1,0 +1,4 @@
+fr-forced-table-header.boxes.txt 2
+fr-forced-table-header.lines.txt 7
+fr-forced-table-header.print.txt 14
+fr-forced-table-header.words.txt 4

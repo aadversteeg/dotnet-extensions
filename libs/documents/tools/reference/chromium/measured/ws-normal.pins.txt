@@ -1,0 +1,4 @@
+ws-normal.boxes.txt 1
+ws-normal.lines.txt 0
+ws-normal.print.txt 22
+ws-normal.words.txt 21

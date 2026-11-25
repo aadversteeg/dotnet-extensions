@@ -1,0 +1,4 @@
+hi-stretch.boxes.txt 1
+hi-stretch.lines.txt 0
+hi-stretch.print.txt 8
+hi-stretch.words.txt 4

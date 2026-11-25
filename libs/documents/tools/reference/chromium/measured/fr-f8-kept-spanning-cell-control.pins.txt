@@ -1,0 +1,4 @@
+fr-f8-kept-spanning-cell-control.boxes.txt 3
+fr-f8-kept-spanning-cell-control.lines.txt 11
+fr-f8-kept-spanning-cell-control.print.txt 20
+fr-f8-kept-spanning-cell-control.words.txt 7

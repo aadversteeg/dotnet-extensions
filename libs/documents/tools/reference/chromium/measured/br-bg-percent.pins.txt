@@ -1,0 +1,4 @@
+br-bg-percent.boxes.txt 3
+br-bg-percent.lines.txt 0
+br-bg-percent.print.txt 9
+br-bg-percent.words.txt 5

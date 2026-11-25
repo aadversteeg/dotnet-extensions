@@ -1,0 +1,4 @@
+tg-break-cut-align.boxes.txt 6
+tg-break-cut-align.lines.txt 22
+tg-break-cut-align.print.txt 32
+tg-break-cut-align.words.txt 8

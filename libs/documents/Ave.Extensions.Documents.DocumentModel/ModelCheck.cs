@@ -256,6 +256,7 @@ public static class ModelCheck
             ?? Sides(style.Padding, "padding", box, DocumentErrorCodes.Input.Invalid.Length)
             ?? Sides(style.Border.Widths, "border", box, DocumentErrorCodes.Input.Invalid.Length)
             ?? BorderStyles(box)
+            ?? Radius(box)
             ?? (style.Orphans < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Orphans, "Orphans must be at least 1 line.", Number(style.Orphans), "orphans", box) : null)
             ?? (style.Widows < 1 ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Widows, "Widows must be at least 1 line.", Number(style.Widows), "widows", box) : null)
             ?? Columns(box)
@@ -351,8 +352,9 @@ public static class ModelCheck
     }
 
     /// <summary>
-    /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3, Appendix A), which this version accepts only when
-    /// laid out by <see cref="LayoutAlgorithmId.Image"/> (an image in a line of text), and only with the initial page break
+    /// The boxes among the runs of an inline box: atomic inlines (CSS Display 3, Appendix A), which this version accepts when
+    /// laid out by <see cref="LayoutAlgorithmId.Image"/> (an image in a line of text) or by <see cref="LayoutAlgorithmId.Flow"/>
+    /// or <see cref="LayoutAlgorithmId.Inline"/> (an inline-block, CSS 2.1 §9.2.4, whose widths are lengths), and only with the initial page break
     /// properties: <c>break-before</c>, <c>break-after</c> and <c>break-inside</c> apply to block-level boxes (CSS
     /// Fragmentation 3 §3.1, §3.2), and an atomic inline never breaks, so a value there could only be lost. The child box
     /// is one nesting level deeper, as any child box.
@@ -362,10 +364,17 @@ public static class ModelCheck
         var initial = BoxStyle.Initial;
         foreach (var child in children)
         {
-            if (child is Box other && other.Layout != LayoutAlgorithmId.Image)
+            if (child is Box other && other.Layout != LayoutAlgorithmId.Image && other.Layout != LayoutAlgorithmId.Flow && other.Layout != LayoutAlgorithmId.Inline)
             {
-                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "A box among the text runs of an inline box must be laid out by the image algorithm (an image in a line); other boxes are not supported in a line.",
+                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "A box among the text runs of an inline box must be laid out by the image algorithm (an image in a line) or by the flow or inline algorithm (an inline-block); other boxes are not supported in a line.",
                     other.Layout.ToString(), "layout", other);
+            }
+
+            if (child is Box sized && sized.Layout != LayoutAlgorithmId.Image
+                && (sized.Style.SpecifiedWidth is SizeValue.Percentage || sized.Style.MinWidth is SizeValue.Percentage || sized.Style.MaxWidth is SizeValue.Percentage))
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.AtomicInline, "An inline-block's width, min-width or max-width is a length in this version: a percentage of the line is not measured.",
+                    $"{sized.Style.SpecifiedWidth}/{sized.Style.MinWidth}/{sized.Style.MaxWidth}", "width", sized);
             }
 
             if (child is Box box && (box.Style.BreakBefore != initial.BreakBefore || box.Style.BreakAfter != initial.BreakAfter || box.Style.BreakInside != initial.BreakInside))
@@ -613,11 +622,16 @@ public static class ModelCheck
     }
 
     /// <summary>The box of an inline group (<see cref="InlineBoxStyle"/>): padding and border widths of zero or more, as a box's;
-    /// horizontal margins of zero or more (a negative one is not drawn in this version).</summary>
+    /// horizontal margins of zero or more (a negative one is not drawn in this version); rounded corners as a box's; no
+    /// dashed side.</summary>
     private static Error? InlineBox(InlineBoxStyle box, InlineGroup group) =>
         Sides(new Edges(Length.Zero, box.MarginRight, Length.Zero, box.MarginLeft), "margin", group, DocumentErrorCodes.Input.Unsupported.NegativeMargin)
         ?? Sides(box.Padding, "padding", group, DocumentErrorCodes.Input.Invalid.Length)
-        ?? Sides(box.Border.Widths, "border", group, DocumentErrorCodes.Input.Invalid.Length);
+        ?? Sides(box.Border.Widths, "border", group, DocumentErrorCodes.Input.Invalid.Length)
+        ?? Rounded(box.BorderRadius, box.Border, "an inline box", group)
+        ?? (new[] { box.Border.Top, box.Border.Right, box.Border.Bottom, box.Border.Left }.Any(side => side.IsVisible && side.Style == BorderStyle.Dashed)
+            ? Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "A dashed border on an inline box is not drawn in this version.", box.Border.ToString(), "border-style", group)
+            : null);
 
     /// <summary>Fixed column widths zero or more and at most <see cref="ModelLimits.MaxLength"/>, fill weights finite and
     /// positive, percentages more than zero and at most <see cref="ModelLimits.MaxPercent"/>.</summary>
@@ -799,14 +813,92 @@ public static class ModelCheck
             return Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "Inset and outset sides on one box are not drawn in this version.", border.ToString(), "border-style", box);
         }
 
+        // Dashed sides (Layout's DashedBorder, cases bd-*): on a box of block flow that is no table part and no page-margin
+        // box, beside visible sides of the same width and colour, each solid or dashed.
+        if (sides.Any(side => Drawn(side, BorderStyle.Dashed)))
+        {
+            var visible = sides.Where(side => side.IsVisible).ToList();
+            var where = box.Layout != LayoutAlgorithmId.Flow && box.Layout != LayoutAlgorithmId.Inline ? $"a box laid out by {box.Layout}"
+                : box.Style.TableDisplay != TableDisplay.None ? "a part of a table"
+                : box.Style.MarginBoxPlace != MarginBoxPlace.None ? "a page-margin box"
+                : !visible.All(side => side.Width == visible[0].Width && side.Color == visible[0].Color && side.Style is BorderStyle.Solid or BorderStyle.Dashed) ? "a box whose visible sides are not all of one width and one colour, solid or dashed"
+                : null;
+            if (where is not null)
+            {
+                return Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, $"A dashed border on {where} is not drawn in this version.", border.ToString(), "border-style", box);
+            }
+        }
+
         static bool IsShaded(Box part) =>
             new[] { part.Style.Border.Top, part.Style.Border.Right, part.Style.Border.Bottom, part.Style.Border.Left }.Any(side => side.IsVisible && side.Style != BorderStyle.Solid);
         var parts = box.Layout == LayoutAlgorithmId.Tracks || box.Style.TableDisplay != TableDisplay.None ? new[] { box } : [];
         var cells = box.Style.TableDisplay == TableDisplay.Row ? box.Children.OfType<Box>() : [];
         return parts.Concat(cells).FirstOrDefault(IsShaded) is { } shaded
-            ? Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "An inset or outset border on a table or a part of a table is not drawn in this version: its lines are drawn solid.",
+            ? Problem(DocumentErrorCodes.Input.Unsupported.BorderStyle, "An inset, outset or dashed border on a table or a part of a table is not drawn in this version: its lines are drawn solid.",
                 shaded.Style.Border.ToString(), "border-style", shaded)
             : null;
+    }
+
+    /// <summary>Rounded corners (<see cref="BoxStyle.BorderRadius"/>, CSS Backgrounds 3 §5): each radius a finite length
+    /// of zero or more, at most <see cref="ModelLimits.MaxLength"/>, and a finite percentage of zero or more (else
+    /// Input.Invalid.Length); drawn only on a box laid out by <see cref="LayoutAlgorithmId.Flow"/>,
+    /// <see cref="LayoutAlgorithmId.Inline"/>, <see cref="LayoutAlgorithmId.ListItem"/> or <see cref="LayoutAlgorithmId.Tracks"/>
+    /// (a table) that is no row, row group or caption (a cell checked with its row) and no page-margin box, whose visible
+    /// border sides are all four solid, of one width and one colour (else Input.Unsupported.BorderRadius): the shapes
+    /// measured with Chromium (cases <c>br-*</c>, <c>bri-*</c>).</summary>
+    private static Error? Radius(Box box)
+    {
+        // A table's cells are the children of its rows; they are checked with their row, as their border styles are.
+        if (box.Style.TableDisplay == TableDisplay.Row)
+        {
+            foreach (var cell in box.Children.OfType<Box>())
+            {
+                if (Rounded(cell.Style.BorderRadius, cell.Style.Border, "a table cell", cell) is { } cellProblem)
+                {
+                    return cellProblem;
+                }
+            }
+        }
+
+        var radius = box.Style.BorderRadius;
+        if (radius.IsZero)
+        {
+            return null;
+        }
+
+        var where = box.Layout != LayoutAlgorithmId.Flow && box.Layout != LayoutAlgorithmId.Inline && box.Layout != LayoutAlgorithmId.ListItem && box.Layout != LayoutAlgorithmId.Tracks
+                ? $"a box laid out by {box.Layout}"
+            : box.Style.TableDisplay != TableDisplay.None ? "a row, a row group or a caption of a table"
+            : box.Style.MarginBoxPlace != MarginBoxPlace.None ? "a page-margin box"
+            : null;
+        return where is null
+            ? Rounded(radius, box.Style.Border, "a box", box)
+            : Problem(DocumentErrorCodes.Input.Unsupported.BorderRadius, $"Rounded corners on {where} are not drawn in this version.", radius.ToString(), "border-radius", box);
+    }
+
+    /// <summary>The corners of a rounded box or inline box: each a bounded length of zero or more plus a finite percentage
+    /// of zero or more (else Input.Invalid.Length), beside a border whose visible sides are all four solid, of one width
+    /// and one colour, or none (else Input.Unsupported.BorderRadius).</summary>
+    private static Error? Rounded(BorderRadius radius, Border border, string what, Node node)
+    {
+        if (radius.IsZero)
+        {
+            return null;
+        }
+
+        foreach (var corner in new[] { radius.TopLeft, radius.TopRight, radius.BottomRight, radius.BottomLeft })
+        {
+            if (!IsBounded(corner.Length) || corner.Length.Points < 0 || !double.IsFinite(corner.Percent) || corner.Percent < 0)
+            {
+                return Problem(DocumentErrorCodes.Input.Invalid.Length, $"A corner radius must be a length of 0 or more, at most {ModelLimits.MaxLength}, plus a percentage of 0 or more.", corner.ToString(), "border-radius", node);
+            }
+        }
+
+        BorderSide[] sides = [border.Top, border.Right, border.Bottom, border.Left];
+        var oneLine = sides.All(side => !side.IsVisible) || sides.All(side => side == border.Top && side.Style == BorderStyle.Solid);
+        return oneLine
+            ? null
+            : Problem(DocumentErrorCodes.Input.Unsupported.BorderRadius, $"Rounded corners on {what} whose border sides are not all solid, of one width and one colour are not drawn in this version.", radius.ToString(), "border-radius", node);
     }
 
     /// <summary>A border model and a caption side the model has (else Input.Invalid.Table), a table height of zero or more,

@@ -1,0 +1,4 @@
+mx-gen-spacing.boxes.txt 1
+mx-gen-spacing.lines.txt 0
+mx-gen-spacing.print.txt 17
+mx-gen-spacing.words.txt 16

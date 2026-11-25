@@ -1,0 +1,4 @@
+tf-empty.boxes.txt 4
+tf-empty.lines.txt 12
+tf-empty.print.txt 18
+tf-empty.words.txt 5

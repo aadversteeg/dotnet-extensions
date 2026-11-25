@@ -1,0 +1,4 @@
+a6-nested-late-h2521875.boxes.txt 37
+a6-nested-late-h2521875.lines.txt 151
+a6-nested-late-h2521875.print.txt 199
+a6-nested-late-h2521875.words.txt 43

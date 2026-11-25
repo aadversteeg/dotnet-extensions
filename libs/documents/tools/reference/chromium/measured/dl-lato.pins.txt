@@ -1,0 +1,4 @@
+dl-lato.boxes.txt 1
+dl-lato.lines.txt 6
+dl-lato.print.txt 19
+dl-lato.words.txt 12

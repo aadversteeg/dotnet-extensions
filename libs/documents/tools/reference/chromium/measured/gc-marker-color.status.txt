@@ -1,0 +1,1 @@
+gc-marker-color equal

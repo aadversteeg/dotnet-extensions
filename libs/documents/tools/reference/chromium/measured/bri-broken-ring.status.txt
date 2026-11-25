@@ -1,0 +1,1 @@
+bri-broken-ring refused Documents.Layout.RoundedBorderLineBreak An inline box with rounded corners and a border is broken over two or more lines; such a border is not drawn in this version. Keep the text of the box on one line (white-space: nowrap), or leave out its border or its radius. at 4:11

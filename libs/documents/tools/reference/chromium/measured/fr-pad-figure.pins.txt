@@ -1,0 +1,4 @@
+fr-pad-figure.boxes.txt 1
+fr-pad-figure.lines.txt 0
+fr-pad-figure.print.txt 6
+fr-pad-figure.words.txt 2

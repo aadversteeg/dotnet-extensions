@@ -1,0 +1,4 @@
+tg-text-two.boxes.txt 4
+tg-text-two.lines.txt 7
+tg-text-two.print.txt 14
+tg-text-two.words.txt 5

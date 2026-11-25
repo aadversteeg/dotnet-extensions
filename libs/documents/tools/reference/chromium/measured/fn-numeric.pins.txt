@@ -1,0 +1,4 @@
+fn-numeric.boxes.txt 1
+fn-numeric.lines.txt 0
+fn-numeric.print.txt 121
+fn-numeric.words.txt 120

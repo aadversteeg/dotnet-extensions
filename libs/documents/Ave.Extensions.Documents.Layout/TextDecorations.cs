@@ -81,10 +81,13 @@ internal static class TextDecorations
     /// <param name="ascent">The ascent of the piece's own font, as the line box takes it.</param>
     /// <param name="rounding">How the fonts' metrics are taken (the document's profile).</param>
     /// <param name="ink">The piece's own font, size and <c>text-decoration-skip-ink</c>, and the paragraph's decoded outlines.</param>
+    /// <param name="band">How far the band the gaps are cut with lies below the line as drawn (<see cref="InkGapBand"/>):
+    /// 0 when the line is built, the rounding of the line's top on the page negated once the page is known
+    /// (<see cref="InlineBoxPixels"/>).</param>
     /// <returns>The rectangles before and after the glyphs (none when the piece has no width), or the error of a glyph
     /// outline that cannot be decoded.</returns>
     public static Result<(IReadOnlyList<PlacedFragment> Before, IReadOnlyList<PlacedFragment> After), Error> Of(
-        IReadOnlyList<Resolved> decorations, double x, LineSegment piece, double baseline, double ascent, FontMetricRounding rounding, Ink ink)
+        IReadOnlyList<Resolved> decorations, double x, LineSegment piece, double baseline, double ascent, FontMetricRounding rounding, Ink ink, double band = 0)
     {
         if (decorations.Count == 0)
         {
@@ -131,14 +134,14 @@ internal static class TextDecorations
             }
 
             var own = new List<(double Left, double Right)>();
-            var added = InkGaps.Add(own, ink.Outlines, ink.Font, ink.Size, x, glyphs, baseline, top, thickness);
+            var added = InkGaps.Add(own, ink.Outlines, ink.Font, ink.Size, x, glyphs, baseline, top + band, thickness);
             if (added.IsFailure)
             {
                 return Result<(IReadOnlyList<PlacedFragment>, IReadOnlyList<PlacedFragment>), Error>.Failure(added.Error);
             }
 
             // The clips of the lines painted before this one stay in force over the rows they reach; its own over its height.
-            var (clipTop, clipBottom) = InkGaps.ClipExtent(top, thickness);
+            var (clipTop, clipBottom) = InkGaps.ClipExtent(top + band, thickness);
             cut.Add((clipTop, clipBottom, own));
             foreach (var (left, rowTop, right, rowBottom) in InkGaps.Cut(x, x + width, top, top + shown, cut, ink.Outlines))
             {
@@ -147,6 +150,28 @@ internal static class TextDecorations
         }
 
         return Result<(IReadOnlyList<PlacedFragment>, IReadOnlyList<PlacedFragment>), Error>.Success((before, after));
+    }
+
+    /// <summary>A decorated piece of a line whose underlines or overlines leave gaps around the ink, with what
+    /// <see cref="Of"/> needs to cut them again once the line's place on the page is known (<see cref="InkGapBand.AtUnroundedLine"/>,
+    /// <see cref="InlineBoxPixels"/>).</summary>
+    /// <param name="Text">The index of the piece's text among the line's children.</param>
+    /// <param name="Before">How many of the children right before it are its underlines and overlines.</param>
+    /// <param name="Decorations">The piece's decorations, in order.</param>
+    /// <param name="X">The piece's start.</param>
+    /// <param name="Piece">The piece: its glyphs and its width on the line.</param>
+    /// <param name="Baseline">The piece's own baseline, from the line box's top.</param>
+    /// <param name="Ascent">The ascent of the piece's own font, as the line box takes it.</param>
+    /// <param name="Rounding">How the fonts' metrics are taken.</param>
+    /// <param name="Ink">The piece's own font, size and <c>text-decoration-skip-ink</c>, and the paragraph's decoded outlines.</param>
+    public sealed record Cut(int Text, int Before, IReadOnlyList<Resolved> Decorations, double X, LineSegment Piece, double Baseline, double Ascent, FontMetricRounding Rounding, Ink Ink)
+    {
+        /// <summary>The piece's underlines and overlines cut with the band <paramref name="band"/> below the line as drawn
+        /// (<see cref="Of"/>).</summary>
+        /// <param name="band">How far below the line the band lies.</param>
+        /// <returns>The rectangles before the glyphs, or the error of a glyph outline that cannot be decoded.</returns>
+        public Result<IReadOnlyList<PlacedFragment>, Error> Again(double band) =>
+            Of(Decorations, X, Piece, Baseline, Ascent, Rounding, Ink, band).OnSuccessMap(lines => lines.Before);
     }
 
     /// <summary>What the gaps around a piece's ink are cut from: the piece's own font and size, its

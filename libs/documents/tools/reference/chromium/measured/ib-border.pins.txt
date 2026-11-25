@@ -1,0 +1,4 @@
+ib-border.boxes.txt 1
+ib-border.lines.txt 3
+ib-border.print.txt 16
+ib-border.words.txt 9

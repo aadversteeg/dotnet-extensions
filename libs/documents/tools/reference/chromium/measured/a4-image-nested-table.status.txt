@@ -1,0 +1,1 @@
+a4-image-nested-table listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 73.5 (laid out at 73.125), Chromium 24.75 (print.txt)

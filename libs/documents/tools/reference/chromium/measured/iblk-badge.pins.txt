@@ -1,0 +1,4 @@
+iblk-badge.boxes.txt 1
+iblk-badge.lines.txt 6
+iblk-badge.print.txt 40
+iblk-badge.words.txt 25

@@ -1,0 +1,1 @@
+kb-t1-kept-row-group-in-padded-box equal

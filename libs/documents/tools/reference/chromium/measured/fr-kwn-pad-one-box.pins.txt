@@ -1,0 +1,4 @@
+fr-kwn-pad-one-box.boxes.txt 1
+fr-kwn-pad-one-box.lines.txt 0
+fr-kwn-pad-one-box.print.txt 11
+fr-kwn-pad-one-box.words.txt 7

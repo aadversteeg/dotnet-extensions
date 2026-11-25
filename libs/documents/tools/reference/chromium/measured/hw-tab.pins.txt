@@ -1,0 +1,4 @@
+hw-tab.boxes.txt 1
+hw-tab.lines.txt 0
+hw-tab.print.txt 7
+hw-tab.words.txt 6

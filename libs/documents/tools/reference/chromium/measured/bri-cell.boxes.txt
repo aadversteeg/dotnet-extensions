@@ -1,0 +1,6 @@
+td 33.820 21.000 Filled
+td 42.832 21.000 Ringed
+td 40.055 21.000 Empty
+td 33.820 19.500 Plain
+td 42.832 19.500 Second
+td 40.055 19.500 Last

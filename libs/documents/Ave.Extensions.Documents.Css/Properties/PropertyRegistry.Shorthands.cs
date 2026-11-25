@@ -25,7 +25,7 @@ public static partial class PropertyRegistry
             BoxSides("border-style", side => $"border-{side}-style", (reader, name) => Find(name)!.Parse(reader), "CSS Backgrounds 3 §3.2"),
             BoxSides("border-color", side => $"border-{side}-color", (reader, name) => Whole(reader, reader.Color(), name), "CSS Backgrounds 3 §3.1"),
             BoxSides("inset", side => side, (reader, name) => Find(name)!.Parse(reader), "CSS Positioned Layout 3 §3.1"),
-            BoxSides("border-radius", side => $"border-{Corner(side)}-radius", (reader, name) => Find(name)!.Parse(reader), "CSS Backgrounds 3 §5.1"),
+            Radii(BoxSides("border-radius", side => $"border-{Corner(side)}-radius", (reader, name) => Find(name)!.Parse(reader), "CSS Backgrounds 3 §5.1")),
             Logical("margin-block", ["margin-top", "margin-bottom"], (reader, name) => ParseMargin(reader, name)),
             Logical("margin-inline", ["margin-left", "margin-right"], (reader, name) => ParseMargin(reader, name)),
             Logical("padding-block", ["padding-top", "padding-bottom"], (reader, name) => Whole(reader, reader.Length(true, true, name), name)),
@@ -223,6 +223,26 @@ public static partial class PropertyRegistry
             }, null, false);
         });
 
+    /// <summary>border-radius: the four corners of <see cref="BoxSides"/>; a '/' before the radii down (elliptical
+    /// corners, CSS Backgrounds 3 §5.1) is refused, so a declaration Chromium draws is never dropped.</summary>
+    private static ShorthandDefinition Radii(ShorthandDefinition sides) =>
+        new(sides.Name, [.. sides.Longhands], sides.Supported, sides.Specification, reader =>
+        {
+            var mark = reader.Mark;
+            while (!reader.AtEnd)
+            {
+                if (reader.Delim('/'))
+                {
+                    return ShorthandParse.Refused("elliptical corners (a '/' in 'border-radius') are not drawn yet; give one radius per corner");
+                }
+
+                reader.Next();
+            }
+
+            reader.Reset(mark);
+            return sides.Parse(reader);
+        });
+
     /// <summary>A logical shorthand of two physical longhands: one value for both, or start then end.</summary>
     private static ShorthandDefinition Logical(string name, string[] longhands, Func<ValueReader, string, ParsedValue> parse) =>
         new(name, longhands, $"<'{longhands[0]}'>{{1,2}}", "CSS Logical 1 §4", reader =>
@@ -283,7 +303,7 @@ public static partial class PropertyRegistry
         foreach (var item in reader.Remaining)
         {
             var single = new ValueReader([item]);
-            if (style is null && Find("border-top-style")!.Parse(single) is var styleValue && (styleValue.IsValid || styleValue.Unsupported))
+            if (style is null && Find($"border-{sides[0]}-style")!.Parse(single) is var styleValue && (styleValue.IsValid || styleValue.Unsupported))
             {
                 if (!styleValue.IsValid)
                 {

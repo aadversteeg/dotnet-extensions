@@ -1,0 +1,1 @@
+a4-row-image-row listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 5 'after' baseline 72.75 (laid out at 72.375), Chromium 24.75 (print.txt)

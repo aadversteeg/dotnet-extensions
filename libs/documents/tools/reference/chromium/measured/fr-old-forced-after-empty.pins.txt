@@ -1,0 +1,4 @@
+fr-old-forced-after-empty.boxes.txt 1
+fr-old-forced-after-empty.lines.txt 0
+fr-old-forced-after-empty.print.txt 3
+fr-old-forced-after-empty.words.txt 1

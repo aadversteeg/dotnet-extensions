@@ -1,0 +1,5 @@
+dl-skip.boxes.txt 1
+dl-skip.ink.txt 10
+dl-skip.lines.txt 3
+dl-skip.print.txt 10
+dl-skip.words.txt 6

@@ -1,0 +1,23 @@
+page 1 300.000 400.080
+word 1 12.000 46.897 23.250 10.500 Dashed #000000 Lato-Regular
+word 1 49.585 78.743 23.250 10.500 boxes. #000000 Lato-Regular
+word 1 12.750 32.453 45.000 10.500 One #303030 Lato-Regular
+word 1 13.500 32.909 75.750 10.500 Two #303030 Lato-Regular
+word 1 14.250 40.915 108.000 10.500 Three #303030 Lato-Regular
+word 1 15.000 36.110 141.750 10.500 Four #303030 Lato-Regular
+path 1 12.000 33.000 88.500 33.750 #c03020 fff01ffe02ffd02ffd03ffc04ffb04ffb05ffa06ff907ff808ff708ff709ff60aff50aff50bff40cff30dff20eff10eff10fff
+path 1 12.000 56.250 88.500 57.000 #c03020 fff01ffe02ffd02ffd03ffc04ffb04ffb05ffa06ff907ff808ff708ff709ff60aff50aff50bff40cff30dff20eff10eff10fff
+path 1 87.750 33.000 88.500 57.000 #c03020 f/f/f/0/3/f/f/c/0/5/f/f/a/0/8/f/f/7/0/a/f/f/5/0/d/f/f/2/0/f/f/f
+path 1 12.000 33.000 12.750 57.000 #c03020 f/f/f/0/3/f/f/c/0/5/f/f/a/0/8/f/f/7/0/a/f/f/5/0/d/f/f/2/0/f/f/f
+path 1 12.000 63.000 90.000 64.500 #2060a0 ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff/ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff
+path 1 12.000 87.000 90.000 88.500 #2060a0 ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff/ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff0003fffffc0006fffff90009fffff6000cfffff3000ffffff
+path 1 88.500 63.000 90.000 88.500 #2060a0 ff/ff/ff/ff/ff/ff/00/00/00/aa/ff/ff/ff/ff/ff/55/00/00/55/ff/ff/ff/ff/ff/aa/00/00/00/ff/ff/ff/ff/ff/ff
+path 1 12.000 63.000 13.500 88.500 #2060a0 ff/ff/ff/ff/ff/ff/00/00/00/aa/ff/ff/ff/ff/ff/55/00/00/55/ff/ff/ff/ff/ff/aa/00/00/00/ff/ff/ff/ff/ff/ff
+path 1 12.000 94.500 91.500 96.750 #208040 ffffff000efffff100cfffff300bfffff400afffff5008fffff7007fffff8005fffffa004fffffb003fffffc001fffffe000ffffff/ffffff000efffff100cfffff300bfffff400afffff5008fffff7007fffff8005fffffa004fffffb003fffffc001fffffe000ffffff/ffffff000efffff100cfffff300bfffff400afffff5008fffff7007fffff8005fffffa004fffffb003fffffc001fffffe000ffffff
+path 1 12.000 119.250 91.500 121.500 #208040 ffffff000efffff100cfffff300bfffff400afffff5008fffff7007fffff8005fffffa004fffffb003fffffc001fffffe000ffffff/ffffff000efffff100cfffff300bfffff400afffff5008fffff7007fffff8005fffffa004fffffb003fffffc001fffffe000ffffff/ffffff000efffff100cfffff300bfffff400afffff5008fffff7007fffff8005fffffa004fffffb003fffffc001fffffe000ffffff
+path 1 89.250 94.500 91.500 121.500 #208040 fff/fff/fff/fff/fff/fff/000/000/000/000/fff/fff/fff/fff/fff/fff/000/000/000/000/fff/fff/fff/fff/fff/fff/000/000/000/000/fff/fff/fff/fff/fff/fff
+path 1 12.000 94.500 14.250 121.500 #208040 fff/fff/fff/fff/fff/fff/000/000/000/000/fff/fff/fff/fff/fff/fff/000/000/000/000/fff/fff/fff/fff/fff/fff/000/000/000/000/fff/fff/fff/fff/fff/fff
+path 1 12.000 127.500 93.000 130.500 #806020 ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff/ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff/ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff/ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff
+path 1 12.000 153.000 93.000 156.000 #806020 ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff/ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff/ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff/ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff00008fffffff70000ffffffff
+path 1 90.000 127.500 93.000 156.000 #806020 ffff/ffff/ffff/ffff/ffff/ffff/ffff/ffff/0000/0000/ffff/ffff/ffff/ffff/ffff/ffff/ffff/ffff/0000/0000/ffff/ffff/ffff/ffff/ffff/ffff/ffff/ffff/0000/0000/ffff/ffff/ffff/ffff/ffff/ffff/ffff/ffff
+path 1 12.000 127.500 15.000 156.000 #806020 ffff/ffff/ffff/ffff/ffff/ffff/ffff/ffff/0000/0000/ffff/ffff/ffff/ffff/ffff/ffff/ffff/ffff/0000/0000/ffff/ffff/ffff/ffff/ffff/ffff/ffff/ffff/0000/0000/ffff/ffff/ffff/ffff/ffff/ffff/ffff/ffff

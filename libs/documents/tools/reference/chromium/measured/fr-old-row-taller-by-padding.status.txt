@@ -1,0 +1,1 @@
+fr-old-row-taller-by-padding listed A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank: page 1 painted area: the pixel at (12, 12): the engine paints it and Chromium does not; the engine paints 766 px #000000, Chromium 0 px (print.txt)

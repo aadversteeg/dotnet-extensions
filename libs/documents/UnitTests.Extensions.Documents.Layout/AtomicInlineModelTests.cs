@@ -40,12 +40,12 @@ public class AtomicInlineModelTests
     [Fact]
     public void A_box_of_another_algorithm_among_the_runs_is_refused_with_a_message_that_says_so()
     {
-        var error = Refused(Document(Line(1, Flow(10, [Paragraph(11, "x")]))));
+        var error = Refused(Document(Line(1, new Box(new NodeId(10), SemanticRole.Table, LayoutAlgorithmId.Tracks, BoxStyle.Initial, [], At(0)))));
 
         error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.AtomicInline);
-        error.Message.Should().Contain("image algorithm");
+        error.Message.Should().Contain("image algorithm").And.Contain("inline-block");
         error.Metadata![ErrorMetadataKeys.Node].Should().Be("#10");
-        error.Metadata![ErrorMetadataKeys.Value].Should().Be(LayoutAlgorithmId.Flow.ToString());
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be(LayoutAlgorithmId.Tracks.ToString());
     }
 
     [Theory]

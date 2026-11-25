@@ -1,0 +1,1 @@
+gf-initial-margin-box equal

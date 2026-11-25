@@ -1,0 +1,4 @@
+a2-row-end-first-row-half-block.boxes.txt 1
+a2-row-end-first-row-half-block.lines.txt 3
+a2-row-end-first-row-half-block.print.txt 17
+a2-row-end-first-row-half-block.words.txt 12

@@ -1,0 +1,4 @@
+bs-corners.boxes.txt 6
+bs-corners.lines.txt 12
+bs-corners.print.txt 33
+bs-corners.words.txt 8

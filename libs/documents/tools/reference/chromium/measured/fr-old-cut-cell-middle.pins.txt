@@ -1,0 +1,4 @@
+fr-old-cut-cell-middle.boxes.txt 2
+fr-old-cut-cell-middle.lines.txt 10
+fr-old-cut-cell-middle.print.txt 26
+fr-old-cut-cell-middle.words.txt 14

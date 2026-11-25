@@ -1,0 +1,4 @@
+bd-sides.boxes.txt 5
+bd-sides.lines.txt 5
+bd-sides.print.txt 37
+bd-sides.words.txt 19

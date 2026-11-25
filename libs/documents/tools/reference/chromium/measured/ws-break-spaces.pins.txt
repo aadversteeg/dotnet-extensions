@@ -1,0 +1,4 @@
+ws-break-spaces.boxes.txt 1
+ws-break-spaces.lines.txt 0
+ws-break-spaces.print.txt 22
+ws-break-spaces.words.txt 21

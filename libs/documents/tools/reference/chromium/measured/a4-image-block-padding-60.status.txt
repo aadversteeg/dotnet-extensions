@@ -1,0 +1,1 @@
+a4-image-block-padding-60 equal

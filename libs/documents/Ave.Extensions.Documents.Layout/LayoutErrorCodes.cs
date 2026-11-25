@@ -42,6 +42,21 @@ public static class LayoutErrorCodes
     /// room it had, in points), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode TableBreak = _ / "TableBreak";
 
+    /// <summary>A box with rounded corners and a border that a page break cuts (<c>BoxStyle.BorderRadius</c>): Chromium 159
+    /// draws such a border's sides under clipping paths, which are not drawn in this version. Metadata: Node, SourceFile,
+    /// SourceLine.</summary>
+    public static readonly ErrorCode RoundedBorderBreak = _ / "RoundedBorderBreak";
+
+    /// <summary>An inline box with rounded corners and a border that a line break cuts (<c>InlineBoxStyle.BorderRadius</c>):
+    /// Chromium 159 draws each part of such a border under clipping paths, which are not drawn in this version. Metadata:
+    /// Node, SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode RoundedBorderLineBreak = _ / "RoundedBorderLineBreak";
+
+    /// <summary>A dashed border side too short or too long to dash (<c>BorderStyle.Dashed</c>): shorter than two dashes and a
+    /// gap, where Chromium 159 draws a solid line, or with more dashes than one path holds. Metadata: Node, Value (the side's
+    /// length and width in CSS pixels), SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode DashedBorder = _ / "DashedBorder";
+
     /// <summary>Computed content (the page count) that does not settle: every layout pass gives a different
     /// number of pages, up to the pass limit. Metadata: Node, Value (the page counts per pass), SourceFile,
     /// SourceLine of the first page-count reference.</summary>

@@ -1,0 +1,4 @@
+br-bg-corners.boxes.txt 4
+br-bg-corners.lines.txt 0
+br-bg-corners.print.txt 11
+br-bg-corners.words.txt 6

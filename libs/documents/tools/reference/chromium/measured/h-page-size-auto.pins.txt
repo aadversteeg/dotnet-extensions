@@ -1,0 +1,4 @@
+h-page-size-auto.boxes.txt 1
+h-page-size-auto.lines.txt 0
+h-page-size-auto.print.txt 3
+h-page-size-auto.words.txt 2

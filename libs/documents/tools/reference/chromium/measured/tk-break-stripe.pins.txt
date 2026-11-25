@@ -1,0 +1,4 @@
+tk-break-stripe.boxes.txt 54
+tk-break-stripe.lines.txt 118
+tk-break-stripe.print.txt 303
+tk-break-stripe.words.txt 61

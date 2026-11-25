@@ -1,0 +1,4 @@
+a4-image-single-cell.boxes.txt 2
+a4-image-single-cell.lines.txt 13
+a4-image-single-cell.print.txt 21
+a4-image-single-cell.words.txt 1

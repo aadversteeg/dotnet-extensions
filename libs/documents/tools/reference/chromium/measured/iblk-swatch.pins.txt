@@ -1,0 +1,4 @@
+iblk-swatch.boxes.txt 1
+iblk-swatch.lines.txt 3
+iblk-swatch.print.txt 21
+iblk-swatch.words.txt 13

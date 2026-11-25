@@ -40,7 +40,9 @@ public sealed record GeneratedContent(string PseudoElement, ComputedStyle Style,
 /// differ from the item's, every other declaration of a <c>::marker</c> rule being refused.</param>
 /// <param name="Text">The text of a <c>content</c> of strings, which replaces the marker's own text; null for the
 /// marker the list style gives.</param>
-public sealed record MarkerStyle(ComputedStyle Style, string? Text);
+/// <param name="Position">Where the <c>content</c> declaration that gives <paramref name="Text"/> is written: the place
+/// reported for that text; null without it.</param>
+public sealed record MarkerStyle(ComputedStyle Style, string? Text, TextPosition? Position = null);
 
 public sealed partial class StyleComputer
 {
@@ -241,6 +243,7 @@ public sealed partial class StyleComputer
         }
 
         string? text = null;
+        TextPosition? position = null;
         if (Highest(candidates.Longhands[ContentProperty.Index]) is { } winner)
         {
             var mark = ReportMark();
@@ -254,6 +257,7 @@ public sealed partial class StyleComputer
                 else
                 {
                     text = content.Text;
+                    position = declaration.Source.Position;
                 }
             }
             else if (ReportMark() == mark && string.Equals(CssSerializer.Shortened(DeclarationPreparer.Trim(declaration.Source.Value)), "none", StringComparison.OrdinalIgnoreCase))
@@ -281,7 +285,7 @@ public sealed partial class StyleComputer
         }
 
         var computed = ComputeFrom(candidates, parent, isRoot: false, resetsLegacyAlignment: false);
-        return computed.IsFailure ? Result<MarkerStyle?, Error>.Failure(computed.Error) : Result<MarkerStyle?, Error>.Success(new MarkerStyle(computed.Value, text));
+        return computed.IsFailure ? Result<MarkerStyle?, Error>.Failure(computed.Error) : Result<MarkerStyle?, Error>.Success(new MarkerStyle(computed.Value, text, position));
     }
 
     /// <summary>The candidates and blocks of the rules whose selector ends in the pseudo-element and matches the element

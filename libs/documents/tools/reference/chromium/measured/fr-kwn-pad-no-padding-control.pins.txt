@@ -1,0 +1,4 @@
+fr-kwn-pad-no-padding-control.boxes.txt 1
+fr-kwn-pad-no-padding-control.lines.txt 0
+fr-kwn-pad-no-padding-control.print.txt 7
+fr-kwn-pad-no-padding-control.words.txt 5

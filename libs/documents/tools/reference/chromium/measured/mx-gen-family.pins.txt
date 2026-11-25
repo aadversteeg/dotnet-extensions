@@ -1,0 +1,4 @@
+mx-gen-family.boxes.txt 1
+mx-gen-family.lines.txt 0
+mx-gen-family.print.txt 8
+mx-gen-family.words.txt 7

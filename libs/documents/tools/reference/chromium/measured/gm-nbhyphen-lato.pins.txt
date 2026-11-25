@@ -1,0 +1,4 @@
+gm-nbhyphen-lato.boxes.txt 1
+gm-nbhyphen-lato.lines.txt 0
+gm-nbhyphen-lato.print.txt 13
+gm-nbhyphen-lato.words.txt 12

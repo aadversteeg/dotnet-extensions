@@ -1,0 +1,4 @@
+ta-items-right.boxes.txt 1
+ta-items-right.lines.txt 0
+ta-items-right.print.txt 121
+ta-items-right.words.txt 120

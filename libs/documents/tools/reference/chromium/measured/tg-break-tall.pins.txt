@@ -1,0 +1,4 @@
+tg-break-tall.boxes.txt 8
+tg-break-tall.lines.txt 40
+tg-break-tall.print.txt 92
+tg-break-tall.words.txt 15

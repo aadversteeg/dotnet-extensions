@@ -1,0 +1,4 @@
+pm-image-exact.boxes.txt 1
+pm-image-exact.lines.txt 1
+pm-image-exact.print.txt 6
+pm-image-exact.words.txt 3

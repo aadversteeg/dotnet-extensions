@@ -1,0 +1,4 @@
+ws-kern.boxes.txt 1
+ws-kern.lines.txt 0
+ws-kern.print.txt 15
+ws-kern.words.txt 8

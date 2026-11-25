@@ -1,0 +1,4 @@
+pm-image-top.boxes.txt 1
+pm-image-top.lines.txt 1
+pm-image-top.print.txt 6
+pm-image-top.words.txt 3

@@ -1,0 +1,4 @@
+fr-f9-cell-orphans3-second-row.boxes.txt 2
+fr-f9-cell-orphans3-second-row.lines.txt 9
+fr-f9-cell-orphans3-second-row.print.txt 21
+fr-f9-cell-orphans3-second-row.words.txt 10

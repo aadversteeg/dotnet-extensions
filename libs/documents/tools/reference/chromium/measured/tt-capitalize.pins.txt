@@ -1,0 +1,4 @@
+tt-capitalize.boxes.txt 1
+tt-capitalize.lines.txt 0
+tt-capitalize.print.txt 71
+tt-capitalize.words.txt 70

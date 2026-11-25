@@ -1,0 +1,4 @@
+hb-anonymous.boxes.txt 1
+hb-anonymous.lines.txt 0
+hb-anonymous.print.txt 6
+hb-anonymous.words.txt 5

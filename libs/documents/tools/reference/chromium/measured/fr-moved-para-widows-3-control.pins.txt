@@ -1,0 +1,4 @@
+fr-moved-para-widows-3-control.boxes.txt 1
+fr-moved-para-widows-3-control.lines.txt 0
+fr-moved-para-widows-3-control.print.txt 10
+fr-moved-para-widows-3-control.words.txt 7

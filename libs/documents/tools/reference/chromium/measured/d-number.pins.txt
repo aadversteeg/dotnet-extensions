@@ -1,0 +1,4 @@
+d-number.boxes.txt 1
+d-number.lines.txt 0
+d-number.print.txt 14
+d-number.words.txt 12

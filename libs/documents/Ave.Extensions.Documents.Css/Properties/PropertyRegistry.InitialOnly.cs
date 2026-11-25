@@ -37,9 +37,16 @@ public static partial class PropertyRegistry
         yield return InitialKeyword("clip-path", false, "none", [], true, "all elements", "CSS Masking 1 §5.1");
         yield return InitialKeyword("mix-blend-mode", false, "normal", [], true, "all elements", "Compositing 1 §3.2");
         yield return InitialKeyword("isolation", false, "auto", ["isolate"], false, "all elements", "Compositing 1 §3.3");
+        // One radius per corner, a length or a percentage of the border box (case br-bg-percent); two (an elliptical
+        // corner) are refused, so a declaration Chromium draws is never dropped.
         foreach (var corner in new[] { "top-left", "top-right", "bottom-right", "bottom-left" })
         {
-            yield return InitialZero($"border-{corner}-radius", false, "0", "all elements", "CSS Backgrounds 3 §5.1");
+            var name = $"border-{corner}-radius";
+            yield return new PropertyDefinition(
+                name, inherited: false, new CssLength(Ave.Extensions.Documents.Core.Length.Zero), "all elements", "<length-percentage [0,∞]> (one value)",
+                PropertySupport.Supported, "CSS Backgrounds 3 §5.1",
+                reader => ParseRadius(reader, name),
+                (value, context) => context.LengthPercentage(value));
         }
 
         // Backgrounds other than the colour (the background shorthand resets them).
@@ -129,6 +136,19 @@ public static partial class PropertyRegistry
     }
 
     /// <summary>A number property the engine implements only at its initial value.</summary>
+    /// <summary>One corner radius (CSS Backgrounds 3 §5.1: <c>&lt;length-percentage [0,∞]&gt;{1,2}</c>): one length or
+    /// percentage of zero or more; a second one, an elliptical corner, is refused.</summary>
+    private static ParsedValue ParseRadius(ValueReader reader, string name)
+    {
+        var first = reader.Length(percentages: true, nonNegative: true, name);
+        if (first is { IsValid: true } && !reader.AtEnd && reader.Length(percentages: true, nonNegative: true, name) is { IsValid: true } && reader.AtEnd)
+        {
+            return ParsedValue.Refused($"an elliptical corner (two radii in '{name}') is not drawn yet; give one radius");
+        }
+
+        return first is { IsValid: true } && !reader.AtEnd ? ParsedValue.Invalid($"not a value of {name}") : Whole(reader, first, name);
+    }
+
     private static PropertyDefinition InitialNumber(string name, bool inherited, double initial, string appliesTo, string specification) =>
         new(name, inherited, new CssNumber(initial), appliesTo, InvariantNumber.Format(initial), PropertySupport.InitialOnly, specification,
             reader =>

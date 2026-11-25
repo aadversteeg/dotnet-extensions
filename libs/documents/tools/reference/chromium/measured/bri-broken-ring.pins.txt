@@ -1,0 +1,5 @@
+bri-broken-ring.boxes.txt 1
+bri-broken-ring.ink.txt 18
+bri-broken-ring.lines.txt 6
+bri-broken-ring.print.txt 17
+bri-broken-ring.words.txt 8

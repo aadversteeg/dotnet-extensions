@@ -1,0 +1,4 @@
+ts-plain.boxes.txt 5
+ts-plain.lines.txt 0
+ts-plain.print.txt 22
+ts-plain.words.txt 5

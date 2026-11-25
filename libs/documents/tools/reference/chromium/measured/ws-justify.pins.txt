@@ -1,0 +1,4 @@
+ws-justify.boxes.txt 1
+ws-justify.lines.txt 0
+ws-justify.print.txt 26
+ws-justify.words.txt 25

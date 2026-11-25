@@ -2,14 +2,21 @@ using System.Collections.Generic;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Layout;
 
 /// <summary>
-/// Puts the inline boxes of a page on whole pixels of the page (<see cref="InlineBoxSnapping.WholePixels"/>), once the page
-/// is laid out: layout builds a line before it knows where the line lies on its page (a paragraph in a table cell is placed
-/// only after the cell is laid out), so it keeps each box exact (<see cref="LineGroupPart.Box"/>) and this pass, which walks
-/// the page with every fragment's place on it, rounds them.
+/// Puts the inline boxes of a page on whole pixels of the page (<see cref="InlineBoxSnapping.WholePixels"/>), and the
+/// bullets of its list items (<see cref="MarkerSnapping.WholePixels"/>), and cuts the gaps of its underlines and overlines
+/// around the ink again with the band at the line's unrounded place (<see cref="InkGapBand.AtUnroundedLine"/>), once the
+/// page is laid out: layout builds a line before it knows where the line lies on its page (a paragraph in a table cell is
+/// placed only after the cell is laid out), so it keeps each box and each bullet exact (<see cref="LineGroupPart.Box"/>,
+/// <see cref="ListItemLayout"/>) and cuts the gaps as if the line's top were on a whole pixel, and this pass, which walks
+/// the page with every fragment's place on it, rounds them and cuts again where the line's top is not. It walks into the
+/// inline-blocks on a line as into any box, so their lines and bullets are put on the page's pixels as well (case
+/// <c>iblk-inside</c>: a list inside an inline-block has its bullets on whole pixels).
 /// </summary>
 /// <remarks>
 /// THE RULE FOR AN INLINE BOX ON WHOLE PIXELS: each edge of the box's border box lies on the nearest whole pixel of the page,
@@ -23,14 +30,27 @@ namespace Ave.Extensions.Documents.Layout;
 /// (in the line's own pixels: 120.3125; case <c>ib-origin-margin</c>); the same in a table cell with padding in points
 /// (<c>ib-origin-cell</c>); on the second page, whose page area starts at 13 px again, a line whose top lies at 37.56 px
 /// draws the text of a box 1.453 px taller than its font from the box's top at 36 px, not at 37 (<c>ib-origin-page</c>).
+/// <para>THE RULE FOR A LINE INSIDE AN INLINE-BLOCK: Chromium draws the text of every line from that line's own top rounded
+/// to the nearest whole pixel of the page, a line inside an inline-block as well, so the text inside an inline-block whose
+/// line top lies at another fraction of a pixel than the top of the line around it is drawn up to a pixel above or below
+/// that line's text (measured with vertical padding of 0.1 to 7.56 px on an inline-block in paragraphs at fractional
+/// places: the inner text always on a whole pixel, the line's text at the line's rounded top plus the padding; case
+/// <c>bri-iblk</c>: 1 mm of padding puts the badge's text 0.23 px below the line's, 2 mm and a 2 px border 0.55 px above
+/// it). The engine draws a line's text at its exact place (the comparison rounds each line's top), so a line inside an
+/// inline-block is moved by its own rounding less the rounding of the line around it, and its text then lies where
+/// Chromium draws it relative to the line around it.</para>
 /// </remarks>
 internal static class InlineBoxPixels
 {
     /// <summary>One fragment on the way down: its place on the page, the children it holds, how many of them are done, and
     /// the children rebuilt so far.</summary>
-    private sealed class Frame(PlacedFragment placed, Point origin, IReadOnlyList<PlacedFragment> children)
+    private sealed class Frame(PlacedFragment placed, Point origin, IReadOnlyList<PlacedFragment> children, double? lineRounding = null)
     {
         public PlacedFragment Placed { get; } = placed;
+
+        /// <summary>For a fragment inside a line (an inline-block and what it holds): how far the nearest line around it
+        /// moves when its top is put on the nearest whole pixel of the page, in points; null outside every line.</summary>
+        public double? LineRounding { get; } = lineRounding;
 
         public Point Origin { get; } = origin;
 
@@ -41,14 +61,35 @@ internal static class InlineBoxPixels
         public bool Changed { get; set; }
     }
 
-    /// <summary>A fragment of a page with every inline box in it on whole pixels of the page.</summary>
+    /// <summary>The policies the pass follows: which of its three jobs it does.</summary>
+    /// <param name="Boxes">Inline boxes go on whole pixels (<see cref="InlineBoxSnapping.WholePixels"/>).</param>
+    /// <param name="Bullets">Bullets go on whole pixels (<see cref="MarkerSnapping.WholePixels"/>).</param>
+    /// <param name="Gaps">Gaps around the ink are cut at the line's unrounded place (<see cref="InkGapBand.AtUnroundedLine"/>).</param>
+    public readonly record struct Policies(bool Boxes, bool Bullets, bool Gaps)
+    {
+        /// <summary>The policies of a profile.</summary>
+        /// <param name="profile">The document's profile.</param>
+        /// <returns>The policies.</returns>
+        public static Policies Of(LayoutProfile profile) => new(
+            profile.InlineBoxSnapping == InlineBoxSnapping.WholePixels,
+            profile.MarkerSnapping == MarkerSnapping.WholePixels,
+            profile.InkGapBand == InkGapBand.AtUnroundedLine);
+
+        /// <summary>True when the pass has nothing to do.</summary>
+        public bool None => !Boxes && !Bullets && !Gaps;
+    }
+
+    /// <summary>A fragment of a page with every inline box in it on whole pixels of the page, every bullet, and the gaps of
+    /// every underline and overline cut at its line's place on the page, each as the policies ask.</summary>
     /// <param name="placed">The fragment, its offset relative to the page's top-left corner.</param>
-    /// <returns>The fragment with its lines that hold a box rebuilt; the same fragment when it holds none.</returns>
-    public static PlacedFragment Snap(PlacedFragment placed)
+    /// <param name="policies">What the pass does.</param>
+    /// <returns>The fragment with its lines and its bullets rebuilt where they change, the same fragment where nothing
+    /// does; or the error of a glyph outline that cannot be decoded.</returns>
+    public static Result<PlacedFragment, Error> Snap(PlacedFragment placed, Policies policies)
     {
         if (placed.Fragment is LineFragment top)
         {
-            return placed with { Fragment = Line(top, placed.Offset) };
+            return Line(top, placed.Offset, policies).OnSuccessMap(line => ReferenceEquals(line, top) ? placed : placed with { Fragment = line });
         }
 
         // Without recursion: fragments nest as deep as the document's boxes.
@@ -63,13 +104,45 @@ internal static class InlineBoxPixels
                 var at = frame.Origin + child.Offset;
                 if (child.Fragment is LineFragment line)
                 {
-                    var snapped = Line(line, at);
+                    // THE RULE FOR A LINE INSIDE AN INLINE-BLOCK (below): the line moves by the difference of its own rounding
+                    // and the rounding of the line around it.
+                    var shift = policies.Boxes && frame.LineRounding is { } around ? CssPixels.Round(at.Y) - at.Y - around : 0;
+                    if (shift != 0)
+                    {
+                        child = child with { Offset = child.Offset + new Point(0, shift) };
+                        at += new Point(0, shift);
+                        frame.Changed = true;
+                    }
+
+                    var rebuilt = Line(line, at, policies);
+                    if (rebuilt.IsFailure)
+                    {
+                        return Result<PlacedFragment, Error>.Failure(rebuilt.Error);
+                    }
+
+                    var snapped = rebuilt.Value;
+                    var placedLine = ReferenceEquals(snapped, line) ? child : child with { Fragment = snapped };
+                    if (snapped.Children.Any(piece => piece.Fragment is BoxFragment))
+                    {
+                        // An inline-block on the line holds lines and bullets of its own, which go on the page's pixels too.
+                        pending.Push(new Frame(placedLine, at, snapped.Children, CssPixels.Round(at.Y) - at.Y) { Changed = !ReferenceEquals(snapped, line) || shift != 0 });
+                        continue;
+                    }
+
                     frame.Changed |= !ReferenceEquals(snapped, line);
-                    frame.Done.Add(ReferenceEquals(snapped, line) ? child : child with { Fragment = snapped });
+                    frame.Done.Add(placedLine);
+                }
+                else if (policies.Bullets && child.Fragment is BoxFragment { Box.Role: SemanticRole.ListLabelRole, Children: [{ Fragment: MarkerFragment }] })
+                {
+                    // THE RULE FOR A BULLET ON WHOLE PIXELS (MarkerSnapping.WholePixels): its box's left and top edges on
+                    // the nearest whole pixel of the page; its size is whole pixels already (ListItemLayout).
+                    var shift = new Point(CssPixels.Round(at.X) - at.X, CssPixels.Round(at.Y) - at.Y);
+                    frame.Changed |= shift != new Point(0, 0);
+                    frame.Done.Add(shift == new Point(0, 0) ? child : child with { Offset = child.Offset + shift });
                 }
                 else if (ChildrenOf(child.Fragment) is { Count: > 0 } children)
                 {
-                    pending.Push(new Frame(child, at, children));
+                    pending.Push(new Frame(child, at, children, frame.LineRounding));
                 }
                 else
                 {
@@ -80,21 +153,22 @@ internal static class InlineBoxPixels
             }
 
             pending.Pop();
-            var rebuilt = !frame.Changed ? frame.Placed : frame.Placed with
+            var done = !frame.Changed ? frame.Placed : frame.Placed with
             {
                 Fragment = frame.Placed.Fragment switch
                 {
                     BoxFragment box => box with { Children = [.. frame.Done] },
+                    LineFragment line => line with { Children = [.. frame.Done] },
                     SliceFragment slice => slice with { Content = frame.Done[0] },
                     var other => other,
                 },
             };
             if (pending.Count == 0)
             {
-                return rebuilt;
+                return Result<PlacedFragment, Error>.Success(done);
             }
 
-            pending.Peek().Done.Add(rebuilt);
+            pending.Peek().Done.Add(done);
             pending.Peek().Changed |= frame.Changed;
         }
     }
@@ -143,30 +217,91 @@ internal static class InlineBoxPixels
     };
 
     /// <summary>A line at <paramref name="origin"/> on the page with its boxes on whole pixels of the page and the text
-    /// inside each moved with it (THE RULE FOR AN INLINE BOX ON WHOLE PIXELS); the same line when it holds no box.</summary>
-    private static LineFragment Line(LineFragment line, Point origin)
+    /// inside each moved with it (THE RULE FOR AN INLINE BOX ON WHOLE PIXELS), and the gaps of its underlines and overlines
+    /// cut again at the line's place on the page (<see cref="InkGapBand.AtUnroundedLine"/>), as the policies ask; the same
+    /// line when neither changes it.</summary>
+    private static Result<LineFragment, Error> Line(LineFragment line, Point origin, Policies policies)
     {
-        if (!line.Groups.Any(part => part.Box is not null))
+        var boxes = policies.Boxes && line.Groups.Any(part => part.Box is not null);
+        var rounding = CssPixels.Round(origin.Y) - origin.Y;
+        var gaps = policies.Gaps && line.InkCuts.Count > 0;
+        if (!boxes && !gaps)
         {
-            return line;
+            return Result<LineFragment, Error>.Success(line);
         }
 
-        var children = line.Children.ToArray();
-        for (var index = 0; index < children.Length; index++)
+        // How far the text of each child is moved down from where the line was built: by the rounding of its box's top.
+        var shifts = new double[line.Children.Count];
+        if (boxes)
         {
-            if (children[index].Fragment is TextFragment && Innermost(line.Groups, index) is { } box)
+            for (var index = 0; index < shifts.Length; index++)
             {
-                var top = box.Origin.Y;
-                var shift = CssPixels.Round(origin.Y + top) - CssPixels.Round(origin.Y) - top;
-                children[index] = children[index] with { Offset = children[index].Offset + new Point(0, shift) };
+                if (line.Children[index].Fragment is TextFragment && Innermost(line.Groups, index) is { } box)
+                {
+                    var top = box.Origin.Y;
+                    shifts[index] = CssPixels.Round(origin.Y + top) - CssPixels.Round(origin.Y) - top;
+                }
             }
         }
 
-        return line with
+        var children = line.Children.Select((child, index) => shifts[index] == 0 ? child : child with { Offset = child.Offset + new Point(0, shifts[index]) }).ToList();
+        var groups = boxes ? [.. line.Groups.Select(part => part.Box is { } box ? part with { Box = OnPixels(box, origin) } : part)] : line.Groups;
+        if (!gaps)
         {
-            Children = [.. children],
-            Groups = [.. line.Groups.Select(part => part.Box is { } box ? part with { Box = OnPixels(box, origin) } : part)],
-        };
+            return Result<LineFragment, Error>.Success(line with { Children = [.. children], Groups = groups });
+        }
+
+        return Recut(children, groups, line.InkCuts, shifts, rounding).OnSuccessMap(recut => line with { Children = recut.Children, Groups = recut.Groups });
+    }
+
+    /// <summary>
+    /// THE RULE FOR THE GAPS ON THE PAGE (<see cref="InkGapBand.AtUnroundedLine"/>): the text of a line is drawn from the
+    /// line's top rounded to the nearest whole pixel of the page (a reader of the engine's print rounds it so; the text of an
+    /// inline box from its box's rounded top, <see cref="Line"/>) and its underlines and overlines painted from there, but the
+    /// gaps are cut with the band at the line's unrounded place. So each decorated piece's lines are cut again with the band
+    /// moved up by the line top's rounding and by the shift of the piece's text; its rectangles take the place of the ones cut
+    /// when the line was built, and the parts of the inline groups are counted again over the new children. A line whose
+    /// top lies on a whole pixel, and whose text is not moved, keeps its rectangles.
+    /// </summary>
+    private static Result<(ValueList<PlacedFragment> Children, ValueList<LineGroupPart> Groups), Error> Recut(
+        List<PlacedFragment> children, ValueList<LineGroupPart> groups, ValueList<TextDecorations.Cut> cuts, double[] shifts, double rounding)
+    {
+        // The new index of every old child, and of the end: a piece's old lines all map to where its new ones start.
+        var starts = new int[children.Count + 1];
+        var rebuilt = new List<PlacedFragment>(children.Count);
+        var next = 0;
+        for (var index = 0; index < children.Count;)
+        {
+            if (next < cuts.Count && cuts[next].Text - cuts[next].Before == index)
+            {
+                var cut = cuts[next++];
+                var band = -(rounding + shifts[cut.Text]);
+                if (System.Math.Abs(band) > 1e-9)
+                {
+                    var again = cut.Again(band);
+                    if (again.IsFailure)
+                    {
+                        return Result<(ValueList<PlacedFragment>, ValueList<LineGroupPart>), Error>.Failure(again.Error);
+                    }
+
+                    for (; index < cut.Text; index++)
+                    {
+                        starts[index] = rebuilt.Count;
+                    }
+
+                    rebuilt.AddRange(again.Value);
+                    continue;
+                }
+            }
+
+            starts[index] = rebuilt.Count;
+            rebuilt.Add(children[index]);
+            index++;
+        }
+
+        starts[children.Count] = rebuilt.Count;
+        return Result<(ValueList<PlacedFragment>, ValueList<LineGroupPart>), Error>.Success(
+            ([.. rebuilt], [.. groups.Select(part => part with { First = starts[part.First], Count = starts[part.First + part.Count] - starts[part.First] })]));
     }
 
     /// <summary>The exact border box of the innermost part with a box that holds the line's child <paramref name="index"/>:

@@ -1,0 +1,4 @@
+ls-word-spacing.boxes.txt 1
+ls-word-spacing.lines.txt 0
+ls-word-spacing.print.txt 117
+ls-word-spacing.words.txt 116

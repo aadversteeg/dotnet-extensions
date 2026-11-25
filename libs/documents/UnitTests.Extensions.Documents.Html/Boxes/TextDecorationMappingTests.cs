@@ -4,6 +4,8 @@ using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html;
 using Ave.Extensions.Documents.Html.Boxes;
 using Ave.Extensions.Documents.Html.Parsing;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.TestSupport;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.Functional;
@@ -210,5 +212,67 @@ public class TextDecorationMappingTests
         var five = string.Concat(Enumerable.Repeat("<span>", 5)) + "a<u>b</u>" + string.Concat(Enumerable.Repeat("</span>", 5));
         Runs(Doc($"<p>{five}</p>", "span { text-decoration: underline overline line-through }")).Select(run => run.Style.Decorations.Count)
             .Should().Equal([15, ModelLimits.MaxDecorations], "a text with exactly as many lines as the model holds is drawn");
+    }
+
+    /// <summary>
+    /// Case <c>dw-gap-fraction</c>: underlines and links over descenders on lines whose top lies 0, 0.25, 0.5 and 0.75 px past
+    /// a whole pixel of the page. Chromium draws the text from the line's rounded top and cuts the gaps with the band at the
+    /// unrounded one; under <see cref="InkGapBand.AtUnroundedLine"/> every piece of every line ends where Chromium's does
+    /// (within its single-precision 0.005 pt), under <see cref="InkGapBand.AtText"/> only those of the lines whose top lies
+    /// on a whole pixel. The line itself is painted at the same place under both.
+    /// </summary>
+    [Theory]
+    [InlineData(InkGapBand.AtUnroundedLine)]
+    [InlineData(InkGapBand.AtText)]
+    public void The_gaps_of_an_underline_are_cut_with_the_band_at_its_line_s_unrounded_place_on_the_page(InkGapBand band)
+    {
+        var boxes = HtmlCases.Boxes("dw-gap-fraction").Value;
+        boxes.Document.Profile.InkGapBand.Should().Be(InkGapBand.AtUnroundedLine);
+        var pages = DocumentLayout.Run(boxes.Document with { Profile = boxes.Document.Profile with { InkGapBand = band } }, boxes.Fonts).Value;
+        var engine = Lines(PrintedPages.Engine(pages).Pages[0].Rectangles);
+        var chromium = Lines(HtmlCases.ChromiumPrint("dw-gap-fraction").Pages[0].Rectangles);
+
+        engine.Keys.Should().Equal(chromium.Keys, "each line is painted where Chromium paints it");
+        var equal = engine.Keys.Where(top => engine[top].Count == chromium[top].Count
+            && engine[top].Zip(chromium[top]).All(pair => Math.Abs(pair.First.X0 - pair.Second.X0) < 0.005 && Math.Abs(pair.First.X1 - pair.Second.X1) < 0.005)).ToList();
+        if (band == InkGapBand.AtUnroundedLine)
+        {
+            equal.Should().Equal(engine.Keys);
+            return;
+        }
+
+        // The lines whose top lies on a whole pixel: the first of the 10.5 pt underlines, of the links and of the 12 pt lines.
+        equal.Should().Equal(23.25, 75, 128.25);
+
+        // The pieces of the underlines and links, line by line from the top: a line is the rectangles one pixel high on one row.
+        static SortedDictionary<double, List<PrintedBox>> Lines(IEnumerable<PrintedBox> boxes) => new(boxes
+            .Where(box => box.Y1 - box.Y0 < 0.8 && box.X1 - box.X0 < 280)
+            .GroupBy(box => ChromiumLayout.WholePixel(box.Y0))
+            .ToDictionary(row => row.Key, row => row.OrderBy(box => box.X0).ToList()));
+    }
+
+    /// <summary>
+    /// The gaps cut again on the page can be more or fewer pieces than when the line was built: "gjpqy" in a 16 pt link on a
+    /// line whose top lies 0.5 px past a whole pixel is two pieces with the band at the text and three with the band at the
+    /// line's unrounded place. The link's part on the line still holds all of its text and all of its pieces, and nothing
+    /// after it.
+    /// </summary>
+    [Fact]
+    public void A_link_holds_its_text_and_every_piece_of_its_underline_when_the_gaps_are_cut_again_into_more_pieces()
+    {
+        var boxes = Boxes(Doc("<div style=\"height: 0.5px\"></div><p><a href=\"https://example.com/\">gjpqy</a> end</p>", "body { font-size: 16pt } p { margin: 0 }")).Value;
+        PageDocument Laid(InkGapBand band) =>
+            DocumentLayout.Run(boxes.Document with { Profile = boxes.Document.Profile with { InkGapBand = band } }, boxes.Fonts).Value;
+        Laid(InkGapBand.AtText).Pages[0].Items.OfType<FillRectangle>().Should().HaveCount(2);
+        var items = Laid(InkGapBand.AtUnroundedLine).Pages[0].Items;
+        items.OfType<FillRectangle>().Should().HaveCount(3);
+
+        var start = items.Select((item, index) => (item, index)).Single(pair => pair.item is StructureStart { Role: SemanticRole.LinkRole }).index;
+        var link = ((StructureStart)items[start]).Node;
+        var end = items.Select((item, index) => (item, index)).Single(pair => pair.item is StructureEnd { } closed && closed.Node == link).index;
+        var inside = items.Skip(start + 1).Take(end - start - 1).ToList();
+        string.Concat(inside.OfType<GlyphRun>().SelectMany(run => run.Glyphs).Select(glyph => glyph.Text)).Should().Be("gjpqy");
+        inside.OfType<FillRectangle>().Should().HaveCount(3, "every piece of the link's underline lies in the link's part");
+        string.Concat(items.Skip(end + 1).OfType<GlyphRun>().SelectMany(run => run.Glyphs).Select(glyph => glyph.Text)).Trim().Should().Be("end");
     }
 }

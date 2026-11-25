@@ -1,0 +1,4 @@
+tpa-table.boxes.txt 18
+tpa-table.lines.txt 21
+tpa-table.print.txt 99
+tpa-table.words.txt 41

@@ -1,0 +1,4 @@
+ws-nowrap.boxes.txt 1
+ws-nowrap.lines.txt 0
+ws-nowrap.print.txt 22
+ws-nowrap.words.txt 21

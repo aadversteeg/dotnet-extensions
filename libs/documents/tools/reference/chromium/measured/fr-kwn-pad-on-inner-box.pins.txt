@@ -1,0 +1,4 @@
+fr-kwn-pad-on-inner-box.boxes.txt 1
+fr-kwn-pad-on-inner-box.lines.txt 0
+fr-kwn-pad-on-inner-box.print.txt 11
+fr-kwn-pad-on-inner-box.words.txt 6

@@ -1,0 +1,4 @@
+fr-kwn-pad-on-outer-box-then-bordered-box.boxes.txt 1
+fr-kwn-pad-on-outer-box-then-bordered-box.lines.txt 1
+fr-kwn-pad-on-outer-box-then-bordered-box.print.txt 11
+fr-kwn-pad-on-outer-box-then-bordered-box.words.txt 6

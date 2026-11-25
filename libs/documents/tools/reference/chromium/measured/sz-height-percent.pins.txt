@@ -1,0 +1,4 @@
+sz-height-percent.boxes.txt 6
+sz-height-percent.lines.txt 4
+sz-height-percent.print.txt 22
+sz-height-percent.words.txt 17

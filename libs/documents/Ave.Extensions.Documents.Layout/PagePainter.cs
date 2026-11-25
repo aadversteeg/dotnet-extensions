@@ -89,11 +89,11 @@ public static class PagePainter
     private static Page PaintPage(PageFragment page, Anchors anchors) =>
         new(page.PageSize,
         [
-            .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null), anchors)) : [],
+            .. page.Header is { } header ? Artifact(ArtifactKind.PageHeader, Items(header.Fragment, header.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null, header.Offset), anchors)) : [],
             .. page.BodyClip is { } body
-                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, body), anchors).Select(item => item is LinkArea link ? link with { Area = Inside(link.Area, body) } : item))
-                : Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, null), anchors),
-            .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null), anchors)) : [],
+                ? Clipped(body, Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, body, page.Root.Offset), anchors).Select(item => item is LinkArea link ? link with { Area = Inside(link.Area, body) } : item))
+                : Items(page.Root.Fragment, page.Root.Offset, inArtifact: false, new Sheet(page.PageSize.Width, null, page.Root.Offset), anchors),
+            .. page.Footer is { } footer ? Artifact(ArtifactKind.PageFooter, Items(footer.Fragment, footer.Offset, inArtifact: true, new Sheet(page.PageSize.Width, null, footer.Offset), anchors)) : [],
         ]);
 
     /// <summary>
@@ -138,7 +138,9 @@ public static class PagePainter
 
     /// <summary>The page being painted: its width, for the clips of slices, and the rectangle its body is clipped to, or
     /// null for a page area or a page whose body is not clipped.</summary>
-    private sealed record Sheet(double Width, Rect? BodyClip);
+    /// <summary>What painting a page's area needs of the page: its width, the clip of its body, and the area's top left
+    /// corner on the page (Chromium places the dashes of a border from it, <see cref="DashedBorder"/>).</summary>
+    private sealed record Sheet(double Width, Rect? BodyClip, Point Area);
 
     private static bool Overlaps(Rect a, Rect b) =>
         a.Origin.X < b.Origin.X + b.Size.Width && b.Origin.X < a.Origin.X + a.Size.Width
@@ -213,7 +215,7 @@ public static class PagePainter
 
         if (inArtifact)
         {
-            return [.. Background(box, origin), .. Border(box, origin), .. Children(box.Children, origin, inArtifact: true, sheet, anchors)];
+            return [.. Background(box, origin), .. Border(box, origin, sheet.Area), .. Children(box.Children, origin, inArtifact: true, sheet, anchors)];
         }
 
         if (box.IsRepeated || box.Box.Role == SemanticRole.Decorative)
@@ -228,7 +230,7 @@ public static class PagePainter
         [
             new StructureStart(box.Box.Id, box.Box.Role, box.Box.Source) { Span = box.Box.Style.Span, Language = box.Box.Language },
             .. anchors.At(box.Box.Id, origin),
-            .. Decoration([.. Background(box, origin), .. Border(box, origin)], inArtifact: false),
+            .. Decoration([.. Background(box, origin), .. Border(box, origin, sheet.Area)], inArtifact: false),
             .. Children(box.Children, origin, inArtifact: false, sheet, anchors),
             new StructureEnd(box.Box.Id),
         ];
@@ -323,11 +325,12 @@ public static class PagePainter
     }
 
     /// <summary>The background and then the border sides of an inline box's part, in its border box <paramref name="area"/>
-    /// (THE RULE FOR PAINTING AN INLINE BOX): the sides as a box's (<see cref="Border(BoxFragment, Point)"/>), the left one
+    /// (THE RULE FOR PAINTING AN INLINE BOX): the sides as a box's (<see cref="Border(BoxFragment, Point, Point)"/>), the left one
     /// only on the part that holds the start edge and the right one only on the part that holds the end edge (THE RULE FOR AN
-    /// INLINE BOX OVER LINES).</summary>
-    private static IEnumerable<DrawItem> InlineBox(InlineBoxStyle box, LineGroupPart part, Rect area) =>
-        [.. box.Background is { } color ? [new FillRectangle(area, color)] : Array.Empty<DrawItem>(),
+    /// INLINE BOX OVER LINES); with rounded corners as <see cref="RoundedBox.InlinePart"/>.</summary>
+    private static IEnumerable<DrawItem> InlineBox(InlineBoxStyle box, LineGroupPart part, Rect area) => !box.BorderRadius.IsZero
+        ? RoundedBox.InlinePart(box, area, part.HoldsStart, part.HoldsEnd)
+        : [.. box.Background is { } color ? [new FillRectangle(area, color)] : Array.Empty<DrawItem>(),
             .. Sides(box.Border with { Left = part.HoldsStart ? box.Border.Left : BorderSide.None, Right = part.HoldsEnd ? box.Border.Right : BorderSide.None }, area.Origin, area.Size)];
 
     private static IEnumerable<DrawItem> Children(ValueList<PlacedFragment> children, Point origin, bool inArtifact, Sheet sheet, Anchors anchors) =>
@@ -344,8 +347,14 @@ public static class PagePainter
         return content.IsEmpty ? [] : [new ArtifactStart(kind), .. content, ArtifactEnd.Instance];
     }
 
-    private static IEnumerable<DrawItem> Background(BoxFragment box, Point origin) =>
-        box.Box.Style.Background is { } color ? [new FillRectangle(new Rect(origin, box.Size), color)] : [];
+    /// <summary>The background of a box under its border box; along the rounded border box where it has rounded corners
+    /// (<see cref="RoundedBox"/>).</summary>
+    private static IEnumerable<DrawItem> Background(BoxFragment box, Point origin) => box.Box.Style.Background switch
+    {
+        null => [],
+        var color when !box.Box.Style.BorderRadius.IsZero => [RoundedBox.Background(box, origin, color.Value)],
+        var color => [new FillRectangle(new Rect(origin, box.Size), color.Value)],
+    };
 
     /// <summary>
     /// The border sides the fragment paints. A border of solid sides is painted as four filled rectangles along the edges
@@ -353,12 +362,19 @@ public static class PagePainter
     /// the height between them. A border with an inset or outset side, or with a corner where two visible solid sides of
     /// different colours meet, is painted as Chromium 159 paints it, with the sides cut at the corners where two colours
     /// meet (CSS Backgrounds 3 §4.4, colour transitions at corners; <see cref="CutBorder"/>); a border of one colour stays
-    /// four rectangles (<c>bs-solid-one-colour</c>: Chromium fills the same pixels as one shape).
+    /// four rectangles (<c>bs-solid-one-colour</c>: Chromium fills the same pixels as one shape). A box with rounded corners
+    /// paints its border as one ring (<see cref="RoundedBox"/>), a border with dashed sides as <see cref="DashedBorder"/>.
     /// </summary>
-    private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin) => Sides(box.Border, origin, box.Size);
+    private static IEnumerable<DrawItem> Border(BoxFragment box, Point origin, Point area) =>
+        box.Box.Style.BorderRadius.IsZero ? Sides(box.Border, origin, box.Size, area) : RoundedBox.Border(box, origin);
 
-    private static IEnumerable<DrawItem> Sides(Border border, Point origin, Size size)
+    private static IEnumerable<DrawItem> Sides(Border border, Point origin, Size size, Point area = default)
     {
+        if (DashedBorder.IsDashed(border))
+        {
+            return DashedBorder.Paint(border, new Rect(origin, size), area);
+        }
+
         if (border.Top.Style != BorderStyle.Solid || border.Right.Style != BorderStyle.Solid || border.Bottom.Style != BorderStyle.Solid || border.Left.Style != BorderStyle.Solid
             || MeetsAnotherColour(border))
         {

@@ -1,0 +1,4 @@
+d-strut.boxes.txt 1
+d-strut.lines.txt 0
+d-strut.print.txt 14
+d-strut.words.txt 12

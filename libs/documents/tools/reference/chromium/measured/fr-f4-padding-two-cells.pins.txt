@@ -1,0 +1,4 @@
+fr-f4-padding-two-cells.boxes.txt 4
+fr-f4-padding-two-cells.lines.txt 14
+fr-f4-padding-two-cells.print.txt 30
+fr-f4-padding-two-cells.words.txt 14

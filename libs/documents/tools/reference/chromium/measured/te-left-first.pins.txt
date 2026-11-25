@@ -1,0 +1,4 @@
+te-left-first.boxes.txt 7
+te-left-first.lines.txt 17
+te-left-first.print.txt 25
+te-left-first.words.txt 7

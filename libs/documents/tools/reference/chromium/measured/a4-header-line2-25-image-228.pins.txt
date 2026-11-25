@@ -1,0 +1,4 @@
+a4-header-line2-25-image-228.boxes.txt 2
+a4-header-line2-25-image-228.lines.txt 15
+a4-header-line2-25-image-228.print.txt 22
+a4-header-line2-25-image-228.words.txt 2

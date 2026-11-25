@@ -1,0 +1,17 @@
+page 1 300.000 400.080
+word 1 12.000 32.349 23.250 10.500 Thin #000000 Lato-Regular
+word 1 35.037 67.965 23.250 10.500 dashed #000000 Lato-Regular
+word 1 70.653 94.078 23.250 10.500 lines. #000000 Lato-Regular
+word 1 12.000 29.656 111.750 10.500 End #000000 Lato-Regular
+word 1 32.344 41.867 111.750 10.500 of #000000 Lato-Regular
+word 1 44.356 67.781 111.750 10.500 lines. #000000 Lato-Regular
+path 1 12.000 38.250 20.250 39.000 #c03020 fff0fff0fff
+path 1 12.000 43.500 33.750 44.250 #c03020 fff00cff309ff606ff903ffc00fff
+path 1 12.000 48.750 74.250 49.500 #c03020 fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff00fff
+path 1 12.000 54.000 125.250 54.750 #c03020 fff01ffe02ffd03ffc04ffb05ffa06ff907ff808ff709ff60aff50bff40cff30dff20eff10fff01ffe02ffd03ffc04ffb05ffa06ff907ff808ff709ff60aff50bff40cff30dff20eff10fff
+path 1 12.000 59.250 186.000 60.000 #c03020 fff00fff01ffe01ffe01ffe02ffd02ffd02ffd03ffc03ffc03ffc04ffb04ffb04ffb05ffa05ffa05ffa06ff906ff906ff907ff807ff807ff808ff708ff708ff708ff709ff609ff609ff60aff50aff50aff50bff40bff40bff40cff30cff30cff30dff20dff20dff20eff10eff10eff10fff00fff
+path 1 12.000 70.500 24.750 72.000 #c03020 ffffff00000ffffff/ffffff00000ffffff
+path 1 12.000 76.500 42.750 78.000 #c03020 ffffff004fffffb008fffff700bfffff400ffffff/ffffff004fffffb008fffff700bfffff400ffffff
+path 1 12.000 82.500 84.750 84.000 #c03020 ffffff0000dfffff2000cfffff3000afffff50008fffff70007fffff80005fffffa0003fffffc0002fffffd0000ffffff/ffffff0000dfffff2000cfffff3000afffff50008fffff70007fffff80005fffffa0003fffffc0002fffffd0000ffffff
+path 1 12.000 88.500 134.250 90.000 #c03020 ffffff0003fffffc0006fffff90008fffff7000bfffff4000efffff1002fffffd0005fffffa0008fffff7000afffff5000dfffff2001fffffe0004fffffb0007fffff80009fffff6000cfffff3000ffffff/ffffff0003fffffc0006fffff90008fffff7000bfffff4000efffff1002fffffd0005fffffa0008fffff7000afffff5000dfffff2001fffffe0004fffffb0007fffff80009fffff6000cfffff3000ffffff
+path 1 12.000 94.500 185.250 96.000 #c03020 ffffff0003fffffc0007fffff8000afffff5000dfffff2001fffffe0005fffffa0008fffff7000bfffff4000efffff1003fffffc0006fffff90009fffff6000cfffff3001fffffe0004fffffb0007fffff8000afffff5000efffff1002fffffd0005fffffa0008fffff7000cfffff3000ffffff/ffffff0003fffffc0007fffff8000afffff5000dfffff2001fffffe0005fffffa0008fffff7000bfffff4000efffff1003fffffc0006fffff90009fffff6000cfffff3001fffffe0004fffffb0007fffff8000afffff5000efffff1002fffffd0005fffffa0008fffff7000cfffff3000ffffff

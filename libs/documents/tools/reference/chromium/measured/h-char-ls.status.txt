@@ -1,0 +1,1 @@
+h-char-ls refused Documents.Html.Unsupported.Character U+2028 at 3:4

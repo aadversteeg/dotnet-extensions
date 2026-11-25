@@ -1,0 +1,4 @@
+a4-header-image-228-beside-two-pages.boxes.txt 4
+a4-header-image-228-beside-two-pages.lines.txt 35
+a4-header-image-228-beside-two-pages.print.txt 61
+a4-header-image-228-beside-two-pages.words.txt 21

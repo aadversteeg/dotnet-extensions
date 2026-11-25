@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0; }
+@page { size: 300pt 460pt; margin: 12pt; }
+span { display: inline-block; background-color: #c0e0ff; }
+</style></head><body>
+<!-- An inline-block's width and height: width, min-width, max-width, height larger and smaller than its content, box-sizing, with padding and a border. -->
+<p>Width <span style="width: 50.3pt">Given</span> end.</p>
+<p>Minimum <span style="min-width: 60pt">Min</span> end.</p>
+<p>Maximum <span style="max-width: 40pt">Max width cuts it</span> end.</p>
+<p>Larger <span style="height: 30pt">Tall</span> end.</p>
+<p>Smaller <span style="height: 6pt">Short</span> end.</p>
+<p>Content <span style="width: 50pt; height: 20pt; padding: 3pt; border: 1.5pt solid #000000">Content</span> end.</p>
+<p>Border <span style="box-sizing: border-box; width: 50pt; height: 20pt; padding: 3pt; border: 1.5pt solid #000000">Border</span> end.</p>
+<p>Both <span style="min-width: 30pt; max-width: 45pt">Both ends of the box</span> end.</p>
+<p>Last line of text.</p>
+</body></html>

@@ -1,0 +1,4 @@
+a3-mirror.boxes.txt 8
+a3-mirror.lines.txt 25
+a3-mirror.print.txt 32
+a3-mirror.words.txt 5

@@ -1,0 +1,4 @@
+a4-image-block-padding-60.boxes.txt 1
+a4-image-block-padding-60.lines.txt 0
+a4-image-block-padding-60.print.txt 7
+a4-image-block-padding-60.words.txt 1

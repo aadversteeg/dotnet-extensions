@@ -1,0 +1,4 @@
+dl-lato-bold.boxes.txt 1
+dl-lato-bold.lines.txt 6
+dl-lato-bold.print.txt 19
+dl-lato-bold.words.txt 12

@@ -1,0 +1,4 @@
+gc-nothing.boxes.txt 2
+gc-nothing.lines.txt 0
+gc-nothing.print.txt 9
+gc-nothing.words.txt 7

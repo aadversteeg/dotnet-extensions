@@ -1,0 +1,4 @@
+mx-gen-block-size.boxes.txt 2
+mx-gen-block-size.lines.txt 2
+mx-gen-block-size.print.txt 18
+mx-gen-block-size.words.txt 11

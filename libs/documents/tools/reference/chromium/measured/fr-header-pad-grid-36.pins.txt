@@ -1,0 +1,4 @@
+fr-header-pad-grid-36.boxes.txt 2
+fr-header-pad-grid-36.lines.txt 20
+fr-header-pad-grid-36.print.txt 27
+fr-header-pad-grid-36.words.txt 3

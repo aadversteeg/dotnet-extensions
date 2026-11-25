@@ -40,6 +40,41 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, InvariantNumber.Format(rest))
             .WithSource(box.Source);
 
+    /// <summary>A box with rounded corners and a border that a page break cuts
+    /// (<see cref="LayoutErrorCodes.RoundedBorderBreak"/>).</summary>
+    /// <param name="box">The box.</param>
+    public static Error RoundedBorderBreak(Box box) =>
+        new Error(
+                LayoutErrorCodes.RoundedBorderBreak,
+                $"{Describe(box)} has rounded corners and a border, and a page break cuts it; such a border is not drawn in this version. Keep the box on one page (break-inside: avoid), or leave out its border or its radius.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .WithSource(box.Source);
+
+    /// <summary>An inline box with rounded corners and a border that a line break cuts
+    /// (<see cref="LayoutErrorCodes.RoundedBorderLineBreak"/>).</summary>
+    /// <param name="group">The inline box's group.</param>
+    public static Error RoundedBorderLineBreak(InlineGroup group) =>
+        new Error(
+                LayoutErrorCodes.RoundedBorderLineBreak,
+                "An inline box with rounded corners and a border is broken over two or more lines; such a border is not drawn in this version. Keep the text of the box on one line (white-space: nowrap), or leave out its border or its radius.")
+            .With(ErrorMetadataKeys.Node, group.Id.ToString())
+            .WithSource(group.Source);
+
+    /// <summary>A dashed border side too short or too long to dash (<see cref="LayoutErrorCodes.DashedBorder"/>).</summary>
+    /// <param name="box">The box.</param>
+    /// <param name="length">The side's length, in CSS pixels.</param>
+    /// <param name="width">The side's width, in CSS pixels.</param>
+    /// <param name="tooMany">True for a side with more dashes than one path holds, false for one too short.</param>
+    public static Error DashedBorder(Box box, double length, double width, bool tooMany) =>
+        new Error(
+                LayoutErrorCodes.DashedBorder,
+                !tooMany
+                    ? $"{Describe(box)} has a dashed border side {InvariantNumber.Format(length)} px long, shorter than two dashes and a gap of a {InvariantNumber.Format(width)} px border; Chromium draws such a side as a solid line, which is not drawn in this version. Make the box larger, or use a solid border."
+                    : $"{Describe(box)} has a dashed border side {InvariantNumber.Format(length)} px long, more than {Layout.DashedBorder.MaxDashes} dashes of a {InvariantNumber.Format(width)} px border; such a side is not drawn in this version. Use a solid border.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, $"{InvariantNumber.Format(length)} px, {InvariantNumber.Format(width)} px")
+            .WithSource(box.Source);
+
     /// <summary>A list item's label that would start left of the sheet (<see cref="LayoutErrorCodes.MarkerOutsideSheet"/>).</summary>
     /// <param name="label">The label; its source is the item's.</param>
     /// <param name="left">The label's left edge on the sheet, in points (negative).</param>
@@ -186,6 +221,15 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, group.Box?.ToString() ?? "none")
             .With(ErrorMetadataKeys.Property, "box")
             .WithSource(group.Source);
+
+    /// <summary>An inline-block taller than the page area that its line starts: Chromium moves the line to the page's top and
+    /// slices the box over the pages, which is not drawn in this version (case <c>iblk-align</c>, its last paragraph).</summary>
+    public static Error InlineBlockTallerThanPage(Box box, double height, double room) =>
+        new Error(DocumentErrorCodes.Input.Unsupported.InlineBox, $"The inline-block made at {box.Source} is {InvariantNumber.Format(height)}pt tall with its line, and a page has {Room(room)}: an inline-block taller than a page is not drawn in this version. Make it a block, or give it less content.")
+            .With(ErrorMetadataKeys.Node, box.Id.ToString())
+            .With(ErrorMetadataKeys.Value, InvariantNumber.Format(height))
+            .With(ErrorMetadataKeys.Property, "height")
+            .WithSource(box.Source);
 
     public static Error InvalidContent(Box box, string message) =>
         new Error(LayoutErrorCodes.InvalidContent, $"{Describe(box)} cannot be laid out: {message}")

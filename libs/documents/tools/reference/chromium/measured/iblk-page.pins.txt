@@ -1,0 +1,4 @@
+iblk-page.boxes.txt 1
+iblk-page.lines.txt 1
+iblk-page.print.txt 20
+iblk-page.words.txt 17

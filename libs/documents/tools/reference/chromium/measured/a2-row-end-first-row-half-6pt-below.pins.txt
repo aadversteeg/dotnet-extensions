@@ -1,0 +1,4 @@
+a2-row-end-first-row-half-6pt-below.boxes.txt 1
+a2-row-end-first-row-half-6pt-below.lines.txt 4
+a2-row-end-first-row-half-6pt-below.print.txt 18
+a2-row-end-first-row-half-6pt-below.words.txt 12

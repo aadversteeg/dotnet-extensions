@@ -187,7 +187,7 @@ public class GeneratedContentTests
 
     [Theory]
     // Values the registry refuses for every element are refused as for an element, at the declaration.
-    [InlineData("p::before { content: \"x\";\n  display: inline-block }", "display")]
+    [InlineData("p::before { content: \"x\";\n  display: inline-flex }", "display")]
     [InlineData("p::before { content: \"x\";\n  position: absolute }", "position")]
     [InlineData("p::before { content: \"x\";\n  float: left }", "float")]
     public void Values_refused_for_every_element_are_refused_on_a_pseudo_element_too(string css, string property)

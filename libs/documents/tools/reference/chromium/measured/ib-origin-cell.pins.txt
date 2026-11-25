@@ -1,0 +1,4 @@
+ib-origin-cell.boxes.txt 4
+ib-origin-cell.lines.txt 5
+ib-origin-cell.print.txt 21
+ib-origin-cell.words.txt 15

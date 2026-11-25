@@ -1,0 +1,4 @@
+hb-empty-block.boxes.txt 1
+hb-empty-block.lines.txt 0
+hb-empty-block.print.txt 4
+hb-empty-block.words.txt 3

@@ -1,0 +1,4 @@
+h-char-ps.boxes.txt 1
+h-char-ps.lines.txt 0
+h-char-ps.print.txt 6
+h-char-ps.words.txt 5

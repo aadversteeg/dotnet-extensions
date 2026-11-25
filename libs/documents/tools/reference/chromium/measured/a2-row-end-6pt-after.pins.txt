@@ -1,0 +1,4 @@
+a2-row-end-6pt-after.boxes.txt 1
+a2-row-end-6pt-after.lines.txt 8
+a2-row-end-6pt-after.print.txt 35
+a2-row-end-6pt-after.words.txt 24

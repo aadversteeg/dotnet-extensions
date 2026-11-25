@@ -6,7 +6,7 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 
 /// <summary>
 /// HTML cases that differ from Chromium by a limit of layout, each pinned with Chromium's print here and listed in the
-/// status file (<see cref="HtmlCases.Listed"/>) and in docs/architecture.md, "Known limits".
+/// case's status file (<c>measured/&lt;case&gt;.status.txt</c>, <c>listed</c> with the test's name) and in docs/architecture.md, "Known limits".
 /// </summary>
 public class HtmlListedDifferenceTests
 {
@@ -185,26 +185,44 @@ public class HtmlListedDifferenceTests
 
     /// <summary>
     /// A link around generated text (case <c>mx-gen-link</c>: <c>a::before { content: "see " }</c> and
-    /// <c>a::after { content: " more" }</c>): Chromium's print writes two link annotations for each link, one around the
-    /// generated text and one around the element's own (33.75 to 52.5 pt and 52.5 to 74.25 pt for "see page"), where the
-    /// engine writes one area for the link's part on the line, from its first piece to its last (THE RULE FOR A LINK'S
-    /// AREA). A link area is not printed, so the print is the same, and each is a valid link annotation (ISO 32000-1
-    /// §12.5.6.5); the engine's area is the union of Chromium's two, edge for edge: the number of rectangles is the whole
-    /// difference.
+    /// <c>a::after { content: " more" }</c>; case <c>tt-groups</c>: <c>a::before { content: "xy" }</c> on a line whose top
+    /// lies between pixels): Chromium's print writes two link annotations for each such link, one around the generated text
+    /// and one around the element's own (33.75 to 52.5 pt and 52.5 to 74.25 pt for "see page"; 84 to 96 pt and 96 to 105 pt
+    /// for "xyef"), where the engine writes one area for the link's part on the line, from its first piece to its last (THE
+    /// RULE FOR A LINK'S AREA). A link area is not printed, so the print is the same, and each is a valid link annotation
+    /// (ISO 32000-1 §12.5.6.5); the engine's area is the union of Chromium's two, edge for edge: the number of rectangles is
+    /// the whole difference. Everything compared before the links is equal: the first difference is a link's.
     /// </summary>
-    [Fact]
-    public void A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest()
+    /// <param name="name">The case.</param>
+    /// <param name="written">How many link rectangles Chromium writes.</param>
+    /// <param name="areas">How many link areas the engine writes: one for each pair of Chromium's and each other link.</param>
+    [Theory]
+    [InlineData("mx-gen-link", 4, 2)]
+    [InlineData("tt-groups", 6, 5)]
+    public void A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest(string name, int written, int areas)
     {
-        HtmlCases.Difference(Engine("mx-gen-link"), HtmlCases.ChromiumPrint("mx-gen-link")).Should().BeNull("the print is equal, its underlines cut around the ink");
-        var boxes = HtmlCases.Boxes("mx-gen-link").Value;
+        HtmlCases.Status(name).Should().StartWith("different link ", "the print is equal, its underlines cut around the ink, and so are its words and boxes");
+        var boxes = HtmlCases.Boxes(name).Value;
         var pages = DocumentLayout.Run(boxes.Document, boxes.Fonts).Value;
-        var chromium = HtmlCases.Links(HtmlCases.Cases, "mx-gen-link");
+        var chromium = HtmlCases.Links(HtmlCases.Cases, name);
 
-        chromium.Should().HaveCount(4);
-        HtmlCases.Links(pages).Should().HaveCount(2);
-        chromium.Chunk(2).Should().OnlyContain(pair => pair[0].X1 == pair[1].X0 && pair[0].Y0 == pair[1].Y0 && pair[0].Y1 == pair[1].Y1 && pair[0].Target == pair[1].Target,
-            "Chromium's two rectangles of a link touch, on one line, to one target");
-        var unions = chromium.Chunk(2).Select(pair => pair[0] with { X1 = pair[1].X1 }).ToList();
+        chromium.Should().HaveCount(written);
+        HtmlCases.Links(pages).Should().HaveCount(areas);
+
+        // Chromium's two rectangles of a link touch, on one line, to one target.
+        var unions = new List<HtmlCases.PrintedLink>();
+        foreach (var link in chromium)
+        {
+            if (unions.Count > 0 && unions[^1] is var last && last.Page == link.Page && last.X1 == link.X0 && last.Y0 == link.Y0 && last.Y1 == link.Y1 && last.Target == link.Target)
+            {
+                unions[^1] = last with { X1 = link.X1 };
+                continue;
+            }
+
+            unions.Add(link);
+        }
+
+        unions.Should().HaveCount(areas);
         HtmlCases.LinkDifference(pages, unions, boxes.Document.Page.Margins.Top.Points).Should().BeNull();
     }
 
@@ -935,5 +953,69 @@ public class HtmlListedDifferenceTests
         HtmlCases.Links(pages).Should().HaveCount(3, "the engine writes one area per line part");
         HtmlCases.LinkDifference(pages, around).Should().BeNull("each area is the rectangle around Chromium's of its line");
         HtmlCases.LinkDifference(pages, chromium).Should().Be("link 1 on page 1: x1 140.18, Chromium 81.75 (links.txt)");
+    }
+
+    /// <summary>
+    /// A list item's bullet against a rounded box in the item (case <c>br-boxes-inside</c>): Chromium paints the marker as
+    /// content of the line, after the backgrounds and borders of every block box in the flow (CSS 2.1 Appendix E, step 4
+    /// before step 7), so its two discs come after the four rounded paths of the page; the engine paints a list item's label
+    /// before the item's body, inside the label's structure element. Paths are compared in drawing order, so that order is
+    /// the whole difference: Chromium's print with each disc moved to where the engine paints it is the engine's.
+    /// </summary>
+    [Fact]
+    public void A_list_bullet_is_painted_before_the_rounded_box_in_its_item_where_Chromium_paints_it_after_every_box()
+    {
+        var (engine, chromium) = (Engine("br-boxes-inside"), Chromium("br-boxes-inside"));
+        var theirs = chromium.Pages.Single();
+        theirs.Paths.Select(path => path.Colour).Should().Equal("#e0f0ff", "#2050a0", "#e0f0ff", "#2050a0", "#000000", "#000000");
+
+        var moved = theirs with { Paths = [theirs.Paths[0], theirs.Paths[1], theirs.Paths[4], theirs.Paths[2], theirs.Paths[3], theirs.Paths[5]] };
+        HtmlCases.Difference(engine, new PrintedPages([moved])).Should().BeNull("the order of the bullet is the whole difference");
+        HtmlCases.Difference(engine, chromium).Should().StartWith("page 1 path at (30, 70.5) paints 2cfc2/cfffc/fffff/cfffc/2cfc2 #000000, Chromium at (42, 62.25) ");
+    }
+
+    /// <summary>
+    /// The same order with rounded list items (case <c>bri-list</c>): Chromium paints the three rounded backgrounds (and the
+    /// second item's ring) before any of the three discs, the engine each disc before its own item's background, inside the
+    /// label's structure element. The pixels are the same: Chromium's print with each disc moved to where the engine paints it
+    /// is the engine's.
+    /// </summary>
+    [Fact]
+    public void A_list_bullet_is_painted_before_its_rounded_item_where_Chromium_paints_it_after_every_item()
+    {
+        var (engine, chromium) = (Engine("bri-list"), Chromium("bri-list"));
+        var theirs = chromium.Pages.Single();
+        theirs.Paths.Select(path => path.Colour).Should().Equal("#f0e0a0", "#f0e0a0", "#c03020", "#f0e0a0", "#000000", "#000000", "#000000");
+
+        var moved = theirs with { Paths = [theirs.Paths[0], theirs.Paths[4], theirs.Paths[1], theirs.Paths[2], theirs.Paths[5], theirs.Paths[3], theirs.Paths[6]] };
+        HtmlCases.Difference(engine, new PrintedPages([moved])).Should().BeNull("the order of the bullets is the whole difference");
+        HtmlCases.Difference(engine, chromium).Should().StartWith("page 1 path at (18, 40.5) paints 2cfc2/cfffc/fffff/cfffc/2cfc2 #000000, Chromium at (30, 54) ");
+    }
+
+    /// <summary>
+    /// A dash's edge on a sample of the comparison (case <c>bd-lengths-thick</c>): the sixteenth dash of a 4 px side of
+    /// 229 px starts 184.1667 px along the side, and its two edges lie on samples of the area comparison (2.5 of 15 into a
+    /// pixel). The engine places it as Chromium writes it, 184.16667 px in single precision; Chromium's print, read back
+    /// through its page transform of .23999999, puts the edge a few millionths of a pixel to the other side of the sample.
+    /// So one sample at each edge, in each of the four rows of the side, is counted the other way; every other dash of the
+    /// 47 measured sides is equal.
+    /// </summary>
+    [Fact]
+    public void A_dash_whose_edge_lies_on_a_sample_differs_by_that_sample()
+    {
+        var (engine, chromium) = (Engine("bd-lengths-thick"), Chromium("bd-lengths-thick"));
+        var (ours, theirs) = (engine.Pages.Single().Paths, chromium.Pages.Single().Paths);
+        ours.Should().HaveSameCount(theirs);
+
+        var differing = ours.Zip(theirs).Where(pair => !pair.First.Rows.SequenceEqual(pair.Second.Rows)).ToList();
+        differing.Should().ContainSingle();
+        var (side, measured) = differing[0];
+        side.Rows.Should().HaveCount(4, "a side 4 px wide");
+        foreach (var (row, other) in side.Rows.Zip(measured.Rows))
+        {
+            Enumerable.Range(0, row.Length).Where(column => row[column] != other[column]).Should().Equal([184, 192], "the dash's two edges, 184.17 px and 192.17 px along the side");
+            new[] { row[184], row[192] }.Should().Equal('c', '3');
+            new[] { other[184], other[192] }.Should().Equal('d', '2');
+        }
     }
 }

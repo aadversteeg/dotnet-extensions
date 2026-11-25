@@ -1,0 +1,7 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Rounded table cells and a rounded table in the separate border model: a cell with a background, a cell with a 1 px border and a background, a cell with a border only, and the table's own border rounded. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } p { margin: 0 0 6pt 0; } table.s { border-collapse: separate; border-spacing: 4px; border: 1px solid #2060a0; border-radius: 10px; margin-bottom: 8pt; } table.s td { border: none; padding: 3px 6px; } .bg { background: #f0e0a0; border-radius: 6px; } .ring { border: 1px solid #c03020 !important; border-radius: 5px; } .both { background: #e0f0d0; }</style></head><body>
+<p>Cells below.</p>
+<table class="s"><tr><td class="bg">Filled</td><td class="ring both">Ringed</td><td class="ring">Empty</td></tr><tr><td>Plain</td><td class="bg">Second</td><td>Last</td></tr></table>
+<p>End of table.</p>
+</body></html>

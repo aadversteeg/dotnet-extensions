@@ -1,0 +1,4 @@
+ta-right.boxes.txt 1
+ta-right.lines.txt 0
+ta-right.print.txt 31
+ta-right.words.txt 30

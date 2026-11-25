@@ -1,0 +1,4 @@
+tw-insets.boxes.txt 9
+tw-insets.lines.txt 17
+tw-insets.print.txt 27
+tw-insets.words.txt 9

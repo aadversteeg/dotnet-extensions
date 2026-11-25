@@ -1,0 +1,4 @@
+pm-tall-bottom.boxes.txt 1
+pm-tall-bottom.lines.txt 3
+pm-tall-bottom.print.txt 17
+pm-tall-bottom.words.txt 13

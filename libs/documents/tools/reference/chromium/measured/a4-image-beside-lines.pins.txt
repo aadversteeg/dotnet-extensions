@@ -1,0 +1,4 @@
+a4-image-beside-lines.boxes.txt 4
+a4-image-beside-lines.lines.txt 24
+a4-image-beside-lines.print.txt 63
+a4-image-beside-lines.words.txt 32

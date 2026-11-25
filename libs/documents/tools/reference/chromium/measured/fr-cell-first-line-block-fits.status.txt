@@ -1,0 +1,1 @@
+fr-cell-first-line-block-fits equal

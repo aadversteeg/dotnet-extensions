@@ -1,0 +1,4 @@
+a2-cells-end-text.boxes.txt 12
+a2-cells-end-text.lines.txt 34
+a2-cells-end-text.print.txt 49
+a2-cells-end-text.words.txt 13

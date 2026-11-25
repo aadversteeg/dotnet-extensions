@@ -1,0 +1,4 @@
+fr-lh-mixed-sizes.boxes.txt 1
+fr-lh-mixed-sizes.lines.txt 0
+fr-lh-mixed-sizes.print.txt 21
+fr-lh-mixed-sizes.words.txt 20

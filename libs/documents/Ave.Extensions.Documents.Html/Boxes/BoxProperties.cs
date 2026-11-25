@@ -40,7 +40,6 @@ internal static class BoxProperties
     [
         "backdrop-filter", "background-attachment", "background-clip", "background-image", "background-origin",
         "background-position-x", "background-position-y", "background-repeat", "background-size",
-        "border-bottom-left-radius", "border-bottom-right-radius", "border-top-left-radius", "border-top-right-radius",
         "bottom", "box-shadow", "clear", "clip-path", "column-count", "column-gap", "column-width", "contain", "content",
         "content-visibility", "direction", "filter", "float",
         "font-language-override", "font-optical-sizing", "font-size-adjust", "font-stretch",
@@ -101,21 +100,34 @@ internal static class BoxProperties
                 _ => "a colour with an alpha other than 0 or 1 is not drawn",
             });
 
+        // CSS Backgrounds 3 §5: rounded corners on a block box, an inline box, an inline-block, a list item, a table or a
+        // cell with a background and a border of one solid line, as Chromium 159 prints them (Layout's RoundedBox, cases
+        // br-* and bri-*). The first corner that is not 0 carries the refusal, so a
+        // border-radius the engine does not draw is one error.
+        string[] corners = ["top-left", "top-right", "bottom-right", "bottom-left"];
+        for (var index = 0; index < corners.Length; index++)
+        {
+            var before = corners[..index];
+            yield return new($"border-{corners[index]}-radius", "a length or a percentage on a block box, an inline box, an inline-block, a list item, a table or a table cell with a border of one width, one colour and solid on all four sides, or none, and overflow visible; 0 everywhere",
+                (value, facts) => IsZero(value) || before.Any(corner => !IsZero(facts.Style, $"border-{corner}-radius")) ? null : RadiusRefusal(facts));
+        }
+
         foreach (var side in Sides)
         {
             // CSS Backgrounds 3 §3.1–3.3: a style of none or hidden computes the width to 0 (no line, no room). Inset and
             // outset are painted in two colours taken from the border colour (Layout's BorderShades, cases bs-*) on a block
             // box; a table's lines are drawn solid by the table's layout, an inline box's border is drawn solid, and inset and
             // outset sides on one box are not measured.
-            yield return new($"border-{side}-style", "none, hidden, solid; inset and outset on a block box that is no table part, not both on one box; any value where the width is 0", (value, facts) => value switch
+            yield return new($"border-{side}-style", "none, hidden, solid; inset and outset on a block box that is no table part, not both on one box; dashed on a block box (display: block) beside sides of its width and colour, solid or dashed; any value where the width is 0", (value, facts) => value switch
             {
                 _ when IsZero(facts.Style, $"border-{side}-width") => null,
                 CssKeyword { Name: "none" or "hidden" or "solid" } => null,
+                CssKeyword { Name: "dashed" } => DashedRefusal(facts),
                 CssKeyword { Name: "inset" or "outset" } when !facts.IsBlock => "an inset or outset border on an inline box is not drawn in this version; use solid",
                 CssKeyword { Name: "inset" or "outset" } when TableProperties.IsPart(facts) => "an inset or outset border on a table or a part of a table is not drawn in this version: its lines are drawn solid",
                 CssKeyword { Name: "inset" or "outset" } keyword when HasStyle(facts.Style, keyword.Name == "inset" ? "outset" : "inset") => "inset and outset sides on one box are not drawn in this version",
                 CssKeyword { Name: "inset" or "outset" } => null,
-                _ => "only solid, inset and outset borders are drawn; use solid",
+                _ => "only solid, inset, outset and dashed borders are drawn; use solid",
             });
             yield return new($"border-{side}-width", "a length on a block box and an inline box; 0 on a column or a column group",
                 (value, facts) => TableProperties.BorderWidth(value, facts));
@@ -187,8 +199,8 @@ internal static class BoxProperties
             facts.IsReplaced && IsKeyword(value, "border-box") && HasInsets(facts.Style) ? "border-box on an image with padding or a border is not drawn in this version" : null);
 
         // CSS Display 3 §2.
-        yield return new("display", "block, inline, none, list-item (CSS Lists 3 §2; HtmlBoxGenerator.Lists.cs), table and its parts",
-            (value, _) => value is CssKeyword { Name: "block" or "inline" or "none" or "list-item" } ? null : TableProperties.Display(value));
+        yield return new("display", "block, inline, inline-block (HtmlBoxGenerator, THE RULE FOR AN INLINE-BLOCK IN HTML), none, list-item (CSS Lists 3 §2; HtmlBoxGenerator.Lists.cs), table and its parts",
+            (value, _) => value is CssKeyword { Name: "block" or "inline" or "inline-block" or "none" or "list-item" } ? null : TableProperties.Display(value));
 
         // CSS Color 4 §3.1: the colour of the element's own text; a border in currentcolor is checked in its row.
         yield return new("color", "a colour of alpha 1; any colour on an element without text of its own",
@@ -287,6 +299,73 @@ internal static class BoxProperties
 
         yield return new("list-style-type", "disc, circle, square, decimal, decimal-leading-zero, lower-roman, upper-roman, lower-alpha, upper-alpha, lower-latin, upper-latin, none (the twelve the style sheet accepts)", (_, _) => null);
         yield return new("list-style-position", "outside, the only value the style sheet accepts", (_, _) => null);
+    }
+
+    /// <summary>Why rounded corners are not drawn on this element, or null where they are: a block box, an inline box, an
+    /// inline-block, a list item, a table or a table cell (display: block, inline, inline-block, list-item, table,
+    /// table-cell) that is no image, whose overflow is visible, and whose visible border sides are all four solid, of one
+    /// width and one colour. A table in the collapsed border model keeps square corners (Chromium 159 ignores its radius,
+    /// case <c>bri-collapse</c>), so one with a background, where that was not measured, is refused.</summary>
+    private static string? RadiusRefusal(ElementFacts facts)
+    {
+        var display = facts.Style[PropertyRegistry.Display] is CssKeyword keyword ? keyword.Name : string.Empty;
+        var where = display switch
+        {
+            _ when facts.IsReplaced => "an image",
+            "table" when !TableProperties.IsSeparated(facts) && Alpha(facts.Style[PropertyRegistry.Find("background-color")!]) > 0 =>
+                "a table in the collapsed border model with a background",
+            "table" or "table-cell" => null,
+            _ when TableProperties.IsPart(facts) => "a row, a row group, a column or a caption of a table",
+            "inline" or "inline-block" or "list-item" or "block" => null,
+            _ => $"a box of display: {display}",
+        };
+        if (where is not null)
+        {
+            return $"rounded corners (border-radius) on {where} are not drawn in this version; leave the radius out";
+        }
+
+        if (!IsKeyword(facts.Style[PropertyRegistry.Find("overflow-x")!], "visible") || !IsKeyword(facts.Style[PropertyRegistry.Find("overflow-y")!], "visible"))
+        {
+            return "rounded corners (border-radius) that clip the content (overflow other than visible) are not drawn in this version; use overflow: visible";
+        }
+
+        string Line(string side) =>
+            IsZero(facts.Style, $"border-{side}-width") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "none") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "hidden")
+                ? "none"
+                : $"{facts.Style[PropertyRegistry.Find($"border-{side}-width")!]} {facts.Style[PropertyRegistry.Find($"border-{side}-style")!]} {Resolved(facts.Style[PropertyRegistry.Find($"border-{side}-color")!], facts.Style)}";
+        var lines = Sides.Select(Line).Distinct(StringComparer.Ordinal).ToArray();
+        return lines is ["none"] || (lines is [var one] && IsKeyword(facts.Style[PropertyRegistry.Find("border-top-style")!], "solid") && one != "none")
+            ? null
+            : "rounded corners (border-radius) beside border sides of different widths, colours or styles, or not solid, are not drawn in this version; give all four sides one solid border, or none";
+    }
+
+    /// <summary>Why a dashed side is not drawn on this element, or null where it is: on a block box (display: block) that is
+    /// no image, whose visible border sides are all of one width and one colour, each solid or dashed (cases <c>bd-*</c>).
+    /// Dashed sides of an inline box, an inline-block, a list item and a table or a part of one were not measured.</summary>
+    private static string? DashedRefusal(ElementFacts facts)
+    {
+        var display = facts.Style[PropertyRegistry.Display] is CssKeyword keyword ? keyword.Name : string.Empty;
+        if (facts.IsReplaced || display != "block")
+        {
+            var where = facts.IsReplaced ? "an image" : TableProperties.IsPart(facts) ? "a table or a part of a table" : display switch
+            {
+                "inline" => "an inline box",
+                "inline-block" => "an inline-block",
+                "list-item" => "a list item",
+                _ => $"a box of display: {display}",
+            };
+            return $"a dashed border on {where} is not drawn in this version; use solid";
+        }
+
+        string? Line(string side) =>
+            IsZero(facts.Style, $"border-{side}-width") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "none") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "hidden")
+                ? null
+                : $"{facts.Style[PropertyRegistry.Find($"border-{side}-width")!]} {Resolved(facts.Style[PropertyRegistry.Find($"border-{side}-color")!], facts.Style)}";
+        var lines = Sides.Select(Line).OfType<string>().Distinct(StringComparer.Ordinal).Count();
+        var styles = Sides.Where(side => Line(side) is not null).All(side => IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "solid") || IsKeyword(facts.Style[PropertyRegistry.Find($"border-{side}-style")!], "dashed"));
+        return lines == 1 && styles
+            ? null
+            : "a dashed side beside sides of another width, colour or style than solid or dashed is not drawn in this version; give the sides one width and one colour";
     }
 
     /// <summary>The alpha of a colour value; NaN for anything else.</summary>

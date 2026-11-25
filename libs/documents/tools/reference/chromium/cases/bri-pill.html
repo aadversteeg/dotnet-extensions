@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Rounded inline boxes on one line: a pill (999px) and a badge without a border, rings of 1 px and 2 px with and without a background, a radius in points (2.5pt), and a box with padding in points above and below. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } p { margin: 0 0 6pt 0; } .bg { background: #f0e0a0; } .pill { border-radius: 999px; padding: 2px 6px; } .badge { border-radius: 3px; padding: 1px 4px; } .one { border: 1px solid #c03020; } .two { border: 2px solid #2060a0; } .pt { border-radius: 2.5pt; padding: 1.5pt 3pt; }</style></head><body>
+<p>Plain <span class="bg pill">pill</span> then <span class="bg badge">badge</span> end.</p>
+<p>Ring <span class="bg pill one">filled</span> then <span class="pill one">empty</span> end.</p>
+<p>Thick <span class="bg pill two">filled</span> then <span class="badge two" style="border-radius:6px">empty</span> end.</p>
+<p>Points <span class="bg pt">radius</span> then <span class="bg pt one">ring</span> end.</p>
+</body></html>

@@ -1,0 +1,1 @@
+a4-slice-near-end-beside-lines equal

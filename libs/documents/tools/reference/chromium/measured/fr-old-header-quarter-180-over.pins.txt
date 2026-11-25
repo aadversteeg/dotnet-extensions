@@ -1,0 +1,4 @@
+fr-old-header-quarter-180-over.boxes.txt 15
+fr-old-header-quarter-180-over.lines.txt 47
+fr-old-header-quarter-180-over.print.txt 64
+fr-old-header-quarter-180-over.words.txt 15

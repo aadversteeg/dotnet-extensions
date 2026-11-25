@@ -1,0 +1,4 @@
+a4-header-image-228-line3-below.boxes.txt 2
+a4-header-image-228-line3-below.lines.txt 15
+a4-header-image-228-line3-below.print.txt 23
+a4-header-image-228-line3-below.words.txt 3

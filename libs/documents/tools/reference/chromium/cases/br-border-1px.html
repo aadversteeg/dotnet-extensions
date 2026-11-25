@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- A solid border of 1 px in one colour with a radius larger than the width (6 px), equal to it (1 px) and smaller (0.5 px), each without and with a background. -->
+<style>@page { size: 300pt 400pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } div { border: 1px solid #c03020; width: 150px; height: 24px; padding: 2px 6px; margin-bottom: 6px; } .bg { background: #f0e0a0; }</style></head><body>
+<p>top</p>
+<div id="larger" style="border-radius:6px">larger</div>
+<div id="filled" class="bg" style="border-radius:6px">filled</div>
+<div id="equal" style="border-radius:1px">equal</div>
+<div id="same" class="bg" style="border-radius:1px">same</div>
+<div id="smaller" style="border-radius:0.5px">smaller</div>
+<div id="under" class="bg" style="border-radius:0.5px">under</div>
+<p>end</p>
+</body></html>

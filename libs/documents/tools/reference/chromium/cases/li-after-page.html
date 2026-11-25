@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><style>
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf); font-weight: 400; }
+@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700; }
+@page { size: 300pt 200pt; margin: 12pt; }
+html, body { margin: 0; padding: 0; }
+body { font-family: Lato; font-size: 10.5pt; line-height: normal; }
+p { margin: 0; }
+ul, ol { margin: 0; padding-left: 24pt; }
+table { width: 100%; border-collapse: collapse; }
+td { padding: 2.3pt 4pt; border: 0.75pt solid #000; }
+</style></head><body>
+<!-- Lists after blocks that end between pixels on the second page. -->
+<p>First page</p>
+<p id="Second" style="break-before: page; line-height: 13pt">Second page starts</p>
+<ul><li>Disc one</li></ul>
+<table id="Cell"><tr><td>Cell text</td></tr></table>
+<ul style="list-style-type: circle"><li>Circle one</li></ul>
+<p id="Twelve" style="line-height: 12.4pt">Twelve and a bit</p>
+<ol><li>Number one</li></ol>
+<p id="Eleven" style="line-height: 11.6pt">Eleven and a bit</p>
+<ul style="list-style-type: square"><li>Square one</li></ul>
+</body></html>

@@ -13,8 +13,8 @@ public sealed record LayoutProfile
     /// <see cref="FontMetricRounding.Exact"/>, <see cref="FontSizeRounding.Exact"/>, <see cref="LengthRounding.Exact"/>,
     /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
     /// <see cref="CellsBesideSlices.GoOn"/>, <see cref="RepeatedHeaderRows.AboveEverySlice"/>,
-    /// <see cref="SliceRestEnd.InsideCell"/>, <see cref="CutRowAlignment.RestAlignedInItsPart"/> and
-    /// <see cref="InlineBoxSnapping.Exact"/>.</summary>
+    /// <see cref="SliceRestEnd.InsideCell"/>, <see cref="CutRowAlignment.RestAlignedInItsPart"/>,
+    /// <see cref="InlineBoxSnapping.Exact"/>, <see cref="MarkerSnapping.Exact"/> and <see cref="InkGapBand.AtText"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -65,6 +65,62 @@ public sealed record LayoutProfile
     /// <summary>Whether the painted edges of an inline box and the text inside it are put on whole pixels
     /// (<see cref="DocumentModel.InlineBoxSnapping"/>).</summary>
     public InlineBoxSnapping InlineBoxSnapping { get; init; } = InlineBoxSnapping.Exact;
+
+    /// <summary>Whether a list item's bullet is drawn where it lies or on whole pixels of the page
+    /// (<see cref="DocumentModel.MarkerSnapping"/>).</summary>
+    public MarkerSnapping MarkerSnapping { get; init; } = MarkerSnapping.Exact;
+
+    /// <summary>Where the band lies that an underline's or an overline's gaps around the glyphs' ink are cut with, relative
+    /// to the text (<see cref="DocumentModel.InkGapBand"/>).</summary>
+    public InkGapBand InkGapBand { get; init; } = InkGapBand.AtText;
+}
+
+/// <summary>
+/// Where the band lies, relative to the glyphs, that the gaps of an underline or an overline around the glyphs' ink are
+/// cut with (<c>text-decoration-skip-ink: auto</c>, THE RULE FOR THE GAPS AROUND A GLYPH'S INK). The line itself is
+/// painted at the same place under both values; only its gaps move.
+/// </summary>
+public enum InkGapBand
+{
+    /// <summary>The band lies where the line is drawn below the text.</summary>
+    AtText,
+
+    /// <summary>
+    /// As Chromium prints it: Chromium draws a line's text from the line's top rounded to the nearest whole pixel of the page
+    /// (a half pixel down), and paints the decoration from there, but cuts the gaps with the band at the line's own,
+    /// unrounded place. So the band lies above the text by as much as the line's top was rounded down, and below it by as
+    /// much as it was rounded up: on a line whose top lies 0.25 px past a whole pixel the band is 0.25 px lower relative to
+    /// the glyphs, on one 0.75 px past it 0.25 px higher, on one 0.5 px past it 0.5 px higher. Measured against Chromium's
+    /// print (<c>tools/reference/chromium</c>): underlines and links at 10.5 and 12 pt on lines whose top lies 0, 0.25,
+    /// 0.5 and 0.75 px past a whole pixel (case <c>dw-gap-fraction</c>); in a table cell with padding in points, after a
+    /// margin in points, and on a second page after a line height in points (<c>dw-gap-places</c>); a link around generated
+    /// text on a line whose top lies 0.656 px past a whole pixel, where the band lies 0.344 px higher (<c>tt-groups</c>).
+    /// </summary>
+    AtUnroundedLine,
+}
+
+/// <summary>
+/// Where a list item's bullet (a disc, a circle or a square, <see cref="MarkerSymbol"/>) is drawn. It takes no room in the
+/// flow under either value, and a number label is text, drawn on its line as any text.
+/// </summary>
+public enum MarkerSnapping
+{
+    /// <summary>The bullet is drawn where its item places it.</summary>
+    Exact,
+
+    /// <summary>
+    /// As Chromium prints it: the bullet's box, whose size is whole pixels already, has its left and top edges on the
+    /// nearest whole pixel of the page (a half pixel goes down and right), in the page's coordinates, so a list that starts
+    /// between pixels draws a bullet that covers whole pixels. Measured against Chromium's print
+    /// (<c>tools/reference/chromium</c>): after a collapsed table whose cell padding is in points the item's baseline lies at
+    /// 55.125 px and its bullet at 48.125 px, which Chromium paints at 48 px (case <c>li-after-table</c>, with a separated
+    /// table, circle, square and a number list); after a paragraph with a line height in points, a box with a border in
+    /// points and an image, one at 226.5 px is painted at 227 (<c>li-after-block</c>); with a padding of 20 pt before the
+    /// content edge the left edge at 26.656 px is painted at 27, in a table cell with padding in points at 32.047 px at 32,
+    /// and the same rounding for items with a line height in points (<c>li-after-edge</c>); on the second page
+    /// (<c>li-after-page</c>).
+    /// </summary>
+    WholePixels,
 }
 
 /// <summary>
