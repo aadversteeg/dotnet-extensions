@@ -2,6 +2,7 @@ using System.Text;
 using Ave.Extensions.Documents;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Html;
+using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.Documents.Render.Pdf;
 using Ave.Extensions.Documents.Render.Raster;
 using Ave.Extensions.Documents.TestSupport;
@@ -96,5 +97,28 @@ public class HtmlRenderingTests
         var error = refused.Error.Parts().Single();
         (error.Metadata![ErrorMetadataKeys.SourceFile], error.Metadata[ErrorMetadataKeys.SourceLine], error.Metadata[ErrorMetadataKeys.SourceColumn])
             .Should().Be(("hello.html", 2, 1));
+    }
+
+    private static string Pages(int count) => Html.Replace("<p>Hello</p>", string.Concat(Enumerable.Repeat("<p style=\"break-after: page\">x</p>", count - 1)) + "<p>x</p>", StringComparison.Ordinal);
+
+    [Fact]
+    public void A_document_of_more_pages_than_the_render_call_allows_is_refused_when_pagination_reaches_the_limit()
+    {
+        HtmlRenderOptions.Default.MaxPages.Should().Be(LayoutEnvironment.DefaultMaxPages);
+        HtmlRendering.ToPages(Pages(3), Options with { MaxPages = 3 }).Value.Output.Pages.Should().HaveCount(3);
+
+        var refused = HtmlRendering.ToPages(Pages(4), Options with { MaxPages = 3 });
+
+        refused.Error.Code.Should().Be(LayoutErrorCodes.TooManyPages);
+        refused.Error.Message.Should().Contain("more than 3 pages").And.Contain("MaxPages");
+    }
+
+    [Fact]
+    public void The_page_limit_stops_a_document_of_many_pages_before_it_lays_them_out()
+    {
+        // 20 000 forced breaks would be 20 000 pages; with a limit of 10 the work ends at page 11.
+        var refused = HtmlRendering.ToPages(Pages(20_000), Options with { MaxPages = 10 });
+
+        refused.Error.Code.Should().Be(LayoutErrorCodes.TooManyPages);
     }
 }

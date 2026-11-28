@@ -210,6 +210,18 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, $"{slices}>{MonolithicSlices.MaxSlicesPerDocument}")
             .WithSource(root.Source);
 
+    /// <summary>A document that would have more than <paramref name="maxPages"/> pages (<see cref="LayoutEnvironment.MaxPages"/>).</summary>
+    /// <param name="root">The document's root box.</param>
+    /// <param name="maxPages">The page limit of the render call.</param>
+    public static Error TooManyPages(Box root, int maxPages) =>
+        new Error(
+                LayoutErrorCodes.TooManyPages,
+                $"The document would have more than {maxPages} pages, the page limit of this render call; pagination stopped there. "
+                + $"Raise the limit with the render option MaxPages (HtmlRenderOptions.MaxPages, LayoutEnvironment.MaxPages; default {LayoutEnvironment.DefaultMaxPages}) to render a longer document.")
+            .With(ErrorMetadataKeys.Node, root.Id.ToString())
+            .With(ErrorMetadataKeys.Value, maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            .WithSource(root.Source);
+
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";
 

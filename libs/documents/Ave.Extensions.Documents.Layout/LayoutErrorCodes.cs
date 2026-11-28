@@ -24,6 +24,11 @@ public static class LayoutErrorCodes
     /// to the page that passes the limit, and the limit), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode TooManySlices = _ / "TooManySlices";
 
+    /// <summary>A document that would have more pages than the render call allows (<see cref="LayoutEnvironment.MaxPages"/>,
+    /// default <see cref="LayoutEnvironment.DefaultMaxPages"/>): pagination stops before the first page past the limit.
+    /// Metadata: Node (the document's root), Value (the limit), SourceFile, SourceLine.</summary>
+    public static readonly ErrorCode TooManyPages = _ / "TooManyPages";
+
     /// <summary>A node whose layout algorithm is unknown, or whose children that algorithm cannot lay out.
     /// Metadata: Node, Value, SourceFile, SourceLine.</summary>
     public static readonly ErrorCode InvalidContent = _ / "InvalidContent";

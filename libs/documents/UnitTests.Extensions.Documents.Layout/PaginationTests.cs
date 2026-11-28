@@ -58,6 +58,22 @@ public class PaginationTests
     }
 
     [Fact]
+    public void A_document_of_more_pages_than_the_environment_allows_is_refused_at_the_limit()
+    {
+        // The paragraph of 14 one-word lines takes 3 pages (above).
+        var narrow = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()) };
+        var document = Document(Paragraph(1, Words(14), narrow));
+        var environment = LayoutEnvironment.Create(TestFonts.Set);
+
+        environment.MaxPages.Should().Be(LayoutEnvironment.DefaultMaxPages);
+        Paginator.Paginate(environment with { MaxPages = 3 }, document).Value.Should().HaveCount(3);
+        var refused = Paginator.Paginate(environment with { MaxPages = 2 }, document).Error;
+        refused.Code.Should().Be(LayoutErrorCodes.TooManyPages);
+        refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be("2");
+        (environment with { MaxPages = 0 }).MaxPages.Should().Be(1, "a document has at least one page");
+    }
+
+    [Fact]
     public void A_block_whose_padding_does_not_fit_moves_whole_to_the_next_page()
     {
         // Five lines use 60 pt of the 80 pt page area; the next block needs 25 pt of padding before any content.

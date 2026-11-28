@@ -38,6 +38,11 @@ public sealed record HtmlRenderOptions
 
     /// <summary>The document's name in every diagnostic (for example its file name).</summary>
     public string SourceName { get; init; } = string.Empty;
+
+    /// <summary>The most pages the document may have (<see cref="LayoutEnvironment.MaxPages"/>; default
+    /// <see cref="LayoutEnvironment.DefaultMaxPages"/>): a longer one is refused with <c>Documents.Layout.TooManyPages</c>
+    /// when pagination reaches the limit.</summary>
+    public int MaxPages { get; init; } = LayoutEnvironment.DefaultMaxPages;
 }
 
 /// <summary>What an <see cref="HtmlRendering"/> call gives: its output and the diagnostics of every stage.</summary>
@@ -78,7 +83,7 @@ public static class HtmlRendering
                 Unsupported = style.Unsupported,
                 MissingCharacters = Shaper.MissingCharacters,
             }))
-            .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, boxes.Fonts).OnSuccessMap(pages => new HtmlRendered<PageDocument>(pages, boxes.Diagnostics)));
+            .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, LayoutEnvironment.Create(boxes.Fonts) with { MaxPages = options.MaxPages }).OnSuccessMap(pages => new HtmlRendered<PageDocument>(pages, boxes.Diagnostics)));
     }
 
     /// <summary>Renders an HTML document to PDF: <see cref="ToPages"/>, then the PDF back-end.</summary>

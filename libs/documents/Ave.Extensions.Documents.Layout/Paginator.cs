@@ -144,6 +144,12 @@ public static class Paginator
         BreakToken? token = null;
         do
         {
+            // The page limit of the render call: stop before the first page past it, not after laying it out.
+            if (pages.Count >= environment.MaxPages)
+            {
+                return Result<Pass, Error>.Failure(LayoutErrors.TooManyPages(document.Root, environment.MaxPages));
+            }
+
             var number = pages.Count + 1;
             var onPage = environment.OnPage(new PageContext(number, pageCount));
             var template = page.TemplateFor(number);

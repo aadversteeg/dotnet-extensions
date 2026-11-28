@@ -24,6 +24,25 @@ public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<Layout
     /// (<see cref="DocumentLayout.Run(StyledDocument, FontSet)"/>) stay as they are.</summary>
     public LayoutProfile Profile { get; internal init; } = LayoutProfile.Default;
 
+    /// <summary>
+    /// The default of <see cref="MaxPages"/>: 10 000 pages. The longest document of the samples, a timesheet of
+    /// 1 000 times its usual length, has 4 667.
+    /// </summary>
+    public const int DefaultMaxPages = 10_000;
+
+    private readonly int _maxPages = DefaultMaxPages;
+
+    /// <summary>
+    /// The most pages a document may have (at least 1; default <see cref="DefaultMaxPages"/>). The work of a layout
+    /// grows with its pages, and a few bytes of input can ask for a page each, so the paginator stops before the first
+    /// page past the limit: <c>Documents.Layout.TooManyPages</c>. Raise it to render a longer document.
+    /// </summary>
+    public int MaxPages
+    {
+        get => _maxPages;
+        init => _maxPages = System.Math.Max(1, value);
+    }
+
     /// <summary>The environment with the engine's algorithms: <see cref="FlowLayout"/>, <see cref="InlineLayout"/>,
     /// <see cref="TracksLayout"/>, <see cref="ImageLayout"/>, <see cref="MarginBoxesLayout"/> and <see cref="ListItemLayout"/>; page 1 of 1.</summary>
     /// <param name="fonts">The fonts text may use.</param>
