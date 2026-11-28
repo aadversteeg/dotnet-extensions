@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
+using Ave.Extensions.Documents.Layout;
 using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents;
@@ -12,6 +13,29 @@ internal static class RenderErrors
 {
     /// <summary>The longest image name a message quotes.</summary>
     private const int MaxNameLength = 80;
+
+    /// <summary>The option of the page limit in the layout's errors (metadata Property).</summary>
+    private const string LayoutMaxPages = $"{nameof(LayoutEnvironment)}.{nameof(LayoutEnvironment.MaxPages)}";
+
+    /// <summary>The layout's page-limit errors (<c>Documents.Layout.TooManyPages</c> and
+    /// <c>Documents.Layout.InvalidOptions</c>, both with Property <see cref="LayoutEnvironment.MaxPages"/>) with the option
+    /// of the entry that was called, which says how to raise the limit; the code stays. Every other error as it is.</summary>
+    /// <param name="error">The error of the layout.</param>
+    /// <param name="option">The option of the entry that sets the limit, for example <c>HtmlRenderOptions.MaxPages</c>.</param>
+    public static Error PageLimit(Error error, string option)
+    {
+        if (error.Metadata is not { } metadata || !metadata.TryGetValue(ErrorMetadataKeys.Property, out var property) || property as string != LayoutMaxPages)
+        {
+            return error;
+        }
+
+        const string invalid = "The page limit of this render call is ";
+        const string raise = "Raise the page limit of the render call";
+        var message = error.Message.StartsWith(invalid, StringComparison.Ordinal)
+            ? $"{option} is {error.Message[invalid.Length..]}"
+            : error.Message.Replace(raise, $"Raise the limit with {option}", StringComparison.Ordinal);
+        return Renamed(error, message, option);
+    }
 
     /// <summary>A raster refusal of an image (<see cref="ErrorMetadataKeys.Image"/>) with the image's name and place in
     /// the document, its source and node; every other error as it is.</summary>

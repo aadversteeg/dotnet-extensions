@@ -38,7 +38,7 @@ public class LimitsTableTests
             [C("PageModel", "PageModel.PageModelRules", "MaxPathSegments", 4_096)]),
         ["clips open one inside the other on a page, for both back-ends"] = ("27 (in PDF one `q` each, plus the drawing's own: the 28 levels of ISO 32000-1 Annex C and ISO 19005-3 §6.1.13; the raster back-end takes the same)",
             [C("PageModel", "PageModel.PageModelRules", "MaxClipDepth", 27)]),
-        ["pages of one document"] = ("10 000 unless the render call sets another limit, at least 1 (`HtmlRenderOptions.MaxPages`; the `maxPages` parameter of the `DocumentRendering` calls on a document; `LayoutEnvironment.MaxPages`); pagination stops before the first page past it (the long timesheet of the samples repeated 1 000 times has 4 667 pages)",
+        ["pages of one document"] = ("10 000 unless the render call sets another limit, at least 1 (`HtmlRenderOptions.MaxPages`; `DocumentRenderOptions.MaxPages` for the `DocumentRendering` calls on a document; `LayoutEnvironment.MaxPages`); pagination stops before the first page past it (the long timesheet of the samples repeated 1 000 times has 4 667 pages)",
             [C("Layout", "Layout.LayoutEnvironment", "DefaultMaxPages", 10_000)]),
         ["slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`)"] = ("100, one per page", [C("Layout", "Layout.MonolithicSlices", "MaxSlices", 100)]),
         ["slices of one document, all pieces together (`MonolithicOverflow.Slice`)"] = ("1 000, counted page by page; a document without a piece taller than the page area has none",

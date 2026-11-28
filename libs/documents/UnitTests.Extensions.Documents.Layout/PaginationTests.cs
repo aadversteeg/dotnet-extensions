@@ -69,7 +69,9 @@ public class PaginationTests
         Paginator.Paginate(environment with { MaxPages = 3 }, document).Value.Should().HaveCount(3);
         var refused = Paginator.Paginate(environment with { MaxPages = 2 }, document).Error;
         refused.Code.Should().Be(LayoutErrorCodes.TooManyPages);
+        refused.Message.Should().Be("The document would have more than 2 pages, the page limit of this render call; pagination stopped there. Raise the page limit of the render call (default 10000) to render a longer document.");
         refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be("2");
+        refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Property].Should().Be("LayoutEnvironment.MaxPages");
     }
 
     [Theory]
@@ -82,7 +84,7 @@ public class PaginationTests
         var refused = DocumentLayout.Run(document, LayoutEnvironment.Create(TestFonts.Set) with { MaxPages = maxPages }).Error;
 
         refused.Code.Should().Be(LayoutErrorCodes.InvalidOptions);
-        refused.Message.Should().Be($"LayoutEnvironment.MaxPages is {maxPages}; a document has at least one page, so the page limit must be at least 1.");
+        refused.Message.Should().Be($"The page limit of this render call is {maxPages}; a document has at least one page, so the page limit must be at least 1.");
         refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Property].Should().Be("LayoutEnvironment.MaxPages");
     }
 

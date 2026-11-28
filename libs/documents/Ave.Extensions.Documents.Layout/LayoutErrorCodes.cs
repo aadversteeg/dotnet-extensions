@@ -26,7 +26,8 @@ public static class LayoutErrorCodes
 
     /// <summary>A document that would have more pages than the render call allows (<see cref="LayoutEnvironment.MaxPages"/>,
     /// default <see cref="LayoutEnvironment.DefaultMaxPages"/>): pagination stops before the first page past the limit.
-    /// Metadata: Node (the document's root), Value (the limit), SourceFile, SourceLine.</summary>
+    /// Metadata: Node (the document's root), Property (the option that sets the limit), Value (the limit), SourceFile,
+    /// SourceLine.</summary>
     public static readonly ErrorCode TooManyPages = _ / "TooManyPages";
 
     /// <summary>Options the layout cannot run with, a caller's error: a page limit below 1

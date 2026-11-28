@@ -23,7 +23,7 @@ public static class DocumentLayout
     /// <returns>The page document, or the layout error; <c>Documents.Layout.InvalidOptions</c> for a
     /// <see cref="LayoutEnvironment.MaxPages"/> below 1, before any layout.</returns>
     public static Result<PageDocument, Error> Run(StyledDocument document, LayoutEnvironment environment) =>
-        environment.MaxPages < 1 ? Result<PageDocument, Error>.Failure(LayoutErrors.InvalidMaxPages(environment.MaxPagesName, environment.MaxPages))
+        environment.MaxPages < 1 ? Result<PageDocument, Error>.Failure(LayoutErrors.InvalidMaxPages(environment.MaxPages))
         : Paginator.Paginate(environment, document)
             .OnSuccessBind(pages => ListMarkers.OutsideSheet(pages) is { } outside ? Result<ValueList<PageFragment>, Error>.Failure(outside) : Result<ValueList<PageFragment>, Error>.Success(pages))
             .OnSuccessBind(pages => RoundedBox.CutBorders(pages) is { } cut ? Result<ValueList<PageFragment>, Error>.Failure(cut) : Result<ValueList<PageFragment>, Error>.Success(pages))

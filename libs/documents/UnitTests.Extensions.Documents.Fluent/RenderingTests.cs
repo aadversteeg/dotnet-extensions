@@ -173,27 +173,28 @@ public class RenderingTests
     private static IEnumerable<(string Entry, Ave.Extensions.ErrorPaths.Error? Error)> EveryEntry(Document document, int? maxPages, bool pngPages = true)
     {
         var raster = new RasterOptions(9);
+        var limit = maxPages is { } max ? new DocumentRenderOptions { MaxPages = max } : null;
         static Ave.Extensions.ErrorPaths.Error? ErrorOf<T>(Ave.Extensions.Functional.Result<T, Ave.Extensions.ErrorPaths.Error> result) => result.IsSuccess ? null : result.Error;
-        yield return ("ToPages", ErrorOf(maxPages is { } m1 ? document.ToPages(TestFonts.Set, m1) : document.ToPages(TestFonts.Set)));
-        yield return ("ToPdf", ErrorOf(maxPages is { } m2 ? document.ToPdf(TestFonts.Set, Options, m2) : document.ToPdf(TestFonts.Set, Options)));
-        yield return ("ToPng", ErrorOf(maxPages is { } m3 ? document.ToPng(TestFonts.Set, 1, raster, m3) : document.ToPng(TestFonts.Set, 1, raster)));
+        yield return ("ToPages", ErrorOf(limit is not null ? document.ToPages(TestFonts.Set, limit) : document.ToPages(TestFonts.Set)));
+        yield return ("ToPdf", ErrorOf(limit is not null ? document.ToPdf(TestFonts.Set, Options, limit) : document.ToPdf(TestFonts.Set, Options)));
+        yield return ("ToPng", ErrorOf(limit is not null ? document.ToPng(TestFonts.Set, 1, raster, limit) : document.ToPng(TestFonts.Set, 1, raster)));
         if (pngPages)
         {
-            yield return ("ToPngPages", ErrorOf(maxPages is { } m4 ? document.ToPngPages(TestFonts.Set, raster, m4) : document.ToPngPages(TestFonts.Set, raster)));
+            yield return ("ToPngPages", ErrorOf(limit is not null ? document.ToPngPages(TestFonts.Set, raster, limit) : document.ToPngPages(TestFonts.Set, raster)));
         }
 
-        yield return ("ToImages", ErrorOf(maxPages is { } m5 ? document.ToImages(TestFonts.Set, raster, m5) : document.ToImages(TestFonts.Set, raster)));
+        yield return ("ToImages", ErrorOf(limit is not null ? document.ToImages(TestFonts.Set, raster, limit) : document.ToImages(TestFonts.Set, raster)));
     }
 
     [Fact]
-    public void Every_call_on_a_document_renders_up_to_its_page_limit_and_refuses_one_page_past_it_naming_its_parameter()
+    public void Every_call_on_a_document_renders_up_to_its_page_limit_and_refuses_one_page_past_it_naming_its_option()
     {
         EveryEntry(Pages(3), 3).Should().OnlyContain(entry => entry.Error == null, "just inside the limit");
 
         foreach (var (entry, error) in EveryEntry(Pages(3), 2))
         {
             error!.Value.Code.Should().Be(LayoutErrorCodes.TooManyPages, entry);
-            error.Value.Message.Should().Contain("more than 2 pages", entry).And.Contain("the maxPages parameter of DocumentRendering (default 10000)", entry)
+            error.Value.Message.Should().Contain("more than 2 pages", entry).And.Contain("Raise the limit with DocumentRenderOptions.MaxPages (default 10000)", entry)
                 .And.NotContain("HtmlRenderOptions", entry).And.NotContain("LayoutEnvironment", entry);
         }
     }
@@ -216,7 +217,8 @@ public class RenderingTests
         foreach (var (entry, error) in EveryEntry(Pages(1), maxPages))
         {
             error!.Value.Code.Should().Be(LayoutErrorCodes.InvalidOptions, entry);
-            error.Value.Message.Should().Be($"The maxPages parameter of DocumentRendering is {maxPages}; a document has at least one page, so the page limit must be at least 1.", entry);
+            error.Value.Message.Should().Be($"DocumentRenderOptions.MaxPages is {maxPages}; a document has at least one page, so the page limit must be at least 1.", entry);
+            error.Value.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Property].Should().Be("DocumentRenderOptions.MaxPages", entry);
         }
     }
 

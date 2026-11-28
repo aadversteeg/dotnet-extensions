@@ -91,7 +91,8 @@ public static class HtmlRendering
                 Unsupported = style.Unsupported,
                 MissingCharacters = Shaper.MissingCharacters,
             }))
-            .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, LayoutEnvironment.Create(boxes.Fonts) with { MaxPages = options.MaxPages, MaxPagesName = "HtmlRenderOptions.MaxPages" })
+            .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, LayoutEnvironment.Create(boxes.Fonts) with { MaxPages = options.MaxPages })
+                .MapError(error => RenderErrors.PageLimit(error, $"{nameof(HtmlRenderOptions)}.{nameof(HtmlRenderOptions.MaxPages)}"))
                 .OnSuccessMap(pages => (new HtmlRendered<PageDocument>(pages, boxes.Diagnostics), boxes.Document)));
     }
 
