@@ -287,7 +287,9 @@ to 8-bit RGBA, a gray sample as three equal ones, alpha 255 without a mask, and 
 decodes with the family's own PNG decoder to the same form (`PrintedPages.Picture`). So the pixels are compared exactly;
 no case draws a JPEG, and a JPEG would differ until a case measures how Chromium writes one.
 
-`destinations.txt` gives the left of each link's destination, which `links.txt` does not hold; the case comparison
+`destinations.txt` gives the left of each link's destination, which `links.txt` does not hold, one line per link of
+`links.txt` in its order; a case with links whose file is missing, or has another number of lines, or a line on another
+page or of another kind than its link (`dest` or `uri`), fails, so no link into the document passes unseen. The case comparison
 compares it as the top: Chromium's left plus the page's left margin within one pixel of the engine's anchor
 (`HtmlCases.DestinationDifferences`; `lk-later-heading`: a heading at the left of the page area, 18 pt from the page's
 left, gets the left 0). And it compares the edges of the link areas on Chromium's pixel grid: Chromium writes each edge

@@ -1055,7 +1055,7 @@ through the whole HTML path unchanged and its pages are compared with every file
   and the SHA-256 of its pixels as 8-bit RGBA): the same, exactly, image by image in drawing order. Chromium writes a
   picture given as a PNG losslessly at its own size; the engine's side is the pixels its own decoder gives.
 - `<case>.destinations.txt`, only for a print that has link annotations, the left of each link's destination
-  (`destinations.py`): for each pair of links into the document, Chromium's left plus the page's left margin within one
+  (`destinations.py`; one line per link of `links.txt`, on its page and of its kind, else the case fails): for each pair of links into the document, Chromium's left plus the page's left margin within one
   CSS pixel (`HtmlCases.DestinationBound`) of the engine's anchor, as for the top.
 - `<case>.links.txt` again, the edges of each pair of link areas on the same page on Chromium's pixel grid: each edge of
   the engine's area taken to the nearest whole pixel within 0.1 pt of Chromium's, as image edges are compared

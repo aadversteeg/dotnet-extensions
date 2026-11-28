@@ -240,7 +240,7 @@ internal static class HtmlCases
             .Concat(OrderDifferences(engine, chromium))
             .Concat(ClipDifferences(engine, chromium))
             .Concat(ImageDifferences(engine, chromium))
-            .Concat(DestinationDifferences(pages.Value, Destinations(folder, name), boxes.Value.Document.Page.Margins.Left.Points))
+            .Concat(DestinationDifferences(pages.Value, Destinations(folder, name, Links(folder, name)), boxes.Value.Document.Page.Margins.Left.Points))
             .Concat(LinkPixelDifferences(pages.Value, Links(folder, name)))
             .Take(DifferenceBound + 1).ToList();
         var (status, listed) = CommittedStatus(committed);
@@ -613,18 +613,35 @@ internal static class HtmlCases
 
     /// <summary>The left edge of each link's destination in Chromium's print, from <c>&lt;case&gt;.destinations.txt</c>
     /// (<c>destinations.py</c>): per link of <c>links.txt</c>, in its order, the page and the left of a destination inside the
-    /// document, or null for a link to a URI; none for a case without the file, whose print has no annotation.</summary>
-    internal static List<(int Page, double Left)?> Destinations(CaseFolder folder, string name)
+    /// document, or null for a link to a URI. The file must have exactly one line per link, on the link's page and of its
+    /// kind (<c>dest</c> for a link into the document, <c>uri</c> for one to a URI), so a link into the document is never
+    /// compared with nothing; a case without links has no file.</summary>
+    /// <param name="folder">The folder of the case's measured files.</param>
+    /// <param name="name">The case.</param>
+    /// <param name="links">Chromium's links of the case (<see cref="Links(CaseFolder, string)"/>).</param>
+    /// <returns>The destinations, one per link.</returns>
+    /// <exception cref="FormatException">The file is missing where the case has links, is there where it has none, or a
+    /// line is not of that form, not on its link's page or not of its kind, or the lines are not one per link.</exception>
+    internal static List<(int Page, double Left)?> Destinations(CaseFolder folder, string name, IReadOnlyList<PrintedLink> links)
     {
         var path = Measured(folder, name) + ".destinations.txt";
-        return File.Exists(path)
-            ? [.. File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ')).Select(parts => parts switch
-            {
-                [_, "uri"] => ((int Page, double Left)?)null,
-                [_, "dest", var page, var left] => (int.Parse(page, CultureInfo.InvariantCulture), Number(left)),
-                _ => throw new FormatException($"Not a line of destinations.py: '{string.Join(' ', parts)}'."),
-            })]
-            : [];
+        if (!File.Exists(path))
+        {
+            return links.Count == 0 ? [] : throw new FormatException($"{name} has {links.Count} links and no destinations.txt.");
+        }
+
+        var rows = File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ')).ToList();
+        if (rows.Count != links.Count)
+        {
+            throw new FormatException($"{name} has {links.Count} links and {rows.Count} lines of destinations.txt.");
+        }
+
+        return [.. rows.Zip(links).Select(pair => (pair.First, pair.Second.Target.Split(' ')[0]) switch
+        {
+            ([var page, "uri"], "uri") when page == $"{pair.Second.Page}" => ((int Page, double Left)?)null,
+            ([var page, "dest", var to, var left], "dest") when page == $"{pair.Second.Page}" => (int.Parse(to, CultureInfo.InvariantCulture), Number(left)),
+            _ => throw new FormatException($"Not the destination of {name}'s link on page {pair.Second.Page} to {pair.Second.Target}: '{string.Join(' ', pair.First)}'."),
+        })];
     }
 
     /// <summary>
