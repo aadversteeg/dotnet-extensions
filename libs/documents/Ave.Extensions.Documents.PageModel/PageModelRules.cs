@@ -97,7 +97,7 @@ public static class PageModelRules
         var problems = Problems(document, code).ToList();
         return problems.Count == 0
             ? Result<PageDocument, Error>.Success(document)
-            : Result<PageDocument, Error>.Failure(Errors.Aggregate(problems));
+            : Result<PageDocument, Error>.Failure(DiagnosticLimits.Aggregate(problems));
     }
 
     /// <summary>
@@ -115,7 +115,7 @@ public static class PageModelRules
             : SizeProblems(page, 1, code).Concat(ItemProblems(page, 1, code)).Concat(MarkerNesting.Problems(page, 1, code)).Concat(StructureNesting.Problems(page, 1, code)).ToList();
         return problems.Count == 0
             ? Result<Page, Error>.Success(page!)
-            : Result<Page, Error>.Failure(Errors.Aggregate(problems));
+            : Result<Page, Error>.Failure(DiagnosticLimits.Aggregate(problems));
     }
 
     private static IEnumerable<Error> Problems(PageDocument? document, ErrorCode code)

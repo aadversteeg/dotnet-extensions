@@ -7,18 +7,28 @@ namespace Ave.Extensions.Documents.Html;
 /// <summary>
 /// The body of a <c>data:</c> URL (Fetch §4.5, "data: URL processor"): what follows the first comma, percent-decoded,
 /// and forgiving-base64 decoded (Infra §4.6) when the type before the comma ends with <c>;base64</c>. A browser needs no
-/// fetch for such a URL, so the front-end reads it itself. The work is linear in the URL's length.
+/// fetch for such a URL, so the front-end reads it itself. The fragment (from the first <c>#</c>) is not part of the
+/// body: the processor reads the URL serialized without it (Fetch §4.5), so Chromium draws <c>data:image/png;base64,…#x</c>
+/// as the image without <c>#x</c>. The work is linear in the URL's length.
 /// </summary>
 internal static class DataUrl
 {
+    /// <summary>Whether the URL has the scheme <c>data</c> (white space at both ends aside, in any case).</summary>
+    public static bool Is(string url)
+    {
+        var text = url.AsSpan().Trim(" \t\n\f\r");
+        return text.Length >= 5 && InfraAscii.EqualsIgnoreCase(text[..5].ToString(), "data:");
+    }
+
     /// <summary>The body's bytes; null when the URL is not a <c>data:</c> URL or its body does not decode.</summary>
     public static byte[]? Body(string url)
     {
-        var text = url.Trim(' ', '\t', '\n', '\f', '\r');
-        if (text.Length < 5 || !InfraAscii.EqualsIgnoreCase(text[..5], "data:"))
+        if (!Is(url))
         {
             return null;
         }
+
+        var text = Urls.WithoutFragment(url.Trim(' ', '\t', '\n', '\f', '\r'));
 
         var comma = text.IndexOf(',', 5);
         if (comma < 0)

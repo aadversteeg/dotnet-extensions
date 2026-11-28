@@ -32,7 +32,7 @@ internal static class ConformanceRules
             .ToList();
         return violations.Count == 0
             ? Result<PageDocument, Error>.Success(document)
-            : Result<PageDocument, Error>.Failure(Errors.Aggregate(violations));
+            : Result<PageDocument, Error>.Failure(DiagnosticLimits.Aggregate(violations));
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ internal static class ConformanceRules
         var violations = profile.IsPdfUa1 ? TableRegularity.Violations(tree).ToList() : [];
         return violations.Count == 0
             ? Result<StructureTree, Error>.Success(tree)
-            : Result<StructureTree, Error>.Failure(Errors.Aggregate(violations));
+            : Result<StructureTree, Error>.Failure(DiagnosticLimits.Aggregate(violations));
     }
 
     /// <summary>ISO 19005-3 §6.8 (veraPDF rule 6.8-3): every embedded file says how it relates to the document.</summary>

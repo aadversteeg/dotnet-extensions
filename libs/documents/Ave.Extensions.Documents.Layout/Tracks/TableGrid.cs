@@ -132,6 +132,11 @@ internal sealed record TableGrid(
 
         var cellBoxes = rowBoxes.Select(row => row.Children.Cast<Box>().ToImmutableArray()).ToImmutableArray();
         var grid = TableSlots.Fill([.. groupRows.Select(rows => (IReadOnlyList<IReadOnlyList<CellSpan>>)[.. rows.Select(row => (IReadOnlyList<CellSpan>)[.. row.Children.Cast<Box>().Select(cell => cell.Style.Span)])])], columnCount);
+        if (grid.Problems.Any(problem => problem.Kind == TableSlots.ProblemKind.TooLarge))
+        {
+            return Invalid(table, $"a table has at most {TableSlots.MaxColumns} columns and {TableSlots.MaxSlots} slots (rows times columns); this one has {columnCount} columns and {rowBoxes.Length} rows.");
+        }
+
         if (grid.Problems.Where(problem => problem.Kind != TableSlots.ProblemKind.EmptyRow).Select(problem => (TableSlots.Problem?)problem).FirstOrDefault() is { } problem)
         {
             var box = cellBoxes[problem.Row][problem.Cell];

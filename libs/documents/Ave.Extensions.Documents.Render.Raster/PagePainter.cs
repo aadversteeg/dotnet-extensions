@@ -79,10 +79,20 @@ internal static class PagePainter
     }
 
     /// <summary>The decoded pixels of the images one render call draws, by image id: each distinct image is decoded and
-    /// converted once, however often it is drawn.</summary>
+    /// converted once, however often it is drawn, and all of them together decode to at most
+    /// <see cref="ImageLimits.MaxDocumentPixels"/> pixels (<see cref="ImagePixelBudget"/>).</summary>
     internal sealed class Images
     {
         private readonly Dictionary<ImageId, RgbaImage> _decoded = [];
+        private readonly ImagePixelBudget _budget;
+
+        public Images()
+            : this(new ImagePixelBudget())
+        {
+        }
+
+        /// <summary>With a budget of its own (a smaller one in tests).</summary>
+        internal Images(ImagePixelBudget budget) => _budget = budget;
 
         public Result<RgbaImage, Error> Of(ImageData image)
         {
@@ -91,7 +101,7 @@ internal static class PagePainter
                 return Result<RgbaImage, Error>.Success(known);
             }
 
-            var decoded = ImageDecoder.DecodeSamples(image).OnSuccessMap(Rgba);
+            var decoded = ImageDecoder.DecodeSamples(image, _budget).OnSuccessMap(Rgba);
             if (decoded.IsSuccess)
             {
                 _decoded[image.Id] = decoded.Value;
@@ -203,7 +213,7 @@ internal static class PagePainter
     }
 
     private static Result<Unit, Error> Image(Canvas canvas, DrawImage image, double scale, PixelBox clip, Images images) =>
-        images.Of(image.Image).OnSuccessBind(pixels =>
+        images.Of(image.Image).MapError(error => Undecoded(error, image.Image)).OnSuccessBind(pixels =>
         {
             var area = image.Area;
 
@@ -220,6 +230,21 @@ internal static class PagePainter
                 new Error(RasterErrorCodes.ImageOutOfReach, $"An image on the page cannot be drawn exactly at this resolution: {error.Message}")
                     .With(ErrorMetadataKeys.Value, error.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.Value, out var reach) ? reach : string.Empty));
         });
+
+    /// <summary>The refusal of an image the raster output cannot decode to pixels: it says why this output needs them,
+    /// where a PDF embeds a JPEG file as it is, and carries the image's id (<see cref="ErrorMetadataKeys.Image"/>), by
+    /// which a caller that has the document names the image.</summary>
+    private static Error Undecoded(Error error, ImageData image)
+    {
+        var metadata = new Dictionary<string, object>(StringComparer.Ordinal);
+        foreach (var (key, value) in error.Metadata ?? new Dictionary<string, object>())
+        {
+            metadata[key] = value;
+        }
+
+        metadata[ErrorMetadataKeys.Image] = image.Id.Digest;
+        return new Error(error.Code, $"The image ({image.Describe()}) is not drawn: the raster output decodes each image to pixels, where a PDF embeds a JPEG file as it is. {error.Message}", metadata, error.Inner);
+    }
 
     /// <summary>Grey or RGB samples and an optional alpha channel as RGBA pixels.</summary>
     private static RgbaImage Rgba(RasterImage image)

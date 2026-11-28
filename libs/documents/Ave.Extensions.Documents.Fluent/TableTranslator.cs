@@ -50,7 +50,7 @@ internal static class TableTranslator
             .Concat(InputChecks.Columns(table.Columns, table.Source))
             .Concat(InputChecks.NotApplicable(box.Padding, "padding", "table", table.Source))
             .Concat(misplaced.Select(InputChecks.MisplacedHeaderRow))
-            .Concat(table.Columns.Count > 0 ? InputChecks.TableShape([.. groups.Select(group => (IReadOnlyList<TableRowElement>)group.Rows)], table.Columns.Count) : [])
+            .Concat(table.Columns.Count > 0 ? InputChecks.TableShape([.. groups.Select(group => (IReadOnlyList<TableRowElement>)group.Rows)], table.Columns.Count, table.Source) : [])
             .ToImmutableArray();
         var own = inherited.With(text);
         var children = Parts(groups, new NodeId(id.Value + 1), own, table.CellDefaults, isLayoutOnly: false);

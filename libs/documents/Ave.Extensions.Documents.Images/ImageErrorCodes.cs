@@ -19,8 +19,10 @@ public static class ImageErrorCodes
     /// nor JPEG.</summary>
     public static readonly ErrorCode Unsupported = _ / "Unsupported";
 
-    /// <summary>An image with more pixels than the engine decodes or encodes (<c>ImageLimits.MaxPixels</c>, 2^26).
-    /// Metadata: Value (width x height).</summary>
+    /// <summary>An image with more pixels than the engine decodes or encodes (<c>ImageLimits.MaxPixels</c>, 2^26), or
+    /// than is left of the document's budget (<c>ImageLimits.MaxDocumentPixels</c>). Metadata: Value (width x height).
+    /// Also an image that is not decoded because the failed decodes of its document have reached
+    /// <c>ImageLimits.MaxFailedDocumentPixels</c>; Value is then the pixels they produced and the limit.</summary>
     public static readonly ErrorCode TooLarge = _ / "TooLarge";
 
     /// <summary>A JPEG whose scans together visit the blocks of its frame more often than the decoder does work for

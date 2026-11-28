@@ -165,6 +165,82 @@ public class RenderingTests
         page.ToPdf(Options).IsSuccess.Should().BeTrue();
     }
 
+    /// <summary>A document of the given number of pages, one short paragraph on each.</summary>
+    private static Document Pages(int count) =>
+        Document([.. Enumerable.Range(0, count).SelectMany(page => page == 0 ? [Paragraph("p")] : new Element[] { PageBreak(), Paragraph("p") })]).FontFamily("Lato");
+
+    /// <summary>What every call on a document gives under a page limit: null when it renders, else the error.</summary>
+    private static IEnumerable<(string Entry, Ave.Extensions.ErrorPaths.Error? Error)> EveryEntry(Document document, int? maxPages, bool pngPages = true)
+    {
+        var raster = new RasterOptions(9);
+        var limit = maxPages is { } max ? new DocumentRenderOptions { MaxPages = max } : null;
+        static Ave.Extensions.ErrorPaths.Error? ErrorOf<T>(Ave.Extensions.Functional.Result<T, Ave.Extensions.ErrorPaths.Error> result) => result.IsSuccess ? null : result.Error;
+        yield return ("ToPages", ErrorOf(limit is not null ? document.ToPages(TestFonts.Set, limit) : document.ToPages(TestFonts.Set)));
+        yield return ("ToPdf", ErrorOf(limit is not null ? document.ToPdf(TestFonts.Set, Options, limit) : document.ToPdf(TestFonts.Set, Options)));
+        yield return ("ToPng", ErrorOf(limit is not null ? document.ToPng(TestFonts.Set, 1, raster, limit) : document.ToPng(TestFonts.Set, 1, raster)));
+        if (pngPages)
+        {
+            yield return ("ToPngPages", ErrorOf(limit is not null ? document.ToPngPages(TestFonts.Set, raster, limit) : document.ToPngPages(TestFonts.Set, raster)));
+        }
+
+        yield return ("ToImages", ErrorOf(limit is not null ? document.ToImages(TestFonts.Set, raster, limit) : document.ToImages(TestFonts.Set, raster)));
+    }
+
+    [Fact]
+    public void Every_call_on_a_document_renders_up_to_its_page_limit_and_refuses_one_page_past_it_naming_its_option()
+    {
+        EveryEntry(Pages(3), 3).Should().OnlyContain(entry => entry.Error == null, "just inside the limit");
+
+        foreach (var (entry, error) in EveryEntry(Pages(3), 2))
+        {
+            error!.Value.Code.Should().Be(LayoutErrorCodes.TooManyPages, entry);
+            error.Value.Message.Should().Contain("more than 2 pages", entry).And.Contain("Raise the limit with DocumentRenderOptions.MaxPages (default 10000)", entry)
+                .And.NotContain("HtmlRenderOptions", entry).And.NotContain("LayoutEnvironment", entry);
+        }
+    }
+
+    [Fact]
+    public void The_calls_on_a_document_stop_at_the_default_page_limit_and_render_past_it_when_it_is_raised()
+    {
+        // One page past the default: refused without the parameter, rendered with a raised limit.
+        var document = Pages(LayoutEnvironment.DefaultMaxPages + 1);
+
+        EveryEntry(document, null, pngPages: false).Should().OnlyContain(entry => entry.Error != null && entry.Error.Value.Code == LayoutErrorCodes.TooManyPages);
+        EveryEntry(document, LayoutEnvironment.DefaultMaxPages + 1, pngPages: false).Should().OnlyContain(entry => entry.Error == null);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-7)]
+    public void A_page_limit_below_one_is_refused_by_every_call_on_a_document(int maxPages)
+    {
+        foreach (var (entry, error) in EveryEntry(Pages(1), maxPages))
+        {
+            error!.Value.Code.Should().Be(LayoutErrorCodes.InvalidOptions, entry);
+            error.Value.Message.Should().Be($"DocumentRenderOptions.MaxPages is {maxPages}; a document has at least one page, so the page limit must be at least 1.", entry);
+            error.Value.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Property].Should().Be("DocumentRenderOptions.MaxPages", entry);
+        }
+    }
+
+    [Fact]
+    public void The_raster_refusal_of_an_image_names_the_place_of_the_image_in_the_code()
+    {
+        // A JPEG whose header claims 16000 x 16000 pixels: embedded in a PDF as it is, too many pixels for the raster output.
+        var jpeg = TestImages.Bytes("jpeg-rgb.jpg");
+        var frame = Enumerable.Range(0, jpeg.Length - 1).First(index => jpeg[index] == 0xFF && jpeg[index + 1] == 0xC0);
+        jpeg[frame + 5] = jpeg[frame + 7] = 16000 >> 8;
+        jpeg[frame + 6] = jpeg[frame + 8] = 16000 & 0xFF;
+        var line = CurrentLine() + 1;
+        var document = Document([Image(jpeg).Width(100.Pt()).Alt("x")]).FontFamily("Lato");
+
+        document.ToPdf(TestFonts.Set, Options).IsSuccess.Should().BeTrue();
+        var refused = document.ToPng(TestFonts.Set, 1, new RasterOptions(72)).Error;
+
+        refused.Code.Should().Be(Ave.Extensions.Documents.Images.ImageErrorCodes.TooLarge);
+        refused.Message.Should().StartWith($"The image at RenderingTests.cs:{line} (jpeg 16000x16000 rgb) is not drawn: the raster output decodes each image to pixels");
+        refused.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
+    }
+
     private static int CurrentLine([CallerLineNumber] int line = 0) => line;
 
     private static string ThisFile([CallerFilePath] string file = "") => file;
