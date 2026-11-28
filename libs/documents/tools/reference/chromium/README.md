@@ -264,7 +264,8 @@ each letter in an inline box of its own), so a word has a place per glyph. The c
 what is painted over it: every fill or image after a text that draws part of the word, whose box overlaps that part's
 box (its advances across, from its first glyph's origin to its last glyph's end, 0.8 of the font size above the baseline
 to 0.2 below) by more than one pixel across and down
-(`HtmlCases.OrderDifferences`, `PixelBound`). A thin line (one pixel or less) is never over a word by this rule. That
+(`HtmlCases.OrderDifferences`, `PixelBound`), each colour with the number of paints of it, so a second line of the same
+colour over a word differs too. A thin line (one pixel or less) is never over a word by this rule. That
 box is chosen, not measured: it stands for "does this word's ink overlap that item", it is the same on both sides, and
 the comparison of clips cuts the same box (`HtmlCases.WordBox`).
 

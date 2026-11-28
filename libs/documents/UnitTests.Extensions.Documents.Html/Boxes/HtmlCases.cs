@@ -950,8 +950,8 @@ internal static class HtmlCases
     internal static PrintedPage PaintedOver(PrintedPage page)
     {
         const double Band = 12;
-        var bands = new Dictionary<int, List<PrintedPaint>>();
-        foreach (var paint in page.Paints)
+        var bands = new Dictionary<int, List<(PrintedPaint Paint, int Index)>>();
+        foreach (var (paint, index) in page.Paints.Select((paint, index) => (paint, index)))
         {
             for (var band = (int)Math.Floor(paint.Y0 / Band); band <= (int)Math.Floor(paint.Y1 / Band); band++)
             {
@@ -960,7 +960,7 @@ internal static class HtmlCases
                     bands[band] = list = [];
                 }
 
-                list.Add(paint);
+                list.Add((paint, index));
             }
         }
 
@@ -974,11 +974,11 @@ internal static class HtmlCases
                 {
                     for (var band = (int)Math.Floor(part.Y0 / Band); band <= (int)Math.Floor(part.Y1 / Band); band++)
                     {
-                        foreach (var paint in bands.TryGetValue(band, out var list) ? list : [])
+                        foreach (var (paint, index) in bands.TryGetValue(band, out var list) ? list : [])
                         {
                             if (paint.Place > place && Math.Min(part.X1, paint.X1) - Math.Max(part.X0, paint.X0) > PixelBound && Math.Min(part.Y1, paint.Y1) - Math.Max(part.Y0, paint.Y0) > PixelBound)
                             {
-                                over.Add(paint.Paint);
+                                over.Add($"{paint.Paint} {index}");
                             }
                         }
                     }
@@ -1026,9 +1026,15 @@ internal static class HtmlCases
     /// <param name="chromium">Chromium's print, with its places (<see cref="PrintedPages.WithOrder"/>).</param>
     /// <returns>The differences.</returns>
     public static IEnumerable<string> OrderDifferences(PrintedPages engine, PrintedPages chromium) =>
-        PairedWords(engine, chromium).Select(pair => pair.Ours.Over.SequenceEqual(pair.Theirs.Over) ? null
-            : $"page {pair.Ours.Page} '{pair.Ours.Text}' is painted over by {Paints(pair.Ours.Over)}, Chromium's by {Paints(pair.Theirs.Over)} (order.txt)").OfType<string>()
+        PairedWords(engine, chromium).Select(pair => (Ours: Counted(pair.Ours.Over), Theirs: Counted(pair.Theirs.Over), pair.Ours) is var found && found.Ours.SequenceEqual(found.Theirs) ? null
+            : $"page {pair.Ours.Page} '{pair.Ours.Text}' is painted over by {Paints(found.Ours)}, Chromium's by {Paints(found.Theirs)} (order.txt)").OfType<string>()
             .Concat(PaintOrderDifferences(engine, chromium));
+
+    // What is painted over a word (PrintedWord.Over: each paint as its colour and its number on the page) as the
+    // comparison compares it: each colour once, with how many paints of it where there are more than one.
+    private static List<string> Counted(IEnumerable<string> over) =>
+        [.. over.GroupBy(paint => paint.Split(' ')[0], StringComparer.Ordinal).OrderBy(group => group.Key, StringComparer.Ordinal)
+            .Select(group => group.Count() == 1 ? group.Key : $"{group.Key} ×{group.Count()}")];
 
     private static string Paints(IEnumerable<string> paints) => paints.Any() ? string.Join(", ", paints) : "nothing";
 
