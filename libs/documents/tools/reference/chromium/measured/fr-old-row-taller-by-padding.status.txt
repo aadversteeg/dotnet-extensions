@@ -1,1 +1,9 @@
-fr-old-row-taller-by-padding listed A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank: page 1 painted area: the pixel at (12, 12): the engine paints it and Chromium does not; the engine paints 766 px #000000, Chromium 0 px (print.txt)
+fr-old-row-taller-by-padding listed A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank: page 1 painted area: the pixel at (12, 12): the engine paints it and Chromium does not; the engine paints 766 px #000000, Chromium 0 px; 766 px differ so, from (12, 12) to (288, 162) (print.txt)
+7 differences:
+- page 1 painted area: the pixel at (12, 12): the engine paints it and Chromium does not; the engine paints 766 px #000000, Chromium 0 px; 766 px differ so, from (12, 12) to (288, 162) (print.txt)
+- page 2 'w' baseline 25.5 (laid out at 25.5), Chromium 26.25 (print.txt)
+- page 2 painted area: the pixel at (12.75, 12): Chromium paints it and the engine does not; the engine paints 400 px #000000, Chromium 766 px; 366 px differ so, from (12.75, 12) to (287.25, 12.75) (print.txt)
+- page 1 painted area: the pixel at (12, 12): the engine paints it and Chromium does not; the engine paints 766 px, Chromium 0 px; 766 px differ so, from (12, 12) to (288, 162) (lines.txt)
+- page 2 painted area: the pixel at (12.75, 12): Chromium paints it and the engine does not; the engine paints 400 px, Chromium 766 px; 366 px differ so, from (12.75, 12) to (287.25, 12.75) (lines.txt)
+- page 2 'w' yMin 13.656, Chromium 14.406 (words.txt)
+- page 2 'w' yMax 28.056, Chromium 28.806 (words.txt)

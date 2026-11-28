@@ -1,1 +1,5 @@
 a4-row-image-row listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 5 'after' baseline 72.75 (laid out at 72.375), Chromium 24.75 (print.txt)
+3 differences:
+- page 5 'after' baseline 72.75 (laid out at 72.375), Chromium 24.75 (print.txt)
+- page 5 'after' yMin 60.906, Chromium 12.906 (words.txt)
+- page 5 'after' yMax 75.306, Chromium 27.306 (words.txt)

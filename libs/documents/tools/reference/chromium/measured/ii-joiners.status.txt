@@ -1,1 +1,7 @@
 ii-joiners listed A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners: page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x' (print.txt)
+5 differences:
+- page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x' (print.txt)
+- page 1 has no word 'abc⁠' (words.txt)
+- page 1 has no word '⁠def' (words.txt)
+- page 1 has no word 'abc‍' (words.txt)
+- page 1 has no word '‍def' (words.txt)

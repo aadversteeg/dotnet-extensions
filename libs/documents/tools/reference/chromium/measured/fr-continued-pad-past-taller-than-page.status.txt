@@ -1,1 +1,5 @@
 fr-continued-pad-past-taller-than-page listed What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding: page 4 'z' baseline 62.25 (laid out at 62.496), Chromium 22.5 (print.txt)
+3 differences:
+- page 4 'z' baseline 62.25 (laid out at 62.496), Chromium 22.5 (print.txt)
+- page 4 'z' yMin 51.887, Chromium 12.136 (words.txt)
+- page 4 'z' yMax 64.487, Chromium 24.736 (words.txt)

@@ -9,16 +9,17 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 
 /// <summary>
 /// Every Chromium reference case through the HTML path, against its committed status file
-/// (<c>tools/reference/chromium/measured/&lt;case&gt;.status.txt</c>): one line, <c>name status rest</c>, where the status, the
+/// (<c>tools/reference/chromium/measured/&lt;case&gt;.status.txt</c>): a first line <c>name status rest</c>, where the status, the
 /// second field, is <c>equal</c> (every fact of the case's measured files within its bound, <see cref="HtmlCases"/>),
 /// <c>listed</c> with the test that pins the limit and the difference it lists, <c>refused</c> with the first refusal's
-/// code, what it names, and its line and column, or <c>open</c> with a known difference, engine against Chromium. A case
+/// code, what it names, and its line and column, or <c>open</c> with a known difference, engine against Chromium; a
+/// <c>listed</c> or <c>open</c> file then holds every difference of the case (<see cref="HtmlCases.DifferenceList"/>). A case
 /// that lays out and differs otherwise fails, and so does a status that changes without its file changing, a case without
 /// a status file and a status file without a case: the status files are the list of what the HTML front-end draws, and
 /// what it refuses is the work list of the packages after this one. The test prints how many cases have each status. With
 /// <c>DOCUMENTS_UPDATE_HTML_STATUS=1</c> the test writes the status files instead (and deletes those without a case); a
 /// case is <c>open</c> or <c>listed</c> only where its committed file already says so, so a written file never accepts a
-/// new difference. Each case's status is a file of its own, so two changes that add different cases touch no status
+/// difference of another case; of a listed or open case it writes the differences found, for the diff to show. Each case's status is a file of its own, so two changes that add different cases touch no status
 /// file in common. The whole documents (<c>tools/reference/chromium/documents</c>) have status files of their own, in
 /// <c>documents/measured</c>, compared and written the same way.
 /// </summary>
@@ -54,29 +55,91 @@ public class CaseStatusTests(ITestOutputHelper output)
 
         var counts = statuses.GroupBy(status => HtmlCases.Fields(status).Status).OrderByDescending(group => group.Count()).ThenBy(group => group.Key, StringComparer.Ordinal);
         output.WriteLine($"{statuses.Count} files: {string.Join(", ", counts.Select(group => $"{group.Count()} {group.Key}"))}");
-        var open = statuses.Where(status => HtmlCases.Fields(status).Status == "open").ToList();
+        var open = statuses.Where(status => HtmlCases.Fields(status).Status == "open").Select(status => status.Split('\n')[0]).ToList();
         output.WriteLine($"{open.Count} open: {string.Join("; ", open)}");
         statuses.Where(status => !HtmlCases.Accepted.Contains(HtmlCases.Fields(status).Status))
             .Should().BeEmpty("a file that lays out is laid out as Chromium prints it");
         folder.StatusNames.Should().Equal(folder.Names, "every file has a status file, and every status file is of a file");
-        folder.Names.Select(name => File.Exists(folder.StatusFile(name)) ? string.Join("\n", File.ReadAllLines(folder.StatusFile(name))) : $"{name} has no status file")
-            .Should().Equal(statuses, "the status of each file is the committed one");
+        folder.Names.Select(name => File.Exists(folder.StatusFile(name)) ? CaseFolder.StatusText(File.ReadAllText(folder.StatusFile(name))) : $"{name} has no status file")
+            .Should().Equal(statuses, "the status of each file is the committed one, with every difference of a listed or open file");
     }
 
-    /// <summary>A listed case names, in its status line, the test that pins its difference: that test is one of the
-    /// family's tests, so a name changed in the line alone fails here.</summary>
+    /// <summary>A status file read on a checkout that wrote carriage returns is the same status: the comparison sees line
+    /// feeds only, and no line feed after the last line.</summary>
     [Fact]
-    public void Every_listed_case_names_a_test_of_the_family()
+    public void A_status_file_with_carriage_returns_reads_as_the_same_status()
     {
-        var family = Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "..", "..", "..", ".."));
-        var obj = $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}";
-        var sources = Directory.GetDirectories(family, "UnitTests.*").SelectMany(project => Directory.GetFiles(project, "*.cs", SearchOption.AllDirectories))
-            .Where(file => !file.Contains(obj, StringComparison.Ordinal)).Select(File.ReadAllText).ToList();
-        var tests = HtmlCases.Names.Select(name => HtmlCases.Cases.Committed(name)?.Split(' ', 2) ?? [])
-            .Where(fields => fields is ["listed", _]).Select(fields => fields[1].Split(": ", 2)[0]).Distinct(StringComparer.Ordinal).ToList();
+        var folder = Directory.CreateTempSubdirectory("documents-status-");
+        try
+        {
+            var lines = new CaseFolder(folder.FullName, folder.FullName);
+            File.WriteAllText(lines.StatusFile("a"), "a listed T: x\r\n2 differences:\r\n- x\r\n- y\r\n");
+            File.WriteAllText(lines.StatusFile("b"), "b equal\n");
 
-        tests.Should().NotBeEmpty();
-        tests.Where(test => !sources.Any(source => source.Contains($" void {test}(", StringComparison.Ordinal))).Should().BeEmpty("a listed case names a test that pins its difference");
+            lines.Committed("a").Should().Be("listed T: x\n2 differences:\n- x\n- y");
+            lines.Committed("b").Should().Be("equal");
+        }
+        finally
+        {
+            folder.Delete(recursive: true);
+        }
+    }
+
+    /// <summary>A listed case names, in its status line, the test that pins its difference: one test of this project, the
+    /// one that lays out the HTML cases (<see cref="HtmlCases"/>), whose text, its attributes and its body
+    /// (<see cref="TestSource"/>), holds the case's name as a string, so the test lays out that case. A name changed in the
+    /// line alone, a test of the code front-end, or a test of another case fails here.</summary>
+    [Fact]
+    public void Every_listed_case_names_a_test_that_lays_out_that_case()
+    {
+        var project = Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "..", "..", "..", "..", "UnitTests.Extensions.Documents.Html"));
+        var obj = $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}";
+        var sources = Directory.GetFiles(project, "*.cs", SearchOption.AllDirectories)
+            .Where(file => !file.Contains(obj, StringComparison.Ordinal)).Select(file => CaseFolder.StatusText(File.ReadAllText(file))).ToList();
+        var listed = HtmlCases.Names.Select(name => (Name: name, Fields: HtmlCases.Cases.Committed(name)?.Split('\n')[0].Split(' ', 2) ?? []))
+            .Where(pair => pair.Fields is ["listed", _]).Select(pair => (pair.Name, Test: pair.Fields[1].Split(": ", 2)[0])).ToList();
+
+        var wrong = listed.Where(pair => sources.Select(source => TestSource(source, pair.Test)).OfType<string>().ToList() is not [var test] || !test.Contains($"\"{pair.Name}\"", StringComparison.Ordinal))
+            .Select(pair => $"{pair.Name}: {pair.Test}").ToList();
+        listed.Should().NotBeEmpty();
+        wrong.Should().BeEmpty($"a listed case names one test of this project, and that test lays out the case by its name ({string.Join("; ", wrong)})");
+    }
+
+    /// <summary>The text of a test method in a source file: from the attributes and comments right above its declaration
+    /// (<c> void name(</c>) to the end of its body, the first line after it that closes a member (four spaces and a brace), or
+    /// the first line that ends in a semicolon for an expression body; null where the file has no such method.</summary>
+    internal static string? TestSource(string source, string test)
+    {
+        var lines = source.Split('\n');
+        var declaration = Array.FindIndex(lines, line => line.Contains($" void {test}(", StringComparison.Ordinal));
+        if (declaration < 0)
+        {
+            return null;
+        }
+
+        var start = declaration;
+        while (start > 0 && lines[start - 1].TrimStart() is var above && (above.StartsWith('[') || above.StartsWith("///", StringComparison.Ordinal)))
+        {
+            start--;
+        }
+
+        var expression = lines[declaration].Contains("=>", StringComparison.Ordinal);
+        var end = declaration;
+        while (end < lines.Length - 1 && !(expression ? lines[end].TrimEnd().EndsWith(';') : lines[end] == "    }"))
+        {
+            end++;
+        }
+
+        return string.Join("\n", lines[start..(end + 1)]);
+    }
+
+    [Theory]
+    [InlineData("    [InlineData(\"c\")]\n    public void T(string name)\n    {\n        x;\n    }\n    [InlineData(\"d\")]\n    public void U(string name)\n    {\n    }", "T", "\"c\"", "\"d\"")]
+    [InlineData("    /// <summary>\"c\"</summary>\n    [Fact]\n    public void T() =>\n        Run(\"d\");\n    [Fact]\n    public void U() => Run(\"e\");", "T", "\"d\"", "\"e\"")]
+    public void The_text_of_a_test_ends_with_its_body_and_starts_at_its_attributes(string source, string test, string inside, string outside)
+    {
+        TestSource(source, test).Should().Contain(inside).And.NotContain(outside);
+        TestSource(source, "V").Should().BeNull();
     }
 
     [Fact]
