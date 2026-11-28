@@ -182,9 +182,11 @@ fonts of the `@font-face` rules, the logo and the style sheets come from the res
 template names. What the HTML front-end draws, refuses and ignores is the HTML profile, `docs/html-css-profile.md`.
 
 The resolver is the one place where a document reaches the caller's files or network, so every URL in the document
-is untrusted input. The engine hands the resolver absolute URLs, resolved against the caller's `BaseUrl` (a `<base>`
-element in the document counts only when the caller sets `AllowBaseElement`; otherwise it is refused), each URL at
-most once per render, at most 4 096 of them, each at most 32 767 characters. `data:` URLs never reach the resolver: the
+is untrusted input. With a `BaseUrl` the engine resolves every reference against it and hands the resolver absolute
+URLs; without one it hands the reference as the document writes it (`logo.png`, `//host/share/x.png`), so set a
+`BaseUrl`. A `<base>` element in the document counts only when the caller sets `AllowBaseElement`; otherwise it is
+refused. A URL's fragment (`#…`) is removed first, as it never names another resource. The resolver is asked each URL
+at most once per render, for at most 4 096 of them, each at most 32 767 characters. `data:` URLs never reach the resolver: the
 engine decodes them itself. Every other URL does, whatever its scheme: `file:`, a Windows share written as
 `file://host/share/x.css`, `ftp:`, `javascript:`, or a path with `../` that leaves the base folder. So the resolver
 decides what it serves: it maps a URL to a file only inside a folder it chose (the HtmlStyles sample checks
