@@ -60,8 +60,9 @@ public class CaseStatusTests(ITestOutputHelper output)
         statuses.Where(status => !HtmlCases.Accepted.Contains(HtmlCases.Fields(status).Status))
             .Should().BeEmpty("a file that lays out is laid out as Chromium prints it");
         folder.StatusNames.Should().Equal(folder.Names, "every file has a status file, and every status file is of a file");
-        folder.Names.Select(name => File.Exists(folder.StatusFile(name)) ? CaseFolder.StatusText(File.ReadAllText(folder.StatusFile(name))) : $"{name} has no status file")
-            .Should().Equal(statuses, "the status of each file is the committed one, with every difference of a listed or open file");
+        var committed = folder.Names.Select(name => File.Exists(folder.StatusFile(name)) ? CaseFolder.StatusText(File.ReadAllText(folder.StatusFile(name))) : $"{name} has no status file").ToList();
+        var changed = committed.Zip(statuses).Where(pair => pair.First != pair.Second).Select(pair => $"{pair.Second}\n(committed: {pair.First.Split('\n')[0]})").ToList();
+        changed.Should().BeEmpty($"the status of each file is the committed one, with every difference of a listed or open file:\n{string.Join("\n\n", changed)}\n");
     }
 
     /// <summary>The file that names every open case and document (<c>tools/reference/chromium/open-cases.txt</c>): one line
