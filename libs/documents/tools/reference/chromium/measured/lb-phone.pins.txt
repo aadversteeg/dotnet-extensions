@@ -1,0 +1,7 @@
+lb-phone.boxes.txt 1
+lb-phone.clips.txt 52
+lb-phone.glyphs.txt 52
+lb-phone.lines.txt 0
+lb-phone.order.txt 52
+lb-phone.print.txt 54
+lb-phone.words.txt 52

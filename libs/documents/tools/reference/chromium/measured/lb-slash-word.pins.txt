@@ -1,0 +1,7 @@
+lb-slash-word.boxes.txt 1
+lb-slash-word.clips.txt 39
+lb-slash-word.glyphs.txt 39
+lb-slash-word.lines.txt 0
+lb-slash-word.order.txt 39
+lb-slash-word.print.txt 40
+lb-slash-word.words.txt 39

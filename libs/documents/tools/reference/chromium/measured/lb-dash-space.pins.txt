@@ -1,0 +1,7 @@
+lb-dash-space.boxes.txt 1
+lb-dash-space.clips.txt 39
+lb-dash-space.glyphs.txt 39
+lb-dash-space.lines.txt 0
+lb-dash-space.order.txt 39
+lb-dash-space.print.txt 40
+lb-dash-space.words.txt 39

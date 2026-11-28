@@ -1,0 +1,27 @@
+word 1 The 0 0 0
+word 1 report 0 0 0 0 0 0
+word 1 at 0 0
+word 1 https://example.com/reports/2026/q4? 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+word 1 part=2 2 2 2 2 2 2
+word 1 lists 2 2 2 2 2
+word 1 REF- 2 2 2 2
+word 1 2026-0042 3 3 3 3 3 3 3 3 3
+word 1 and/or 3 3 3 3 3 3
+word 1 AB-12-CD, 4 4 4 4 4 4 4 4 4
+word 1 dated 4 4 4 4 4
+word 1 2026-11-28, 5 5 5 5 5 5 5 5 5 5 5
+word 1 for 5 5 5
+word 1 /srv/shared/reports/2026. 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6
+word 1 The 7 7 7
+word 1 report 7 7 7 7 7 7
+word 1 at 7 7
+word 1 https://example.com/reports/2026/q4? 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+word 1 part=2 9 9 9 9 9 9
+word 1 lists 9 9 9 9 9
+word 1 REF-2026-0042 9 9 9 9 9 9 9 9 9 9 9 9 9
+word 1 and/or 10 10 10 10 10 10
+word 1 AB-12-CD, 10 10 10 10 10 10 10 10 10
+word 1 dated 10 10 10 10 10
+word 1 2026-11-28, 11 11 11 11 11 11 11 11 11 11 11
+word 1 for 11 11 11
+word 1 /srv/shared/reports/2026. 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12 12

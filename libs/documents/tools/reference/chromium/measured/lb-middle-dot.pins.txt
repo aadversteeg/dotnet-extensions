@@ -1,0 +1,7 @@
+lb-middle-dot.boxes.txt 1
+lb-middle-dot.clips.txt 44
+lb-middle-dot.glyphs.txt 44
+lb-middle-dot.lines.txt 0
+lb-middle-dot.order.txt 44
+lb-middle-dot.print.txt 46
+lb-middle-dot.words.txt 44
