@@ -448,6 +448,12 @@ the size of its input, or by a fixed and named limit; never by a number the inpu
 | slices of one piece of content taller than the page area (`MonolithicOverflow.Slice`) | 100, one per page | `Layout/MonolithicSlices.cs` | `Documents.Layout.TooManySlices` |
 | slices of one document, all pieces together (`MonolithicOverflow.Slice`) | 1 000, counted page by page; a document without a piece taller than the page area has none | `Layout/MonolithicSlices.cs`, `Layout/Paginator.cs` | `Documents.Layout.TooManySlices` (the message names the limit for one document) |
 
+The grid limit of a table bounds its memory, not its time: the layout of a table near the limit allocates about 15 KB
+per slot and takes minutes (measured on a Linux development machine, .NET 10, Release, two cores: 2^16 slots, 256 × 256,
+1.6 s and 0.9 GB allocated; 2^18 slots, 4 096 × 64, 3.1 s and 4.3 GB; 2^20 slots, 4 096 × 256, 12.4 s and 15.7 GB;
+2^22 slots, 4 096 × 1 024, about 210 s and 61 GB; the peak stays under 200 MB). Making that time grow with the table
+is work on the table layout, not a lower limit.
+
 In stage 3 a limit that is reached ends the work where it is reached: the style resolution fails with the limit's
 error, in both modes of `HtmlStyleOptions.Unsupported`, and returns no partly styled tree. Selector matching
 (`Css/Selectors/SelectorMatcher.cs`) computes, per step of a selector and element, whether the steps up to it match
