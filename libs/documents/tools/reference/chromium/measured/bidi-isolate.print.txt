@@ -1,0 +1,20 @@
+page 1 300.000 300.000
+word 1 12.000 39.258 23.250 10.500 Name #000000 Lato-Regular
+word 1 41.946 47.175 23.250 10.500 x #000000 Lato-Regular
+word 1 49.863 68.800 23.250 10.500 abc! #000000 Lato-Regular
+word 1 71.226 76.644 23.250 10.500 y #000000 Lato-Regular
+word 1 79.070 102.101 23.250 10.500 here. #000000 Lato-Regular
+word 1 12.000 34.543 44.250 10.500 Span #000000 Lato-Regular
+word 1 37.231 42.460 44.250 10.500 x #000000 Lato-Regular
+word 1 45.152 66.494 44.250 10.500 (abc) #000000 Lato-Regular
+word 1 69.181 83.839 44.250 10.500 12. #000000 Lato-Regular
+word 1 86.273 91.691 44.250 10.500 y #000000 Lato-Regular
+word 1 94.117 117.148 44.250 10.500 here. #000000 Lato-Regular
+word 1 12.000 29.692 65.250 10.500 Left #000000 Lato-Regular
+word 1 32.375 42.067 65.250 10.500 to #000000 Lato-Regular
+word 1 44.755 66.112 65.250 10.500 right #000000 Lato-Regular
+word 1 68.794 87.384 65.250 10.500 abc. #000000 Lato-Regular
+word 1 12.000 29.692 86.250 10.500 Left #000000 Lato-Regular
+word 1 32.375 42.067 86.250 10.500 to #000000 Lato-Regular
+word 1 44.755 66.112 86.250 10.500 right #000000 Lato-Regular
+word 1 68.794 86.082 86.250 10.500 def. #000000 Lato-Regular

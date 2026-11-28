@@ -1,0 +1,6 @@
+page 1 300.000 300.000
+word 1 12.000 35.966 23.250 10.500 Mark #000000 Lato-Regular
+word 1 38.654 54.772 23.250 10.500 abc #000000 Lato-Regular
+word 1 57.457 67.668 23.250 10.500 ؜?!؜ #000000 Lato-Regular
+word 1 67.668 82.725 23.250 10.500 def #000000 Lato-Regular
+word 1 85.214 108.246 23.250 10.500 here. #000000 Lato-Regular

@@ -1,0 +1,1 @@
+bidi-rlo refused Documents.Input.Unsupported.RightToLeft U+202E at 4:11

@@ -1,0 +1,7 @@
+bidi-fsi listed A_left_to_right_formatting_character_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'Note x abc def. y here. List (1, 2!) end.', Chromium 'Note x ⁨abc def.⁩ y here. List (⁨1, 2!⁩) end.'; the engine's page 1: digest ebb58b532710d539 (print.txt)
+5 differences:
+- page 1 reads 'Note x abc def. y here. List (1, 2!) end.', Chromium 'Note x ⁨abc def.⁩ y here. List (⁨1, 2!⁩) end.'; the engine's page 1: digest ebb58b532710d539 (print.txt)
+- page 1 has no word '⁨abc'; the engine's words inside page 1: digest 928b545a28580af9 (words.txt)
+- page 1 has no word 'def.⁩'; the engine's words inside page 1: digest 928b545a28580af9 (words.txt)
+- page 1 has no word '(⁨1,'; the engine's words inside page 1: digest 928b545a28580af9 (words.txt)
+- page 1 has no word '2!⁩)'; the engine's words inside page 1: digest 928b545a28580af9 (words.txt)

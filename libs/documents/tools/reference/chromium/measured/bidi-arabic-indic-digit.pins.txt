@@ -1,0 +1,7 @@
+bidi-arabic-indic-digit.boxes.txt 1
+bidi-arabic-indic-digit.clips.txt 5
+bidi-arabic-indic-digit.glyphs.txt 5
+bidi-arabic-indic-digit.lines.txt 0
+bidi-arabic-indic-digit.order.txt 5
+bidi-arabic-indic-digit.print.txt 6
+bidi-arabic-indic-digit.words.txt 3

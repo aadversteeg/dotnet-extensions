@@ -1,0 +1,7 @@
+bidi-dir-rtl.boxes.txt 1
+bidi-dir-rtl.clips.txt 4
+bidi-dir-rtl.glyphs.txt 4
+bidi-dir-rtl.lines.txt 0
+bidi-dir-rtl.order.txt 4
+bidi-dir-rtl.print.txt 5
+bidi-dir-rtl.words.txt 4

@@ -1673,7 +1673,26 @@ Each is documented next to its code as well.
   skips it and attaches the mark; HarfBuzz applies `mark` with manual joiners and leaves the mark unattached. In the
   PDF text layer a soft hyphen outside a ligature is dropped and one inside a ligature kept; Chromium keeps every soft
   hyphen and adds U+2010 at a shown hyphen. Contextual and other OpenType lookup types are skipped, and so is mark-to-mark positioning
-  (GPOS type 6); default language system only; complex scripts, bidi and hyphenation are not implemented. Only
+  (GPOS type 6); default language system only; complex scripts, bidi and hyphenation are not implemented. LIMIT: text
+  is laid out left to right only, in text order; there is no bidirectional algorithm (UAX #9) and no mirroring. So a
+  character that asks for right-to-left text is refused under both policies, whatever the font has
+  (`Documents.Input.Unsupported.RightToLeft`, `Core/RightToLeftCharacters.cs`): Bidi_Class R, AL or AN (Hebrew, Arabic,
+  the Arabic-Indic digits, U+200F RIGHT-TO-LEFT MARK, U+061C ARABIC LETTER MARK) and the controls RLE U+202B, RLO U+202E
+  and RLI U+2067, which Chromium 159 prints otherwise than in text order (cases `bidi-rlo`, `bidi-rle`, `bidi-rli`,
+  `bidi-rlm`, `bidi-alm`, `bidi-hebrew`, `bidi-arabic-indic-digit`). The classes are a table generated from
+  `UnicodeData.txt` (field 4, `Core/RightToLeftCharacters.g.cs`); a code point without an entry there is not one of them,
+  as no font has a glyph for it. Two places apply the one rule: the HTML front-end beside its glyph check, at the
+  character's line and column (generated text, a marker's and a page-margin box's text at their `content` declaration),
+  once per text and place; and `ModelCheck` for every text run of any document, at the run's line, so a document built
+  in code is refused the same way. Text that is not laid out is not checked: the metadata, alternative text, a link's
+  description. Accepted and drawn as nothing (they need no glyph): LRE U+202A, LRO U+202D, LRI U+2066, FSI U+2068, PDF
+  U+202C, PDI U+2069 and U+200E LEFT-TO-RIGHT MARK; Chromium places every glyph as without them (cases `bidi-lrm`,
+  `bidi-lre`, `bidi-lri`, `bidi-fsi`; FSI takes left to right, as no right-to-left character can follow it) and keeps them
+  in its PDF's text, which the engine's does not (listed:
+  `HtmlListedDifferenceTests.A_left_to_right_formatting_character_is_not_in_the_text_where_Chromium_keeps_it`).
+  `dir="rtl"`, `direction: rtl`, `<bdo>` and `unicode-bidi` other than `normal` and `isolate` are refused as values (case
+  `bidi-dir-rtl`); `dir="ltr"`, `direction: ltr`, `<bdi>`, `unicode-bidi: isolate` and `dir="auto"` are accepted (cases
+  `bidi-isolate`, `bidi-dir-auto`, equal). Only
   `white-space-collapse` values `collapse`, `preserve` and `preserve-breaks` exist (per run, `TextStyle.WhiteSpaceCollapse`),
   and `break-spaces`, and `text-wrap-mode` `wrap` and `nowrap` (`TextStyle.TextWrapMode`); Chromium 159 prints
   `preserve-spaces` and `discard` as `collapse`, so the model has neither. A soft wrap opportunity

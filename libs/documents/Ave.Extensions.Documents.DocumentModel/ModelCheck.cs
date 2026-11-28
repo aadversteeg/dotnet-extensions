@@ -109,7 +109,7 @@ public static class ModelCheck
             {
                 Box box when inBox && inLink => Problem(DocumentErrorCodes.Input.Unsupported.InlineBox, "An image inside a link and inside an inline group with a box of its own (InlineGroup.Box) is not drawn in this version; put the image outside the group or outside the link.", box.Layout.ToString(), "layout", box),
                 Box box => Box(box) ?? Sizes(box, measured),
-                TextRun run => Text(run.Style, run) ?? Characters(run) ?? PreservedTab(run),
+                TextRun run => Text(run.Style, run) ?? Characters(run) ?? RightToLeft(run) ?? PreservedTab(run),
                 InlineRun run => Text(run.Style, run),
                 ImageNode image => ImageSize(image),
                 MarkerSymbol symbol => Text(symbol.Style, symbol) ?? (System.Enum.IsDefined(symbol.Shape)
@@ -770,6 +770,17 @@ public static class ModelCheck
         run.Text is { } text && TextCharacters.IndexOfForbidden(text) is { } offset
             ? (Error?)Problem(DocumentErrorCodes.Input.Invalid.Text, $"The text holds a character text cannot hold at position {offset} (a control character, a noncharacter or half of a surrogate pair).", text, "text", run)
                 .With(ErrorMetadataKeys.Offset, offset)
+            : null;
+
+    /// <summary>No character that asks for right-to-left text (<see cref="RightToLeftCharacters"/>): the engine lays out
+    /// left to right only, so such text would be printed in another order than a browser prints it. Every document goes
+    /// through this check, whichever front-end made it; the HTML front-end refuses such text before, at the character's
+    /// line and column.</summary>
+    private static Error? RightToLeft(TextRun run) =>
+        run.Text is { } text && RightToLeftCharacters.Find(text) is var (offset, codePoint, count)
+            ? (Error?)Problem(DocumentErrorCodes.Input.Unsupported.RightToLeft, RightToLeftCharacters.Message(codePoint, count), $"U+{codePoint:X4}", "text", run)
+                .With(ErrorMetadataKeys.Offset, offset)
+                .With(ErrorMetadataKeys.Count, count)
             : null;
 
     /// <summary>No tab in a run whose white space is preserved: a preserved tab moves the text to the next tab stop (CSS Text 3

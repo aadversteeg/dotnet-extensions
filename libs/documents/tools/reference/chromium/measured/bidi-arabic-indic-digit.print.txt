@@ -1,0 +1,6 @@
+page 1 300.000 300.000
+word 1 12.000 34.150 23.250 10.500 Digit #000000 Lato-Regular
+word 1 36.832 42.051 23.250 10.500 a #000000 Lato-Regular
+word 1 42.059 47.309 23.250 10.500 ٠ #000000 FreeSerif
+word 1 47.309 53.189 23.250 10.500 b #000000 Lato-Regular
+word 1 55.877 78.908 23.250 10.500 here. #000000 Lato-Regular

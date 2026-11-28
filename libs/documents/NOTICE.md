@@ -276,11 +276,13 @@ PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 the Unicode License v3 (`assets/unicode/18.0.0/LICENSE.txt`). The table in
 `Ave.Extensions.Documents.Typesetting/Unicode/UnicodePropertyRanges.g.cs` is generated from them, and so is
 `Ave.Extensions.Documents.Typesetting/Unicode/UnicodeNormalizationData.g.cs` (canonical combining classes, canonical
-decompositions and composition exclusions, from `UnicodeData.txt` and `DerivedNormalizationProps.txt`). The line
+decompositions and composition exclusions, from `UnicodeData.txt` and `DerivedNormalizationProps.txt`), and so is
+`Ave.Extensions.Documents.Core/RightToLeftCharacters.g.cs` (the code points whose Bidi_Class is R, AL, AN, RLE, RLO or
+RLI, from `UnicodeData.txt`). The line
 breaking algorithm is written from UAX #14, revision 57; normalization from UAX #15 and the Unicode Standard §3.11.
 The Unicode License v3 asks for its copyright and permission notice "with all copies of the Data Files or Software,
 or ... in associated Documentation": the notice is `assets/unicode/18.0.0/LICENSE.txt`, and it applies to the data
-files and to the two generated tables.
+files and to the three generated tables.
 
 ## HTML Standard and Encoding Standard data
 

@@ -1,0 +1,7 @@
+bidi-isolate.boxes.txt 1
+bidi-isolate.clips.txt 19
+bidi-isolate.glyphs.txt 19
+bidi-isolate.lines.txt 0
+bidi-isolate.order.txt 19
+bidi-isolate.print.txt 20
+bidi-isolate.words.txt 19

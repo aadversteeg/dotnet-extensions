@@ -1,0 +1,7 @@
+bidi-rle.boxes.txt 1
+bidi-rle.clips.txt 6
+bidi-rle.glyphs.txt 6
+bidi-rle.lines.txt 0
+bidi-rle.order.txt 6
+bidi-rle.print.txt 7
+bidi-rle.words.txt 6

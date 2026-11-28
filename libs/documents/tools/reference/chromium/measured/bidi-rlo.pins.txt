@@ -1,0 +1,7 @@
+bidi-rlo.boxes.txt 1
+bidi-rlo.clips.txt 5
+bidi-rlo.glyphs.txt 5
+bidi-rlo.lines.txt 0
+bidi-rlo.order.txt 5
+bidi-rlo.print.txt 6
+bidi-rlo.words.txt 5

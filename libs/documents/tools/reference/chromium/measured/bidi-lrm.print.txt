@@ -1,0 +1,17 @@
+page 1 300.000 300.000
+word 1 12.000 35.966 23.250 10.500 Mark #000000 Lato-Regular
+word 1 38.654 69.750 23.250 10.500 abc‎def #000000 Lato-Regular
+word 1 72.238 83.935 23.250 10.500 (1) #000000 Lato-Regular
+word 1 86.623 102.940 23.250 10.500 ghi. #000000 Lato-Regular
+word 1 12.000 34.239 44.250 10.500 Total #000000 Lato-Regular
+word 1 36.927 66.453 44.250 10.500 ‎12.50‎ #000000 Lato-Regular
+word 1 66.453 83.730 44.250 10.500 due #000000 Lato-Regular
+word 1 86.418 108.652 44.250 10.500 now. #000000 Lato-Regular
+word 1 12.000 36.034 65.250 10.500 Signs #000000 Lato-Regular
+word 1 38.722 43.941 65.250 10.500 a #000000 Lato-Regular
+word 1 46.629 56.840 65.250 10.500 ‎!?‎ #000000 Lato-Regular
+word 1 56.840 62.720 65.250 10.500 b #000000 Lato-Regular
+word 1 65.408 85.169 65.250 10.500 end. #000000 Lato-Regular
+word 1 12.000 29.656 86.250 10.500 End #000000 Lato-Regular
+word 1 32.344 41.867 86.250 10.500 of #000000 Lato-Regular
+word 1 44.356 63.445 86.250 10.500 line‎ #000000 Lato-Regular

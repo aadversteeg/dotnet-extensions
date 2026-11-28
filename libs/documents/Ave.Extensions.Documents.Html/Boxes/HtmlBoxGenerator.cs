@@ -217,6 +217,10 @@ public static partial class HtmlBoxGenerator
         private readonly Dictionary<StyledElement, TextStyle?> _decorated = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<StyledElement, TrueTypeFont> _faces = new(ReferenceEqualityComparer.Instance);
         private readonly HashSet<(TrueTypeFont Face, int CodePoint)> _missingGlyphs = [];
+
+        /// <summary>The places at which right-to-left text was refused (<see cref="RefuseRightToLeft"/>): generated text
+        /// of many elements has the one place of its declaration, which is refused once.</summary>
+        private readonly HashSet<(string Source, TextPosition Place)> _rightToLeft = [];
         private int _nextId;
         private bool _tooDeep;
 
@@ -406,6 +410,28 @@ public static partial class HtmlBoxGenerator
                     var madeOf = Rune.TryGetRuneAt(written, offset, out var source) && source != character ? (transform, source) : ((string, Rune)?)null;
                     Failures.Add(MissingGlyph(raised.Error, face, character, later, madeOf).WithSource(_sourceName, place(offset)));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Refuses, in both modes, a text with a character that asks for right-to-left text (<see cref="RightToLeftCharacters"/>):
+        /// the engine lays out left to right only, and there is no faithful way to leave one character out of a line.
+        /// Checked as written, whatever the face has, beside the glyph check (<see cref="RefuseMissingGlyphs(string, StyledElement, Func{int, TextPosition})"/>):
+        /// the text of the document, generated text, the text of a list marker and of a page-margin box. One refusal per
+        /// text, at the first such character, with how many the text holds, and once per place (a declaration gives the
+        /// text of every element it matches); one pass over the text.
+        /// </summary>
+        /// <param name="data">The text as written.</param>
+        /// <param name="place">The place of an offset: the character's own place for text from the document, the declaration
+        /// for generated text.</param>
+        /// <param name="sourceName">The source the place is in (a style sheet for generated text); the document by default.</param>
+        private void RefuseRightToLeft(string data, Func<int, TextPosition> place, string? sourceName = null)
+        {
+            if (RightToLeftCharacters.Find(data) is var (offset, codePoint, count) && _rightToLeft.Add((sourceName ?? _sourceName, place(offset))))
+            {
+                Failures.Add(new Error(DocumentErrorCodes.Input.Unsupported.RightToLeft, RightToLeftCharacters.Message(codePoint, count))
+                    .With(ErrorMetadataKeys.Value, $"U+{codePoint:X4}").With(ErrorMetadataKeys.Offset, offset).With(ErrorMetadataKeys.Count, count)
+                    .WithSource(sourceName ?? _sourceName, place(offset)));
             }
         }
 
@@ -912,6 +938,7 @@ public static partial class HtmlBoxGenerator
                     var preservedTab = RefusePreservedTab(counted, sourceName);
                     RefuseUnspacedCharacter(counted);
                     RefuseGeneratedTextInBox(counted, frame);
+                    RefuseRightToLeft(counted.Text.Data, frame.Element.Generated is { } at ? _ => at.Position : counted.Text.PositionOf, sourceName);
                     if (TextStyleOf(frame.Element) is { } style)
                     {
                         // The glyphs are checked in the text as it is drawn, after its transform, at the source's places: for

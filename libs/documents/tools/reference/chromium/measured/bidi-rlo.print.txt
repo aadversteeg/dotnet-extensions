@@ -1,0 +1,6 @@
+page 1 300.000 300.000
+word 1 12.000 36.286 23.250 10.500 Code #000000 Lato-Regular
+word 1 38.974 44.203 23.250 10.500 x #000000 Lato-Regular
+word 1 46.898 65.700 23.250 10.500 cba‮‬ #000000 Lato-Regular
+word 1 65.437 70.855 23.250 10.500 y #000000 Lato-Regular
+word 1 73.281 96.312 23.250 10.500 here. #000000 Lato-Regular

@@ -201,6 +201,39 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// The left-to-right formatting characters the engine accepts (<c>RightToLeftCharacters</c>: LRE U+202A, PDF U+202C,
+    /// LRO U+202D, LRI U+2066, FSI U+2068, PDI U+2069 and the left-to-right mark U+200E) in left-to-right text: Chromium's
+    /// print places every glyph where it places it without them, and keeps them in the PDF's text, where the engine's PDF
+    /// does not (it draws no glyph for a character that needs none), the same as the zero width non-joiner above. With the
+    /// characters taken out of Chromium's words the case is equal, positions included, but for the end of a word that ends
+    /// in one: Chromium's PDF gives the character the default width of its font (<c>/DW</c>) and the read-back reads it as
+    /// that wide, so such a word ends past its last letter. That end is the engine's; every other fact is compared.
+    /// </summary>
+    [Theory]
+    [InlineData("bidi-lrm")]
+    [InlineData("bidi-lre")]
+    [InlineData("bidi-lri")]
+    [InlineData("bidi-fsi")]
+    public void A_left_to_right_formatting_character_is_not_in_the_text_where_Chromium_keeps_it(string name)
+    {
+        const string controls = "\u202A\u202C\u202D\u2066\u2068\u2069\u200E";
+        var (engine, chromium) = (Engine(name), Chromium(name));
+        chromium.Pages.Single().Words.Should().Contain(word => word.Text.IndexOfAny(controls.ToCharArray()) >= 0);
+        var words = engine.Pages.Single().Words;
+        chromium.Pages.Single().Words.Select((word, index) => (word, index)).Where(pair => controls.Contains(pair.word.Text[^1], StringComparison.Ordinal))
+            .Should().OnlyContain(pair => pair.word.X1 > words[pair.index].X1, "the read-back reads a trailing control as wide as the font's default width");
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select((word, index) => word with
+            {
+                Text = string.Concat(word.Text.Where(character => !controls.Contains(character, StringComparison.Ordinal))),
+                X1 = controls.Contains(word.Text[^1], StringComparison.Ordinal) ? words[index].X1 : word.X1,
+            })],
+        })]);
+        HtmlCases.Difference(engine, read).Should().BeNull();
+    }
+
+    /// <summary>
     /// A link around generated text (case <c>mx-gen-link</c>: <c>a::before { content: "see " }</c> and
     /// <c>a::after { content: " more" }</c>; case <c>mx-link-gen-after</c>: the second alone; case <c>tt-groups</c>: <c>a::before { content: "xy" }</c> on a line whose top
     /// lies between pixels): Chromium's print writes two link annotations for each such link, one around the generated text

@@ -43,6 +43,38 @@ public class RenderingTests
         error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
     }
 
+    [Theory]
+    [InlineData("x \u202Eabc\u202C y", "U+202E")]
+    [InlineData("x \u202Babc.\u202C y", "U+202B")]
+    [InlineData("x \u2067abc.\u2069 y", "U+2067")]
+    [InlineData("abc \u200F!?\u200F def", "U+200F")]
+    [InlineData("abc \u061C!?\u061C def", "U+061C")]
+    [InlineData("a\u05D0b", "U+05D0")]
+    [InlineData("a\u0627b", "U+0627")]
+    [InlineData("a\u0660b", "U+0660")]
+    public void A_character_that_asks_for_right_to_left_text_is_an_error_at_the_line_of_its_text(string text, string codePoint)
+    {
+        var line = CurrentLine() + 1;
+        var span = Text(text);
+
+        var error = Document([Paragraph([Bold("Note: "), span])]).FontFamily("Lato").ToPdf(TestFonts.Set, Options).Error;
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.RightToLeft);
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be(codePoint);
+        error.Metadata![ErrorMetadataKeys.SourceFile].Should().Be(ThisFile());
+        error.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
+        error.Message.Should().Contain("left to right only");
+    }
+
+    [Theory]
+    [InlineData("x \u202Aabc\u202C y")]
+    [InlineData("x \u202Dabc\u202C y")]
+    [InlineData("x \u2066abc\u2069 y")]
+    [InlineData("x \u2068abc\u2069 y")]
+    [InlineData("abc\u200Edef")]
+    public void A_left_to_right_formatting_character_is_accepted(string text) =>
+        Document([Paragraph([Text(text)])]).FontFamily("Lato").ToPdf(TestFonts.Set, Options).IsSuccess.Should().BeTrue();
+
     [Fact]
     public void A_block_that_can_never_fit_a_page_is_an_error_at_the_line_of_the_block()
     {

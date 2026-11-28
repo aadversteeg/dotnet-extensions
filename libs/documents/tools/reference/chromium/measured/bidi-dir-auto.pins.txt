@@ -1,0 +1,7 @@
+bidi-dir-auto.boxes.txt 1
+bidi-dir-auto.clips.txt 11
+bidi-dir-auto.glyphs.txt 11
+bidi-dir-auto.lines.txt 0
+bidi-dir-auto.order.txt 11
+bidi-dir-auto.print.txt 12
+bidi-dir-auto.words.txt 11

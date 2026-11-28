@@ -1,0 +1,16 @@
+word 1 Mark 0 0 0 0
+word 1 abc‎def 0 0 0 2 2 2
+word 1 (1) 2 2 2
+word 1 ghi. 2 2 2 2
+word 1 Total 3 3 3 3 3
+word 1 ‎12.50‎ 5 5 5 5 5
+word 1 due 7 7 7
+word 1 now. 7 7 7 7
+word 1 Signs 8 8 8 8 8
+word 1 a 8
+word 1 ‎!?‎ 10 10
+word 1 b 12
+word 1 end. 12 12 12 12
+word 1 End 13 13 13
+word 1 of 13 13
+word 1 line‎ 13 13 13 13

@@ -1,0 +1,7 @@
+bidi-lrm listed A_left_to_right_formatting_character_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'Mark abcdef (1) ghi. Total 12.50 due now. Signs a !? b end. End of line', Chromium 'Mark abc‎def (1) ghi. Total ‎12.50‎ due now. Signs a ‎!?‎ b end. End of line‎'; the engine's page 1: digest a19d0d1ef6566c70 (print.txt)
+5 differences:
+- page 1 reads 'Mark abcdef (1) ghi. Total 12.50 due now. Signs a !? b end. End of line', Chromium 'Mark abc‎def (1) ghi. Total ‎12.50‎ due now. Signs a ‎!?‎ b end. End of line‎'; the engine's page 1: digest a19d0d1ef6566c70 (print.txt)
+- page 1 has no word 'abc‎def'; the engine's words inside page 1: digest f5931756e1c22d28 (words.txt)
+- page 1 has no word '‎12.50‎'; the engine's words inside page 1: digest f5931756e1c22d28 (words.txt)
+- page 1 has no word '‎!?‎'; the engine's words inside page 1: digest f5931756e1c22d28 (words.txt)
+- page 1 has no word 'line‎'; the engine's words inside page 1: digest f5931756e1c22d28 (words.txt)

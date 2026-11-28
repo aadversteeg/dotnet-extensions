@@ -23,9 +23,13 @@ public partial class MeasuredFaceTests
     /// the hyphens U+2010 and U+2011 that Theano Didot has no glyph for, which Chromium takes from a font of the system
     /// (refused, <see cref="MissingGlyphTests.A_hyphen_a_face_cannot_draw_is_refused"/>); the Ɑ (U+2C6D) of generated text
     /// and the ✔ (U+2714) of the element's own text that Lato has no glyph for (refused,
-    /// <see cref="MissingGlyphTests.Generated_text_and_the_element_s_own_text_are_each_refused_at_their_own_place"/>).</summary>
+    /// <see cref="MissingGlyphTests.Generated_text_and_the_element_s_own_text_are_each_refused_at_their_own_place"/>); a Hebrew
+    /// letter and an Arabic-Indic digit, which Lato has no glyph for either, and which are refused as right-to-left text
+    /// whatever the font has (<see cref="RightToLeftTests"/>).</summary>
     private static readonly IReadOnlyDictionary<string, string[]> Fallback = new Dictionary<string, string[]>(StringComparer.Ordinal)
     {
+        ["bidi-arabic-indic-digit"] = ["FreeSerif"],
+        ["bidi-hebrew"] = ["LiberationSerif"],
         ["gm-nbhyphen-theano"] = ["LiberationSerif"],
         ["mx-gen-missing"] = ["FreeSans", "LiberationSerif"],
         ["pm-family-unused"] = ["LiberationSerif-Bold"],

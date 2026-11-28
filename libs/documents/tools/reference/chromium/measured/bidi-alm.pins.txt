@@ -1,0 +1,7 @@
+bidi-alm.boxes.txt 1
+bidi-alm.clips.txt 5
+bidi-alm.glyphs.txt 5
+bidi-alm.lines.txt 0
+bidi-alm.order.txt 5
+bidi-alm.print.txt 6
+bidi-alm.words.txt 5

@@ -325,6 +325,11 @@ public static partial class HtmlBoxGenerator
             // CSS Lists 3 §3.1: a ::marker rule gives the marker its colour, weight and style, a shape as a number, and a
             // content of strings its text (cases gc-marker-color, gc-marker-font, gc-marker-content).
             var styled = element.Marker is { } marker ? element with { Style = marker.Style } : element;
+            if (type != "none" && element.Marker is { Text: { } markerText, Position: { } at })
+            {
+                RefuseRightToLeft(markerText, _ => at);
+            }
+
             if (type == "none" || FaceStyleOf(styled) is not { } face)
             {
                 return null;

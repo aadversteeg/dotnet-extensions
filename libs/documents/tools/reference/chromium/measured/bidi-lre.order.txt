@@ -1,0 +1,17 @@
+word 1 Note 0 0 0 0
+word 1 x 0
+word 1 ‪abc 2 2 2
+word 1 def.‬ 2 2 2 2
+word 1 y 4
+word 1 here. 4 4 4 4 4
+word 1 Code 5 5 5 5
+word 1 x 5
+word 1 ‭abc 7 7 7
+word 1 (1) 7 7 7
+word 1 def.‬ 7 7 7 7
+word 1 y 9
+word 1 here. 9 9 9 9 9
+word 1 Lone 10 10 10 10
+word 1 abc‬ 10 10 10
+word 1 def 12 12 12
+word 1 end. 12 12 12 12
