@@ -1,0 +1,4 @@
+lb-dash-before-sign.boxes.txt 1
+lb-dash-before-sign.lines.txt 0
+lb-dash-before-sign.print.txt 64
+lb-dash-before-sign.words.txt 62

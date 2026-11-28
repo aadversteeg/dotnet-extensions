@@ -23,7 +23,8 @@ import sys
 
 # The documents, in the order of the resource.
 DOCUMENTS = ['lb-ascii-letters', 'lb-ascii-digits', 'lb-pairs-letters', 'lb-pairs-digits', 'lb-strings',
-             'lb-letters-beside-punctuation', 'lb-signs-in-numbers', 'lb-signs-in-paragraphs']
+             'lb-letters-beside-punctuation', 'lb-signs-in-numbers', 'lb-signs-in-paragraphs', 'lb-middle-dots',
+             'lb-ambiguous', 'lb-hyphens-before-letters', 'lb-signs-before-inverted-marks', 'lb-rule-edges']
 
 # The hyphens a line shows where it ends at a soft hyphen.
 HYPHENS = {'-', '\u2010'}
@@ -70,6 +71,42 @@ SIGN_NEIGHBOURS = '/:;,.)]}([{!?-'
 PARAGRAPH_SIGNS = [0xA2, 0xA3, 0xA5, 0xB0, 0xB1, 0x20AC]
 PARAGRAPH_ENDS = ['', ' x\u20AC', ' x\u03A9', ' x\u00E9', ' x\u2014', ' x\u00A0y', ' x\u0101']
 
+# U+00B7 MIDDLE DOT and U+0387 GREEK ANO TELEIA (class IS) beside every character of the pairs above, the letters
+# that are not ASCII and the Latin-1 signs, after and before every pair of ASCII punctuation characters, and in the
+# contexts of the other rules.
+DOTS = [0xB7, 0x387]
+DOT_CONTEXTS = ['ab\u00A0\u00AD%scd', 'ab\u200B\u00AD%scd', 'ab \u2013%scd', '\u2013%scd', 'ab--%scd', 'ab?-%scd',
+                '%scd', 'ab%s', 'ab %s']
+
+# Characters of class AI that Lato draws, in the contexts of the soft hyphen, of a dash after a space, of a hyphen after
+# a hyphen or a question mark, and beside every ASCII punctuation character.
+AMBIGUOUS = [0xA7, 0xB6, 0xD7, 0xF7, 0xA8, 0xAA, 0xB2, 0xB3, 0xB8, 0xB9, 0xBA, 0xBC, 0xBD, 0xBE, 0x2015, 0x2020,
+             0x2021, 0x2122, 0x221E, 0x2260, 0x2264, 0x2265, 0x2190, 0x2192, 0x2113, 0x25CF, 0x2460, 0x2C7, 0x2D8,
+             0x221A]
+DASH_CONTEXTS = ['ab %s%scd', '%s%scd', 'ab %s%s cd', '12 %s%s34', 'ab\u200B%s%scd', 'ab\u00A0%s%scd', 'ab%s%scd']
+AMBIGUOUS_CONTEXTS = ['ab\u00A0\u00AD%scd', '12\u00A0\u00AD%s34', 'ab\u200B\u00AD%scd', 'ab\u00AD%scd', 'ab \u00AD%scd',
+                      'a--%sd', 'a?-%sd', '--%sd', 'a-%sd', 'a!-%sd', 'ab %scd', 'ab%s cd']
+
+# A hyphen-minus after every ASCII punctuation character and a few others, before letters that are not ASCII (Latin,
+# Greek, Cyrillic), characters of class AI and two signs; and the pairs -- and ?- after the characters of HYPHEN_STARTS.
+HYPHEN_LETTERS = [0xE9, 0xFC, 0xDF, 0xF1, 0xC9, 0x101, 0x3A9, 0x3B1, 0x430, 0x416, 0xA7, 0xBD, 0x20AC, 0xA3]
+HYPHEN_SIGNS = [0xA1, 0xBF, 0xAB, 0xBB, 0x2013, 0x2014, 0x2026, 0x2019, 0xE9]
+HYPHEN_STARTS = ['', 'a', '1', ' ', '\u00A0', '!', '.', '-', '?', '\u00E9', '\u03A9']
+
+# The signs of class PR and PO before and after the characters of class OP in Latin-1 (U+00A1, U+00BF) and beyond it,
+# in a number, between letters and between the two; and every ASCII punctuation character before the two marks.
+INVERTED_SIGNS = [0x24, 0x25, 0x2B, 0x5C, 0x23, 0xA2, 0xA3, 0xA4, 0xA5, 0xB0, 0xB1, 0x20AC, 0x20A4, 0x20A9, 0x20B9,
+                  0x2116, 0x2212, 0x2030, 0x2103, 0xFFE1]
+INVERTED_OPENERS = [0xA1, 0xBF, 0x201A, 0x201E, 0x2045, 0x28, 0x5B]
+INVERTED_CONTEXTS = [('12', '34'), ('ab', 'cd'), ('12', 'cd'), ('ab', '34'), ('1 ', '3')]
+
+# Places where one condition of a rule decides: characters of class CL and IS beyond ASCII before the Latin-1 signs; a
+# soft hyphen after a no-break space before a digit; a dash at the start of the text before a letter.
+EDGE_ROWS = ['12\u00B7\u00A334', '12\u2046\u00A334', '12\u037E\u00A334', '12\u2E29\u00A334', '12\u2046\u00B034',
+             '12\u037E\u00A234', 'ab\u2046\u00A3cd', 'ab\u00A0\u00AD1cd', 'ab\u00A0\u00AD12', '12\u00A0\u00AD1cd',
+             'a\u00A0\u00AD1', 'ab \u00A0\u00AD1cd', '\u2013cd', '\u2012cd', '\u2013\u00E9d', '\u2012\u03A9d', '\u2013a',
+             '\u2013\u00A7d']
+
 
 def rows_of(document):
     """The rows of a document, each a string."""
@@ -108,6 +145,46 @@ def rows_of(document):
                 rows += ['12' + sign + mark + '34' + end for mark in '([{']
             rows += ['ab/\u00A3cd' + end, 'ab\u00A3(cd' + end, '12 \u00A3/34' + end]
         return rows
+    if document == 'lb-middle-dots':
+        neighbours = ascii_ + [c for c in pairs if not c.isascii()] + [chr(code) for code in LETTERS + SIGNS + DOTS]
+        rows = []
+        for dot in (chr(code) for code in DOTS):
+            for x in dict.fromkeys(neighbours):
+                rows += ['ab' + x + dot + 'cd', 'ab' + dot + x + 'cd', '12' + x + dot + '34', '12' + dot + x + '34']
+            for p in punctuation:
+                for q in punctuation:
+                    rows += ['a' + p + q + dot + 'd', 'a' + dot + p + q + 'd']
+            rows += [context % dot for context in DOT_CONTEXTS]
+        return list(dict.fromkeys(rows))
+    if document == 'lb-ambiguous':
+        rows = []
+        for x in (chr(code) for code in AMBIGUOUS):
+            for dash in '\u2012\u2013':
+                rows += [context % (dash, x) for context in DASH_CONTEXTS]
+            rows += [context % x for context in AMBIGUOUS_CONTEXTS]
+            for p in punctuation:
+                rows += ['ab' + p + x + 'cd', 'ab' + x + p + 'cd']
+        return rows
+    if document == 'lb-hyphens-before-letters':
+        rows = []
+        for letter in (chr(code) for code in HYPHEN_LETTERS):
+            for p in punctuation + [chr(code) for code in HYPHEN_SIGNS]:
+                rows.append('a' + p + '-' + letter + 'd')
+            for start in HYPHEN_STARTS:
+                rows += [start + '--' + letter + 'd', start + '?-' + letter + 'd', start + '---' + letter + 'd']
+        return list(dict.fromkeys(rows))
+    if document == 'lb-signs-before-inverted-marks':
+        rows = []
+        for sign in (chr(code) for code in INVERTED_SIGNS):
+            for opener in (chr(code) for code in INVERTED_OPENERS):
+                for start, end in INVERTED_CONTEXTS:
+                    rows += [start + sign + opener + end, start + opener + sign + end]
+        for p in punctuation:
+            for opener in '\u00A1\u00BF':
+                rows += ['12' + p + opener + '34', 'ab' + p + opener + '34']
+        return list(dict.fromkeys(rows))
+    if document == 'lb-rule-edges':
+        return EDGE_ROWS
     raise SystemExit('unknown document ' + document)
 
 

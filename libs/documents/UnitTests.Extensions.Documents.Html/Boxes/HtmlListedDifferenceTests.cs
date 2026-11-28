@@ -834,6 +834,34 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// A dash after a space and a soft hyphen after a no-break space before a sign of class AI, and two hyphens before
+    /// letters beyond ASCII (case <c>lb-dash-before-sign</c>, 30, 45 and 60 pt wide paragraphs): the lines are Chromium's
+    /// (<c>LineBreakRules.Chromium</c>, a character of class AI read as AL), but for one. In the 30 pt paragraph Chromium
+    /// ends a line after <c>x-</c> and starts the next with <c>-Ωmega</c>, as it finds the places of each line anew from
+    /// its start, where UAX #14 LB20a keeps the letter after a hyphen at the start of a text; the engine finds them once for
+    /// the whole paragraph and breaks again after that hyphen (docs/architecture.md, the limit of the line-break rules;
+    /// <c>ChromiumLineBreakingTests.A_line_that_starts_at_a_break_is_decided_anew_by_chromium_and_once_by_the_rules</c>).
+    /// The text layer differs as in <c>ws-soft</c>: Chromium's PDF text keeps the soft hyphen that starts a word after the
+    /// no-break space and adds U+2010 at a shown hyphen. With Chromium's words read as the engine's text, the line of
+    /// <c>-Ωmega</c> is the whole difference of the page's text (the comparison stops at a page whose text differs; the
+    /// status file lists every difference of the case).
+    /// </summary>
+    [Fact]
+    public void A_dash_and_a_soft_hyphen_before_a_sign_break_like_Chromium_but_a_hyphen_that_starts_a_line_breaks_again()
+    {
+        var (engine, chromium) = (Engine("lb-dash-before-sign"), HtmlCases.ChromiumPrint("lb-dash-before-sign"));
+        chromium.Pages[0].Words.Select(word => word.Text).Should().ContainInOrder("\u2013\u00A712", "\u00AD\u00A74", "a-", "-\u00E9lan,", "why?-", "\u00E9cole", "x-", "-\u03A9mega");
+        engine.Pages[0].Words.Select(word => word.Text).Should().ContainInOrder("\u2013\u00A712", "\u00A74", "a-", "-\u00E9lan,", "why?-", "\u00E9cole", "x-", "-", "\u03A9mega");
+
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with { Words = [.. page.Words.Select(word => word with { Text = EngineText(word.Text) })] })]);
+        HtmlCases.Differences(engine, read).Should().Equal(
+            "page 1 reads 'See rules \u2013\u00A712 and \u2012\u00BD hour, the cut \u00A74 and art \u00AD \u00D72, a- -\u00E9lan, why?- \u00E9cole and x- - \u03A9mega here. "
+            + "See rules \u2013\u00A712 and \u2012\u00BD hour, the cut \u00AD \u00A74 and art \u00D72, a- -\u00E9lan, why?- \u00E9cole and x-- \u03A9mega here.', "
+            + "Chromium 'See rules \u2013\u00A712 and \u2012\u00BD hour, the cut \u00A74 and art \u00AD \u00D72, a- -\u00E9lan, why?- \u00E9cole and x- -\u03A9mega here. "
+            + "See rules \u2013\u00A712 and \u2012\u00BD hour, the cut \u00AD \u00A74 and art \u00D72, a- -\u00E9lan, why?- \u00E9cole and x-- \u03A9mega here.' (print.txt)");
+    }
+
+    /// <summary>
     /// Underlines that skip the ink of descenders, cut beside an image, at a shown soft hyphen and in ligatures (case
     /// <c>sk-misc</c>; the code front-end's <c>SkipInkTests</c> pins the same pieces): the pieces are Chromium's, compared
     /// as the status compares them (<see cref="HtmlCases.ChromiumPrint"/>); the text layer differs at the shown soft

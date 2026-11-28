@@ -626,6 +626,8 @@ For a template author that means:
 
 - A line may break after every space, also before a closing bracket, a semicolon, an exclamation mark or a middle dot
   that follows a space (`( see table 2 )`, `Street · Town`).
+- A middle dot (·, and the Greek ano teleia) counts as a letter: a line breaks beside it where it would break beside a
+  letter. `Leiden·(Centraal)` and `tickets·$12` stay in one piece; `really!·Yes` may break after the `!`.
 - A line does not break after a slash or a backslash before a letter or a digit: `and/or`, `he/she`, `/usr/local/share`,
   `C:\Users\Public` and `INV/2026/0042` each stay in one piece. Nor after `!` or `|` between letters, nor between
   the two plus signs of `C++`.
@@ -636,10 +638,13 @@ For a template author that means:
   `https://example.com/orders/2026/11/overview?` / `page=2&sort=date`.
 - The signs ¢ £ ¤ ¥ ° ± may move to the next line after a slash, a colon, a semicolon, a comma, a full stop or a closing
   bracket in a number, and a line may break after them before an opening bracket: `12.50/` / `£15.00`. The euro and
-  dollar signs, and every sign beyond U+00FF, stay with the number: `12,50/€15,00` is one piece.
+  dollar signs, and every sign beyond U+00FF, stay with the number: `12,50/€15,00` is one piece. Before an inverted
+  ¡ or ¿ a line may break after each of $ % + \ ¢ £ ¤ ¥ ° ±, also in a number: `12$` / `¡34`.
 - A line may break after an en dash, a bar or another character of class BA before a no-break space (`10–` / `12`
   written with `&nbsp;`), and after a soft hyphen that follows a no-break space.
-- An en dash or a figure dash written right before a word after a space (`Rotterdam –Den Haag`) stays with the word.
+- An en dash or a figure dash written right before a word after a space (`Rotterdam –Den Haag`) stays with the word, and
+  so does it before a sign such as § ½ × † → ①, a character that UAX #14 counts as a letter by default (class AI):
+  `see –§12`.
 
 To keep two words together, put a no-break space (`&nbsp;`) between them, or wrap them in an element with
 `white-space: nowrap`. To allow a break where these rules forbid one, put a zero width space (`&#x200B;`) there; `wbr`
@@ -647,12 +652,18 @@ is refused.
 
 Measured against Chromium's print: every pair of printable ASCII characters, between letters and between digits; every
 pair of 55 characters met in documents in both contexts; 104 strings of ordinary documents (addresses, paths, dates,
-amounts, phone numbers, codes, abbreviations, quotes); ASCII punctuation beside letters that are not ASCII; and the
-currency, percent and degree signs beside the punctuation of a number: 23 907 rows, every one reproduced (the matrix of
-`tools/reference/chromium/line-breaks.py`, kept as `Reference/Chromium/line-breaks.txt` of the typesetting tests), and
-the cases `lb-*`. Not measured, and so laid out by the standard rules: text in the scripts no font of the repository
-draws (Chinese, Japanese, Korean, Thai and the other scripts that UAX #14 breaks by dictionary or by syllable), which
-is refused today for its glyphs.
+amounts, phone numbers, codes, abbreviations, quotes); ASCII punctuation beside letters that are not ASCII; the
+currency, percent and degree signs beside the punctuation of a number and before ¡ and ¿; the two middle dots beside
+all of these characters and between pairs of ASCII punctuation; 30 characters of class AI after a dash, after a soft
+hyphen and beside ASCII punctuation; a hyphen after punctuation before Latin, Greek and Cyrillic letters: 34 223 rows,
+every one reproduced (the matrix of `tools/reference/chromium/line-breaks.py`, kept as
+`Reference/Chromium/line-breaks.txt` of the typesetting tests), and the cases `lb-*`. Other characters beyond ASCII
+follow the same rules by their class, without rows of their own. Chromium finds the places of each line anew from the
+line's start, the engine once for the whole paragraph: in a box so narrow that a line starts right where the one
+before ended, the engine may break again where Chromium does not (`a-` / `-` / `élan` for Chromium's `a-` / `-élan`;
+476 rows of the matrix). Not measured, and so laid out by the standard rules:
+text in the scripts no font of the repository draws (Chinese, Japanese, Korean, Thai and the other scripts that UAX #14
+breaks by dictionary or by syllable), which is refused today for its glyphs.
 
 What stays refused: every value of `word-break`, `overflow-wrap` (and `word-wrap`), `line-break` and `hyphens` but the
 initial one. Chromium breaks between any two letters under `word-break: break-all`, `overflow-wrap: anywhere` or

@@ -1,6 +1,10 @@
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fluent;
+using Ave.Extensions.Documents.Fonts;
+using Ave.Extensions.Documents.Layout;
+using Ave.Extensions.Documents.TestSupport;
+using Ave.Extensions.Functional;
 using static Ave.Extensions.Documents.Fluent.Elements;
 
 namespace UnitTests.Extensions.Documents.Fluent;
@@ -100,6 +104,37 @@ public class LayoutProfileTests
         LayoutProfile.Default.CellsBesideSlices.Should().Be(CellsBesideSlices.GoOn);
         model.Profile.Should().Be(new LayoutProfile { CellsBesideSlices = CellsBesideSlices.Below });
         undefined.Error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.LayoutProfile);
+    }
+
+    [Fact]
+    public void A_document_built_in_code_breaks_its_lines_by_the_standard_rules()
+    {
+        var model = DocumentTranslator.ToModel(Doc()).Value;
+
+        LayoutProfile.Default.LineBreakRules.Should().Be(LineBreakRules.Standard);
+        new LayoutProfile().LineBreakRules.Should().Be(LineBreakRules.Standard);
+        model.Profile.LineBreakRules.Should().Be(LineBreakRules.Standard);
+    }
+
+    [Fact]
+    public void A_text_that_the_two_line_break_rules_break_otherwise_takes_the_standard_lines_in_a_document_built_in_code()
+    {
+        // UAX #14 breaks after the slash before a letter and keeps the hyphens of a date with its digits (LB25); Chromium's
+        // rules keep "and/or" whole and break after each hyphen of the date (matrix rows and/or, 2026-11-28).
+        var document = Document([Paragraph("and/or 2026-11-28").PaddingRight(270.Pt())], Page(300.Pt(), 200.Pt()).Margin(12.Pt()), title: "Title", language: "en")
+            .FontFamily("Lato").FontSize(12.Pt()).LineHeight(18.Pt());
+        var model = DocumentTranslator.ToModel(document).Value;
+
+        Lines(model).Should().Equal("and/", "or", "2026-11-28");
+        Lines(model with { Profile = model.Profile with { LineBreakRules = LineBreakRules.Chromium } }).Should().Equal("and/or", "2026-", "11-", "28");
+    }
+
+    /// <summary>The texts of the lines of the first page of the model's layout.</summary>
+    private static List<string> Lines(StyledDocument model)
+    {
+        var printed = DocumentLayout.Run(model, new FontSet([TestFonts.Regular])).OnSuccessMap(PrintedPages.Engine);
+        printed.IsSuccess.Should().BeTrue(printed.IsFailure ? printed.Error.ToString() : string.Empty);
+        return [.. printed.Value.Pages[0].Lines.Select(line => line.Text)];
     }
 
     [Fact]

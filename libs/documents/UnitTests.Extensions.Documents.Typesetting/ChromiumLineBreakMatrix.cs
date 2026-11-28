@@ -91,6 +91,24 @@ internal static class ChromiumLineBreakMatrix
     }
 
     /// <summary>
+    /// The breaks of a text in a box 1 pt wide as Chromium prints it, by the rules of <see cref="ChromiumLineBreaking"/>:
+    /// each line ends at the first opportunity after its start, and the opportunities of each line are found anew from
+    /// its start, as Chromium's line breaker finds them (<c>ChromiumLineBreaking</c>, THE LINE START).
+    /// </summary>
+    public static ImmutableArray<int> BoxBreaks(string text)
+    {
+        var ends = new List<BreakOpportunity>();
+        var start = 0;
+        while (ChromiumLineBreaking.Find(text[start..]).FirstOrDefault(found => start + found.Offset < text.Length) is { Offset: > 0 } next)
+        {
+            start += next.Offset;
+            ends.Add(new BreakOpportunity(start, false));
+        }
+
+        return VisibleBreaks(text, ends);
+    }
+
+    /// <summary>
     /// The source text of the ASCII pair table: for every pair of printable ASCII characters other than the space, whether
     /// Chromium's print breaks between them, read from the rows <c>ab</c> X Y <c>cd</c> of the document
     /// <c>lb-ascii-letters</c> (a break between X and Y is a break after three visible characters).

@@ -93,18 +93,22 @@ public enum LineBreakRules
 
     /// <summary>
     /// As Chromium prints it: the standard with seven departures (<c>Typesetting.LineBreaking.ChromiumLineBreaking</c>,
-    /// where each rule names its measured rows). In words: after a space a line may always break, also before closing
+    /// where each rule names its measured rows). In words: a middle dot counts as a letter, and so does a character of
+    /// class AI in the departures; after a space a line may always break, also before closing
     /// punctuation; between two ASCII characters Chromium decides by a fixed table, so a line does not break after a slash
     /// or a backslash before a letter or a digit (<c>and/or</c>, <c>/usr/local</c>), after <c>!</c> or <c>|</c> between
     /// letters, or between the two plus signs of <c>C++</c>, and it may break after a hyphen in a number (<c>2026-</c>
     /// <c>11-28</c>, <c>REF-2026-0042</c>) but not after a minus sign (<c>-5</c>, <c>12 -34</c>); a line may break after
     /// <c>?</c> in an address; the signs ¢ £ ¤ ¥ ° ± are not held to a number across ASCII punctuation (<c>12/£34</c> may
-    /// break after the slash, <c>12/€34</c> may not); a dash may break before a no-break space; a soft hyphen may break
-    /// after a no-break space; an en dash or a figure dash after a space stays with the word after it. Measured against
-    /// Chromium's print (<c>tools/reference/chromium</c>): the matrix <c>line-breaks.py</c> (23 907 rows, every one
-    /// reproduced), and the cases <c>lb-url</c>, <c>lb-path</c>, <c>lb-date</c>, <c>lb-slash-word</c>, <c>lb-amount</c>,
+    /// break after the slash, <c>12/€34</c> may not), and the signs of class PR or PO up to U+00FF may break before
+    /// <c>¡</c> and <c>¿</c>; a dash may break before a no-break space; a soft hyphen may break
+    /// after a no-break space; an en dash or a figure dash after a space stays with the word (or a sign such as <c>§</c>) after it. Measured against
+    /// Chromium's print (<c>tools/reference/chromium</c>): the matrix <c>line-breaks.py</c> (34 223 rows, every one
+    /// reproduced with the rules found anew from each line start, as Chromium finds them; the engine finds them once for the
+    /// whole text, which differs only where a line starts right at a break, 476 rows), and the cases <c>lb-url</c>, <c>lb-path</c>, <c>lb-date</c>, <c>lb-slash-word</c>, <c>lb-amount</c>,
     /// <c>lb-phone</c>, <c>lb-space-closer</c>, <c>lb-hyphens</c>, <c>lb-dash-space</c>, <c>lb-table</c>,
-    /// <c>lb-justify</c> and <c>lb-list</c>, where the standard ends lines elsewhere.
+    /// <c>lb-justify</c>, <c>lb-list</c>, <c>lb-middle-dot</c> and <c>lb-dash-before-sign</c>, where the standard ends
+    /// lines elsewhere.
     /// </summary>
     Chromium,
 }

@@ -18,15 +18,25 @@ namespace Ave.Extensions.Documents.Typesetting.LineBreaking;
 /// rows are every pair of printable ASCII characters between letters (<c>ab</c> X Y <c>cd</c>) and between digits
 /// (<c>12</c> X Y <c>34</c>), every pair of 55 characters met in documents (dashes, quotes, brackets, currency signs, the
 /// no-break and zero-width characters) in both contexts, 104 strings of ordinary documents, ASCII punctuation beside
-/// letters that are not ASCII, and the currency, percent and degree signs beside ASCII punctuation in a number. The rules
-/// reproduce every row. The rows named below are written as text where they are ASCII; the other characters are named.</para>
+/// letters that are not ASCII, the currency, percent and degree signs beside ASCII punctuation in a number and before
+/// the inverted exclamation and question marks, the middle dots and the characters of class AI in the contexts of every
+/// rule, and the hyphen-minus after punctuation before letters that are not ASCII. Each row is a box 1 pt wide, so each of
+/// its lines ends at the first opportunity after the line's start; with the rules found anew from each line start (THE
+/// LINE START, below) they reproduce every row. The rows named below are written as text where they are ASCII; the other
+/// characters are named.</para>
+/// <para>Two readings come before the rules. U+00B7 MIDDLE DOT and U+0387 GREEK ANO TELEIA (class IS in Unicode 18) are
+/// read as a letter of class AL beyond ASCII, for the standard's opportunities as well as for the rules: rows <c>ab!</c>
+/// MIDDLE DOT <c>cd</c> (a break after the exclamation mark), <c>ab</c> MIDDLE DOT <c>(cd</c> and <c>a</c> MIDDLE DOT
+/// <c>$!d</c> (none), <c>ab/</c> GREEK ANO TELEIA <c>cd</c> (a break after the slash), and the same rows with a letter
+/// in the place of the dot. And in the rules a character of class AI is of class AL, as UAX #14 LB1 resolves it for the
+/// standard: rows <c>ab</c> SPACE EN DASH SECTION SIGN <c>cd</c> (no break after the dash), <c>ab</c> NO-BREAK SPACE
+/// SOFT HYPHEN SECTION SIGN <c>cd</c> (a break after the soft hyphen).</para>
 /// <para>The rules, in the order in which they are tried; the first that applies decides:</para>
 /// <list type="number">
 /// <item>THE SPACE RULE: after U+0020 SPACE a line may always break, unless a space or a mandatory break (a character of
 /// class BK, CR, LF or NL) follows. This overrides UAX #14 LB7 (no break before ZW), LB11 (before WJ), LB13 (before CL,
 /// CP, EX, SY), LB14 (after OP and spaces), LB15a, LB15d (before IS), LB16 and LB17 after a space. Rows <c>ab )cd</c>,
-/// <c>ab /cd</c>, <c>ab( cd</c>, <c>ab</c> SPACE WORD JOINER <c>cd</c>, <c>ab</c> SPACE MIDDLE DOT <c>cd</c> (U+00B7, of
-/// class IS in Unicode 18).</item>
+/// <c>ab /cd</c>, <c>ab( cd</c>, <c>ab</c> SPACE WORD JOINER <c>cd</c>, <c>ab</c> SPACE MIDDLE DOT <c>cd</c>.</item>
 /// <item>THE MINUS-SIGN RULE: between U+002D HYPHEN-MINUS and an ASCII digit a line may break only when the character
 /// before the hyphen-minus is an ASCII letter or digit, so a minus sign stays with its number. Rows <c>2026-11-28</c>
 /// (a break after both hyphens), <c>REF-2026-0042</c>, <c>06-12345678</c>, <c>12--34</c> (no break after the second
@@ -50,26 +60,42 @@ namespace Ave.Extensions.Documents.Typesetting.LineBreaking;
 /// of them with the other five signs, also with a character beyond U+00FF in the same paragraph. The signs of the same
 /// classes beyond U+00FF keep LB25 (U+20AC EURO SIGN, U+20A4, U+20A7, U+20A9, U+20B9, U+20BA, U+20BD, U+20BF, U+2030,
 /// U+2103, U+2116, U+2212, U+FFE1): row <c>12/</c> EURO SIGN <c>34</c> is one piece. Next to a digit the six signs stay:
-/// row <c>12</c> POUND SIGN <c>34</c>.</item>
+/// row <c>12</c> POUND SIGN <c>34</c>. Beside an ASCII character of these classes the rule holds only for that ASCII
+/// character: rows <c>12</c> RIGHT SQUARE BRACKET WITH QUILL POUND SIGN <c>34</c> and <c>12</c> GREEK QUESTION MARK
+/// POUND SIGN <c>34</c> (class CL and IS beyond ASCII) are one piece. And a line may break between any sign of class PR
+/// or PO up to U+00FF (also <c>$ % + \</c>) and U+00A1 INVERTED EXCLAMATION MARK or U+00BF INVERTED QUESTION MARK (class
+/// OP), where LB25 keeps a sign with an opening punctuation before a digit: rows <c>12$</c> INVERTED EXCLAMATION MARK
+/// <c>34</c>, <c>12</c> POUND SIGN INVERTED QUESTION MARK <c>34</c>; the signs beyond U+00FF and the characters of class
+/// OP beyond U+00FF keep LB25 (rows <c>12</c> EURO SIGN INVERTED EXCLAMATION MARK <c>34</c>, <c>12$</c> SINGLE LOW-9
+/// QUOTATION MARK <c>34</c>: one piece).</item>
 /// <item>BA BEFORE GL: between a character of class BA and one of class GL a line may break, where LB12a forbids it.
 /// Rows <c>ab</c> EN DASH NO-BREAK SPACE <c>cd</c>, <c>ab|</c> NO-BREAK SPACE <c>cd</c>, <c>ab</c> EN DASH NARROW
 /// NO-BREAK SPACE <c>cd</c>, <c>ab</c> EN DASH NON-BREAKING HYPHEN <c>cd</c>, <c>pp.</c> NO-BREAK SPACE <c>10</c> EN
 /// DASH <c>12</c>.</item>
 /// <item>THE SOFT HYPHEN: after U+00AD SOFT HYPHEN a line may break before a character of class AL, HL or NU, also where
 /// LB12 and LB20a keep it after a no-break or zero-width character, as if the soft hyphen were of class BA. Rows
-/// <c>ab</c> NO-BREAK SPACE SOFT HYPHEN <c>cd</c>, <c>ab</c> ZERO WIDTH SPACE SOFT HYPHEN <c>cd</c>.</item>
+/// <c>ab</c> NO-BREAK SPACE SOFT HYPHEN <c>cd</c>, <c>ab</c> ZERO WIDTH SPACE SOFT HYPHEN <c>cd</c>. Before a digit the
+/// standard gives the same break (row <c>ab</c> NO-BREAK SPACE SOFT HYPHEN <c>1cd</c>).</item>
 /// <item>THE DASH AFTER A SPACE: U+2012 FIGURE DASH and U+2013 EN DASH at the start of the text or after a character of
 /// class SP, GL, ZW, BK, CR, LF, NL or CB keep a following letter (class AL or HL), as LB20a keeps one after a hyphen
 /// there. Rows <c>ab</c> SPACE EN DASH <c>cd</c>, <c>ab</c> SPACE FIGURE DASH <c>cd</c>, <c>ab</c> NO-BREAK SPACE EN DASH
-/// <c>cd</c>.</item>
+/// <c>cd</c>, EN DASH <c>cd</c> at the start of the text.</item>
 /// </list>
 /// <para>The rules look at the two code points beside a place and at the one before them, by their Line_Break class as
-/// LineBreak.txt gives it, before LB1 resolves it. Combining marks are not joined to their base for them (LB9), so a
-/// pair with a mark follows the standard. Not measured, and so the standard's answer: pairs of characters outside the
+/// LineBreak.txt gives it, with class AI read as AL; the other classes LB1 resolves (SA, SG, XX, CJ) are read as they
+/// are. Combining marks are not joined to their base for them (LB9), so a pair with a mark follows the standard. Not measured, and so the standard's answer: pairs of characters outside the
 /// measured set in contexts other than the measured ones, text in scripts no repository font draws (CJK, Thai and the
 /// other scripts of class SA, ID, H2, H3), and the dashes after a no-break space before letters that are not ASCII.</para>
-/// <para>BOUNDED WORK: one pass of <see cref="UnicodeLineBreaking.Find"/>, then one pass over the code points, each
-/// decided by a table lookup and a look-behind of at most two code points.</para>
+/// <para>THE LINE START: Chromium finds the opportunities of each line anew from the line's start, so a pair right after a
+/// line end is decided as at the start of a text. The matrix shows it, as each of its lines ends at the first opportunity:
+/// row <c>a--</c> E WITH ACUTE <c>d</c> breaks after the first hyphen only, as the second hyphen then starts a line and
+/// UAX #14 LB20a keeps the letter after a hyphen at the start of a text; in running text Chromium breaks after both
+/// hyphens (case <c>lb-dash-before-sign</c>: <c>a--</c> / <c>élan</c>). Every row of the matrix is reproduced so, with
+/// the rules found anew from each line start. LIMIT: this class finds the opportunities once, for the whole text, so a
+/// line that starts at an opportunity may break again where Chromium's does not; the matrix holds 476 such rows, all in a
+/// box too narrow for the shorter line (<c>ChromiumLineBreakingTests</c>).</para>
+/// <para>BOUNDED WORK: one copy of the text where it holds a middle dot, one pass of <see cref="UnicodeLineBreaking.Find"/>,
+/// then one pass over the code points, each decided by a table lookup and a look-behind of at most two code points.</para>
 /// </remarks>
 public static partial class ChromiumLineBreaking
 {
@@ -83,6 +109,12 @@ public static partial class ChromiumLineBreaking
     /// <returns>The opportunities in text order.</returns>
     public static ImmutableArray<BreakOpportunity> Find(string text)
     {
+        // The middle dots read as a letter; each is one UTF-16 code unit, as the letter is, so the offsets stay.
+        if (text.AsSpan().IndexOfAny(MiddleDot, GreekAnoTeleia) >= 0)
+        {
+            text = text.Replace(MiddleDot, Letter).Replace(GreekAnoTeleia, Letter);
+        }
+
         var standard = UnicodeLineBreaking.Find(text);
         if (standard.IsEmpty)
         {
@@ -150,7 +182,8 @@ public static partial class ChromiumLineBreaking
 
         var beforeClass = ClassOf(before);
         if ((before < 0x80 && beforeClass is SY or IS or CL or CP && IsLatin1Sign(after))
-            || (IsLatin1Sign(before) && after < 0x80 && afterClass == OP))
+            || (IsLatin1Sign(before) && after < 0x80 && afterClass == OP)
+            || (before <= 0xFF && beforeClass is PR or PO && after is InvertedExclamationMark or InvertedQuestionMark))
         {
             // The Latin-1 sign rule.
             return true;
@@ -190,11 +223,25 @@ public static partial class ChromiumLineBreaking
     private const int SoftHyphen = 0x00AD;
     private const int FigureDash = 0x2012;
     private const int EnDash = 0x2013;
+    private const int InvertedExclamationMark = 0x00A1;
+    private const int InvertedQuestionMark = 0x00BF;
+    private const char MiddleDot = '\u00B7';
+    private const char GreekAnoTeleia = '\u0387';
+
+    /// <summary>The letter the middle dots are read as: U+00E9 LATIN SMALL LETTER E WITH ACUTE, of class AL and beyond
+    /// ASCII, as both dots are.</summary>
+    private const char Letter = '\u00E9';
 
     private static bool IsAsciiPrintable(int codePoint) => codePoint is >= FirstAscii and <= 0x7E;
 
     /// <summary>A sign of class PR or PO in U+0080 to U+00FF: one of the six of the Latin-1 sign rule.</summary>
     private static bool IsLatin1Sign(int codePoint) => codePoint is >= 0x80 and <= 0xFF && ClassOf(codePoint) is PR or PO;
 
-    private static LineBreakClass ClassOf(int codePoint) => UnicodeProperties.Of(codePoint).Class;
+    /// <summary>The Line_Break class of a code point as the rules read it: as LineBreak.txt gives it, with class AI read
+    /// as AL (UAX #14 LB1).</summary>
+    private static LineBreakClass ClassOf(int codePoint) => UnicodeProperties.Of(codePoint).Class switch
+    {
+        AI => AL,
+        var found => found,
+    };
 }
