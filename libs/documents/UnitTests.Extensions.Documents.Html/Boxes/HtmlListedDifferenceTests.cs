@@ -567,7 +567,9 @@ public class HtmlListedDifferenceTests
     /// the pages of the slices the header lies over the slice in Chromium and above it in the engine; what follows the
     /// slices in the table starts that much lower in the engine, and where Chromium starts the next row in an empty part
     /// below the header on the page of the last slice, that row goes on half a grid line higher on the next page than the
-    /// engine's, which starts it there (0.375 pt, within the comparison's whole pixel until the end of the table).
+    /// engine's, which starts it there (0.375 pt; the comparison paints a baseline on the whole pixel, and on page 7 of
+    /// <c>a4-header-image-360-image</c> and <c>a4-header-two-image-rows</c> that half grid line crosses a pixel: "after" is
+    /// laid out at 88.875 and painted at 89.25, Chromium's at 88.5, a difference their status files list).
     /// Cases: a 360 pt image, then a 408 pt image (<c>a4-header-image-360-image</c>, pages 3 and 4); a row, a 408 pt image,
     /// a row (<c>a4-header-row-image-row</c>, pages 4 and 5); a 408 pt image, a row, a 408 pt image
     /// (<c>a4-header-image-row-image</c>, pages 3 and 4); two 408 pt images (<c>a4-header-two-image-rows</c>, pages 3 and 4).
