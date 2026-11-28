@@ -101,7 +101,7 @@ public static class HtmlStyleResolver
         private readonly List<Error> _diagnostics = [];
         private int _suppressed;
         private int _suppressedRefusals;
-        private Error? _firstSuppressedRefusal;
+        private string? _firstSuppressedRefusal;
         private readonly HashSet<int> _renamed = [];
         private readonly Dictionary<StyleSheet, string?> _baseOf = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<string, StyleSheet?> _fetched = new(StringComparer.Ordinal);
@@ -179,6 +179,7 @@ public static class HtmlStyleResolver
                 // A part's own summary: its counts join these, so the last summary counts everything left out.
                 _suppressed += Count(error, ErrorMetadataKeys.Value, 1);
                 _suppressedRefusals += Count(error, ErrorMetadataKeys.Refusals, 0);
+                _firstSuppressedRefusal ??= error.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.FirstRefusal, out var first) ? first as string : null;
                 return;
             }
 
@@ -192,7 +193,7 @@ public static class HtmlStyleResolver
             if (HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal)
             {
                 _suppressedRefusals++;
-                _firstSuppressedRefusal ??= error;
+                _firstSuppressedRefusal ??= error.Message;
             }
         }
 
@@ -236,11 +237,14 @@ public static class HtmlStyleResolver
         private ValueList<Error> Capped(List<Error> diagnostics) =>
             _suppressed == 0
                 ? [.. diagnostics]
-                : [.. diagnostics, new Error(DocumentErrorCodes.TooManyDiagnostics,
-                        $"{_suppressed} more diagnostics are left out, {_suppressedRefusals} of them refusals{(_firstSuppressedRefusal is { } first ? $" (the first: {first.Message})" : string.Empty)}; {HtmlInputLimits.MaxDiagnostics} are kept.")
+                : [.. diagnostics, WithFirstRefusal(new Error(DocumentErrorCodes.TooManyDiagnostics,
+                        $"{_suppressed} more diagnostics are left out, {_suppressedRefusals} of them refusals{(_firstSuppressedRefusal is { } first ? $" (the first: {first})" : string.Empty)}; {HtmlInputLimits.MaxDiagnostics} are kept.")
                     .With(ErrorMetadataKeys.Value, _suppressed)
                     .With(ErrorMetadataKeys.Refusals, _suppressedRefusals)
-                    .With(ErrorMetadataKeys.SourceFile, _sourceName)];
+                    .With(ErrorMetadataKeys.SourceFile, _sourceName))];
+
+        private Error WithFirstRefusal(Error summary) =>
+            _firstSuppressedRefusal is { } first ? summary.With(ErrorMetadataKeys.FirstRefusal, first) : summary;
 
         /// <summary>The start tag as the author wrote it, with its first attributes (a user-agent rule may select the
         /// element by one of them, as <c>[dir=rtl]</c> does): at most four, each value cut at 40 characters.</summary>

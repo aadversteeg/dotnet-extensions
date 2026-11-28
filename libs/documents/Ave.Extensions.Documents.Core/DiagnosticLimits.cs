@@ -40,7 +40,7 @@ public static class DiagnosticLimits
         ArgumentNullException.ThrowIfNull(diagnostics);
         var kept = new List<Error>();
         var (length, suppressed, refusals, own) = (0L, 0, 0, 0);
-        Error? firstRefusal = null;
+        string? firstRefusal = null;
         Error? summary = null;
         var summaries = 0;
         // The parts of an aggregate are diagnostics of their own.
@@ -50,6 +50,7 @@ public static class DiagnosticLimits
             {
                 suppressed += Count(diagnostic, ErrorMetadataKeys.Value, 1);
                 refusals += Count(diagnostic, ErrorMetadataKeys.Refusals, 0);
+                firstRefusal ??= diagnostic.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.FirstRefusal, out var first) ? first as string : null;
                 summary = diagnostic;
                 summaries++;
                 continue;
@@ -69,7 +70,7 @@ public static class DiagnosticLimits
             if (refuses?.Invoke(diagnostic) ?? true)
             {
                 refusals++;
-                firstRefusal ??= error;
+                firstRefusal ??= error.Message;
             }
         }
 
@@ -80,10 +81,11 @@ public static class DiagnosticLimits
         }
         else if (suppressed > 0)
         {
-            kept.Add(new Error(DocumentErrorCodes.TooManyDiagnostics,
-                    $"{suppressed} more diagnostics are left out, {refusals} of them refusals{(firstRefusal is { } first ? $" (the first: {Cut(first.Message, 200)})" : string.Empty)}; {kept.Count} are kept.")
+            var left = new Error(DocumentErrorCodes.TooManyDiagnostics,
+                    $"{suppressed} more diagnostics are left out, {refusals} of them refusals{(firstRefusal is { } first ? $" (the first: {Cut(first, 200)})" : string.Empty)}; {kept.Count} are kept.")
                 .With(ErrorMetadataKeys.Value, suppressed)
-                .With(ErrorMetadataKeys.Refusals, refusals));
+                .With(ErrorMetadataKeys.Refusals, refusals);
+            kept.Add(firstRefusal is null ? left : left.With(ErrorMetadataKeys.FirstRefusal, Cut(firstRefusal, 200)));
         }
 
         return kept;

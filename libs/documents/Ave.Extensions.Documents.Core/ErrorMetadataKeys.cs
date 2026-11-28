@@ -47,4 +47,9 @@ public static class ErrorMetadataKeys
     /// <summary>Of the diagnostics a <see cref="DocumentErrorCodes.TooManyDiagnostics"/> leaves out, how many refuse the
     /// document (int).</summary>
     public const string Refusals = "Refusals";
+
+    /// <summary>Of the diagnostics a <see cref="DocumentErrorCodes.TooManyDiagnostics"/> leaves out, the message of the
+    /// first that refuses the document (string), which the summary quotes; a later summary that takes in its counts
+    /// quotes it too.</summary>
+    public const string FirstRefusal = "FirstRefusal";
 }

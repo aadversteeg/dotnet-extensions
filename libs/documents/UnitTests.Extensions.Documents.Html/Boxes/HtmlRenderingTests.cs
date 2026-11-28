@@ -128,6 +128,21 @@ public class HtmlRenderingTests
     }
 
     [Fact]
+    public void The_summary_of_left_out_diagnostics_quotes_the_first_refusal_whichever_stage_cuts()
+    {
+        // 10 000 unsupported properties and then one more refusal: in the style stage (a property) and in box generation
+        // (an element), the summary has the same shape.
+        var options = Options with { Style = Options.Style with { Unsupported = UnsupportedPolicy.Warn } };
+        var many = string.Concat(Enumerable.Repeat("<p style=\"foo:bar\">x</p>", 10_000));
+        foreach (var (last, first) in new[] { ("<p style=\"grid-template-columns:1fr 2fr\">y</p>", "The property 'grid-template-columns' is not supported."), ("<input type=text value=v>", "The property 'foo' is not supported.") })
+        {
+            var rendered = HtmlRendering.ToPages(Html.Replace("<p>Hello</p>", many + last, StringComparison.Ordinal), options).Value;
+
+            rendered.Diagnostics[^1].Message.Should().Be($"1 more diagnostics are left out, 1 of them refusals (the first: {first}); 10000 are kept.");
+        }
+    }
+
+    [Fact]
     public void The_page_limit_stops_a_document_of_many_pages_before_it_lays_them_out()
     {
         // 20 000 forced breaks would be 20 000 pages; with a limit of 10 the work ends at page 11.

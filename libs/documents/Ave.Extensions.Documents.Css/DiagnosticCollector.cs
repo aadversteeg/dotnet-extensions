@@ -14,7 +14,7 @@ internal sealed class DiagnosticCollector
     private readonly List<Error> _kept = [];
     private int _suppressed;
     private int _refusals;
-    private Error? _firstRefusal;
+    private string? _firstRefusal;
 
     /// <summary>The number kept so far.</summary>
     public int Count => _kept.Count;
@@ -31,6 +31,7 @@ internal sealed class DiagnosticCollector
         {
             _suppressed += MetadataCount(error, ErrorMetadataKeys.Value, 1);
             _refusals += MetadataCount(error, ErrorMetadataKeys.Refusals, 0);
+            _firstRefusal ??= FirstRefusal(error);
             return;
         }
 
@@ -44,7 +45,7 @@ internal sealed class DiagnosticCollector
         if (CssDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal)
         {
             _refusals++;
-            _firstRefusal ??= error;
+            _firstRefusal ??= error.Message;
         }
     }
 
@@ -75,11 +76,18 @@ internal sealed class DiagnosticCollector
 
     /// <summary>The summary of the diagnostics left out: how many, how many of them refuse the document, and the first
     /// of those (the reason a refusal would otherwise not show).</summary>
-    internal static Error LeftOut(int suppressed, int refusals, Error? firstRefusal, int kept) =>
-        new Error(DocumentErrorCodes.TooManyDiagnostics,
-                $"{suppressed} more diagnostics are left out, {refusals} of them refusals{(firstRefusal is { } first ? $" (the first: {first.Message})" : string.Empty)}; {kept} are kept.")
+    internal static Error LeftOut(int suppressed, int refusals, string? firstRefusal, int kept)
+    {
+        var summary = new Error(DocumentErrorCodes.TooManyDiagnostics,
+                $"{suppressed} more diagnostics are left out, {refusals} of them refusals{(firstRefusal is { } first ? $" (the first: {first})" : string.Empty)}; {kept} are kept.")
             .With(ErrorMetadataKeys.Value, suppressed)
             .With(ErrorMetadataKeys.Refusals, refusals);
+        return firstRefusal is null ? summary : summary.With(ErrorMetadataKeys.FirstRefusal, firstRefusal);
+    }
+
+    /// <summary>The first refusal a summary of left-out diagnostics quotes, or null.</summary>
+    internal static string? FirstRefusal(Error summary) =>
+        summary.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.FirstRefusal, out var value) ? value as string : null;
 
     private static int MetadataCount(Error error, string key, int otherwise) =>
         error.Metadata is { } metadata && metadata.TryGetValue(key, out var value) && value is int count ? count : otherwise;

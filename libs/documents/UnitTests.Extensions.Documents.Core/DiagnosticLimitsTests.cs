@@ -37,6 +37,18 @@ public class DiagnosticLimitsTests
     }
 
     [Fact]
+    public void Summaries_taken_in_together_quote_the_first_refusal_one_of_them_left_out()
+    {
+        var first = new Error(DocumentErrorCodes.TooManyDiagnostics, "1 more").With(ErrorMetadataKeys.Value, 1).With(ErrorMetadataKeys.Refusals, 1).With(ErrorMetadataKeys.FirstRefusal, "The property 'x' is not supported.");
+        var second = new Error(DocumentErrorCodes.TooManyDiagnostics, "2 more").With(ErrorMetadataKeys.Value, 2).With(ErrorMetadataKeys.Refusals, 0);
+
+        var kept = DiagnosticLimits.Kept([.. Many(3), first, second]);
+
+        kept[^1].Message.Should().Be("3 more diagnostics are left out, 1 of them refusals (the first: The property 'x' is not supported.); 3 are kept.");
+        kept[^1].Metadata![ErrorMetadataKeys.FirstRefusal].Should().Be("The property 'x' is not supported.");
+    }
+
+    [Fact]
     public void A_message_is_cut_at_its_limit_and_an_aggregate_keeps_parts_while_their_messages_fit()
     {
         DiagnosticLimits.Kept(Many(1, DiagnosticLimits.MaxMessageLength)).Single().Message.Should().HaveLength(DiagnosticLimits.MaxMessageLength);
