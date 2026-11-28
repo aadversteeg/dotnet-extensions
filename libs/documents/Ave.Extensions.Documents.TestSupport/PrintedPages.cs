@@ -140,6 +140,11 @@ public sealed record PrintedBox(int Page, double X0, double Y0, double X1, doubl
 /// painted, f for the whole pixel.</param>
 public sealed record PrintedPath(int Page, double X0, double Y0, double X1, double Y1, string Colour, ImmutableArray<string> Rows)
 {
+    /// <summary>The path's place in its page's drawing sequence (<see cref="PrintedWord.Place"/>): in the engine's pages the
+    /// index of its fill among the page's items, in a print read back from its PDF the place of its paint in <c>order.txt</c>
+    /// (<see cref="PrintedPages.WithOrder"/>); null where it is not known. Not part of <see cref="Paints"/>.</summary>
+    public int? Place { get; init; }
+
     /// <summary>Whether two paths paint the same area in the same colour (a record compares its array by reference).</summary>
     /// <param name="other">The other path.</param>
     /// <returns>Whether they are the same.</returns>
@@ -340,7 +345,8 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
 
     /// <summary>
     /// The print with the place in the drawing sequence of each word (<see cref="PrintedWord.Place"/>) and what each page
-    /// paints besides text (<see cref="PrintedPage.Paints"/>), from the text <c>order.py</c> writes (<c>order.txt</c>):
+    /// paints besides text (<see cref="PrintedPage.Paints"/>, in drawing order: by place, a fill before the stroke of the same
+    /// drawing as the file lists them; the file lists the images after the fills), from the text <c>order.py</c> writes (<c>order.txt</c>):
     /// <c>word page text place…</c> per word of <c>print.txt</c> in its order (a place per glyph, <see cref="PrintedWord.Places"/>), <c>paint page place x0 y0 x1 y1 colour</c> per fill
     /// or stroke and <c>image page place x0 y0 x1 y1</c> per image.
     /// </summary>
@@ -367,15 +373,57 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                 throw new FormatException($"Page {page.Number} has {page.Words.Length} words and {words.Count} word lines of order.txt.");
             }
 
+            var paints = on.Where(fields => fields[0] != "word").Select(fields =>
+                new PrintedPaint(Whole(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]), Number(fields[6]), fields[0] == "image" ? "image" : fields[7]))
+                .OrderBy(paint => paint.Place).ToList();
+            if (paints.Count(paint => paint.Paint == "image") != page.Images.Length)
+            {
+                throw new FormatException($"Page {page.Number} has {page.Images.Length} images and {paints.Count(paint => paint.Paint == "image")} image lines of order.txt.");
+            }
+
             return page with
             {
                 Words = [.. page.Words.Zip(words).Select(pair => pair.Second[2] == pair.First.Text && (pair.First.Glyphs.IsEmpty || pair.First.Glyphs.Length == pair.Second.Length - 3)
                     ? pair.First with { Places = [.. pair.Second.Skip(3).Select(Whole)], Place = pair.Second.Length > 3 ? Whole(pair.Second[3]) : null }
                     : throw new FormatException($"Not the places of page {page.Number}'s word '{pair.First.Text}': '{string.Join(' ', pair.Second)}'."))],
-                Paints = [.. on.Where(fields => fields[0] != "word").Select(fields =>
-                    new PrintedPaint(Whole(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]), Number(fields[6]), fields[0] == "image" ? "image" : fields[7]))],
+                Paints = [.. paints],
+                Paths = PathPlaces(page, paints),
             };
         })]);
+    }
+
+    /// <summary>
+    /// The paths of a page of a print read back from its PDF, each with the place of the drawing that paints it
+    /// (<see cref="PrintedPath.Place"/>): <c>order.txt</c> writes a fill or stroke of a curve as it writes one of a rectangle,
+    /// so a path's paint is found by its colour and its box: the first paint in drawing order, after the paint of the path
+    /// before it, of the path's colour whose box lies inside the path's box of whole pixels widened by one pixel on each
+    /// side (the whole pixels round a box out by less than a pixel) and overlaps it.
+    /// </summary>
+    /// <param name="page">The page, with its paths from <c>print.txt</c>.</param>
+    /// <param name="paints">The page's paints from <c>order.txt</c>, in drawing order.</param>
+    /// <returns>The paths with their places.</returns>
+    /// <exception cref="FormatException">A path has no such paint.</exception>
+    private static ImmutableArray<PrintedPath> PathPlaces(PrintedPage page, System.Collections.Generic.List<PrintedPaint> paints)
+    {
+        const double Pixel = 0.75;
+        const double Precision = 0.002;
+        var from = 0;
+        var paths = ImmutableArray.CreateBuilder<PrintedPath>();
+        foreach (var path in page.Paths)
+        {
+            var at = paints.FindIndex(from, paint => paint.Paint == path.Colour
+                && paint.X0 >= path.X0 - Pixel - Precision && paint.Y0 >= path.Y0 - Pixel - Precision && paint.X1 <= path.X1 + Pixel + Precision && paint.Y1 <= path.Y1 + Pixel + Precision
+                && paint.X0 < path.X1 && path.X0 < paint.X1 && paint.Y0 < path.Y1 && path.Y0 < paint.Y1);
+            if (at < 0)
+            {
+                throw new FormatException(FormattableString.Invariant($"Page {page.Number}'s path at ({path.X0}, {path.Y0}) {path.Colour} has no paint of order.txt."));
+            }
+
+            paths.Add(path with { Place = paints[at].Place });
+            from = at + 1;
+        }
+
+        return paths.ToImmutable();
     }
 
     /// <summary>
@@ -528,7 +576,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                         images.Add(shown);
                         break;
                     case FillPath path when PathSampler.Sample(number, path, clips.Count == 0 ? null : clips.Peek()) is { } painted:
-                        paths.Add(painted);
+                        paths.Add(painted with { Place = place });
                         break;
                 }
             }

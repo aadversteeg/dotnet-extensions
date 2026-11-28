@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -968,9 +967,106 @@ internal static class HtmlCases
     /// <returns>The differences.</returns>
     public static IEnumerable<string> OrderDifferences(PrintedPages engine, PrintedPages chromium) =>
         PairedWords(engine, chromium).Select(pair => pair.Ours.Over.SequenceEqual(pair.Theirs.Over) ? null
-            : $"page {pair.Ours.Page} '{pair.Ours.Text}' is painted over by {Paints(pair.Ours.Over)}, Chromium's by {Paints(pair.Theirs.Over)} (order.txt)").OfType<string>();
+            : $"page {pair.Ours.Page} '{pair.Ours.Text}' is painted over by {Paints(pair.Ours.Over)}, Chromium's by {Paints(pair.Theirs.Over)} (order.txt)").OfType<string>()
+            .Concat(PaintOrderDifferences(engine, chromium));
 
-    private static string Paints(ImmutableArray<string> paints) => paints.IsEmpty ? "nothing" : string.Join(", ", paints);
+    private static string Paints(IEnumerable<string> paints) => paints.Any() ? string.Join(", ", paints) : "nothing";
+
+    /// <summary>
+    /// Every difference in what is painted over the engine's images and paths and over Chromium's (<c>order.txt</c>), page
+    /// by page: each image paired with the image of the same number in drawing order, and each path that is not a shape the
+    /// other side paints with rectangles (<see cref="ShapesOfRectangles"/>) with the path of the same number, on a page where
+    /// both sides have as many (otherwise <see cref="Differences"/> names the count, with the digest of the engine's side).
+    /// Of every fill, stroke or image whose box overlaps the image's box (the part its clips leave) or the path's box of whole
+    /// pixels by more than a pixel each way (<see cref="PixelBound"/>), the one painted after it on one side must be painted
+    /// after it on the other, compared by its colour or as an image, as over a word (<see cref="OrderDifferences"/>): a
+    /// background painted over its own image, or over a list item's bullet or a border drawn as a path, differs. Two
+    /// rectangles are compared by the area each colour paints (<see cref="PaintedDifferences"/>).
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with its places (<see cref="PrintedPages.WithOrder"/>).</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> PaintOrderDifferences(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
+        {
+            var (ourImages, theirImages) = (Images(ours), Images(theirs));
+            if (ourImages.Count == theirImages.Count)
+            {
+                foreach (var (image, measured, number) in ourImages.Zip(theirImages).Select((pair, index) => (pair.First, pair.Second, index + 1)))
+                {
+                    var (over, chromiumOver) = (Over(ours, image, ours.Paints[image], PathsByPaint(ours)), Over(theirs, measured, theirs.Paints[measured], PathsByPaint(theirs)));
+                    if (!over.SequenceEqual(chromiumOver))
+                    {
+                        yield return $"page {ours.Number} image {number} at ({Of(ours.Paints[image].X0)}, {Of(ours.Paints[image].Y0)}) is painted over by {Paints(over)}, Chromium's by {Paints(chromiumOver)} (order.txt)";
+                    }
+                }
+            }
+
+            var shapes = ShapesOfRectangles(ours, theirs);
+            var ourPaths = ours.Paths.Where(path => !shapes.Exists(shape => shape.InOurs && ReferenceEquals(shape.Path, path))).ToList();
+            var theirPaths = theirs.Paths.Where(path => !shapes.Exists(shape => !shape.InOurs && ReferenceEquals(shape.Path, path))).ToList();
+            if (ourPaths.Count == theirPaths.Count)
+            {
+                foreach (var (path, measured, number) in ourPaths.Zip(theirPaths).Select((pair, index) => (pair.First, pair.Second, index + 1)))
+                {
+                    var (over, chromiumOver) = (Over(ours, Drawn(ours, path), Box(path), PathsByPaint(ours)).Where(paint => !Same(paint, path)).ToList(),
+                        Over(theirs, Drawn(theirs, measured), Box(measured), PathsByPaint(theirs)).Where(paint => !Same(paint, measured)).ToList());
+                    if (!over.SequenceEqual(chromiumOver))
+                    {
+                        yield return $"page {ours.Number} path {number} at ({Of(path.X0)}, {Of(path.Y0)}) is painted over by {Paints(over)}, Chromium's by {Paints(chromiumOver)} (order.txt)";
+                    }
+                }
+            }
+        }
+
+        static int Pixel(double points) => ChromiumLayout.Pixel(points);
+        static PrintedPaint Box(PrintedPath path) => new(0, path.X0, path.Y0, path.X1, path.Y1, path.Colour);
+
+        // An opaque paint of the path's own colour over it paints the pixels it shares with the path as they were: the
+        // engine draws a border with rounded corners as a path for each corner and rectangles of its colour between them,
+        // Chromium as one path (cases br-border-1px, bri-cell), so such a paint is over the path on one side only.
+        static bool Same(string paint, PrintedPath path) => paint == path.Colour && paint.Length == 7;
+        static List<int> Images(PrintedPage page) => [.. page.Paints.Select((paint, index) => (paint, index)).Where(item => item.paint.Paint == "image").Select(item => item.index)];
+
+        // The paint of a path in the page's paints: the one at its place in its colour (a drawing that fills and strokes
+        // writes a paint for each), else the one at its place.
+        static int Drawn(PrintedPage page, PrintedPath path)
+        {
+            var place = path.Place ?? throw new InvalidOperationException($"Page {page.Number}'s path at ({Of(path.X0)}, {Of(path.Y0)}) has no place in the drawing sequence.");
+            var index = page.Paints.ToList().FindIndex(paint => paint.Place == place && paint.Paint == path.Colour);
+            index = index >= 0 ? index : page.Paints.ToList().FindIndex(paint => paint.Place == place);
+            return index >= 0 ? index : throw new InvalidOperationException($"Page {page.Number}'s path at ({Of(path.X0)}, {Of(path.Y0)}) has no paint at its place {place}.");
+        }
+
+        static Dictionary<int, PrintedPath> PathsByPaint(PrintedPage page) => page.Paths.ToDictionary(path => Drawn(page, path));
+
+        // What is painted after the paint of the given index (the paints are in drawing order; a stroke written after the
+        // fill of the same drawing is painted after it, ISO 32000-1 §8.5.3) and overlaps the box by more than a pixel each
+        // way: a rectangle or an image by its box, a path by the pixels it paints (a ring's box holds its hole: case
+        // bri-collapse, a table's rounded border around its cells), two by two of them inside the box.
+        static List<string> Over(PrintedPage page, int drawn, PrintedPaint box, Dictionary<int, PrintedPath> paths) =>
+            [.. page.Paints.Select((paint, index) => (paint, index)).Skip(drawn + 1)
+                .Where(item => paths.TryGetValue(item.index, out var path) ? PaintsInside(path, box) : Overlap(box, item.paint))
+                .Select(item => item.paint.Paint).Distinct().Order(StringComparer.Ordinal)];
+
+        // Whether two boxes share two by two whole pixels, each edge on the pixel it is painted on (WholePixel), as the
+        // painted area is compared: one side's edges lie on whole pixels and the other's where layout puts them, so an
+        // overlap of one pixel row (a collapsed border's half in the next row, cases a4-header-line2-25-image-228) is not
+        // a paint over the other on one side only.
+        static bool Overlap(PrintedPaint box, PrintedPaint paint) =>
+            Math.Min(Pixel(box.X1), Pixel(paint.X1)) - Math.Max(Pixel(box.X0), Pixel(paint.X0)) >= 2 && Math.Min(Pixel(box.Y1), Pixel(paint.Y1)) - Math.Max(Pixel(box.Y0), Pixel(paint.Y0)) >= 2;
+
+        // Whether a path paints two by two whole pixels that lie inside the box (its rows, PrintedPath).
+        static bool PaintsInside(PrintedPath path, PrintedPaint box)
+        {
+            var (left, top) = (Pixel(path.X0), Pixel(path.Y0));
+            bool Painted(int column, int row) => row < path.Rows.Length && column < path.Rows[row].Length && path.Rows[row][column] != '0'
+                && left + column >= Pixel(box.X0) && left + column + 1 <= Pixel(box.X1) && top + row >= Pixel(box.Y0) && top + row + 1 <= Pixel(box.Y1);
+            return Enumerable.Range(0, path.Rows.Length).Any(row => Enumerable.Range(0, path.Rows[row].Length)
+                .Any(column => Painted(column, row) && Painted(column + 1, row) && Painted(column, row + 1) && Painted(column + 1, row + 1)));
+        }
+    }
 
     /// <summary>
     /// Every difference in how the clips cut the engine's words and Chromium's (<c>clips.txt</c>), on each page whose text is

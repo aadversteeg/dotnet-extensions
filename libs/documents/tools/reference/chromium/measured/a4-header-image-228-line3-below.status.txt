@@ -1,1 +1,3 @@
-a4-header-image-228-line3-below equal
+a4-header-image-228-line3-below open page 3 image 1 at (12.75, 12) is painted over by #000000, Chromium's by nothing (order.txt)
+1 difference:
+- page 3 image 1 at (12.75, 12) is painted over by #000000, Chromium's by nothing (order.txt)
