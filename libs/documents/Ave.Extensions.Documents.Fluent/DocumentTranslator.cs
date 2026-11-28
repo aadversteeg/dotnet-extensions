@@ -226,7 +226,7 @@ public static class DocumentTranslator
         }
 
         IReadOnlyList<Error> all = result.IsFailure ? [.. problems, .. result.Error.Parts()] : problems;
-        return Result<T, Error>.Failure(Errors.Aggregate(all));
+        return Result<T, Error>.Failure(DiagnosticLimits.Aggregate(all));
     }
 
     private static Result<Node, Error> Translate(Element element, NodeId id, bool pageBreakBefore, Inherited inherited) => element switch
@@ -272,7 +272,7 @@ public static class DocumentTranslator
             .ToImmutableArray();
         if (!problems.IsEmpty)
         {
-            return Result<Node, Error>.Failure(Errors.Aggregate(problems));
+            return Result<Node, Error>.Failure(DiagnosticLimits.Aggregate(problems));
         }
 
         if (paragraph.AnchorName is { } anchor && inherited.Links?.Anchor(anchor, id, paragraph.Source) is { } duplicate)

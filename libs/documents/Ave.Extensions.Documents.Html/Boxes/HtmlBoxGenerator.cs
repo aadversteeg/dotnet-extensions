@@ -108,10 +108,12 @@ public static partial class HtmlBoxGenerator
             return Result<HtmlBoxes, Error>.Failure(Combined(run.Refusals));
         }
 
-        return Result<HtmlBoxes, Error>.Success(new HtmlBoxes(document, run.Fonts.Used, [.. styled.Diagnostics, .. run.Refusals]));
+        // One bound for the diagnostics of the parse, the style resolution and the box generation together.
+        return Result<HtmlBoxes, Error>.Success(new HtmlBoxes(document, run.Fonts.Used,
+            [.. DiagnosticLimits.Kept([.. styled.Diagnostics, .. run.Refusals], error => HtmlStyleDiagnostics.ClassOf(error.Code) == Css.DiagnosticClass.Refusal)]));
     }
 
-    private static Error Combined(IReadOnlyList<Error> errors) => errors.Count == 1 ? errors[0] : Errors.Aggregate([.. errors]);
+    private static Error Combined(IReadOnlyList<Error> errors) => DiagnosticLimits.Aggregate(errors);
 
     /// <summary>A block box being built: its element, its id, its level and what goes into it.</summary>
     private sealed class BlockFrame(StyledElement element, NodeId id, int depth, bool[] kinds, bool[] dropped)

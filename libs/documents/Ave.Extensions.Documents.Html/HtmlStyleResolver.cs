@@ -59,7 +59,7 @@ public static class HtmlStyleResolver
 
         var refusals = styled.Diagnostics.Where(error => HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal).ToList();
         return options.Unsupported == UnsupportedPolicy.Refuse && refusals.Count > 0
-            ? Result<StyledHtmlDocument, Error>.Failure(refusals.Count == 1 ? refusals[0] : Errors.Aggregate(refusals))
+            ? Result<StyledHtmlDocument, Error>.Failure(DiagnosticLimits.Aggregate(refusals))
             : Result<StyledHtmlDocument, Error>.Success(styled);
     }
 

@@ -60,7 +60,7 @@ public sealed record XmpPacket(ValueList<XmpProperty> Properties)
             : nameProblems;
         return problems.IsEmpty
             ? Result<ImmutableArray<byte>, Error>.Success(Serialize())
-            : Result<ImmutableArray<byte>, Error>.Failure(Errors.Aggregate(problems));
+            : Result<ImmutableArray<byte>, Error>.Failure(DiagnosticLimits.Aggregate(problems));
     }
 
     /// <summary>The checked properties as RDF/XML.</summary>
