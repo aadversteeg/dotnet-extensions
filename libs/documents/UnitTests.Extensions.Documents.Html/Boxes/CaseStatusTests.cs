@@ -110,10 +110,14 @@ public class CaseStatusTests(ITestOutputHelper output)
         }
     }
 
-    /// <summary>A listed case names, in its status line, the test that pins its difference: one test of this project, the
-    /// one that lays out the HTML cases (<see cref="HtmlCases"/>), whose text, its attributes and its body
-    /// (<see cref="TestSource"/>), holds the case's name as a string, so the test lays out that case. A name changed in the
-    /// line alone, a test of the code front-end, or a test of another case fails here.</summary>
+    /// <summary>
+    /// A listed case names, in its status line, the test that pins its difference, and the link is data, not text: one
+    /// test method of this project by that name, a theory with a row (<see cref="InlineDataAttribute"/>) whose first value is
+    /// the case's name, read by reflection, and whose first parameter is <c>string name</c>; and that test lays out the case
+    /// it is given: its body (<see cref="TestSource"/> from the declaration on, comments left out) uses <c>name</c> and holds
+    /// no case's name as a string, so it cannot be given one case and look at another. A name changed in the line alone, a
+    /// test of another case, or a case named only in a comment fails here.
+    /// </summary>
     [Fact]
     public void Every_listed_case_names_a_test_that_lays_out_that_case()
     {
@@ -123,12 +127,105 @@ public class CaseStatusTests(ITestOutputHelper output)
             .Where(file => !file.Contains(obj, StringComparison.Ordinal)).Select(file => CaseFolder.StatusText(File.ReadAllText(file))).ToList();
         var listed = HtmlCases.Names.Select(name => (Name: name, Fields: HtmlCases.Cases.Committed(name)?.Split('\n')[0].Split(' ', 2) ?? []))
             .Where(pair => pair.Fields is ["listed", _]).Select(pair => (pair.Name, Test: pair.Fields[1].Split(": ", 2)[0])).ToList();
+        var methods = typeof(CaseStatusTests).Assembly.GetTypes().SelectMany(type => type.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly)).ToList();
 
-        var wrong = listed.Where(pair => sources.Select(source => TestSource(source, pair.Test)).OfType<string>().ToList() is not [var test] || !test.Contains($"\"{pair.Name}\"", StringComparison.Ordinal))
-            .Select(pair => $"{pair.Name}: {pair.Test}").ToList();
+        var wrong = listed.Select(pair => (pair.Name, pair.Test, Why: Unlinked(pair.Name, pair.Test, methods, sources))).Where(found => found.Why is not null)
+            .Select(found => $"{found.Name}: {found.Test} {found.Why}").ToList();
         listed.Should().NotBeEmpty();
-        wrong.Should().BeEmpty($"a listed case names one test of this project, and that test lays out the case by its name ({string.Join("; ", wrong)})");
+        wrong.Should().BeEmpty($"a listed case names one test of this project, and that test is given the case by its name in a row and lays it out ({string.Join("; ", wrong)})");
     }
+
+    /// <summary>Why a listed case and the test its status line names are not linked
+    /// (<see cref="Every_listed_case_names_a_test_that_lays_out_that_case"/>), or null where they are.</summary>
+    internal static string? Unlinked(string name, string test, IReadOnlyList<System.Reflection.MethodInfo> methods, IReadOnlyList<string> sources)
+    {
+        if (methods.Where(method => method.Name == test).ToList() is not [var method])
+        {
+            return "is not one test method of this project";
+        }
+
+        if (method.GetParameters() is not [{ Name: "name" } first, ..] || first.ParameterType != typeof(string))
+        {
+            return "has no first parameter string name";
+        }
+
+        var rows = method.GetCustomAttributes(typeof(InlineDataAttribute), inherit: false).OfType<InlineDataAttribute>().SelectMany(row => row.GetData(method)).ToList();
+        if (!rows.Exists(row => row is [string given, ..] && given == name))
+        {
+            return "has no row whose first value is the case";
+        }
+
+        if (sources.Select(source => TestSource(source, test)).OfType<string>().ToList() is not [var text])
+        {
+            return "is not one method in the sources";
+        }
+
+        var lines = text.Split('\n');
+        var body = string.Join("\n", lines.SkipWhile(line => !line.Contains($" void {test}(", StringComparison.Ordinal)).Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal)));
+        if (System.Text.RegularExpressions.Regex.Matches(body, @"\bname\b").Count < 2)
+        {
+            return "does not use the name it is given";
+        }
+
+        return HtmlCases.Names.FirstOrDefault(other => body.Contains($"\"{other}\"", StringComparison.Ordinal)) is { } named ? $"names the case \"{named}\" in its body" : null;
+    }
+
+    [Theory]
+    [InlineData("Linked", null)]
+    [InlineData("Missing", "is not one test method of this project")]
+    [InlineData("NoName", "has no first parameter string name")]
+    [InlineData("OtherRow", "has no row whose first value is the case")]
+    [InlineData("Unused", "does not use the name it is given")]
+    [InlineData("Other", "names the case \"ta-items\" in its body")]
+    public void A_listed_case_is_linked_to_its_test_by_a_row_that_names_it_and_a_body_that_uses_it(string test, string? why)
+    {
+        var methods = typeof(LinkedTests).GetMethods().Where(method => method.DeclaringType == typeof(LinkedTests)).ToList();
+        string[] sources = [CaseFolder.StatusText(LinkedSource)];
+
+        Unlinked("ta-kerning-scale", test, methods, sources).Should().Be(why);
+    }
+
+    private const string LinkedSource = """
+            [InlineData("ta-kerning-scale")]
+            public void Linked(string name) => Run(name);
+            [InlineData("ta-kerning-scale")]
+            public void NoName(string other) => Run(other);
+            [InlineData("ta-items")]
+            public void OtherRow(string name) => Run(name);
+            [InlineData("ta-kerning-scale")]
+            public void Unused(string name)
+            {
+                // see name
+                Run("x");
+            }
+            [InlineData("ta-kerning-scale")]
+            public void Other(string name)
+            {
+                Run(name, "ta-items");
+            }
+        """;
+
+    /// <summary>The methods <see cref="A_listed_case_is_linked_to_its_test_by_a_row_that_names_it_and_a_body_that_uses_it"/>
+    /// checks, by the rows <see cref="LinkedSource"/> shows for them.</summary>
+#pragma warning disable xUnit1008 // Rows on methods that are no tests: the check reads them by reflection, nothing runs them.
+    private static class LinkedTests
+    {
+        [InlineData("ta-kerning-scale")]
+        public static void Linked(string name) => _ = name;
+
+        [InlineData("ta-kerning-scale")]
+        public static void NoName(string other) => _ = other;
+
+        [InlineData("ta-items")]
+        public static void OtherRow(string name) => _ = name;
+
+        [InlineData("ta-kerning-scale")]
+        public static void Unused(string name) => _ = name;
+
+        [InlineData("ta-kerning-scale")]
+        public static void Other(string name) => _ = name;
+    }
+#pragma warning restore xUnit1008
 
     /// <summary>The text of a test method in a source file: from the attributes and comments right above its declaration
     /// (<c> void name(</c>) to the end of its body, the first line after it that closes a member (four spaces and a brace), or
