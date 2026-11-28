@@ -164,6 +164,91 @@ public class PageTemplateTests
         TextOf(Paginate(WithTemplate(Document(Paragraph(1, "Body")), footer)).Value.Single().Footer!.Fragment).Should().Be("1/1");
     }
 
+    [Fact]
+    public void A_page_count_only_in_a_fixed_height_footer_lays_the_body_out_once()
+    {
+        // 50 one-word lines, 5 a page above a 20 pt footer: the first pass, told 1 page, makes 10. "of 10" is wider than
+        // "of 1", but the footer's height is fixed, so the body keeps the same room on every page and only the footers
+        // are laid out again. The body is the one a document without a page count gets.
+        var footer = new PageTemplate(null, new PageArea(Area(60, Line(61, Text(62, "Page "), Counter(63, PageCounter.PageNumber), Text(64, " of "), Counter(65, PageCounter.PageCount))), 20.Pt()));
+        var plain = new PageTemplate(null, new PageArea(Area(60, Line(61, Text(62, "Page"))), 20.Pt()));
+        var body = Document(Paragraph(1, Words(50), Narrow));
+
+        var pagination = Paginator.Paginated(LayoutEnvironment.Create(TestFonts.Set), WithTemplate(body, footer)).Value;
+        var withoutCount = Paginate(WithTemplate(body, plain)).Value;
+
+        pagination.BodyPasses.Should().Be(1);
+        pagination.Pages.Select(page => TextOf(page.Footer!.Fragment)).Should().Equal(Enumerable.Range(1, 10).Select(number => $"Page {number} of 10"));
+        pagination.Pages.Select(page => page.Root).Should().Equal(withoutCount.Select(page => page.Root));
+    }
+
+    [Fact]
+    public void A_page_count_in_a_row_of_page_margin_boxes_that_reaches_three_digits_lays_the_body_out_once()
+    {
+        // 500 one-word lines on 100 pages; the bottom row's end box shows "Page x of y", whose count grows from one
+        // digit (the first pass) to three. A row of margin boxes has a fixed height, so the body is laid out once.
+        var marginBox = BoxStyle.Initial with { MarginBoxPlace = MarginBoxPlace.End, TextAlign = TextAlign.Right, Text = Models.Text() };
+        var end = new Box(new NodeId(61), SemanticRole.Generic, LayoutAlgorithmId.Inline, marginBox,
+            [Text(62, "Page "), Counter(63, PageCounter.PageNumber), Text(64, " of "), Counter(65, PageCounter.PageCount)], At(0));
+        var row = new Box(new NodeId(60), SemanticRole.Generic, LayoutAlgorithmId.MarginBoxes, BoxStyle.Initial, [end], At(0));
+        var document = WithTemplate(Document(Paragraph(1, Words(500), Narrow)), new PageTemplate(null, new PageArea(row, 20.Pt())));
+
+        var pagination = Paginator.Paginated(LayoutEnvironment.Create(TestFonts.Set), document).Value;
+
+        pagination.BodyPasses.Should().Be(1);
+        pagination.Pages.Should().HaveCount(100);
+        TextOf(pagination.Pages[8].Footer!.Fragment).Should().Be("Page 9 of 100");
+        TextOf(pagination.Pages[99].Footer!.Fragment).Should().Be("Page 100 of 100");
+    }
+
+    [Fact]
+    public void A_page_count_in_the_body_still_lays_the_body_out_again()
+    {
+        // The count's digits are in the body itself, so the body of the first pass (told 1 page) is not the final one.
+        var count = Line(90, Text(91, "Pages: "), Counter(92, PageCounter.PageCount));
+        var pagination = Paginator.Paginated(LayoutEnvironment.Create(TestFonts.Set), Document(count, Paragraph(1, Words(10), Narrow))).Value;
+
+        pagination.BodyPasses.Should().Be(2);
+        pagination.Pages.Should().HaveCount(2);
+        TextOf(((BoxFragment)pagination.Pages[0].Root.Fragment).Children[0].Fragment).Should().Be("Pages: 2");
+    }
+
+    [Fact]
+    public void A_footer_that_a_wider_count_makes_taller_lays_the_body_out_again()
+    {
+        // The footer of the wrapping test above, without a fixed height: "of 10" wraps, the footer grows, and the body gets
+        // less room, so laying out only the footers again is not enough. The second pass gives 12 pages; told 12, the
+        // footers keep their two-line height, so that pass's body is final: two body passes, not three.
+        var environment = LayoutEnvironment.Create(TestFonts.Set);
+        var nine = environment.Measure(Line(1, Text(2, "of 9"))).Value.MaxContent;
+        var ten = environment.Measure(Line(1, Text(2, "of 10"))).Value.MaxContent;
+        var footerStyle = BoxStyle.Initial with { Margin = new Edges(0.Pt(), (180 - (nine + ten) / 2).Pt(), 0.Pt(), 0.Pt()) };
+        var footer = new PageTemplate(null, new PageArea(Area(60, Line(61, Text(62, "of "), Counter(63, PageCounter.PageCount)) with { Style = footerStyle }), null));
+
+        var pagination = Paginator.Paginated(environment, WithTemplate(Document(Paragraph(1, Words(48), Narrow)), footer)).Value;
+
+        pagination.BodyPasses.Should().Be(2);
+        pagination.Pages.Should().HaveCount(12);
+        pagination.Pages.Select(page => TextOf(page.Footer!.Fragment)).Should().AllBe("of 12", "lines are joined with a space here");
+    }
+
+    [Fact]
+    public void A_test_algorithm_in_the_body_keeps_every_pass()
+    {
+        // An algorithm the engine does not ship may read the page count itself, so its body is laid out in every pass.
+        var counting = 0;
+        var flow = LayoutEnvironment.Create(TestFonts.Set).Algorithms[LayoutAlgorithmId.Flow];
+        var environment = LayoutEnvironment.Create(TestFonts.Set).WithAlgorithm(
+            LayoutAlgorithmId.Flow, (env, box, space, incoming) => { counting++; return flow.Layout(env, box, space, incoming); }, flow.Measure);
+        var footer = new PageTemplate(null, new PageArea(Area(60, Line(61, Counter(62, PageCounter.PageCount))), 20.Pt()));
+
+        var pagination = Paginator.Paginated(environment, WithTemplate(Document(Paragraph(1, Words(10), Narrow)), footer)).Value;
+
+        pagination.BodyPasses.Should().Be(2);
+        pagination.Pages.Select(page => TextOf(page.Footer!.Fragment)).Should().AllBe("2");
+        counting.Should().BeGreaterThan(0);
+    }
+
     private static int CurrentLine([System.Runtime.CompilerServices.CallerLineNumber] int line = 0) => line;
 
     private sealed record FlipToken(int Pages) : BreakToken;

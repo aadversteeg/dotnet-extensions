@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Linq;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.ErrorPaths;
@@ -27,15 +28,22 @@ public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<Layout
     /// <see cref="TracksLayout"/>, <see cref="ImageLayout"/>, <see cref="MarginBoxesLayout"/> and <see cref="ListItemLayout"/>; page 1 of 1.</summary>
     /// <param name="fonts">The fonts text may use.</param>
     /// <returns>The environment.</returns>
-    public static LayoutEnvironment Create(FontSet fonts) =>
-        new(fonts, ImmutableDictionary<LayoutAlgorithmId, RegisteredAlgorithm>.Empty
+    public static LayoutEnvironment Create(FontSet fonts) => new(fonts, EngineAlgorithms, PageContext.First);
+
+    /// <summary>Whether every registered algorithm is one the engine ships. Those read the page context only to show a
+    /// page counter's text (<see cref="InlineLayout"/>), so a body without a page-count counter cannot depend on the
+    /// page count, which lets the paginator lay it out once (<see cref="Paginator.Paginate"/>, "One body pass").</summary>
+    internal bool HasOnlyEngineAlgorithms =>
+        Algorithms.All(pair => EngineAlgorithms.TryGetValue(pair.Key, out var own) && own == pair.Value);
+
+    private static readonly ImmutableDictionary<LayoutAlgorithmId, RegisteredAlgorithm> EngineAlgorithms =
+        ImmutableDictionary<LayoutAlgorithmId, RegisteredAlgorithm>.Empty
             .Add(LayoutAlgorithmId.Flow, new RegisteredAlgorithm(FlowLayout.Layout, FlowLayout.Measure))
             .Add(LayoutAlgorithmId.Inline, new RegisteredAlgorithm(InlineLayout.Layout, InlineLayout.Measure))
             .Add(LayoutAlgorithmId.Tracks, new RegisteredAlgorithm(TracksLayout.Layout, TracksLayout.Measure))
             .Add(LayoutAlgorithmId.Image, new RegisteredAlgorithm(ImageLayout.Layout, ImageLayout.Measure))
             .Add(LayoutAlgorithmId.MarginBoxes, new RegisteredAlgorithm(MarginBoxesLayout.Layout, MarginBoxesLayout.Measure))
-            .Add(LayoutAlgorithmId.ListItem, new RegisteredAlgorithm(ListItemLayout.Layout, ListItemLayout.Measure)),
-            PageContext.First);
+            .Add(LayoutAlgorithmId.ListItem, new RegisteredAlgorithm(ListItemLayout.Layout, ListItemLayout.Measure));
 
     /// <summary>Adds or replaces an algorithm.</summary>
     /// <param name="id">The algorithm id boxes name.</param>

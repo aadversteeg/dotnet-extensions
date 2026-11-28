@@ -11,7 +11,7 @@ namespace Ave.Extensions.Documents.Layout;
 /// <summary>
 /// The pagination driver: lays the root box out page after page — the root algorithm is called once per page with the
 /// previous page's outgoing break token — until no token is left; applies the page template of each page;
-/// and repeats the whole layout until the page count that computed content shows is the page count it produces.
+/// and repeats the layout until the page count that computed content shows is the page count it produces.
 /// </summary>
 public static class Paginator
 {
@@ -30,6 +30,14 @@ public static class Paginator
     /// the assumed count, so the next pass would repeat it exactly. Page numbers need no fixpoint: pages are laid out
     /// in order, so each page knows its own number. A document that shows no page count is laid out once; one that does
     /// settles in one pass when it has one page, otherwise in at least two.</para>
+    /// <para><b>One body pass.</b> When the page count shows only in header and footer areas and the environment holds
+    /// only the engine's own algorithms (one added for a test may read the page count itself), the second pass lays out
+    /// only those areas again with the count the first pass produced, and keeps the first pass's body, if every page's
+    /// header and footer then take the height they took in the first pass. That is the second pass exactly: the body
+    /// reads the page context only through its own page counters (it has no page-count counter here, and a page number
+    /// is the same in both passes), and it sees the same height on every page, so it would be laid out the same, on the
+    /// same number of pages. When an area's height changes (a wider count wraps a line of it), or laying an area out
+    /// with the count fails, the whole second pass runs as above.</para>
     /// <para>Not settling within <see cref="MaxPasses"/> passes is <c>Documents.Layout.NotConverging</c>, with the
     /// source location of the first page-count reference and the page count of every pass.</para>
     /// </remarks>
@@ -40,10 +48,17 @@ public static class Paginator
     /// <see cref="LayOutPages"/>) gives <see cref="LayoutErrorCodes.EngineDefect"/>: without this check pagination could
     /// loop forever.</returns>
     public static Result<ValueList<PageFragment>, Error> Paginate(LayoutEnvironment environment, StyledDocument document) =>
+        Paginated(environment, document).OnSuccessMap(pagination => pagination.Pages);
+
+    /// <summary><see cref="Paginate"/>, with the number of times it laid the body out.</summary>
+    /// <param name="environment">The fonts and algorithms.</param>
+    /// <param name="document">The document.</param>
+    /// <returns>The pages and the body passes, or the first layout error.</returns>
+    internal static Result<Pagination, Error> Paginated(LayoutEnvironment environment, StyledDocument document) =>
         ModelCheck.Check(document).OnSuccessBind(checkedDocument => PaginateChecked(environment, checkedDocument));
 
     /// <summary>The work of <see cref="Paginate"/> on a model that passed <see cref="ModelCheck"/>.</summary>
-    private static Result<ValueList<PageFragment>, Error> PaginateChecked(LayoutEnvironment environment, StyledDocument document)
+    private static Result<Pagination, Error> PaginateChecked(LayoutEnvironment environment, StyledDocument document)
     {
         // The document's policies are the ones its front-end chose; every algorithm reads them from the environment. A
         // model without a profile gets the default one.
@@ -51,7 +66,7 @@ public static class Paginator
         var page = document.Page;
         if (!(page.AreaWidth.Points > 0 && page.AreaHeight.Points > 0))
         {
-            return Result<ValueList<PageFragment>, Error>.Failure(
+            return Result<Pagination, Error>.Failure(
                 new Error(DocumentErrorCodes.Input.Invalid.PageSize, "The page margins leave no page area for content.")
                     .With(ErrorMetadataKeys.Value, $"{page.Width}x{page.Height} margin={page.Margins}"));
         }
@@ -59,24 +74,31 @@ public static class Paginator
         // Without a page count shown anywhere, no pass can change what an earlier one laid out: one pass is final.
         if (!PageCountReferences(document).Any())
         {
-            return LayOutPages(withProfile, document, pageCount: 1);
+            return LayOutPages(withProfile, document, pageCount: 1).OnSuccessMap(pass => new Pagination(pass.Pages, 1));
         }
 
+        var onlyInAreas = environment.HasOnlyEngineAlgorithms && !PageCountReferences(document.Root).Any();
         var counts = ImmutableArray.CreateBuilder<int>();
         var assumedCount = 1;
         for (var pass = 1; pass <= MaxPasses; pass++)
         {
-            var pages = LayOutPages(withProfile, document, assumedCount);
-            if (pages.IsFailure || pages.Value.Count == assumedCount)
+            var laidOut = LayOutPages(withProfile, document, assumedCount);
+            if (laidOut.IsFailure || laidOut.Value.Pages.Count == assumedCount)
             {
-                return pages;
+                return laidOut.OnSuccessMap(result => new Pagination(result.Pages, pass));
             }
 
-            counts.Add(pages.Value.Count);
-            assumedCount = pages.Value.Count;
+            var count = laidOut.Value.Pages.Count;
+            if (onlyInAreas && WithAreasRedone(withProfile, document, laidOut.Value, count) is { } settled)
+            {
+                return Result<Pagination, Error>.Success(new Pagination(settled, pass));
+            }
+
+            counts.Add(count);
+            assumedCount = count;
         }
 
-        return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.NotConverging(document, counts.ToImmutable()));
+        return Result<Pagination, Error>.Failure(LayoutErrors.NotConverging(document, counts.ToImmutable()));
     }
 
     /// <summary>The page-count references of a document, in the header and footer areas first, then the body: what
@@ -89,9 +111,10 @@ public static class Paginator
             .Select(area => area?.Content)
             .OfType<Box>()
             .Append(document.Root)
-            .SelectMany(Descendants)
-            .OfType<CounterRun>()
-            .Where(run => run.Counter == PageCounter.PageCount);
+            .SelectMany(PageCountReferences);
+
+    private static IEnumerable<CounterRun> PageCountReferences(Box box) =>
+        Descendants(box).OfType<CounterRun>().Where(run => run.Counter == PageCounter.PageCount);
 
     private static IEnumerable<Node> Descendants(Node node) => node switch
     {
@@ -109,12 +132,13 @@ public static class Paginator
     /// <remarks>An algorithm that reports NoRoom at the start of a page, or returns the token it was given, broke the
     /// layout contract: <see cref="LayoutErrorCodes.EngineDefect"/>, a defect of the engine, never an answer for a
     /// document.</remarks>
-    private static Result<ValueList<PageFragment>, Error> LayOutPages(LayoutEnvironment environment, StyledDocument document, int pageCount)
+    private static Result<Pass, Error> LayOutPages(LayoutEnvironment environment, StyledDocument document, int pageCount)
     {
         var page = document.Page;
         var pageSize = new Size(page.Width.Points, page.Height.Points);
         var (areaWidth, areaHeight) = (page.AreaWidth.Points, page.AreaHeight.Points);
         var pages = ImmutableArray.CreateBuilder<PageFragment>();
+        var areaHeights = ImmutableArray.CreateBuilder<(double Header, double Footer)>();
         var counts = environment.Profile.MonolithicOverflow == MonolithicOverflow.Slice;
         var slices = 0;
         BreakToken? token = null;
@@ -126,14 +150,14 @@ public static class Paginator
             var areas = PageAreas.LayOut(onPage, template, areaWidth, areaHeight);
             if (areas.IsFailure)
             {
-                return Result<ValueList<PageFragment>, Error>.Failure(areas.Error);
+                return Result<Pass, Error>.Failure(areas.Error);
             }
 
             var (header, footer) = areas.Value;
             var bodyHeight = areaHeight - header.Height - footer.Height;
             if (!(bodyHeight > 0))
             {
-                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.NoBodyArea(template, number));
+                return Result<Pass, Error>.Failure(LayoutErrors.NoBodyArea(template, number));
             }
 
             // The root establishes the block formatting context, so its margins never collapse with its
@@ -144,7 +168,7 @@ public static class Paginator
             var outcome = InFlowChild.Place(onPage, document.Root, areaWidth, top, bodyHeight, bodyHeight, isAtPageStart: !(top > 0), token, isPageRoot: true);
             if (outcome.IsFailure)
             {
-                return Result<ValueList<PageFragment>, Error>.Failure(outcome.Error);
+                return Result<Pass, Error>.Failure(outcome.Error);
             }
 
             if (outcome.Value.HasNoValue)
@@ -153,23 +177,23 @@ public static class Paginator
                 // to another page.
                 if (top > 0)
                 {
-                    return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.DoesNotFit(document.Root, bodyHeight - top));
+                    return Result<Pass, Error>.Failure(LayoutErrors.DoesNotFit(document.Root, bodyHeight - top));
                 }
 
-                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.EngineDefect(document.Root, "reported no room at the start of a page"));
+                return Result<Pass, Error>.Failure(LayoutErrors.EngineDefect(document.Root, "reported no room at the start of a page"));
             }
 
             var placement = outcome.Value.Value;
             if (placement.Continuation is not null && placement.Continuation == token)
             {
-                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.EngineDefect(document.Root, "made no progress: it returned the break token it was given"));
+                return Result<Pass, Error>.Failure(LayoutErrors.EngineDefect(document.Root, "made no progress: it returned the break token it was given"));
             }
 
             // The limit per document on slices (MonolithicSlices.MaxSlicesPerDocument); without slicing there are none.
             slices += counts ? MonolithicSlices.Count(placement.Fragment.Fragment) : 0;
             if (slices > MonolithicSlices.MaxSlicesPerDocument)
             {
-                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.TooManySlicesInDocument(document.Root, number, slices));
+                return Result<Pass, Error>.Failure(LayoutErrors.TooManySlicesInDocument(document.Root, number, slices));
             }
 
             var origin = new Point(page.Margins.Left.Points, page.Margins.Top.Points);
@@ -177,20 +201,17 @@ public static class Paginator
             var clip = new Rect(body, new Size(System.Math.Max(0, areaWidth - page.BodyClipInset.Width), System.Math.Max(0, bodyHeight - page.BodyClipInset.Height)));
             if (number > 1 && InlineBoxPixels.AboveArea(Moved(placement.Fragment, body), body.Y) is { } above)
             {
-                return Result<ValueList<PageFragment>, Error>.Failure(LayoutErrors.InlineBox(above, "it starts a later page and reaches above its page area, where Chromium paints it on both pages; give it no vertical padding or border, or keep its line off the page start"));
+                return Result<Pass, Error>.Failure(LayoutErrors.InlineBox(above, "it starts a later page and reaches above its page area, where Chromium paints it on both pages; give it no vertical padding or border, or keep its line off the page start"));
             }
 
             // Inline boxes and bullets go on whole pixels of the page, and gaps around the ink are cut at each line's place on
             // the page, only here, where every line's place on the page is known.
             var policies = InlineBoxPixels.Policies.Of(environment.Profile);
-            Result<PlacedFragment, Error> OnPage(PlacedFragment fragment, Point by) =>
-                policies.None ? Result<PlacedFragment, Error>.Success(Moved(fragment, by)) : InlineBoxPixels.Snap(Moved(fragment, by), policies);
-            Result<PlacedFragment, Error>? onPageBody = OnPage(placement.Fragment, body);
-            Result<PlacedFragment, Error>? onPageHeader = header.Fragment is { } headerFragment ? OnPage(headerFragment, origin) : null;
-            Result<PlacedFragment, Error>? onPageFooter = footer.Fragment is { } footerFragment ? OnPage(footerFragment, origin + new Point(0, areaHeight - footer.Height)) : null;
+            Result<PlacedFragment, Error>? onPageBody = OnPage(placement.Fragment, body, policies);
+            var (onPageHeader, onPageFooter) = AreasOnPage(header, footer, origin, areaHeight, policies);
             if (new[] { onPageBody, onPageHeader, onPageFooter }.FirstOrDefault(result => result is { IsFailure: true }) is { } failed)
             {
-                return Result<ValueList<PageFragment>, Error>.Failure(failed.Error);
+                return Result<Pass, Error>.Failure(failed.Error);
             }
 
             pages.Add(new PageFragment(
@@ -199,12 +220,72 @@ public static class Paginator
                 onPageHeader?.Value,
                 onPageFooter?.Value,
                 environment.Profile.BodyClip == BodyClip.BodyArea ? clip : null));
+            areaHeights.Add((header.Height, footer.Height));
             token = placement.Continuation;
         }
         while (token is not null);
 
-        return Result<ValueList<PageFragment>, Error>.Success(pages.ToImmutable());
+        return Result<Pass, Error>.Success(new Pass(pages.ToImmutable(), areaHeights.ToImmutable()));
     }
+
+    /// <summary>
+    /// The pages of a pass with their header and footer areas laid out again for another page count, and the body
+    /// kept; null when that is not the pass the count would give: an area of some page takes another height than in
+    /// the pass (the body would get another height there), or laying an area out or putting it on its page fails
+    /// (the full pass then reports the failure where it occurs). See <see cref="Paginate"/>, "One body pass".
+    /// </summary>
+    /// <param name="environment">The fonts and algorithms, with the document's profile.</param>
+    /// <param name="document">The document; its body shows no page count.</param>
+    /// <param name="pass">A pass laid out with another page count.</param>
+    /// <param name="pageCount">The page count to lay the areas out with.</param>
+    /// <returns>The pages, or null.</returns>
+    private static ValueList<PageFragment>? WithAreasRedone(LayoutEnvironment environment, StyledDocument document, Pass pass, int pageCount)
+    {
+        var page = document.Page;
+        var (areaWidth, areaHeight) = (page.AreaWidth.Points, page.AreaHeight.Points);
+        var origin = new Point(page.Margins.Left.Points, page.Margins.Top.Points);
+        var policies = InlineBoxPixels.Policies.Of(environment.Profile);
+        var pages = ImmutableArray.CreateBuilder<PageFragment>(pass.Pages.Count);
+        for (var index = 0; index < pass.Pages.Count; index++)
+        {
+            var number = index + 1;
+            var areas = PageAreas.LayOut(environment.OnPage(new PageContext(number, pageCount)), page.TemplateFor(number), areaWidth, areaHeight);
+            if (areas.IsFailure || areas.Value.Header.Height != pass.AreaHeights[index].Header || areas.Value.Footer.Height != pass.AreaHeights[index].Footer)
+            {
+                return null;
+            }
+
+            var (onPageHeader, onPageFooter) = AreasOnPage(areas.Value.Header, areas.Value.Footer, origin, areaHeight, policies);
+            if (onPageHeader is { IsFailure: true } || onPageFooter is { IsFailure: true })
+            {
+                return null;
+            }
+
+            pages.Add(pass.Pages[index] with { Header = onPageHeader?.Value, Footer = onPageFooter?.Value });
+        }
+
+        return pages.MoveToImmutable();
+    }
+
+    /// <summary>A page's header and footer put on the page: the header at the top of the page area, the footer at its
+    /// bottom, inline boxes on whole pixels as the profile says.</summary>
+    private static (Result<PlacedFragment, Error>? Header, Result<PlacedFragment, Error>? Footer) AreasOnPage(
+        PageAreas.Area header, PageAreas.Area footer, Point origin, double areaHeight, InlineBoxPixels.Policies policies) =>
+        (header.Fragment is { } headerFragment ? OnPage(headerFragment, origin, policies) : null,
+            footer.Fragment is { } footerFragment ? OnPage(footerFragment, origin + new Point(0, areaHeight - footer.Height), policies) : null);
+
+    /// <summary>A fragment moved to its place on the page, its inline boxes and bullets on whole pixels of the page
+    /// and gaps around the ink cut there, as the policies say.</summary>
+    private static Result<PlacedFragment, Error> OnPage(PlacedFragment fragment, Point by, InlineBoxPixels.Policies policies) =>
+        policies.None ? Result<PlacedFragment, Error>.Success(Moved(fragment, by)) : InlineBoxPixels.Snap(Moved(fragment, by), policies);
+
+    /// <summary>The pages of a document, and how many times the paginator laid its body out to settle them.</summary>
+    /// <param name="Pages">One fragment per page.</param>
+    /// <param name="BodyPasses">The body layouts: 1 without a page count, otherwise the passes of the fixpoint.</param>
+    internal sealed record Pagination(ValueList<PageFragment> Pages, int BodyPasses);
+
+    /// <summary>One layout pass: its pages, and the height the header and footer areas took on each.</summary>
+    private sealed record Pass(ValueList<PageFragment> Pages, ImmutableArray<(double Header, double Footer)> AreaHeights);
 
     private static PlacedFragment Moved(PlacedFragment fragment, Point by) => fragment with { Offset = fragment.Offset + by };
 }
