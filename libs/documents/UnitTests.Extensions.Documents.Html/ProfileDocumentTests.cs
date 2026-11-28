@@ -365,6 +365,10 @@ public class ProfileDocumentTests
         Line("  line (`display: block`, a table display). An `a` without `href`, and an `a` with `href` that draws nothing, is no link,");
         Line("  as in Chromium. A link in a table header row that repeats on every page leads from its first copy only (the copies");
         Line("  are artifacts); Chromium writes it on every page (a listed difference, case `lk-header-row`).");
+        Line("- The `base` element: its `href` replaces the caller's base URL only when the caller allows it");
+        Line("  (`HtmlStyleOptions.AllowBaseElement`, `HtmlBoxOptions.AllowBaseElement`); otherwise it is refused");
+        Line("  (`Documents.Html.Unsupported.Element`, at the element) and the caller's `BaseUrl` stays the base of the document's");
+        Line("  resources and links.");
         Line("- Links inside the document: an `href` that starts with `#` (also under a `base`) leads to the element the HTML");
         Line("  Standard's \"indicated part of the document\" names: `#` alone, and `#top` in any case when no element has that id, the");
         Line("  top of the first page; else the first element with that `id`, else the first `a` with that `name`, then both again");
