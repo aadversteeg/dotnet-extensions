@@ -1039,7 +1039,8 @@ through the whole HTML path unchanged and its pages are compared with every file
 - `<case>.order.txt`, the place of every word, fill, stroke and image in the page's drawing sequence (`order.py`,
   `sequence.py`): on each page whose text is the same, for each word, the colours (or images) painted after a text that
   draws part of it over that part's box (its advances across, from 0.8 of the font size above the baseline to 0.2 below)
-  by more than one pixel (0.75 pt, `HtmlCases.PixelBound`) across and down are the same on both sides. A background
+  by more than one pixel (0.75 pt, `HtmlCases.PixelBound`) across and down are the same on both sides. The box is a
+  chosen one for "does this word's ink overlap that item", the same on both sides, not a measured one. A background
   painted over its own text differs; the places themselves are not compared, as Chromium batches its drawings in a
   sequence of its own.
 - `<case>.clips.txt`, the clip around each word's text (`clips.py`: the rectangle the clips leave, and whether each of
