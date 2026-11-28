@@ -197,7 +197,7 @@ public static partial class HtmlBoxGenerator
         /// <returns>The image's box; null when it is refused.</returns>
         private Box? ContentImage(MarginBoxStyle box, CssContentImage image, TextStyle text)
         {
-            var url = DataUrl.Body(image.Url) is null ? Urls.WithoutFragment(Urls.Absolute(image.Url, box.BaseUrl ?? options.BaseUrl) ?? image.Url) : image.Url;
+            var url = Urls.WithoutFragment(DataUrl.Is(image.Url) ? image.Url : Urls.Absolute(image.Url, box.BaseUrl ?? options.BaseUrl) ?? image.Url);
             var bytes = DataUrl.Body(url) ?? options.Resources?.Invoke(url)?.Bytes;
             if (bytes is null)
             {

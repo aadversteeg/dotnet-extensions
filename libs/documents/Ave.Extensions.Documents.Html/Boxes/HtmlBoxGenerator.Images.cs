@@ -16,7 +16,8 @@ public static partial class HtmlBoxGenerator
         private string? _documentBase;
         private bool _documentBaseRead;
 
-        /// <summary>Per URL of an image (a <c>data:</c> URL by its text), its decoded image or why it did not decode.</summary>
+        /// <summary>Per URL of an image without its fragment (a <c>data:</c> URL by its text), its decoded image or why it did
+        /// not decode.</summary>
         private readonly Dictionary<string, Result<ImageData, Error>> _decodedImages = new(StringComparer.Ordinal);
 
         /// <summary>The pixels the document's images decode to, all together (<see cref="ImageLimits.MaxDocumentPixels"/>).</summary>
@@ -168,9 +169,10 @@ public static partial class HtmlBoxGenerator
 
         /// <summary>The bytes of an image's file: the body of a <c>data:</c> URL, or what the resolver gives for the URL
         /// resolved against the document's base URL (HTML Standard §2.4.1: the first <c>base</c> element with an
-        /// <c>href</c>, else the document's URL); null when there are none. With them the URL that names the image: the
-        /// <c>data:</c> URL itself or the absolute one without its fragment (also when the resolver gives nothing for
-        /// it).</summary>
+        /// <c>href</c>, else the document's URL); null when there are none. With them the URL that names the image, without
+        /// its fragment: the <c>data:</c> URL itself or the absolute one (also when the resolver gives nothing for it). A
+        /// <c>data:</c> URL is never handed to the resolver, and neither is a reference that is empty without its fragment
+        /// (<see cref="ResourceTable"/>).</summary>
         private (ReadOnlyMemory<byte>? Bytes, string? Url) ImageBytes(string? source)
         {
             if (string.IsNullOrEmpty(source))
@@ -180,7 +182,7 @@ public static partial class HtmlBoxGenerator
 
             if (DataUrl.Body(source) is { } inline)
             {
-                return (inline, source);
+                return (inline, Urls.WithoutFragment(source));
             }
 
             var url = Urls.Absolute(source, DocumentBase()) is { } absolute ? Urls.WithoutFragment(absolute) : null;

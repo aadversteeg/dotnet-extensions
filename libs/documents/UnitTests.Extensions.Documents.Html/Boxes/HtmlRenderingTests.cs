@@ -207,6 +207,53 @@ public class HtmlRenderingTests
     }
 
     [Fact]
+    public void A_reference_that_is_only_a_fragment_is_not_there_without_a_base_and_is_the_base_with_one()
+    {
+        var asked = new List<string>();
+        var png = TestImages.Bytes("rgb8.png");
+        HtmlResource? Resolve(string url)
+        {
+            asked.Add(url);
+            return url == "lato.ttf" || url == "https://e.test/lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : null;
+        }
+
+        var html = Html.Replace("<p>Hello</p>", "<p><img alt=x width=10 src=\"#only\"><img alt=x width=10 src=\"#\"></p>", StringComparison.Ordinal);
+        var options = Options with { Style = Options.Style with { Resources = Resolve, Unsupported = UnsupportedPolicy.Warn } };
+
+        var rendered = HtmlRendering.ToPages(html, options);
+
+        rendered.Value.Diagnostics.Where(error => error.Message.Contains("of <img> is not there", StringComparison.Ordinal)).Should().HaveCount(2);
+        asked.Should().Equal(["lato.ttf"], "the empty reference is never handed to the resolver");
+
+        asked.Clear();
+        HtmlRendering.ToPages(html, options with { Style = options.Style with { BaseUrl = "https://e.test/doc.html" } }).IsSuccess.Should().BeTrue();
+        asked.Should().BeEquivalentTo(["https://e.test/lato.ttf", "https://e.test/doc.html"], "with a base the reference is the document itself, asked once");
+    }
+
+    [Fact]
+    public void A_data_URL_with_a_fragment_is_drawn_as_without_it_and_no_data_URL_reaches_the_resolver()
+    {
+        // Chromium reads a data: URL without its fragment (Fetch §4.5), so data:…#x shows the image.
+        var asked = new List<string>();
+        var data = "data:image/png;base64," + Convert.ToBase64String(TestImages.Bytes("rgb8.png"));
+        var options = Options with { Style = Options.Style with { Resources = url => { asked.Add(url); return url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : null; } } };
+        string Page(string images) => Html.Replace("<p>Hello</p>", $"<p>{images}</p>", StringComparison.Ordinal);
+        var raster = new RasterOptions(72);
+
+        var plain = HtmlRendering.ToPng(Page($"<img alt=x width=10 src=\"{data}\"><img alt=x width=10 src=\"{data}\">"), options, 1, raster);
+        var withFragments = HtmlRendering.ToPng(Page($"<img alt=x width=10 src=\"{data}#x\"><img alt=x width=10 src=\"{data}#y\">"), options, 1, raster);
+
+        withFragments.IsSuccess.Should().BeTrue(withFragments.IsFailure ? withFragments.Error.ToString() : string.Empty);
+        withFragments.Value.Output.Should().Equal(plain.Value.Output);
+        asked.Should().OnlyContain(url => url == "lato.ttf");
+
+        // A data: URL whose body does not decode is not there; it is not handed to the resolver either.
+        var broken = HtmlRendering.ToPages(Page("<img alt=x width=10 src=\"data:image/png;base64,%%%\">"), options with { Style = options.Style with { Unsupported = UnsupportedPolicy.Warn } });
+        broken.Value.Diagnostics.Should().ContainSingle(error => error.Message.Contains("of <img> is not there", StringComparison.Ordinal));
+        asked.Should().OnlyContain(url => url == "lato.ttf");
+    }
+
+    [Fact]
     public void The_summary_of_left_out_diagnostics_quotes_the_first_refusal_whichever_stage_cuts()
     {
         // 10 000 unsupported properties and then one more refusal: in the style stage (a property) and in box generation

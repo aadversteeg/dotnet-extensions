@@ -22,8 +22,9 @@ public sealed record HtmlResource(ReadOnlyMemory<byte> Bytes)
 /// most 32 767 characters each, and never opens a file or a socket itself. The URL comes from the document and is
 /// untrusted: it can have any scheme (<c>file:</c>, a Windows share written as <c>file://host/share/x</c>, <c>ftp:</c>,
 /// <c>javascript:</c>) and climb out of the base with <c>../</c>; a <c>base</c> element moves it only when the caller
-/// allows it (<see cref="HtmlStyleOptions.AllowBaseElement"/>). A <c>data:</c> URL never reaches the resolver: the engine
-/// decodes it itself. So the resolver must not map a URL to a file path without confining it to a folder, nor fetch
+/// allows it (<see cref="HtmlStyleOptions.AllowBaseElement"/>). The URL never has a fragment and is never empty: a
+/// reference that is only a fragment, with no base URL, is not there. A <c>data:</c> URL never reaches the resolver,
+/// with or without a fragment: the engine decodes it itself. So the resolver must not map a URL to a file path without confining it to a folder, nor fetch
 /// one from a host it does not trust; null refuses it. What it gives for a style sheet is read as CSS: give null
 /// for a resource that is not one, as Chromium applies only a resource served as text/css. An empty URL and the
 /// document's own address are not asked for a style sheet: both are an empty one.

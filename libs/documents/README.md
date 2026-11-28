@@ -185,10 +185,11 @@ The resolver is the one place where a document reaches the caller's files or net
 is untrusted input. With a `BaseUrl` the engine resolves every reference against it and hands the resolver absolute
 URLs; without one it hands the reference as the document writes it (`logo.png`, `//host/share/x.png`), so set a
 `BaseUrl`. A `<base>` element in the document counts only when the caller sets `AllowBaseElement`; otherwise it is
-refused. A URL's fragment (`#…`) is removed first, as it never names another resource. The resolver is asked each URL
-at most once per render, for at most 4 096 of them, each at most 32 767 characters. `data:` URLs never reach the resolver: the
-engine decodes them itself. Every other URL does, whatever its scheme: `file:`, a Windows share written as
-`file://host/share/x.css`, `ftp:`, `javascript:`, or a path with `../` that leaves the base folder. So the resolver
+refused. A URL's fragment (`#…`) is removed first, as it never names another resource; a reference that is then empty
+(`#top` without a `BaseUrl`) is not there, and the resolver is not asked. The resolver is asked each URL at most once
+per render, for at most 4 096 of them, each at most 32 767 characters. `data:` URLs never reach the resolver, with or
+without a fragment: the engine decodes them itself. Every other URL does, whatever its scheme: `file:`, a Windows
+share written as `file://host/share/x.css`, `ftp:`, `javascript:`, or a path with `../` that leaves the base folder. So the resolver
 decides what it serves: it maps a URL to a file only inside a folder it chose (the HtmlStyles sample checks
 `folder.IsBaseOf(uri)`), fetches only from hosts it trusts, and gives null for anything else. The engine itself opens
 no file, socket or process.
