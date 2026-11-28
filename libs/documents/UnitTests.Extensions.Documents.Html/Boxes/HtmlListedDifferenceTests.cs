@@ -896,6 +896,39 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// Tables 1 pt wide with automatic layout, whose first cell holds two hyphens (or <c>?-</c>) before a letter beyond ASCII
+    /// (case <c>lb-line-start-width</c>): the lines are Chromium's, for example <c>a--</c> and <c>élanxxxx</c>, and the first
+    /// column is narrower. Such a column is as wide as the widest piece of its cell between two places where a line may end.
+    /// Chromium measures that piece with the second hyphen, <c>-élanxxxx</c>, as it finds the places of a line that starts
+    /// at that hyphen anew from the line's start, where UAX #14 LB20a keeps the letter after a hyphen at the start of a text;
+    /// the engine finds the places once for the cell's text and measures <c>élanxxxx</c> (docs/architecture.md, the limit
+    /// of the line-break rules; case <c>lb-dash-before-sign</c> shows the same limit as an extra line). So the first cell's
+    /// box is a hyphen's width (3.9 pt) narrower, and the cell after it starts that much further left. With ASCII letters
+    /// after the pair (<c>a--elanxxxx</c>) both measure the word and the table is equal. With each word of a second cell
+    /// moved by its table's difference, the print is equal; the status file lists the three cell widths besides.
+    /// </summary>
+    [Theory]
+    [InlineData("lb-line-start-width")]
+    public void A_column_after_two_hyphens_before_a_letter_beyond_ASCII_is_narrower_than_Chromium_s_by_the_second_hyphen(string name)
+    {
+        var (engine, chromium) = (Engine(name), HtmlCases.ChromiumPrint(name));
+        string[] lines = ["a--", "M", "\u00E9lanxxxx", "why?-", "M", "\u00E9colexx", "x--", "M", "\u03A9megaxxx", "a--", "M", "elanxxxx"];
+        engine.Pages.Single().Words.Select(word => word.Text).Should().Equal(lines);
+        chromium.Pages.Single().Words.Select(word => word.Text).Should().Equal(lines);
+
+        var shifts = chromium.Pages.Single().Words.Where(word => word.Text == "M")
+            .Zip(engine.Pages.Single().Words.Where(word => word.Text == "M"), (theirs, mine) => theirs.X0 - mine.X0).ToList();
+        shifts.Take(3).Should().AllSatisfy(shift => shift.Should().BeApproximately(3.9, 0.02, "the second hyphen's width"));
+        shifts[3].Should().BeApproximately(0, 0.02, "with ASCII letters both measure the word");
+
+        var moved = new PrintedPages([.. chromium.Pages.Select(page => page with
+        {
+            Words = [.. page.Words.Select((word, index) => word.Text == "M" ? word with { X0 = word.X0 - shifts[index / 3], X1 = word.X1 - shifts[index / 3] } : word)],
+        })]);
+        HtmlCases.Difference(engine, moved).Should().BeNull("the width of the first column is the whole difference of the print");
+    }
+
+    /// <summary>
     /// Underlines that skip the ink of descenders, cut beside an image, at a shown soft hyphen and in ligatures (case
     /// <c>sk-misc</c>; the code front-end's <c>SkipInkTests</c> pins the same pieces): the pieces are Chromium's, compared
     /// as the status compares them (<see cref="HtmlCases.ChromiumPrint"/>); the text layer differs at the shown soft
