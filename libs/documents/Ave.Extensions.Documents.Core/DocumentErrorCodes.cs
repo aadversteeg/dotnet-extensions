@@ -191,6 +191,12 @@ public static class DocumentErrorCodes
             /// the text to the next tab stop, and tab stops are not built. Metadata: Value, Property, Offset.</summary>
             public static readonly ErrorCode PreservedTab = _ / "PreservedTab";
 
+            /// <summary>Text with a character that asks for right-to-left text (<see cref="RightToLeftCharacters"/>: Bidi_Class
+            /// R, AL or AN, or the controls RLE, RLO and RLI), which the engine does not lay out: it sets text left to right
+            /// only. Refused under every policy, whatever the font has. Metadata: Value (the code point), Offset, Count, and
+            /// the place of the character (of its declaration for generated text).</summary>
+            public static readonly ErrorCode RightToLeft = _ / "RightToLeft";
+
             /// <summary>A width, minimum or maximum width or an auto horizontal margin where layout does not take it: on a
             /// box laid out by another algorithm than flow or inline, or on a box inside a table or a row of page-margin
             /// boxes, whose columns are sized by the intrinsic widths of their content (a sized box's share in them is not

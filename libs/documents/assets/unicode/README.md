@@ -8,8 +8,8 @@ conformance test `ucd/auxiliary/LineBreakTest.txt`; and, for normalization befor
 `ucd/DerivedNormalizationProps.txt` (SHA-256 `98ac7f67d985fe781e317f6182e885e94cabb0c314769e6dd73e48b226931ccd`).
 Licence: Unicode License v3 (`18.0.0/LICENSE.txt`).
 
-`Ave.Extensions.Documents.Typesetting/Unicode/UnicodePropertyRanges.g.cs` and `UnicodeNormalizationData.g.cs` are
-generated from them by `UnitTests.Extensions.Documents.Typesetting/UnicodeDataGenerator.cs`; a test fails when a table
+`Ave.Extensions.Documents.Typesetting/Unicode/UnicodePropertyRanges.g.cs`, `UnicodeNormalizationData.g.cs` and
+`Ave.Extensions.Documents.Core/RightToLeftCharacters.g.cs` are generated from them by `UnitTests.Extensions.Documents.Typesetting/UnicodeDataGenerator.cs`; a test fails when a table
 and the files differ. After
 replacing these files with a newer version, change `UnicodeDataGenerator.Version`, move the folder, and run the
 tests with `UPDATE_GENERATED=1`.

@@ -426,7 +426,9 @@ container with font hinting off, within the layout units Chromium snaps
 Known limits, each documented next to the code: negative margins (reported as unsupported), `vertical-align: baseline` in cells, column gaps and column styles, the separated
 border model, diagonal border joins, keep rules that would move a break to a cut inside a row of an earlier table, interlaced
 and 16-bit PNG, CMYK and arithmetic-coded JPEG, contextual and other OpenType
-lookup types (skipped), complex scripts, bidi, hyphenation, CFF fonts; in preview images: no hinting (small text is lighter than in viewers that hint), two rectangles that meet
+lookup types (skipped), complex scripts, bidi (text is laid out left to right only, so a character that asks for
+right-to-left text, such as a Hebrew or Arabic letter, an Arabic-Indic digit or U+202E RIGHT-TO-LEFT OVERRIDE, is refused
+with `Documents.Input.Unsupported.RightToLeft` by both front-ends), hyphenation, CFF fonts; in preview images: no hinting (small text is lighter than in viewers that hint), two rectangles that meet
 inside a pixel let some of the page show through (a quarter at half a pixel, as in MuPDF), and an enlarged image shows
 its sample squares, as the PDF defines it, where some viewers smooth it. At most font sizes Chromium's text is narrower
 than the font's advances, by a share that depends on the size (0.039 % at 10 pt, 0.071 % at 11 pt, more at small

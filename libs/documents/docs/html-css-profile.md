@@ -617,6 +617,35 @@ read back as U+2011). Refused, because Chromium takes them from a font of the sy
 has only U+002D (case `gm-nbhyphen-theano`), and the spaces U+00A0, U+202F, U+2009, U+2002, U+2003, U+2007, U+2008 and
 U+200A in a face without them (case `gm-spaces-roboto`).
 
+## Left to right only
+
+The engine lays out text left to right, in text order: it has no bidirectional algorithm (UAX #9), no mirroring and no
+right-to-left layout. Box generation refuses, under both policies and whatever the font has, every text with a character
+that asks for right-to-left text (`Documents.Input.Unsupported.RightToLeft`, `RightToLeftCharacters`): a character whose
+Bidi_Class (UAX #9 §3.2) is R, AL or AN, among them Hebrew, Arabic, the Arabic-Indic digits, U+200F RIGHT-TO-LEFT MARK and
+U+061C ARABIC LETTER MARK, and the controls U+202B RIGHT-TO-LEFT EMBEDDING, U+202E RIGHT-TO-LEFT OVERRIDE and U+2067
+RIGHT-TO-LEFT ISOLATE. Chromium 159 prints them otherwise than in text order: `x &#x202E;abc&#x202C; y` as `cba`, a full
+stop at the end of an embedding or isolate at its front, `!?` between two marks as `?!` (cases `bidi-rlo`, `bidi-rle`,
+`bidi-rli`, `bidi-rlm`, `bidi-alm`, `bidi-hebrew`, `bidi-arabic-indic-digit`). A text is refused once, at the line and
+column of its first such character, with how many it holds; generated text, a marker's and a page-margin box's text at
+their `content` declaration, once. The classes come from `UnicodeData.txt` of Unicode 18.0.0; a code point without an
+entry there is not one of them (no font has a glyph for it, so it is refused as a missing glyph). Not checked, as it is
+not laid out: the title and the other metadata, alternative text and a link's description. The message says what was
+found, that the engine lays out left to right only, and what to do:
+
+"The character U+202E, the RIGHT-TO-LEFT OVERRIDE, asks for right-to-left text, and the engine lays out left to right
+only: remove it."
+
+Accepted, and drawn as nothing: U+202A LEFT-TO-RIGHT EMBEDDING, U+202D LEFT-TO-RIGHT OVERRIDE, U+2066 LEFT-TO-RIGHT
+ISOLATE, U+2068 FIRST STRONG ISOLATE, U+202C POP DIRECTIONAL FORMATTING, U+2069 POP DIRECTIONAL ISOLATE and U+200E
+LEFT-TO-RIGHT MARK. Chromium places every glyph as it does without them (cases `bidi-lrm`, `bidi-lre`, `bidi-lri`,
+`bidi-fsi`; a first strong isolate takes left to right, since no right-to-left character can follow it), and keeps them in
+the PDF's text, where the engine's PDF does not: a listed difference of the text layer, as for the zero width characters.
+
+`dir="rtl"` and `direction: rtl` are refused, and so are `<bdo>` and `unicode-bidi` values other than `normal` and
+`isolate` (case `bidi-dir-rtl`). `dir="ltr"`, `direction: ltr`, `<bdi>`, `unicode-bidi: isolate` and `dir="auto"` are
+accepted: in text that is left to right throughout they change nothing (cases `bidi-isolate`, `bidi-dir-auto`).
+
 ## Where a line may end
 
 The HTML front-end ends lines where Chromium 159's print ends them. Its rules are the Unicode Line Breaking Algorithm

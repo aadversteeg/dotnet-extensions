@@ -65,6 +65,17 @@ public class LayoutErrorTests
     }
 
     [Fact]
+    public void A_right_to_left_letter_is_refused_before_its_glyph_is_looked_for()
+    {
+        var error = Fail(Document(Paragraph(1, "Shalom \u05E9")));
+
+        error.Code.Should().Be(DocumentErrorCodes.Input.Unsupported.RightToLeft);
+        error.Metadata![ErrorMetadataKeys.Value].Should().Be("U+05E9");
+        error.Metadata![ErrorMetadataKeys.Offset].Should().Be(7);
+        error.Metadata.Should().ContainKey(ErrorMetadataKeys.SourceLine);
+    }
+
+    [Fact]
     public void Text_directly_in_a_flow_box_is_invalid_content()
     {
         var flow = Flow(1, [new TextRun(new NodeId(2), "loose text", Models.Text(), At(1))]);

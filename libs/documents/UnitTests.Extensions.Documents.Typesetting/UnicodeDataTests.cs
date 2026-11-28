@@ -30,4 +30,17 @@ public class UnicodeDataTests
         File.ReadAllText(UnicodeDataGenerator.GeneratedNormalizationFile()).ReplaceLineEndings("\n").Should().Be(
             expected, "the table is generated from assets/unicode; run the tests with UPDATE_GENERATED=1 after changing them");
     }
+
+    [Fact]
+    public void The_committed_right_to_left_table_matches_the_unicode_data_files()
+    {
+        var expected = UnicodeDataGenerator.GenerateRightToLeft();
+        if (Environment.GetEnvironmentVariable("UPDATE_GENERATED") == "1")
+        {
+            File.WriteAllText(UnicodeDataGenerator.GeneratedRightToLeftFile(), expected);
+        }
+
+        File.ReadAllText(UnicodeDataGenerator.GeneratedRightToLeftFile()).ReplaceLineEndings("\n").Should().Be(
+            expected, "the table is generated from assets/unicode; run the tests with UPDATE_GENERATED=1 after changing them");
+    }
 }
