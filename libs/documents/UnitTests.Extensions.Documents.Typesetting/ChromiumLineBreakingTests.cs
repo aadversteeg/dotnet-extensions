@@ -88,6 +88,8 @@ public class ChromiumLineBreakingTests(ITestOutputHelper output)
     [InlineData("Latin-1 sign rule", "12/\u00B034 x\u20AC", new[] { 3, 6 })]
     [InlineData("Latin-1 sign rule", "12$\u00A134", new[] { 3 })]
     [InlineData("Latin-1 sign rule", "12\u00A3\u00BF34", new[] { 3 })]
+    [InlineData("Latin-1 sign rule", "12%\u00A134", new[] { 3 })]
+    [InlineData("Latin-1 sign rule", "12\u00B0\u00BF34", new[] { 3 })]
     [InlineData("BA before GL", "ab\u2013\u00A0cd", new[] { 3 })]
     [InlineData("BA before GL", "ab|\u00A0cd", new[] { 3 })]
     [InlineData("soft hyphen", "ab\u00A0\u00ADcd", new[] { 2 })]
@@ -101,6 +103,23 @@ public class ChromiumLineBreakingTests(ITestOutputHelper output)
         row.Should().NotBeNull($"the {rule} names a measured row");
         row!.Breaks.Should().Equal(breaks);
         ChromiumLineBreakMatrix.VisibleBreaks(text, UnicodeLineBreaking.Find(text)).Should().NotEqual(breaks, $"the {rule} departs from the standard here");
+        ChromiumLineBreakMatrix.VisibleBreaks(text, ChromiumLineBreaking.Find(text)).Should().Equal(breaks);
+    }
+
+    /// <summary>The rows just past a bound that a rule's documentation names, where the rule does not apply: each is a row
+    /// of the matrix with these breaks, and the rules give the standard's breaks there. The clause of the Latin-1 sign rule
+    /// before an inverted exclamation or question mark takes the signs of class PR and PO up to U+00FF only: the euro sign
+    /// (class PR) and the per mille sign (class PO) keep the standard's LB25 before them.</summary>
+    [Theory]
+    [InlineData("Latin-1 sign rule", "12\u20AC\u00A134", new int[0])]
+    [InlineData("Latin-1 sign rule", "12\u2030\u00BF34", new int[0])]
+    public void The_rows_past_a_bound_of_a_rule_keep_the_standard_breaks_as_chromium_prints_them(string rule, string text, int[] breaks)
+    {
+        var row = ChromiumLineBreakMatrix.Rows().SingleOrDefault(found => found.Text == text);
+
+        row.Should().NotBeNull($"the {rule} names a measured row");
+        row!.Breaks.Should().Equal(breaks);
+        ChromiumLineBreakMatrix.VisibleBreaks(text, UnicodeLineBreaking.Find(text)).Should().Equal(breaks, $"the {rule} does not apply here");
         ChromiumLineBreakMatrix.VisibleBreaks(text, ChromiumLineBreaking.Find(text)).Should().Equal(breaks);
     }
 
