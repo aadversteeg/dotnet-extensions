@@ -1050,7 +1050,8 @@ through the whole HTML path unchanged and its pages are compared with every file
   its distance below the baseline within the file's step, 0.0005 pt (both sides place it exactly). The text reading of a PDF spreads a ligature over
   its characters at positions of its own; the trace gives the glyph that is drawn, and that is what is compared. A glyph
   of the engine whose text is white space is in no word: it must draw nothing (its outline has no contour,
-  `HtmlCases.BlankDifferences`), as Chromium's glyph for white space draws nothing.
+  `HtmlCases.BlankDifferences`), as Chromium's glyph for white space draws nothing. The place of such a glyph is not
+  compared: no pixel shows it, though a reader's copy or search of the text could.
 - `<case>.order.txt`, the place of every word, fill, stroke and image in the page's drawing sequence (`order.py`,
   `sequence.py`): on each page whose text is the same, for each word, the colours (or images) painted after a text that
   draws part of it over that part's box (its advances across, from 0.8 of the font size above the baseline to 0.2 below)
@@ -1122,7 +1123,9 @@ compared out of step, not a limit. One more difference, one fewer or one changed
 The test that a listed case names is a test of `UnitTests.Extensions.Documents.Html` that lays out that case by its
 name and pins the cause in numbers: a theory that is not skipped, with a row that is not skipped whose first value is
 the case's name, given to its first parameter `string name`, which the body uses and never assigns to, and with no case
-named in the body (`CaseStatusTests.Every_listed_case_names_a_test_that_lays_out_that_case`); the code front-end's tests of
+named in the body (`CaseStatusTests.Every_listed_case_names_a_test_that_lays_out_that_case`). That is a check of form: it
+cannot prove that the test means what it says, so a body that returns before it lays out the case, or that lays out
+another variable put in the place of `name`, passes it. The code front-end's tests of
 the same limits pin it with documents of their own (`HtmlListedBreakTests` names the ones of page breaks and line
 heights after them). The status files are read with every line ending a line feed, whatever the checkout wrote.
 

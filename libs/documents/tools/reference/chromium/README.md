@@ -92,7 +92,9 @@ that add different cases touch no file in common.
   file, a file without a pin, a pin without a file and a case without a pin file fail it);
 - `<case>.status.txt`: the case's status line, `<case> <status> …` (`CaseStatusTests`,
   `UnitTests.Extensions.Documents.Html`; docs/architecture.md, "The status file"). A `listed` case names in that line
-  the test that pins its difference, a test of that project that lays out the case by its name; after the line, a
+  the test that pins its difference, a test of that project that lays out the case by its name (a check of form only:
+  a body that returns before it lays out the case, or lays out another variable put in the place of the name, passes
+  it); after the line, a
   `listed` or `open` case's file holds every difference the comparison finds, one per line. An `open` case is also
   named, with why it is open, in `open-cases.txt` in this folder, which names no other case.
 
@@ -292,7 +294,8 @@ unknown: of the 28,182 distances of the cases equal to Chromium 99.1 % agree to 
 exactly (`HtmlCases.ReaderStep`). A glyph whose text is white space belongs to no word on
 either side; Chromium draws it with the font's glyph for it, which draws nothing, so the engine's must draw nothing
 either: its outline in the font has no contour (`HtmlCases.BlankDifferences`). Such glyphs are in the digest of an
-engine page too.
+engine page too. The place of such a glyph is not compared: no pixel shows it, though a reader's copy or search of the
+text could.
 
 `order.txt` gives every word, fill, stroke and image its place in the page's drawing sequence. PyMuPDF numbers the text
 of its trace and the drawings of its drawing list by that place, and its bounding-box log holds one entry per place,
