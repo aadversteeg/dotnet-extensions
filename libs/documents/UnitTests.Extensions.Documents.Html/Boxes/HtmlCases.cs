@@ -231,7 +231,7 @@ internal static class HtmlCases
         var lines = Cut(Rows(folder, name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
         var lineTops = LineTops(boxes.Value);
         var differences = unused.Select(clip => $"page {clip.Line.Page} the line clipped at y {Of(clip.Line.Y0)} is no rectangle of the print (ink.txt)")
-            .Concat(Differences(engine, chromium, lineTops))
+            .Concat(Differences(engine, chromium, lineTops, Links(pages.Value)))
             .Concat(RectangleDifferences(engine, chromium, lines))
             .Concat(PopplerDifferences(pages.Value, engine, Rows(folder, name, "words"), lineTops))
             .Concat(BoxDifferences(folder, name, boxes.Value, Rows(folder, name, "boxes")))
@@ -292,6 +292,131 @@ internal static class HtmlCases
         var hash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", differences))));
         return $"{count}, SHA-256 {hash} of all of them; the first {ShownDifferences}:\n" + string.Join("\n", differences.Take(ShownDifferences).Select(difference => "- " + difference));
     }
+
+    /// <summary>How many hexadecimal digits of a digest a difference writes (<see cref="Digest"/>): 16, the first 64 bits of
+    /// the SHA-256.</summary>
+    public const int DigestDigits = 16;
+
+    /// <summary>
+    /// The digest of what the engine has where the comparison cannot pair it with Chromium's print and so compares none of
+    /// it one by one: the first <see cref="DigestDigits"/> lowercase hexadecimal digits of the SHA-256 of the lines in UTF-8,
+    /// joined by line feeds. A difference that skips such content carries the digest of the engine's side
+    /// (<see cref="PageLines"/>, <see cref="WordLine"/>, <see cref="DigestNumber"/>), so a change of the engine there changes
+    /// the status file even though nothing is compared with Chromium.
+    /// </summary>
+    /// <param name="lines">The engine's content, one item per line (<see cref="PageLines"/>).</param>
+    /// <returns>The digest.</returns>
+    internal static string Digest(IEnumerable<string> lines) =>
+        Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", lines))))[..DigestDigits];
+
+    /// <summary>
+    /// A number as a digest holds it: as every difference writes it (<see cref="Of"/>, three decimals at most, invariant),
+    /// so the digest is the same on every platform the tests run on. .NET rounds the number's 15 significant digits to three
+    /// decimals, so a number a few units in the last place off on another platform writes the same, unless it lies on the
+    /// edge between two roundings. That is checked, not assumed: a number whose written form changes when it is moved
+    /// <see cref="DigestSteps"/> units in the last place up or down throws, so a digest can never differ by platform unseen.
+    /// The one exception is a number exactly on such an edge, an odd multiple of 1/16 pt (0.0625, 64.6875): it is exact in
+    /// binary, the result of exact sums and products of binary fractions (the layout's 1/64 px), which every platform with
+    /// IEEE 754 doubles computes alike, and it is written as it is. Zero is written <c>0</c> whatever its sign, and so is a
+    /// number that rounds to it.
+    /// </summary>
+    /// <param name="value">The number, in points.</param>
+    /// <returns>The number as written.</returns>
+    internal static string DigestNumber(double value)
+    {
+        static string Written(double number) => Of(number) is "-0" ? "0" : Of(number);
+        var written = Written(value);
+        var (down, up) = (value, value);
+        for (var step = 0; step < DigestSteps; step++)
+        {
+            (down, up) = (Math.BitDecrement(down), Math.BitIncrement(up));
+        }
+
+        var sixteenths = value * 16;
+        var tie = sixteenths == Math.Floor(sixteenths) && Math.Abs(sixteenths % 2) == 1;
+        if (!tie && (Written(down) != written || Written(up) != written))
+        {
+            throw new InvalidOperationException($"The number {value.ToString("R", CultureInfo.InvariantCulture)} writes {written}, and {Written(down)} or {Written(up)} {DigestSteps} units in the last place away; its digest could differ by platform.");
+        }
+
+        return written;
+    }
+
+    /// <summary>How many units in the last place a number of a digest may differ by platform and still write the same
+    /// (<see cref="DigestNumber"/>): 2. Sums, products and quotients of doubles round alike on every platform; only a library
+    /// function may differ, by a unit in the last place (the layout's <c>Math.Sin</c> and <c>Math.Cos</c> of rounded corners,
+    /// <c>Math.Pow</c> of a border's shade).</summary>
+    public const int DigestSteps = 2;
+
+    private static string DigestBox(double x0, double y0, double x1, double y1) => $"{DigestNumber(x0)} {DigestNumber(y0)} {DigestNumber(x1)} {DigestNumber(y1)}";
+
+    /// <summary>
+    /// The lines of an engine's page for its digest (<see cref="Digest"/>), in this order: the page (number, width, height);
+    /// each word in the page's order (baseline, then x0; <see cref="WordLine"/>); each painted rectangle in drawing order
+    /// (box, colour); each image area in drawing order (box) and then each picture (<c>width height sha256</c>); each painted
+    /// path in drawing order (box, colour, rows); each paint in drawing order (its rank in the page's drawing sequence, box,
+    /// colour or <c>image</c>); each link area on the page in drawing order (box, target). Every box is <c>x0 y0 x1 y1</c>,
+    /// every number as <see cref="DigestNumber"/> writes it.
+    /// </summary>
+    /// <param name="page">The engine's page (<see cref="PrintedPages.Engine"/>).</param>
+    /// <param name="links">The engine's link areas (<see cref="Links(PageDocument)"/>); those of other pages are left out.</param>
+    /// <returns>The lines.</returns>
+    internal static IEnumerable<string> PageLines(PrintedPage page, IReadOnlyList<PrintedLink> links)
+    {
+        var ranks = Ranks(page);
+        yield return $"page {page.Number} {DigestNumber(page.Width)} {DigestNumber(page.Height)}";
+        foreach (var word in page.Words)
+        {
+            yield return WordLine(word, ranks);
+        }
+
+        foreach (var box in page.Rectangles)
+        {
+            yield return $"rectangle {DigestBox(box.X0, box.Y0, box.X1, box.Y1)} {box.Colour}{(box.Stroked ? " stroked" : string.Empty)}";
+        }
+
+        foreach (var lines in new[] { page.Images.Select(box => $"image {DigestBox(box.X0, box.Y0, box.X1, box.Y1)}"), page.Pictures.Select(picture => $"picture {picture}"), PathLines(page) })
+        {
+            foreach (var line in lines)
+            {
+                yield return line;
+            }
+        }
+
+        foreach (var paint in page.Paints)
+        {
+            yield return $"paint {ranks[paint.Place]} {DigestBox(paint.X0, paint.Y0, paint.X1, paint.Y1)} {paint.Paint}";
+        }
+
+        foreach (var link in links.Where(link => link.Page == page.Number))
+        {
+            yield return $"link {DigestBox(link.X0, link.Y0, link.X1, link.Y1)} {link.Target}";
+        }
+    }
+
+    /// <summary>The lines of the painted paths of a page for a digest, in drawing order: box, colour and rows.</summary>
+    private static IEnumerable<string> PathLines(PrintedPage page) =>
+        page.Paths.Select(path => $"path {DigestBox(path.X0, path.Y0, path.X1, path.Y1)} {path.Colour} {string.Join('/', path.Rows)}");
+
+    /// <summary>The rank of each place of a page's drawing sequence that draws a word or a paint, from 0: the order of what is
+    /// drawn, without the places of items that draw nothing (structure, clips, anchors).</summary>
+    private static Dictionary<int, int> Ranks(PrintedPage page) =>
+        page.Words.Select(word => word.Place).OfType<int>().Concat(page.Paints.Select(paint => paint.Place)).Distinct().Order()
+            .Select((place, rank) => (place, rank)).ToDictionary(pair => pair.place, pair => pair.rank);
+
+    /// <summary>The line of a word for a digest (<see cref="PageLines"/>): its text, x0, x1, baseline, font size, colour and
+    /// face; its rank in the page's drawing sequence (<c>-</c> where there is none); the box its clips leave, or <c>none</c>;
+    /// and each glyph as <c>id x below end</c>.</summary>
+    /// <param name="word">The engine's word.</param>
+    /// <param name="ranks">The ranks of the page's places (<see cref="Ranks"/>), or null to leave the rank out.</param>
+    /// <returns>The line.</returns>
+    internal static string WordLine(PrintedWord word, IReadOnlyDictionary<int, int>? ranks = null) =>
+        $"word {word.Text} {DigestNumber(word.X0)} {DigestNumber(word.X1)} {DigestNumber(word.Baseline)} {DigestNumber(word.FontSize)} {word.Colour} {word.Face}" +
+        $" at {(ranks is not null && word.Place is { } place ? $"{ranks[place]}" : "-")} clip {(word.Clip is { } clip ? DigestBox(clip.X0, clip.Y0, clip.X1, clip.Y1) : "none")}" +
+        $" glyphs {string.Join(", ", word.Glyphs.Select(glyph => $"{glyph.Glyph} {DigestNumber(glyph.X)} {DigestNumber(glyph.Below)} {DigestNumber(glyph.End)}"))}";
+
+    /// <summary>The digest of an engine's page (<see cref="PageLines"/>), as a difference writes it.</summary>
+    private static string PageDigest(PrintedPage page, IReadOnlyList<PrintedLink> links) => $"the engine's page {page.Number}: digest {Digest(PageLines(page, links))}";
 
     /// <summary>Chromium's print of a case as <see cref="Status(CaseFolder, string, string?)"/> compares it: <c>print.txt</c>
     /// with each line that Chromium clips around the glyphs' ink replaced by its pieces (<see cref="Clips"/>).</summary>
@@ -629,13 +754,16 @@ internal static class HtmlCases
     /// <see cref="Difference"/>, in one fixed order: the number of pages, then page by page (the pages both have, in turn) its
     /// size, its text or else each word's start, end, baseline, font size, colour and face, the painted area
     /// (<see cref="PaintedDifferences"/>), the images and the paths. A page whose text differs is one difference: its words
-    /// are not compared one by one, since they cannot be paired.
+    /// are not compared one by one, since they cannot be paired, and the difference carries the digest of the engine's page
+    /// (<see cref="PageLines"/>); so does the difference of the number of pages, for each page of the engine past Chromium's
+    /// last, and a different number of images or of paths, with the digest of the engine's images or paths.
     /// </summary>
-    public static IEnumerable<string> Differences(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null)
+    public static IEnumerable<string> Differences(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null, IReadOnlyList<PrintedLink>? links = null)
     {
+        links ??= [];
         if (engine.Pages.Length != chromium.Pages.Length)
         {
-            yield return $"{engine.Pages.Length} pages, Chromium {chromium.Pages.Length} (print.txt)";
+            yield return $"{engine.Pages.Length} pages, Chromium {chromium.Pages.Length}{string.Concat(engine.Pages.Skip(chromium.Pages.Length).Select(page => "; " + PageDigest(page, links)))} (print.txt)";
         }
 
         foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
@@ -649,7 +777,7 @@ internal static class HtmlCases
             var text = string.Join(" ", words.Select(word => word.Text));
             if (text != theirs.Text)
             {
-                yield return $"page {ours.Number} reads '{text}', Chromium '{theirs.Text}' (print.txt)";
+                yield return $"page {ours.Number} reads '{text}', Chromium '{theirs.Text}'; {PageDigest(ours, links)} (print.txt)";
             }
             else
             {
@@ -687,7 +815,8 @@ internal static class HtmlCases
     /// for each (Chromium embeds subsets of the fonts that keep the font program's glyph ids); each glyph's x as its
     /// distance from the word's first glyph within <see cref="Bound"/>, the bound of a word's x0 and x1 (the word's own x0
     /// is compared there); and each glyph's distance below the baseline within <see cref="Bound"/>. At most one difference
-    /// per word and kind, the first glyph that differs, with how many differ.
+    /// per word and kind, the first glyph that differs, with how many differ. A word drawn with another number of glyphs is
+    /// that one difference, with the digest of the engine's word and its glyphs (<see cref="WordLine"/>).
     /// </summary>
     /// <param name="engine">The engine's pages.</param>
     /// <param name="chromium">Chromium's print, with the glyphs of its words.</param>
@@ -707,7 +836,7 @@ internal static class HtmlCases
                 var at = $"page {ours.Number} '{word.Text}'";
                 if (word.Glyphs.Length != measured.Glyphs.Length)
                 {
-                    yield return $"{at} is drawn with {word.Glyphs.Length} glyphs, Chromium's with {measured.Glyphs.Length} (glyphs.txt)";
+                    yield return $"{at} is drawn with {word.Glyphs.Length} glyphs, Chromium's with {measured.Glyphs.Length}; the engine's word: digest {Digest([WordLine(word)])} (glyphs.txt)";
                     continue;
                 }
 
@@ -878,8 +1007,9 @@ internal static class HtmlCases
 
     /// <summary>
     /// Every difference between the pictures the engine's images show and those of Chromium's print (<c>images.txt</c>,
-    /// <see cref="PrintedPage.Pictures"/>), image by image in drawing order on each page where both have as many images
-    /// (<see cref="Differences"/> names a page where they do not): the same size in pixels and the same pixels, exactly.
+    /// <see cref="PrintedPage.Pictures"/>), image by image in drawing order on each page where both have as many pictures,
+    /// else that page's one difference with the digest of the engine's pictures (<see cref="Digest"/>): the same size in
+    /// pixels and the same pixels, exactly.
     /// Chromium writes a picture it was given as a PNG losslessly at its own size, and both sides decode to 8-bit RGBA, so
     /// there is no bound.
     /// </summary>
@@ -888,8 +1018,14 @@ internal static class HtmlCases
     /// <returns>The differences.</returns>
     public static IEnumerable<string> ImageDifferences(PrintedPages engine, PrintedPages chromium)
     {
-        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages).Where(pair => pair.First.Pictures.Length == pair.Second.Pictures.Length))
+        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
         {
+            if (ours.Pictures.Length != theirs.Pictures.Length)
+            {
+                yield return $"page {ours.Number} shows {ours.Pictures.Length} pictures, Chromium's {theirs.Pictures.Length}; the engine's pictures: digest {Digest(ours.Pictures)} (images.txt)";
+                continue;
+            }
+
             foreach (var (picture, number) in ours.Pictures.Zip(theirs.Pictures).Select((pair, index) => (pair, index + 1)).Where(item => item.pair.First != item.pair.Second))
             {
                 yield return $"page {ours.Number} image {number} shows {Short(picture.First)}, Chromium's {Short(picture.Second)} (images.txt)";
@@ -994,13 +1130,14 @@ internal static class HtmlCases
 
     /// <summary>The first difference between the areas the paths that are not rectangles (curves: a list marker's disc or
     /// circle) paint on a page (<see cref="PrintedPath"/>): the same number, and each in drawing order the same box of
-    /// whole pixels, colour and painted share per pixel. Both sides are sampled by one rule: the engine's filled paths by
+    /// whole pixels, colour and painted share per pixel; a different number is the one difference, with the digest of the
+    /// engine's paths (<see cref="Digest"/>). Both sides are sampled by one rule: the engine's filled paths by
     /// <see cref="PathSampler"/>, Chromium's curves by <c>paths.py</c>.</summary>
     private static IEnumerable<string> PathDifferences(PrintedPage ours, PrintedPage theirs)
     {
         if (ours.Paths.Length != theirs.Paths.Length)
         {
-            return [$"page {ours.Number} has {ours.Paths.Length} painted paths, Chromium {theirs.Paths.Length}"];
+            return [$"page {ours.Number} has {ours.Paths.Length} painted paths, Chromium {theirs.Paths.Length}; the engine's paths: digest {Digest(PathLines(ours))}"];
         }
 
         return ours.Paths.Zip(theirs.Paths).Where(pair => !pair.First.Paints(pair.Second)).Select(pair =>
@@ -1094,6 +1231,8 @@ internal static class HtmlCases
     /// ascender and plus the descender of the face's line metrics (<see cref="FontMetrics.Line"/>: the typographic ones
     /// where the face sets USE_TYPO_METRICS, as Chromium writes them into the PDF's font descriptor; measured with Theano
     /// Didot, case <c>f-theano-13-ab</c>) at the word's size, is within <see cref="Bound"/> of <c>yMin</c> and <c>yMax</c>.
+    /// Where the numbers differ, or a word of the file has no partner, some of the engine's words are compared with nothing:
+    /// those differences carry the digest of the engine's words inside the page (<see cref="WordLine"/>, <see cref="Digest"/>).
     /// </summary>
     private static IEnumerable<string> PopplerDifferences(PageDocument document, PrintedPages engine, List<string[]> rows, IReadOnlyDictionary<(int Page, double Baseline), double> lineTops)
     {
@@ -1106,9 +1245,10 @@ internal static class HtmlCases
         {
             var inside = page.JoinedWords.Select(joined => joined.Word).Where(word => WholePixel(word.Baseline) <= page.Height && WholePixel(word.Baseline) - word.FontSize >= 0).ToList();
             var poppler = rows.Where(row => int.Parse(row[0], CultureInfo.InvariantCulture) == page.Number).ToList();
+            var digest = $"the engine's words inside page {page.Number}: digest {Digest(inside.Select(word => WordLine(word)))}";
             if (inside.Count != poppler.Count)
             {
-                yield return $"page {page.Number} has {inside.Count} words inside the page, Chromium {poppler.Count} (words.txt)";
+                yield return $"page {page.Number} has {inside.Count} words inside the page, Chromium {poppler.Count}; {digest} (words.txt)";
             }
 
             foreach (var row in poppler)
@@ -1117,7 +1257,7 @@ internal static class HtmlCases
                 var word = inside.Where(word => word.Text == text).OrderBy(word => Math.Abs(word.X0 - Number(row[1])) + Math.Abs(WholePixel(word.Baseline) - Number(row[4]))).FirstOrDefault();
                 if (word is null)
                 {
-                    yield return $"page {page.Number} has no word '{text}' (words.txt)";
+                    yield return $"page {page.Number} has no word '{text}'; {digest} (words.txt)";
                     continue;
                 }
 
@@ -1204,7 +1344,8 @@ internal static class HtmlCases
     /// <summary>Every difference between the boxes of a document and the rows of its <c>boxes.txt</c>, by the rules of
     /// <see cref="BoxDifferences(CaseFolder, string, HtmlBoxes, List{string[]})"/>, row by row in the file's order: of each
     /// row the box not found, or its height and its width. Where the number of cells differs the rows cannot be paired
-    /// with the cells, and that is the one difference.</summary>
+    /// with the cells, and that is the one difference, with the digest of the engine's boxes it leaves uncompared
+    /// (<see cref="SkippedBoxLines"/>).</summary>
     public static IEnumerable<string> BoxDifferences(HtmlDocument document, HtmlBoxes boxes, IReadOnlyList<string[]> rows)
     {
         if (rows.Count == 0)
@@ -1225,7 +1366,7 @@ internal static class HtmlCases
         var cellRows = rows.Count(row => row[0] is "td" or "th");
         if (cellRows != cells.Count)
         {
-            yield return $"{cellRows} cells, the document {cells.Count} (boxes.txt)";
+            yield return $"{cellRows} cells, the document {cells.Count}; the engine's boxes: digest {Digest(SkippedBoxLines(boxes.Document.Root, elements, cells, rows, pages.Value))} (boxes.txt)";
             yield break;
         }
 
@@ -1234,13 +1375,42 @@ internal static class HtmlCases
         foreach (var row in rows)
         {
             var label = row.Length > 3 ? string.Join(' ', row[3..]) : string.Empty;
-            var (box, missing) = row[0] is "td" or "th" ? CellBox(boxes.Document.Root, cells, cells[cellIndex++], row, label) : IdBox(boxes.Document.Root, elements, row, label);
+            var (box, missing) = row[0] is "td" or "th" ? CellBox(boxes.Document.Root, cells, cells[cellIndex++], row, label) : IdBox(boxes.Document.Root, elements, row, label, pages.Value);
             foreach (var different in missing is not null ? [missing] : SizeDifferences(box!, pages.Value, unbroken, row, label))
             {
                 yield return different + " (boxes.txt)";
             }
         }
     }
+
+    /// <summary>The lines of the engine's boxes that a different number of cells leaves uncompared, for a digest
+    /// (<see cref="Digest"/>): each cell element in document order (tag, id, source line) with its cell box found by its place
+    /// among the cells of its line (<see cref="CellBox"/>), then each row of the file that is no cell with the box its id
+    /// names (<see cref="IdBox"/>); each box as its parts on the pages (<see cref="FragmentLines"/>), or the reason it has
+    /// none.</summary>
+    private static IEnumerable<string> SkippedBoxLines(Box root, IReadOnlyList<HtmlElement> elements, List<HtmlElement> cells, IReadOnlyList<string[]> rows, IReadOnlyList<PageFragment> pages)
+    {
+        foreach (var cell in cells)
+        {
+            var line = cell.Position.Line;
+            var place = cells.Where(other => other.Position.Line == line).ToList().IndexOf(cell);
+            var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role is SemanticRole.TableHeaderCellRole)).ElementAtOrDefault(place);
+            yield return $"cell {cell.LocalName} {cell.Attribute("id")} {line}: {(box is null ? "no box" : FragmentLines(box, pages))}";
+        }
+
+        foreach (var row in rows.Where(row => row[0] is not ("td" or "th")))
+        {
+            var label = row.Length > 3 ? string.Join(' ', row[3..]) : string.Empty;
+            var (box, missing) = IdBox(root, elements, row, label);
+            yield return $"{row[0]} {label}: {missing ?? FragmentLines(box!, pages)}";
+        }
+    }
+
+    /// <summary>A box as a digest holds it: for each page it is on, the page, the height and the width of its first part
+    /// there, and whether that part is in a repeated copy.</summary>
+    private static string FragmentLines(Box box, IReadOnlyList<PageFragment> pages) =>
+        string.Join("; ", pages.Select((page, index) => (Part: Part(page.Root.Fragment, box.Id), Number: index + 1)).Where(found => found.Part is not null)
+            .Select(found => $"page {found.Number} {DigestNumber(found.Part!.Value.Fragment.Size.Height)} {DigestNumber(found.Part.Value.Fragment.Size.Width)}{(found.Part.Value.Repeated ? " repeated" : string.Empty)}"));
 
     private static bool IsCell(HtmlElement element) => element.Namespace == ElementNamespace.Html && element.LocalName is "td" or "th";
 
@@ -1269,11 +1439,12 @@ internal static class HtmlCases
     /// <c>&lt;div&gt;&lt;table id="t"&gt;</c> on one line, the table's box is the line's one table box, not the div's box
     /// before it). A box carries its source line only, so where the line holds more or fewer boxes of the role than
     /// elements (an element of the role that makes no box, an inline element, an anonymous box of a block written on the
-    /// line) the place is not known, and that is the difference. Else the difference. Column elements and a <c>br</c>
+    /// line) the place is not known, and that is the difference, with the digest of the engine's boxes of that role on the
+    /// line where the pages are given (<see cref="Digest"/>). Else the difference. Column elements and a <c>br</c>
     /// are no peers: they never make a box of their own (a column is read by its table, a <c>br</c> is a line break in
     /// the text; case <c>tw-col</c>: <c>&lt;div id="w"&gt;&lt;table&gt;&lt;colgroup&gt;&lt;col&gt;</c> on one line).
     /// </summary>
-    internal static (Box? Box, string? Difference) IdBox(Box root, IReadOnlyList<HtmlElement> elements, string[] row, string label)
+    internal static (Box? Box, string? Difference) IdBox(Box root, IReadOnlyList<HtmlElement> elements, string[] row, string label, IReadOnlyList<PageFragment>? pages = null)
     {
         var at = $"box {row[0]} '{label}'";
         var named = elements.Where(element => element.Attribute("id") == label).ToList();
@@ -1288,7 +1459,8 @@ internal static class HtmlCases
         var candidates = Boxes(root).Where(box => box.Source.Line == line && (box.Role == role || (box.Role is SemanticRole.TableHeaderCellRole && role is SemanticRole.TableHeaderCellRole))).ToList();
         return candidates.Count == peers.Count
             ? (candidates[peers.IndexOf(element)], null)
-            : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role");
+            : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role" +
+                (pages is null ? string.Empty : $"; the engine's boxes of the line: digest {Digest(candidates.Select(candidate => FragmentLines(candidate, pages)))}"));
     }
 
     /// <summary>An element the HTML front-end never makes a box for: a column, a column group, a line break.</summary>
@@ -1444,12 +1616,13 @@ internal static class HtmlCases
     }
 
     /// <summary>Every edge of the images of a page that after <see cref="WholePixel"/> is not within <see cref="Bound"/> of
-    /// Chromium's, image by image in drawing order; or a different count, the one difference.</summary>
+    /// Chromium's, image by image in drawing order; or a different count, the one difference, with the digest of the engine's
+    /// image areas (<see cref="Digest"/>).</summary>
     private static IEnumerable<string> Areas(string at, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
     {
         if (ours.Count != theirs.Count)
         {
-            return [$"{at}s: {ours.Count}, Chromium {theirs.Count}"];
+            return [$"{at}s: {ours.Count}, Chromium {theirs.Count}; the engine's images: digest {Digest(ours.Select(box => $"image {DigestBox(box.X0, box.Y0, box.X1, box.Y1)}"))}"];
         }
 
         return ours.Zip(theirs.Select((box, index) => (box, index + 1))).SelectMany(pair =>

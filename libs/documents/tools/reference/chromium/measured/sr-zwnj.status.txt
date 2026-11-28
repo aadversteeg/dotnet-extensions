@@ -1,6 +1,6 @@
-sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
+sr-zwnj listed A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it: page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T'; the engine's page 1: digest c76af232daabc376 (print.txt)
 4 differences:
-- page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T' (print.txt)
-- page 1 has no word 'T‌o' (words.txt)
-- page 1 has no word 'T‌o' (words.txt)
-- page 1 has no word 'To‌T' (words.txt)
+- page 1 reads 'To T o T o T', Chromium 'T‌o T ‌o T o‌ T'; the engine's page 1: digest c76af232daabc376 (print.txt)
+- page 1 has no word 'T‌o'; the engine's words inside page 1: digest f2e6ba4a81050815 (words.txt)
+- page 1 has no word 'T‌o'; the engine's words inside page 1: digest f2e6ba4a81050815 (words.txt)
+- page 1 has no word 'To‌T'; the engine's words inside page 1: digest f2e6ba4a81050815 (words.txt)
