@@ -194,9 +194,9 @@ public class TablesImagesAndPageAreasTests
         Fail(Doc(Row([Paragraph("a"), Paragraph("b")]).Columns(Fill(1)))).Code.Should().Be(DocumentErrorCodes.Input.Invalid.Columns);
     }
 
-    /// <summary>A PNG of 8192 x 8192 pixels, 1 bit per pixel with a palette, without image data: refused after its header
-    /// is read. <paramref name="mark"/> makes files that differ.</summary>
-    private static byte[] LargeHeader(byte mark)
+    /// <summary>A greyscale PNG of 8192 x 8192 black pixels, the largest image one call may show (2^26 pixels, one byte
+    /// each). <paramref name="mark"/> makes files that differ.</summary>
+    private static byte[] Largest(byte mark)
     {
         static byte[] Chunk(string type, byte[] data)
         {
@@ -221,8 +221,18 @@ public class TablesImagesAndPageAreasTests
         var header = new byte[13];
         System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(header, 8192);
         System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(4), 8192);
-        (header[8], header[9]) = (1, 3);
-        return [137, 80, 78, 71, 13, 10, 26, 10, .. Chunk("IHDR", header), .. Chunk("PLTE", [mark, 2, 3]), .. Chunk("IEND", [])];
+        (header[8], header[9]) = (8, 0);
+        using var data = new System.IO.MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(data, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+        {
+            var row = new byte[8193];
+            for (var y = 0; y < 8192; y++)
+            {
+                zlib.Write(row);
+            }
+        }
+
+        return [137, 80, 78, 71, 13, 10, 26, 10, .. Chunk("IHDR", header), .. Chunk("tEXt", [(byte)'k', 0, mark]), .. Chunk("IDAT", data.ToArray()), .. Chunk("IEND", [])];
     }
 
     [Fact]
@@ -232,11 +242,11 @@ public class TablesImagesAndPageAreasTests
         // One file shown three times is decoded and charged once, and leaves room for it.
         var small = TestImages.Bytes("rgba8.png");
         var line = CurrentLine() + 1;
-        var refused = Fail(Doc(Image(LargeHeader(1)), Image(LargeHeader(2)), Image(small))).Parts().Single(error => error.Message.Contains("of one document", StringComparison.Ordinal));
+        var refused = Fail(Doc(Image(Largest(1)).Alt("a"), Image(Largest(2)).Alt("b"), Image(small).Alt("c"))).Parts().Single(error => error.Message.Contains("of one document", StringComparison.Ordinal));
 
         ShouldPointAt(refused, ImageErrorCodes.TooLarge, line);
-        Fail(Doc(Image(LargeHeader(1)), Image(LargeHeader(1)), Image(LargeHeader(1)), Image(small))).Parts()
-            .Should().NotContain(error => error.Message.Contains("of one document", StringComparison.Ordinal));
+        var once = Largest(1);
+        Model(Doc(Image(once).Alt("a"), Image(once).Alt("a"), Image(once).Alt("a"), Image(small).Alt("c")));
     }
 
     [Fact]
