@@ -287,8 +287,8 @@ public class MarginBoxGenerationTests
         var html = "<!doctype html><html lang=\"en\"><head><title>T</title><link rel=\"stylesheet\" href=\"sheets/page.css\"><style>@font-face { font-family: Lato; src: url(lato.ttf) }"
                    + $" html, body {{ margin: 0; font-family: Lato; font-size: 10pt }} @page {{ {Page} @bottom-left {{ content: url(own/badge.png) }} }}</style></head><body><p>one</p></body></html>";
         var result = HtmlParser.Parse(html, new HtmlParseOptions("doc.html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, BaseUrl = "file:///doc/doc.html" }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resolver, BaseUrl = "file:///doc/doc.html" }));
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = "file:///doc/doc.html" }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resolver, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = "file:///doc/doc.html" }));
 
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         asked.Should().Contain(["file:///doc/images/badge.png", "file:///doc/own/badge.png"]);

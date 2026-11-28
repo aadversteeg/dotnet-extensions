@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -116,8 +117,8 @@ public class LayoutWorkTests(ITestOutputHelper output)
     {
         var baseUrl = new Uri(Path.Combine(Family(), "tools", "reference", "chromium", "documents", name + ".html")).AbsoluteUri;
         var boxes = HtmlParser.Parse(html, new HtmlParseOptions(name + ".html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, MissingCharacters = Shaper.MissingCharacters }))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, AllowedResourceSchemes = FileSchemes, BaseUrl = baseUrl }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, AllowedResourceSchemes = FileSchemes, BaseUrl = baseUrl, MissingCharacters = Shaper.MissingCharacters }))
             .Value;
         return (boxes.Document, boxes.Fonts);
     }
@@ -161,6 +162,9 @@ public class LayoutWorkTests(ITestOutputHelper output)
     }
 
     /// <summary>The files under the family folder, by file URL: the documents' fonts and images.</summary>
+    /// <summary>The default resource schemes and <c>file</c>: the cases' base URL is the file they are read from.</summary>
+    private static ImmutableHashSet<string> FileSchemes { get; } = HtmlStyleOptions.Default.AllowedResourceSchemes.Add("file");
+
     private static HtmlResource? Resource(string url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.IsFile && Path.GetFullPath(uri.LocalPath) is var path
             && path.StartsWith(Family(), StringComparison.Ordinal) && File.Exists(path)

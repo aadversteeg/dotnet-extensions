@@ -271,20 +271,21 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
         }
 
         var source = rule.Sources.FirstOrDefault(candidate => candidate.Format is null or "truetype");
-        var url = source is null ? null : Urls.Absolute(source.Url, rule.BaseUrl ?? options.BaseUrl) ?? source.Url;
+        var (url, why) = source is null ? (null, null) : ResourceTable.Locate(options.Resources, source.Url, rule.BaseUrl ?? options.BaseUrl);
         if (url is not null && _files.TryGetValue(url, out var file))
         {
             _loaded[rule] = file;
             return file;
         }
 
-        var resource = url is null ? null : options.Resources?.Invoke(url);
+        var resource = url is null || why is not null ? null : options.Resources?.Invoke(url);
         loaded = resource is null
             ? Result<TrueTypeFont, Error>.Failure(new Error(HtmlStyleErrorCodes.Resource.NotFound,
                     source is null ? $"The @font-face rule of '{rule.Family}' has no TrueType source."
-                    : ResourceTable.Refusal(options.Resources, url!) is { } why ? $"The font file '{InputQuote.Of(url!)}' of '{rule.Family}' {why}."
+                    : why is not null ? $"The font file '{InputQuote.Of(url ?? source.Url)}' of '{rule.Family}' {why}."
+                    : DataUrl.Is(url!) ? $"The font file '{InputQuote.Of(url!)}' of '{rule.Family}' is a data: URL, which the engine reads for images only, so it is not read: give the font file through the resource resolver under a URL of its own."
                     : $"The font file '{url}' of '{rule.Family}' was not given by the resolver.")
-                .With(ErrorMetadataKeys.Value, url ?? rule.Family).WithSource(sourceName, rule.Position))
+                .With(ErrorMetadataKeys.Value, url ?? source?.Url ?? rule.Family).WithSource(sourceName, rule.Position))
             : FontParser.Parse(resource.Bytes).MapError(error => error.WithSource(sourceName, rule.Position));
         _loaded[rule] = loaded;
         if (url is not null && loaded.IsSuccess)

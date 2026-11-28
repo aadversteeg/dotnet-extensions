@@ -34,8 +34,8 @@ public class LineBreakAndImageTests
 
     private static Result<HtmlBoxes, Error> Boxes(string html, string? baseUrl = "file:///docs/t.html") =>
         HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resources, BaseUrl = baseUrl, AllowBaseElement = true }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resources, BaseUrl = baseUrl, AllowBaseElement = true }));
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resources, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = baseUrl, AllowBaseElement = true }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resources, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = baseUrl, AllowBaseElement = true }));
 
     private static Box Body(string html, string? baseUrl = "file:///docs/t.html")
     {
@@ -222,8 +222,8 @@ public class LineBreakAndImageTests
         var html = Doc(string.Concat(Enumerable.Repeat("<img src=\"missing.png\" alt=\"a\">", 12_000)));
 
         var warned = HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resources, BaseUrl = "file:///docs/t.html", Unsupported = UnsupportedPolicy.Warn }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resources, BaseUrl = "file:///docs/t.html", Unsupported = UnsupportedPolicy.Warn }))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resources, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = "file:///docs/t.html", Unsupported = UnsupportedPolicy.Warn }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resources, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = "file:///docs/t.html", Unsupported = UnsupportedPolicy.Warn }))
             .Value.Diagnostics;
 
         warned.Should().HaveCount(DiagnosticLimits.MaxDiagnostics + 1);
@@ -248,8 +248,8 @@ public class LineBreakAndImageTests
 
         Result<HtmlBoxes, Error> Generate(UnsupportedPolicy policy) =>
             HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
-                .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, BaseUrl = "file:///docs/t.html", Unsupported = policy }))
-                .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resolver, BaseUrl = "file:///docs/t.html", Unsupported = policy }));
+                .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = "file:///docs/t.html", Unsupported = policy }))
+                .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resolver, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = "file:///docs/t.html", Unsupported = policy }));
 
         var refusal = Generate(UnsupportedPolicy.Refuse).Error.Parts().Single();
         (refusal.Code, refusal.Metadata![ErrorMetadataKeys.Value], refusal.Metadata[ErrorMetadataKeys.SourceLine]).Should().Be((HtmlStyleErrorCodes.Unsupported.Element, "base", 2));

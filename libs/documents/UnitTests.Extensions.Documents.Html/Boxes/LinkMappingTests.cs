@@ -25,8 +25,8 @@ public class LinkMappingTests
 
     private static Result<HtmlBoxes, Error> Boxes(string html, string? documentUrl = null, UnsupportedPolicy policy = UnsupportedPolicy.Refuse) =>
         HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Unsupported = policy, Resources = Resources, BaseUrl = documentUrl, AllowBaseElement = true }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Unsupported = policy, Resources = Resources, BaseUrl = documentUrl, AllowBaseElement = true }));
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Unsupported = policy, Resources = Resources, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = documentUrl, AllowBaseElement = true }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Unsupported = policy, Resources = Resources, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = documentUrl, AllowBaseElement = true }));
 
     private static readonly byte[] Figure = System.IO.File.ReadAllBytes(System.IO.Path.Combine(HtmlCases.Folder(), "figure.png"));
 
@@ -413,8 +413,8 @@ public class LinkMappingTests
                 var html = File.ReadAllText(path).Replace("<html>", "<html lang=\"en\">", StringComparison.Ordinal).Replace("<head>", "<head><title>Links</title>", StringComparison.Ordinal);
                 var baseUrl = new System.Uri(path).AbsoluteUri;
                 var pdf = HtmlParser.Parse(html, new HtmlParseOptions(name + ".html"))
-                    .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = baseUrl }))
-                    .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = HtmlCases.Resource, BaseUrl = baseUrl }))
+                    .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = baseUrl }))
+                    .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = baseUrl }))
                     .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, boxes.Fonts))
                     .OnSuccessBind(pages => pages.ToPdf(new PdfRenderOptions(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero)) { Profile = PdfProfile.PdfA3a.AndPdfUa1() }));
                 pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? $"{name}: {pdf.Error}" : string.Empty);

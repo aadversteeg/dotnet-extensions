@@ -88,6 +88,7 @@ public static class HtmlRendering
                 Resources = style.Resources,
                 BaseUrl = style.BaseUrl,
                 AllowBaseElement = style.AllowBaseElement,
+                AllowedResourceSchemes = style.AllowedResourceSchemes,
                 Unsupported = style.Unsupported,
                 MissingCharacters = Shaper.MissingCharacters,
             }))

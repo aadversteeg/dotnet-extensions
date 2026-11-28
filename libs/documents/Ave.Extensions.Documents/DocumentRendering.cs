@@ -98,6 +98,7 @@ public static class DocumentRendering
     /// <param name="options">The PDF file's creation date and identifier.</param>
     /// <param name="renderOptions">The page limit.</param>
     /// <returns>The PDF bytes, or the error with the source location of the call that caused it.</returns>
+    /// <exception cref="ArgumentNullException">The document, the font set or the render options are null.</exception>
     public static Result<ImmutableArray<byte>, Error> ToPdf(this Document document, FontSet fonts, PdfRenderOptions options, DocumentRenderOptions renderOptions) =>
         document.ToPages(fonts, renderOptions).OnSuccessBind(pages => pages.ToPdf(options));
 
@@ -128,6 +129,7 @@ public static class DocumentRendering
     /// <param name="options">The resolution and background.</param>
     /// <param name="renderOptions">The page limit.</param>
     /// <returns>The PNG file, or the error.</returns>
+    /// <exception cref="ArgumentNullException">The document, the font set or the render options are null.</exception>
     public static Result<ImmutableArray<byte>, Error> ToPng(this Document document, FontSet fonts, int pageNumber, RasterOptions options, DocumentRenderOptions renderOptions) =>
         Laid(document, fonts, renderOptions).OnSuccessBind(laid => laid.Pages.ToPng(pageNumber, options).MapError(error => RenderErrors.ImagePlace(error, laid.Model)));
 
@@ -157,6 +159,7 @@ public static class DocumentRendering
     /// <param name="options">The resolution and background.</param>
     /// <param name="renderOptions">The page limit.</param>
     /// <returns>One PNG file per page, in order, or the error.</returns>
+    /// <exception cref="ArgumentNullException">The document, the font set or the render options are null.</exception>
     public static Result<ImmutableArray<ImmutableArray<byte>>, Error> ToPngPages(this Document document, FontSet fonts, RasterOptions options, DocumentRenderOptions renderOptions) =>
         Laid(document, fonts, renderOptions).OnSuccessBind(laid => laid.Pages.ToPngPages(options).MapError(error => RenderErrors.ImagePlace(error, laid.Model)));
 
@@ -197,6 +200,7 @@ public static class DocumentRendering
     /// <param name="options">The resolution and background.</param>
     /// <param name="renderOptions">The page limit.</param>
     /// <returns>One image per page (8-bit RGBA, sRGB), in order, or the error.</returns>
+    /// <exception cref="ArgumentNullException">The document, the font set or the render options are null.</exception>
     public static Result<ImmutableArray<RgbaImage>, Error> ToImages(this Document document, FontSet fonts, RasterOptions options, DocumentRenderOptions renderOptions) =>
         Laid(document, fonts, renderOptions).OnSuccessBind(laid => laid.Pages.ToImages(options).MapError(error => RenderErrors.ImagePlace(error, laid.Model)));
 

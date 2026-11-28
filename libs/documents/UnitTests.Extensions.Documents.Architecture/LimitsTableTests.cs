@@ -22,7 +22,7 @@ public class LimitsTableTests
         ["decoded image (PNG, and JPEG decoded to samples)"] = ("2^26 pixels", [C("Images", "Images.ImageLimits", "MaxPixels", 1L << 26)]),
         ["decoded images of one document, all together"] = ("2^27 pixels (two images at the limit of one, or about 60 screenshots of 1920 × 1080), charged from each image's header before it is decoded and given back when its data does not decode; each distinct image decoded and charged once (in HTML by its URL, in the code front-end and the raster back-end by its file); a JPEG that is only embedded is not decoded and not charged",
             [C("Images", "Images.ImageLimits", "MaxDocumentPixels", 1L << 27)]),
-        ["work of the image decodes of one document that fail, all together"] = ("2^27 pixels of what they produced (a PNG: the pixels of the rows its data filled or began, the buffer growing with the data; a JPEG: its whole frame), never given back; once reached, no later image of the document is decoded, so they produce less than 2^27 + 2^26",
+        ["work of the image decodes of one document that fail, all together"] = ("2^27 pixels of what they produced (a PNG: the pixels of the rows its data filled or began, inflated in reads of at most 64 KiB and counted after each, the read in which the inflate fails in full; the buffer growing with the data; a JPEG: its whole frame), never given back; once reached, no later image of the document is decoded, so they produce less than 2^27 + 2^26",
             [C("Images", "Images.ImageLimits", "MaxFailedDocumentPixels", 1L << 27)]),
         ["blocks the scans of one JPEG visit together"] = ("32 times the blocks of its frame", [C("Images", "Images.Jpeg.JpegDecoder", "MaxPasses", 32)]),
         ["glyphs of one text"] = ("64 per input glyph, at least 16 384",
@@ -90,7 +90,7 @@ public class LimitsTableTests
         ["points of one glyph outline, components included"] = ("65 536", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxPoints", 65_536)]),
         ["component references one glyph outline visits"] = ("65 536", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxComponents", 65_536)]),
         ["nesting of composite glyphs"] = ("64 levels", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxDepth", 64)]),
-        ["resources one HTML render asks the resolver for"] = ("4 096 distinct URLs, each asked once per render (style resolution and the box generation of its result share one table); a URL of at most 32 767 characters, the bound of a link's URI",
+        ["resources one HTML render asks the resolver for"] = ("4 096 distinct URLs, each asked once per render (style resolution and the box generation of its result share one table); a URL of at most 32 767 characters, the bound of a link's URI, without tabs, newlines and fragment; only a URL whose scheme the caller allows (`AllowedResourceSchemes`, default `http` and `https`), read from the reference before it is resolved, or the base URL's for a reference without one; a reference without a scheme and without a host is handed on as written when there is no base URL, one that names a host never; never a `data:` URL",
             [C("Html", "Html.ResourceTable", "MaxResources", 4_096), C("Html", "Html.ResourceTable", "MaxUrlLength", 32_767)]),
         ["characters without a glyph one HTML document is refused for"] = ("64, each pair of face and character once, in source order", [C("Html", "Html.Boxes.HtmlBoxGenerator", "MaxMissingGlyphs", 64)]),
     };

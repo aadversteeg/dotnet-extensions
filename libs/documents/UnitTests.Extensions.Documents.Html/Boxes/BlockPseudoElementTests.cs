@@ -109,7 +109,7 @@ public class BlockPseudoElementTests
         + " p::after { content: \"End of note\"; display: block; margin-top: 6pt; padding: 3pt; background: #eeeeee }</style></head>"
         + "<body><h1>Results</h1><p>A paragraph.</p></body></html>";
 
-    private static HtmlRenderOptions TaggedOptions { get; } = new() { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
+    private static HtmlRenderOptions TaggedOptions { get; } = new() { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
 
     [Fact]
     public void In_the_structure_tree_the_text_of_a_block_pseudo_element_is_a_div_of_its_element_and_one_without_text_is_not_there()

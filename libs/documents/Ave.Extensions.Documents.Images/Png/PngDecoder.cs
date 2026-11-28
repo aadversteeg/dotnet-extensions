@@ -28,6 +28,11 @@ internal static class PngDecoder
     /// <summary>The first buffer the data is inflated into: 4 KiB, or the announced size when that is less.</summary>
     internal const int FirstBuffer = 4096;
 
+    /// <summary>The most bytes one read inflates: 64 KiB. The count of inflated bytes is added after each read, and when the
+    /// data fails inside the inflate (a wrong checksum, damaged data) the read in which it failed is counted in full, so
+    /// the count is never less than what was inflated, and at most one read more.</summary>
+    internal const int Piece = 65_536;
+
     public static bool HasSignature(ReadOnlySpan<byte> file) => file.StartsWith(Signature);
 
     public static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file, ImagePixelBudget? budget) =>
@@ -116,8 +121,9 @@ internal static class PngDecoder
         var expected = header.Height * (header.Stride + 1);
         var compressed = idat.SelectMany(chunk => chunk.Data.ToArray()).ToArray();
 
-        // The buffer grows with the data, four times at a time up to what the header announces: a header that announces
-        // more than its data holds costs what the data holds, not what the header announces.
+        // The buffer grows with the data, four times at a time, and goes to what the header announces at once when four
+        // times would reach half of it or more: a header that announces more than its data holds costs what the data holds
+        // (at most eight times it), and an honest image allocates its buffers once and less than two thirds again.
         var scanlines = new byte[Math.Min(expected, FirstBuffer)];
         inflated = 0;
         bool trailing;
@@ -126,19 +132,31 @@ internal static class PngDecoder
             using var zlib = new ZLibStream(new MemoryStream(compressed), CompressionMode.Decompress);
             while (true)
             {
-                inflated += zlib.ReadAtLeast(scanlines.AsSpan((int)inflated), scanlines.Length - (int)inflated, throwOnEndOfStream: false);
-                if (inflated < scanlines.Length || scanlines.Length == expected)
+                if (inflated == scanlines.Length)
+                {
+                    if (scanlines.Length == expected)
+                    {
+                        break;
+                    }
+
+                    Array.Resize(ref scanlines, (int)Grown(scanlines.Length, expected));
+                }
+
+                var read = zlib.Read(scanlines.AsSpan((int)inflated, (int)Math.Min(Piece, scanlines.Length - inflated)));
+                if (read == 0)
                 {
                     break;
                 }
 
-                Array.Resize(ref scanlines, (int)Math.Min(expected, 4L * scanlines.Length));
+                inflated += read;
             }
 
             trailing = inflated == expected && zlib.ReadByte() >= 0;
         }
         catch (InvalidDataException exception)
         {
+            // The read in which the data failed counts in full: what it inflated before the error is not told.
+            inflated += Math.Min(Piece, scanlines.Length - inflated);
             return ImageErrors.Invalid<byte[]>($"the IDAT data is not valid zlib data ({exception.Message})", idat[0].Offset);
         }
 
@@ -152,4 +170,8 @@ internal static class PngDecoder
             ? Result<byte[], Error>.Success(scanlines)
             : ImageErrors.Invalid<byte[]>($"scanline {badRow} has an undefined filter type.", idat[0].Offset);
     }
+
+    /// <summary>The next size of the inflate buffer: four times the last, or the announced size when four times would
+    /// reach half of it or more.</summary>
+    internal static long Grown(long length, long expected) => 8L * length >= expected ? expected : 4L * length;
 }

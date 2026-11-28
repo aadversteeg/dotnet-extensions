@@ -232,6 +232,44 @@ public class ImageSizeLimitTests
         budget.Used.Should().Be(0);
     }
 
+    [Fact]
+    public void A_decode_that_fails_inside_the_inflate_counts_what_it_inflated()
+    {
+        // The data of 8192 x 8192 grey pixels in full, with a wrong Adler-32: the inflate fails at its end, so the decode
+        // has produced every row, and two such files reach the limit of the document.
+        var data = Deflate(8192L * 8193);
+        data[^1] ^= 0xFF;
+        var file = Png(Header(8192, 8192, 8, 0), Chunk("IDAT", data), Chunk("IEND", []));
+        var budget = new ImagePixelBudget();
+
+        var first = ImageDecoder.Decode(file, budget);
+
+        ShouldBe(first, ImageErrorCodes.Invalid);
+        first.Error.Message.Should().Contain("not valid zlib data");
+        budget.FailedPixels.Should().Be(8192L * 8192, "all that was inflated");
+        ShouldBe(ImageDecoder.Decode(file, budget), ImageErrorCodes.Invalid);
+        budget.FailedPixels.Should().Be(ImageLimits.MaxFailedDocumentPixels);
+        ShouldBe(ImageDecoder.Decode(file, budget), ImageErrorCodes.TooLarge);
+    }
+
+    [Fact]
+    public void An_image_just_above_a_step_of_the_buffer_allocates_it_once()
+    {
+        // 4096 x 1024 grey: 4 MiB + 1024 bytes of scanlines, just above the step of 4 MiB. The buffer goes from 1 MiB to the
+        // announced size at once, not to 4 MiB first.
+        var expected = 1024L * 4097;
+        var file = Png(Header(4096, 1024, 8, 0), Chunk("IDAT", Deflate(expected)), Chunk("IEND", []));
+        PngDecoder.Grown(1 << 20, expected).Should().Be(expected);
+        PngDecoder.Grown(1 << 20, 64L << 20).Should().Be(4L << 20);
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+
+        var result = ImageDecoder.Decode(file);
+
+        result.IsSuccess.Should().BeTrue();
+        var used = GC.GetAllocatedBytesForCurrentThread() - allocated;
+        used.Should().BeLessThan(expected * 26 / 10, $"the scanlines once, the steps before them and the samples ({used} bytes)");
+    }
+
     private static void ShouldBe(Ave.Extensions.Functional.Result<ImageData, Ave.Extensions.ErrorPaths.Error> result, Ave.Extensions.ErrorPaths.ErrorCode code) =>
         result.Error.Code.Should().Be(code);
 }

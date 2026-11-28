@@ -48,7 +48,7 @@ public static class HtmlStyleResolver
         }
 
         // The caller's resolver is asked at most once per URL in this resolution, and in the box generation of its result.
-        var resources = ResourceTable.Once(options.Resources);
+        var resources = ResourceTable.Once(options.Resources, options.AllowedResourceSchemes, $"{nameof(HtmlStyleOptions)}.{nameof(HtmlStyleOptions.AllowedResourceSchemes)}");
         var run = new Run(parsed, options with { Resources = resources });
         if (run.Resolve() is not { } styled)
         {
@@ -135,6 +135,15 @@ public static class HtmlStyleResolver
                         $"The <base href=\"{InputQuote.Of(baseElement.Attribute("href")!)}\"> is not honoured: the document's URLs are resolved against the caller's base URL. Remove the base element, or let the caller allow it (HtmlStyleOptions.AllowBaseElement).")
                     .With(ErrorMetadataKeys.Value, "base")
                     .WithSource(_sourceName, baseElement.Position));
+            }
+            else if (options.AllowBaseElement && Urls.BaseElement(document) is { } allowed && Urls.Resolved(allowed.Attribute("href")!, options.BaseUrl).Refusal is { } why)
+            {
+                // A browser moves the document's URLs to where it reads the href; the engine falls back to the caller's
+                // base URL, so it says so.
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Element,
+                        $"The <base href=\"{InputQuote.Of(allowed.Attribute("href")!)}\"> {why}; the document's URLs are resolved against the caller's base URL instead.")
+                    .With(ErrorMetadataKeys.Value, "base")
+                    .WithSource(_sourceName, allowed.Position));
             }
 
             var sheets = new List<CascadeSheet> { new(UserAgentStyleSheet.Sheet, CascadeOrigin.UserAgent) };
@@ -612,7 +621,7 @@ public static class HtmlStyleResolver
         /// of an image type that is neither, or a URL with no resolver to ask, is unknown.</summary>
         private ImageState Image(HtmlElement html, out string? source)
         {
-            source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
+            source = html.Attribute("src") is { } src ? Urls.Cleaned(src) : null;
             if (string.IsNullOrEmpty(source))
             {
                 return ImageState.Missing;
@@ -625,7 +634,7 @@ public static class HtmlStyleResolver
                     : ImageState.Missing;
             }
 
-            if (Urls.Absolute(source, _documentBase) is not { } absolute)
+            if (ResourceTable.Locate(options.Resources, source, _documentBase) is not { Url: { } absolute })
             {
                 return ImageState.Missing;
             }
@@ -721,7 +730,10 @@ public static class HtmlStyleResolver
                 return;
             }
 
-            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The image '{InputQuote.Of(source ?? string.Empty)}' is not there (no src, or neither a data: URL nor the resource resolver gives a PNG or JPEG image), so Chromium 159 shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported.")
+            var why = source is { Length: > 0 } && !DataUrl.Is(source) ? ResourceTable.Locate(options.Resources, source, _documentBase).Why : null;
+            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, why is not null
+                    ? $"The image '{InputQuote.Of(source!)}' {why}. Chromium 159 then shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported."
+                    : $"The image '{InputQuote.Of(source ?? string.Empty)}' is not there (no src, or neither a data: URL nor the resource resolver gives a PNG or JPEG image), so Chromium 159 shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported.")
                 .With(ErrorMetadataKeys.Value, "alt")
                 .WithSource(_sourceName, html.Attributes.First(item => item.LocalName == "alt").Position));
         }
@@ -932,7 +944,7 @@ public static class HtmlStyleResolver
                         sheets.Add(sheet);
                     }
                 }
-                else if (element.Attribute("href") is { } href && href.Trim().Length > 0)
+                else if (element.Attribute("href") is { } attribute && Urls.Cleaned(attribute) is { Length: > 0 } href)
                 {
                     var at = element.Attributes.First(attribute => attribute.LocalName == "href").Position;
                     if (element.Attributes.FirstOrDefault(attribute => attribute.LocalName == "integrity" && attribute.Value.Trim().Length > 0) is { } integrity)
@@ -944,7 +956,7 @@ public static class HtmlStyleResolver
                             .WithSource(_sourceName, integrity.Position));
                     }
 
-                    if (Fetch(href.Trim(), _documentBase, _sourceName, at) is { } linked)
+                    if (Fetch(href, _documentBase, _sourceName, at) is { } linked)
                     {
                         sheets.Add(linked);
                     }
@@ -1017,7 +1029,7 @@ public static class HtmlStyleResolver
             [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(InfraAscii.ToLower)];
 
         /// <summary>The document's own address without its fragment, or null when it has none.</summary>
-        private string? DocumentAddress => options.BaseUrl is { } address && Urls.Absolute(address, null) is { } absolute ? Urls.WithoutFragment(absolute) : null;
+        private string? DocumentAddress => options.BaseUrl is { } address && Urls.Resolved(address, null).Url is { } absolute ? Urls.WithoutFragment(absolute) : null;
 
 
         /// <summary>An @import: its URL resolved against the importing sheet's URL.</summary>
@@ -1031,7 +1043,7 @@ public static class HtmlStyleResolver
         /// empty style sheet, and the resolver is not asked.</summary>
         private StyleSheet? Fetch(string url, string? baseUrl, string referrer, TextPosition position)
         {
-            var absolute = Urls.Absolute(url, baseUrl);
+            var (absolute, refused) = ResourceTable.Locate(options.Resources, url, baseUrl);
             if (url.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || (absolute is not null && Urls.WithoutFragment(absolute) == DocumentAddress))
             {
                 return ReadOrNull(CssParser.ParseStyleSheet(ReadOnlyMemory<byte>.Empty, new CssSourceOptions(absolute ?? referrer)));
@@ -1043,7 +1055,7 @@ public static class HtmlStyleResolver
             }
 
             StyleSheet? sheet = null;
-            if (absolute is not null && options.Resources?.Invoke(absolute) is { } resource)
+            if (absolute is not null && refused is null && options.Resources?.Invoke(absolute) is { } resource)
             {
                 sheet = ReadOrNull(CssParser.ParseStyleSheet(resource.Bytes, new CssSourceOptions(absolute) { ProtocolEncoding = resource.Charset, EnvironmentEncoding = "utf-8" }));
                 if (sheet is not null)
@@ -1053,8 +1065,9 @@ public static class HtmlStyleResolver
             }
             else
             {
-                var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given"
-                    : ResourceTable.Refusal(options.Resources, absolute) ?? "was not found by the resource resolver";
+                var why = refused ?? (absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given"
+                    : DataUrl.Is(absolute) ? "is a data: URL, which the engine reads for images only, so it is not read: put the style sheet in a <style> element, or give it through the resource resolver under a URL of its own"
+                    : "was not found by the resource resolver");
                 Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{InputQuote.Of(url)}' {why}.")
                     .With(ErrorMetadataKeys.Value, InputQuote.Of(absolute ?? url))
                     .WithSource(referrer, position));

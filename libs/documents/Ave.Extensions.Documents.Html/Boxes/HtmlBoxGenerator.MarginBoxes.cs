@@ -197,11 +197,12 @@ public static partial class HtmlBoxGenerator
         /// <returns>The image's box; null when it is refused.</returns>
         private Box? ContentImage(MarginBoxStyle box, CssContentImage image, TextStyle text)
         {
-            var url = Urls.WithoutFragment(DataUrl.Is(image.Url) ? image.Url : Urls.Absolute(image.Url, box.BaseUrl ?? options.BaseUrl) ?? image.Url);
-            var bytes = DataUrl.Body(url) ?? options.Resources?.Invoke(url)?.Bytes;
+            var (absolute, why) = DataUrl.Is(image.Url) ? (image.Url, null) : ResourceTable.Locate(options.Resources, image.Url, box.BaseUrl ?? options.BaseUrl);
+            var url = Urls.WithoutFragment(absolute ?? image.Url);
+            var bytes = DataUrl.Body(url) ?? (absolute is null || why is not null ? null : options.Resources?.Invoke(url)?.Bytes);
             if (bytes is null)
             {
-                Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, ResourceTable.Refusal(options.Resources, url) is { } why
+                Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, why is not null
                         ? $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} {why}; what Chromium shows instead is not drawn in this version."
                         : $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} is not there (neither a data: URL nor the resource resolver gives it), and what Chromium shows instead is not drawn in this version.",
                     image.ToString(), box.Position, "content");
