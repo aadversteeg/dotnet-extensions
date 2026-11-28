@@ -64,6 +64,30 @@ public class CaseStatusTests(ITestOutputHelper output)
             .Should().Equal(statuses, "the status of each file is the committed one, with every difference of a listed or open file");
     }
 
+    /// <summary>The file that names every open case and document (<c>tools/reference/chromium/open-cases.txt</c>): one line
+    /// each, the name and why it is open. A case is open only where the file names it, and every name in the file is of an
+    /// open case or document, so a difference cannot be parked as open by its status file alone.</summary>
+    [Fact]
+    public void Every_open_case_is_named_with_its_reason_in_the_list_of_open_cases_and_no_other_is()
+    {
+        var named = OpenCases();
+        var open = new[] { HtmlCases.Cases, HtmlCases.Documents }
+            .SelectMany(folder => folder.Names.Where(name => HtmlCases.Fields($"{name} {folder.Committed(name)}").Status == "open")).Order(StringComparer.Ordinal).ToList();
+
+        named.Should().OnlyContain(line => line.Reason.Length > 0, "each open case says why it is open");
+        named.Select(line => line.Name).Should().OnlyHaveUniqueItems().And.Equal(open, "the list of open cases names exactly the cases whose status is open");
+    }
+
+    /// <summary>The lines of <c>open-cases.txt</c> (<see cref="Every_open_case_is_named_with_its_reason_in_the_list_of_open_cases_and_no_other_is"/>),
+    /// in the file's order, which is ordinal; lines that start with <c>#</c> are comments.</summary>
+    private static List<(string Name, string Reason)> OpenCases()
+    {
+        var lines = CaseFolder.StatusText(File.ReadAllText(Path.Combine(HtmlCases.Folder(), "..", "open-cases.txt"))).Split('\n')
+            .Where(line => line.Length > 0 && !line.StartsWith('#')).Select(line => line.Split(' ', 2)).Select(fields => (fields[0], fields.Length > 1 ? fields[1].Trim() : string.Empty)).ToList();
+        lines.Select(line => line.Item1).Should().BeInAscendingOrder(StringComparer.Ordinal);
+        return lines;
+    }
+
     /// <summary>A status file read on a checkout that wrote carriage returns is the same status: the comparison sees line
     /// feeds only, and no line feed after the last line.</summary>
     [Fact]

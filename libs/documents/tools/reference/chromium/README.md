@@ -80,7 +80,8 @@ that add different cases touch no file in common.
 - `<case>.status.txt`: the case's status line, `<case> <status> …` (`CaseStatusTests`,
   `UnitTests.Extensions.Documents.Html`; docs/architecture.md, "The status file"). A `listed` case names in that line
   the test that pins its difference, a test of that project that lays out the case by its name; after the line, a
-  `listed` or `open` case's file holds every difference the comparison finds, one per line.
+  `listed` or `open` case's file holds every difference the comparison finds, one per line. An `open` case is also
+  named, with why it is open, in `open-cases.txt` in this folder, which names no other case.
 
 To add a case:
 

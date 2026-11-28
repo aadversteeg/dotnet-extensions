@@ -1055,7 +1055,9 @@ keeps; for an inline box layout does not draw where it stands, `Documents.Input.
 column of the element that made it); `<case> listed <test>: <difference>` for a
 difference of layout already listed in "Known limits" and pinned by that test; or `<case> open <difference>` for a known
 difference, engine against Chromium, that is not fixed yet (no pull request while one is open). The status is the first
-line's second field, and the difference on it the first the comparison finds.
+line's second field, and the difference on it the first the comparison finds. Every open case is named, one line each with
+why it is open, in `tools/reference/chromium/open-cases.txt`: a case is open only where that file names it, and the file
+names no other (`CaseStatusTests`), so a difference cannot be set aside by its status file alone.
 
 A `listed` or an `open` case differs from Chromium in exactly the differences its file holds. The comparison does not
 stop at the first difference: it goes on through every file and every page and writes each difference in a fixed order
