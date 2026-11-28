@@ -1035,7 +1035,9 @@ through the whole HTML path unchanged and its pages are compared with every file
   same glyph id for each (Chromium embeds font subsets that keep the font program's glyph ids), each glyph's distance
   from the word's first glyph within 0.1 pt (the bound of a word's start and end; kerning and letter spacing inside a
   word show here) and its distance below the baseline within 0.1 pt. The text reading of a PDF spreads a ligature over
-  its characters at positions of its own; the trace gives the glyph that is drawn, and that is what is compared.
+  its characters at positions of its own; the trace gives the glyph that is drawn, and that is what is compared. A glyph
+  of the engine whose text is white space is in no word: it must draw nothing (its outline has no contour,
+  `HtmlCases.BlankDifferences`), as Chromium's glyph for white space draws nothing.
 - `<case>.order.txt`, the place of every word, fill, stroke and image in the page's drawing sequence (`order.py`,
   `sequence.py`): on each page whose text is the same, for each word, the colours (or images) painted after a text that
   draws part of it over that part's box (its advances across, from 0.8 of the font size above the baseline to 0.2 below)

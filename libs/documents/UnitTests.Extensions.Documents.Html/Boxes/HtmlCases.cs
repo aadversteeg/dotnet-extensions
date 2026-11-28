@@ -236,6 +236,7 @@ internal static class HtmlCases
             .Concat(BoxDifferences(folder, name, boxes.Value, Rows(folder, name, "boxes")))
             .Concat(LinkDifferences(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points))
             .Concat(GlyphDifferences(engine, chromium))
+            .Concat(BlankDifferences(engine))
             .Concat(OrderDifferences(engine, chromium))
             .Concat(ClipDifferences(engine, chromium))
             .Concat(ImageDifferences(engine, chromium))
@@ -351,7 +352,9 @@ internal static class HtmlCases
 
     /// <summary>
     /// The lines of an engine's page for its digest (<see cref="Digest"/>), in this order: the page (number, width, height);
-    /// each word in the page's order (baseline, then x0; <see cref="WordLine"/>); each painted rectangle in drawing order
+    /// each word in the page's order (baseline, then x0; <see cref="WordLine"/>); each glyph whose text is white space in
+    /// drawing order (its characters, glyph id, x, baseline, distance below it, and <c>ink</c> where it draws any,
+    /// <see cref="PrintedPage.Blanks"/>); each painted rectangle in drawing order
     /// (box, colour); each image area in drawing order (box) and then each picture (<c>width height sha256</c>); each painted
     /// path in drawing order (box, colour, rows); each paint in drawing order (its rank in the page's drawing sequence, box,
     /// colour or <c>image</c>); each link area on the page in drawing order (box, target). Every box is <c>x0 y0 x1 y1</c>,
@@ -367,6 +370,11 @@ internal static class HtmlCases
         foreach (var word in page.Words)
         {
             yield return WordLine(word, ranks);
+        }
+
+        foreach (var blank in page.Blanks)
+        {
+            yield return $"blank {Characters(blank.Text)} {blank.Glyph} {DigestNumber(blank.X)} {DigestNumber(blank.Baseline)} {DigestNumber(blank.Below)}{(blank.Ink ? " ink" : string.Empty)}";
         }
 
         foreach (var box in page.Rectangles)
@@ -392,6 +400,8 @@ internal static class HtmlCases
             yield return $"link {DigestBox(link.X0, link.Y0, link.X1, link.Y1)} {link.Target}";
         }
     }
+
+    private static string Characters(string text) => string.Join("+", text.Select(character => $"U+{(int)character:X4}"));
 
     /// <summary>The lines of the painted paths of a page for a digest, in drawing order: box, colour and rows.</summary>
     private static IEnumerable<string> PathLines(PrintedPage page) =>
@@ -859,6 +869,19 @@ internal static class HtmlCases
             differ.Count == 0 ? null
                 : $"{at} glyph {differ[0].Number} {what}{value(differ[0].Ours, ourFirst)}, Chromium's {what}{value(differ[0].Theirs, theirFirst)}" + (differ.Count > 1 ? $" ({differ.Count} of {count} glyphs)" : string.Empty);
     }
+
+    /// <summary>
+    /// Every glyph of the engine's pages whose text is white space and that draws ink (<see cref="PrintedPage.Blanks"/>):
+    /// such a glyph is part of no word, so the comparison of words and glyphs never sees it. Chromium's print draws white
+    /// space with the font's glyph for it, which draws nothing, and the reading of its PDF has no word and no glyph entry
+    /// for it; so the engine's glyph must draw nothing either: its outline in the font has no contour. A glyph with ink
+    /// there (another glyph id, a letter drawn with white space as its text) is a difference on any page.
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> BlankDifferences(PrintedPages engine) =>
+        engine.Pages.SelectMany(page => page.Blanks.Where(blank => blank.Ink).Select(blank =>
+            $"page {page.Number} the white space {Characters(blank.Text)} at ({Of(blank.X)}, {Of(blank.Baseline)}) is drawn with glyph {blank.Glyph}, which draws ink; Chromium draws white space with nothing (the engine's font)"));
 
     /// <summary>One CSS pixel in points: how far two things must overlap each way to be painted one over the other
     /// (<see cref="OrderDifferences"/>), and how far the part of a word its clips cut off may differ from Chromium's

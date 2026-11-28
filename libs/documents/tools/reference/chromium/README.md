@@ -247,7 +247,10 @@ ligature is one glyph, its "t" such an entry); and a format character (a soft hy
 which Chromium draws as the font's space glyph without an advance (`ws-soft`). A precomposed letter the reading writes
 as base and mark is one glyph (`ta-marks`: "y" with U+0323 is the glyph of U+1EF5). The case comparison compares, word
 by word, the number of glyphs, each glyph id and each glyph's distance from the word's first glyph within 0.1 pt, the
-bound of a word's start and end (`HtmlCases.GlyphDifferences`).
+bound of a word's start and end (`HtmlCases.GlyphDifferences`). A glyph whose text is white space belongs to no word on
+either side; Chromium draws it with the font's glyph for it, which draws nothing, so the engine's must draw nothing
+either: its outline in the font has no contour (`HtmlCases.BlankDifferences`). Such glyphs are in the digest of an
+engine page too.
 
 `order.txt` gives every word, fill, stroke and image its place in the page's drawing sequence. PyMuPDF numbers the text
 of its trace and the drawings of its drawing list by that place, and its bounding-box log holds one entry per place,

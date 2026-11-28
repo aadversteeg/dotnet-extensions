@@ -97,6 +97,18 @@ public sealed record PrintedWord(int Page, double X0, double X1, double Baseline
 /// <param name="End">The x where its advance ends.</param>
 public sealed record PrintedGlyph(int Glyph, double X, double Below, double End);
 
+/// <summary>A glyph of the engine's page whose text is white space (a space, a no-break space, a tab): not part of any
+/// word (<see cref="PrintedPages.Engine"/>), so its place and its glyph are compared here, on the engine's side alone:
+/// Chromium's print draws such a character with the font's glyph for it, which draws nothing, and its reading has no word
+/// for it. In points, origin at the top left of the page, y down.</summary>
+/// <param name="Text">The characters the glyph shows.</param>
+/// <param name="Glyph">The glyph id.</param>
+/// <param name="X">The x of its origin.</param>
+/// <param name="Baseline">Its run's baseline.</param>
+/// <param name="Below">The distance of its origin below the baseline.</param>
+/// <param name="Ink">Whether the glyph draws anything: its outline in the font has a contour, or it cannot be read.</param>
+public sealed record PrintedBlank(string Text, int Glyph, double X, double Baseline, double Below, bool Ink);
+
 /// <summary>An item a page paints other than text, with its place in the page's drawing sequence: a fill (a rectangle, a
 /// path's box; for a print read back from its PDF also a stroke's box) or an image, as the part its clips leave, in points,
 /// origin top left, y down.</summary>
@@ -170,6 +182,10 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
     /// <summary>What the page paints other than text, each with its place in the drawing sequence, in drawing order: set in
     /// the engine's pages and, for a print read back from its PDF, from its <c>order.txt</c>; empty where not known.</summary>
     public ImmutableArray<PrintedPaint> Paints { get; init; } = [];
+
+    /// <summary>The glyphs whose text is white space, in drawing order (<see cref="PrintedBlank"/>): set in the engine's pages,
+    /// empty for a print read back from its PDF.</summary>
+    public ImmutableArray<PrintedBlank> Blanks { get; init; } = [];
 
     /// <summary>Which picture each of <see cref="Images"/> shows, in the same order: <c>width height sha256</c>, its size in
     /// pixels and the SHA-256 (lowercase hexadecimal) of its pixels as 8-bit RGBA, row by row from the top (<see cref="PrintedPages.Picture"/>);
@@ -587,6 +603,8 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             {
                 Paints = paints.ToImmutable(),
                 Pictures = pictures.ToImmutable(),
+                Blanks = [.. runs.SelectMany(run => run.Run.Glyphs.Where(IsBlank).Select(glyph => new PrintedBlank(glyph.Text, glyph.Glyph.Value, run.Run.Origin.X + glyph.X, run.Run.Origin.Y,
+                    glyph.Y, run.Run.Font.Shape(glyph.Glyph) is not { IsSuccess: true } shape || !shape.Value.Contours.IsEmpty)))],
             };
         })]);
 
@@ -646,7 +664,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
         var word = ImmutableArray.CreateBuilder<PositionedGlyph>();
         foreach (var glyph in run.Glyphs)
         {
-            if (glyph.Text.Length > 0 && glyph.Text.All(char.IsWhiteSpace))
+            if (IsBlank(glyph))
             {
                 if (word.Count > 0)
                 {
@@ -666,6 +684,9 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             yield return Word(page, run, word.ToImmutable());
         }
     }
+
+    // A glyph whose text is white space: it ends a word and is not part of one (PrintedBlank).
+    private static bool IsBlank(PositionedGlyph glyph) => glyph.Text.Length > 0 && glyph.Text.All(char.IsWhiteSpace);
 
     private static PrintedWord Word(int page, GlyphRun run, ImmutableArray<PositionedGlyph> glyphs)
     {
