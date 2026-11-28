@@ -42,7 +42,7 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <c>tools/reference/chromium</c>, printed on US Letter, 612 × 792 pt, no margins). The layout policies are Chromium's
 /// (<see cref="LayoutProfile"/>: <see cref="MonolithicOverflow.Slice"/>, <see cref="EmptyRowParts.Allow"/>,
 /// <see cref="FontMetricRounding.WholePixels"/>, <see cref="FontSizeRounding.FlooredToPixelFractions"/>,
-/// <see cref="LengthRounding.SixtyFourthPixels"/>). The metadata: the title element's text (HTML Standard §4.2.2) and the
+/// <see cref="LengthRounding.SixtyFourthPixels"/>, <see cref="LineBreakRules.Chromium"/>). The metadata: the title element's text (HTML Standard §4.2.2) and the
 /// root element's language (§3.2.6.2).</para>
 /// <para>The tree is walked with an explicit stack, never by recursion, so the depth of the input costs heap, not call
 /// frames.</para>
@@ -78,6 +78,7 @@ public static partial class HtmlBoxGenerator
         InlineBoxSnapping = InlineBoxSnapping.WholePixels,
         MarkerSnapping = MarkerSnapping.WholePixels,
         InkGapBand = InkGapBand.AtUnroundedLine,
+        LineBreakRules = LineBreakRules.Chromium,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>

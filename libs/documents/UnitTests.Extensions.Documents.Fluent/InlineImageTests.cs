@@ -169,10 +169,11 @@ public class InlineImageTests
     [Fact]
     public void A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it()
     {
-        // A LISTED DIFFERENCE, of the line breaking algorithm, not of the image: UAX #14 LB20a, "( sot | BK | CR | LF | NL |
-        // SP | ZW | CB | GL ) ( HY | HH ) × ( AL | HL )", allows no break between a hyphen and the letter after it when a
-        // space or an atomic inline (CB, U+FFFC) comes before the hyphen; Chromium breaks there all the same, after a space
-        // as after an image (ii-hyphen: "-" and "b" on lines of their own). The image behaves as the space does.
+        // The code front-end's line-break rules are the standard's (LineBreakRules.Standard): UAX #14 LB20a, "( sot | BK | CR |
+        // LF | NL | SP | ZW | CB | GL ) ( HY | HH ) × ( AL | HL )", allows no break between a hyphen and the letter after it
+        // when a space or an atomic inline (CB, U+FFFC) comes before the hyphen; Chromium breaks there all the same, after a
+        // space as after an image (ii-hyphen: "-" and "b" on lines of their own), and so does the HTML front-end, whose rules
+        // are Chromium's (LineBreakRules.Chromium; the case is equal there). The image behaves as the space does.
         var engine = Engine(300,
             Narrow(6, [Text("a"), In(Fig(8.4)), Text("-b")]),
             Narrow(6, [Text("a -b")]),

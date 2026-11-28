@@ -191,17 +191,19 @@ public static class GreedyLineBreaker
     /// width stays as it is. The running sum that finds the first piece that no longer fits stays exact; the line it
     /// finds is checked with the rounded widths, and an earlier break is tried when that does not fit (WHERE THE LINE
     /// ENDS). Cases <c>ta-items</c>, <c>ta-items-right</c> and <c>ta-items-fit</c> of <c>tools/reference/chromium</c>.</param>
+    /// <param name="tailoring">Which rules find the places where a line may end: the standard's (the default) or those of
+    /// Chromium's print (<see cref="LineBreaking.ChromiumLineBreaking"/>).</param>
     /// <returns>The lines, top to bottom (empty when the paragraph has no visible text), or a shaping error.</returns>
     public static Result<ValueList<TextLine>, Error> BreakLines(
         IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper reshape, IReadOnlyList<LineEndShaping> atSpace,
-        double textItemStep = 0) =>
-        Break(runs, modes, availableWidth, reshape, run => run < atSpace.Count ? atSpace[run] : LineEndShaping.KeepParagraphGlyphs, textItemStep);
+        double textItemStep = 0, LineBreakTailoring tailoring = LineBreakTailoring.None) =>
+        Break(runs, modes, availableWidth, reshape, run => run < atSpace.Count ? atSpace[run] : LineEndShaping.KeepParagraphGlyphs, textItemStep, tailoring);
 
     private static Result<ValueList<TextLine>, Error> Break(
         IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, double availableWidth, LineShaper? reshape, Func<int, LineEndShaping> atSpace,
-        double textItemStep = 0)
+        double textItemStep = 0, LineBreakTailoring tailoring = LineBreakTailoring.None)
     {
-        var paragraph = BreakableSegments.Split(runs, modes, canShapeAgain: reshape is not null);
+        var paragraph = BreakableSegments.Split(runs, modes, canShapeAgain: reshape is not null, tailoring);
         var shaping = new LineEnds(paragraph, reshape, reshape is null ? null : new LineShapingBudget(paragraph.Text.Length), atSpace, availableWidth);
         var lines = ImmutableArray.CreateBuilder<TextLine>();
         var segments = paragraph.Segments;

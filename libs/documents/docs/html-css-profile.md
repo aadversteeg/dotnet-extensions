@@ -617,6 +617,50 @@ read back as U+2011). Refused, because Chromium takes them from a font of the sy
 has only U+002D (case `gm-nbhyphen-theano`), and the spaces U+00A0, U+202F, U+2009, U+2002, U+2003, U+2007, U+2008 and
 U+200A in a face without them (case `gm-spaces-roboto`).
 
+## Where a line may end
+
+The HTML front-end ends lines where Chromium 159's print ends them. Its rules are the Unicode Line Breaking Algorithm
+(UAX #14, Unicode 18.0.0) with the departures Chromium's line breaker shows (the layout policy
+`LineBreakRules.Chromium`; the rules and the rows that show each: `Typesetting/LineBreaking/ChromiumLineBreaking.cs`).
+For a template author that means:
+
+- A line may break after every space, also before a closing bracket, a semicolon, an exclamation mark or a middle dot
+  that follows a space (`( see table 2 )`, `Street · Town`).
+- A line does not break after a slash or a backslash before a letter or a digit: `and/or`, `he/she`, `/usr/local/share`,
+  `C:\Users\Public` and `INV/2026/0042` each stay in one piece. Nor after `!` or `|` between letters, nor between
+  the two plus signs of `C++`.
+- A line may break after a hyphen in a number or a code when a letter or a digit comes before the hyphen:
+  `2026-` / `11-` / `28`, `REF-` / `2026-` / `0042`, `06-` / `12345678`. A minus sign stays with its number: `-5`,
+  `12 -34`.
+- In an address a line may break after `?` and after a hyphen, not after each slash:
+  `https://example.com/orders/2026/11/overview?` / `page=2&sort=date`.
+- The signs ¢ £ ¤ ¥ ° ± may move to the next line after a slash, a colon, a semicolon, a comma, a full stop or a closing
+  bracket in a number, and a line may break after them before an opening bracket: `12.50/` / `£15.00`. The euro and
+  dollar signs, and every sign beyond U+00FF, stay with the number: `12,50/€15,00` is one piece.
+- A line may break after an en dash, a bar or another character of class BA before a no-break space (`10–` / `12`
+  written with `&nbsp;`), and after a soft hyphen that follows a no-break space.
+- An en dash or a figure dash written right before a word after a space (`Rotterdam –Den Haag`) stays with the word.
+
+To keep two words together, put a no-break space (`&nbsp;`) between them, or wrap them in an element with
+`white-space: nowrap`. To allow a break where these rules forbid one, put a zero width space (`&#x200B;`) there; `wbr`
+is refused.
+
+Measured against Chromium's print: every pair of printable ASCII characters, between letters and between digits; every
+pair of 55 characters met in documents in both contexts; 104 strings of ordinary documents (addresses, paths, dates,
+amounts, phone numbers, codes, abbreviations, quotes); ASCII punctuation beside letters that are not ASCII; and the
+currency, percent and degree signs beside the punctuation of a number: 23 907 rows, every one reproduced (the matrix of
+`tools/reference/chromium/line-breaks.py`, kept as `Reference/Chromium/line-breaks.txt` of the typesetting tests), and
+the cases `lb-*`. Not measured, and so laid out by the standard rules: text in the scripts no font of the repository
+draws (Chinese, Japanese, Korean, Thai and the other scripts that UAX #14 breaks by dictionary or by syllable), which
+is refused today for its glyphs.
+
+What stays refused: every value of `word-break`, `overflow-wrap` (and `word-wrap`), `line-break` and `hyphens` but the
+initial one. Chromium breaks between any two letters under `word-break: break-all`, `overflow-wrap: anywhere` or
+`break-word` and `line-break: anywhere`, and hyphenates English words by its dictionary under `hyphens: auto` with
+`lang="en"`; the engine has neither.
+
+Documents built in code (the fluent front-end) follow the standard rules (`LineBreakRules.Standard`, the default).
+
 ## HTML
 
 - The user-agent style sheet: `Ave.Extensions.Documents.Html/UserAgent/html.css` (HTML Standard §15, as Chromium 159

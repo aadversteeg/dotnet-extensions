@@ -1,0 +1,4 @@
+lb-amount.boxes.txt 1
+lb-amount.lines.txt 0
+lb-amount.print.txt 51
+lb-amount.words.txt 49

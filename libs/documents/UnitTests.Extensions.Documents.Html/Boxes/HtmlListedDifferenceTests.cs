@@ -716,26 +716,6 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
-    /// A hyphen after an image or a space, before a letter (case <c>ii-hyphen</c>, 6 pt wide paragraphs, 18 pt lines):
-    /// UAX #14 LB20a allows no break between the hyphen and the letter there, so the engine keeps "-b" on one line;
-    /// Chromium breaks after the hyphen all the same, after an image as after a space, and prints "-" and "b" on lines of
-    /// their own (the code front-end's <c>InlineImageTests</c> pins the same lines). That break is the whole difference:
-    /// with each such "b" set after its hyphen on the hyphen's line and what follows moved up one line, Chromium's print
-    /// is the engine's.
-    /// </summary>
-    [Fact]
-    public void A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case()
-    {
-        var (engine, chromium) = (Engine("ii-hyphen"), HtmlCases.ChromiumPrint("ii-hyphen"));
-        engine.Pages[0].Lines.Select(line => line.Text).Should().Equal("a", "-b", "a", "-b", "a-", "b", "x");
-        chromium.Pages[0].Lines.Select(line => line.Text).Should().Equal("a", "-", "b", "a", "-", "b", "a-", "b", "x");
-        chromium.Pages[0].Images.Single().Y1.Should().Be(43.5, "the image is on a line of its own in both");
-
-        var joined = JoinedWithNextLine(JoinedWithNextLine(chromium, 115.5, 18), 61.5, 18);
-        HtmlCases.Difference(engine, joined).Should().BeNull("the break after the hyphen is the whole difference");
-    }
-
-    /// <summary>
     /// A line break beside an image next to a word joiner (U+2060) or a zero width joiner (U+200D) (case <c>ii-joiners</c>,
     /// a deliberate deviation from CSS Text 3 §5.5 that follows Chromium; the code front-end's <c>InlineImageTests</c> pins
     /// it): the lines are Chromium's, and the text layer differs. Chromium's print keeps the joiners in the PDF's text, the
@@ -834,6 +814,26 @@ public class HtmlListedDifferenceTests
     }
 
     /// <summary>
+    /// A dash before a no-break space or a no-break hyphen, and a soft hyphen after a no-break space (case <c>lb-hyphens</c>,
+    /// 30, 45 and 60 pt wide paragraphs): the lines are Chromium's, which break after the dash and after the soft hyphen
+    /// where UAX #14 alone does not (LB12a, LB12, LB20a; the HTML front-end's line-break rules are Chromium's,
+    /// <c>LineBreakRules.Chromium</c>). The text layer differs as in <c>ws-soft</c> (docs/architecture.md, a listed
+    /// difference of the text layer): Chromium's PDF text keeps the soft hyphen that starts a word after the no-break space
+    /// and adds U+2010 at a shown hyphen; the engine's keeps only a shown soft hyphen. With Chromium's words read as the
+    /// engine's text, the case is equal.
+    /// </summary>
+    [Fact]
+    public void A_dash_and_a_soft_hyphen_beside_a_no_break_space_break_like_Chromium_whose_text_keeps_the_soft_hyphen()
+    {
+        var (engine, chromium) = (Engine("lb-hyphens"), HtmlCases.ChromiumPrint("lb-hyphens"));
+        chromium.Pages[0].Words.Select(word => word.Text).Should().ContainInOrder("10\u2013", "12", "a", "\u00ADlong", "e\u2011mail", "\u00AD\u2010", "address");
+        engine.Pages[0].Words.Select(word => word.Text).Should().ContainInOrder("10\u2013", "12", "a", "long", "e\u2011mail", "\u00AD", "address");
+
+        var read = new PrintedPages([.. chromium.Pages.Select(page => page with { Words = [.. page.Words.Select(word => word with { Text = EngineText(word.Text) })] })]);
+        HtmlCases.Difference(engine, read).Should().BeNull("the text layer is the whole difference");
+    }
+
+    /// <summary>
     /// Underlines that skip the ink of descenders, cut beside an image, at a shown soft hyphen and in ligatures (case
     /// <c>sk-misc</c>; the code front-end's <c>SkipInkTests</c> pins the same pieces): the pieces are Chromium's, compared
     /// as the status compares them (<see cref="HtmlCases.ChromiumPrint"/>); the text layer differs at the shown soft
@@ -881,21 +881,6 @@ public class HtmlListedDifferenceTests
             Images = [.. page.Images.Select(image => image.Y0 >= baseline ? image with { Y0 = image.Y0 + lineHeight, Y1 = image.Y1 + lineHeight }
                 : On(image.Y1, baseline) && moved(image.X0) ? image with { X0 = image.X0 - x + left, X1 = image.X1 - x + left, Y0 = image.Y0 + lineHeight, Y1 = image.Y1 + lineHeight } : image)],
             Rectangles = [.. page.Rectangles.Select(box => box.Y0 >= baseline ? box with { Y0 = box.Y0 + lineHeight, Y1 = box.Y1 + lineHeight } : box)],
-        }]);
-    }
-
-    /// <summary>The only page with the one word on the line below <paramref name="baseline"/> set after the line's one word,
-    /// as one word, and everything below moved up by one line of <paramref name="lineHeight"/>.</summary>
-    private static PrintedPages JoinedWithNextLine(PrintedPages pages, double baseline, double lineHeight)
-    {
-        var page = pages.Pages.Single();
-        var (first, next) = (page.Words.Single(word => On(word.Baseline, baseline)), page.Words.Single(word => On(word.Baseline, baseline + lineHeight)));
-        return new([page with
-        {
-            Words = [.. page.Words.Where(word => word != next).Select(word => word == first ? word with { Text = first.Text + next.Text, X1 = first.X1 + next.X1 - next.X0 }
-                : word.Baseline > baseline + 0.01 ? word with { Baseline = word.Baseline - lineHeight } : word)],
-            Images = [.. page.Images.Select(image => image.Y0 > baseline + lineHeight ? image with { Y0 = image.Y0 - lineHeight, Y1 = image.Y1 - lineHeight } : image)],
-            Rectangles = [.. page.Rectangles.Select(box => box.Y0 > baseline + lineHeight ? box with { Y0 = box.Y0 - lineHeight, Y1 = box.Y1 - lineHeight } : box)],
         }]);
     }
 
