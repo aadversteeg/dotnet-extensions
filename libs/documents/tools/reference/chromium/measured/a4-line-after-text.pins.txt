@@ -1,4 +1,7 @@
 a4-line-after-text.boxes.txt 1
+a4-line-after-text.clips.txt 4
+a4-line-after-text.glyphs.txt 4
 a4-line-after-text.lines.txt 0
+a4-line-after-text.order.txt 4
 a4-line-after-text.print.txt 7
 a4-line-after-text.words.txt 2

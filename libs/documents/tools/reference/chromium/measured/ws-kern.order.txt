@@ -1,0 +1,14 @@
+word 1 To 0 0
+word 1 T 1
+word 1 o 2
+word 1 T 3
+word 1 o 4
+word 1 T 5
+word 1 o 6
+word 1 T 7
+word 1 o 8
+word 1 T 9
+word 1 o 10
+word 1 T 11
+word 1 o 12
+word 1 x 13

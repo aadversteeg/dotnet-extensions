@@ -1,4 +1,7 @@
 li-after-page.boxes.txt 5
+li-after-page.clips.txt 24
+li-after-page.glyphs.txt 24
 li-after-page.lines.txt 5
+li-after-page.order.txt 31
 li-after-page.print.txt 33
 li-after-page.words.txt 24

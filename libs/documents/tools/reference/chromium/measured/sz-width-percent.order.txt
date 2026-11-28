@@ -1,0 +1,18 @@
+word 1 right 2 2 2 2 2
+word 1 end 2 2 2
+word 1 alpha 3 3 3 3 3
+word 1 beta 3 3 3 3
+word 1 gamma 3 3 3 3 3
+word 1 delta 3 3 3 3 3
+word 1 epsilon 4 4 4 4 4 4 4
+word 1 zeta 4 4 4 4
+word 1 eta 4 4 4
+word 1 theta 4 4 4 4 4
+word 1 iota 4 4 4 4
+word 1 kappa 5 5 5 5 5
+word 1 lambda 5 5 5 5 5 5
+word 1 after 6 6 6 6
+word 1 the 6 6 6
+word 1 boxes 6 6 6 6 6
+paint 1 0 12.000 12.000 122.250 24.750 #dddddd
+paint 1 1 12.000 30.750 150.000 69.000 #dddddd

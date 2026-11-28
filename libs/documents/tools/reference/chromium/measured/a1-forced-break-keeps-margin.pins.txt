@@ -1,4 +1,7 @@
 a1-forced-break-keeps-margin.boxes.txt 1
+a1-forced-break-keeps-margin.clips.txt 2
+a1-forced-break-keeps-margin.glyphs.txt 2
 a1-forced-break-keeps-margin.lines.txt 0
+a1-forced-break-keeps-margin.order.txt 2
 a1-forced-break-keeps-margin.print.txt 4
 a1-forced-break-keeps-margin.words.txt 2

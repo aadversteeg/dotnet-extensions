@@ -1,5 +1,9 @@
 lk-cell.boxes.txt 3
+lk-cell.clips.txt 16
+lk-cell.destinations.txt 1
+lk-cell.glyphs.txt 16
 lk-cell.lines.txt 1
 lk-cell.links.txt 1
+lk-cell.order.txt 17
 lk-cell.print.txt 18
 lk-cell.words.txt 16

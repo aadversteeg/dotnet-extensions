@@ -1,4 +1,7 @@
 fr-old-header-quarter-180-at.boxes.txt 15
+fr-old-header-quarter-180-at.clips.txt 16
+fr-old-header-quarter-180-at.glyphs.txt 16
 fr-old-header-quarter-180-at.lines.txt 51
+fr-old-header-quarter-180-at.order.txt 67
 fr-old-header-quarter-180-at.print.txt 69
 fr-old-header-quarter-180-at.words.txt 16

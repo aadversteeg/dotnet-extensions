@@ -1,0 +1,86 @@
+word 1 STRASSE 0 0 0 0 0 0 0
+word 1 GROSS 0 0 0 0 0
+word 1 WORD 1 1 1 1
+word 1 ǄUNGLA 1 1 1 1 1 1
+word 1 Word 2 2 2 2
+word 1 ǅungla 2 2 2 2 2 2
+word 1 word 3 3 3 3
+word 1 ǆungla 3 3 3 3 3 3
+word 1 ǆungla 3 3 3 3 3 3
+word 1 WORD 4 4 4 4
+word 1 FINE 4 4 4 4
+word 1 ʼN 4 4
+word 1 WORD 5 5 5 5
+word 1 İSTANBUL 5 5 5 5 5 5 5 5
+word 1 İĞNE 5 5 5 5
+word 1 word 6 6 6 6
+word 1 ıstanbul 6 6 6 6 6 6 6 6
+word 1 izmır 6 6 6 6 6
+word 1 WORD 7 7 7 7
+word 1 ISTANBUL 7 7 7 7 7 7 7 7
+word 1 IĞNE 7 7 7 7
+word 1 word 8 8 8 8
+word 1 οδος 8 8 8 8
+word 1 σοφος 8 8 8 8 8
+word 1 σ 8
+word 1 WORD 9 9 9 9
+word 1 ΑΔΕΙΑ 9 9 9 9 9
+word 1 ΟΛΑ 9 9 9
+word 1 WORD 10 10 10 10
+word 1 ΆΔΕΙΑ 11 12 12 12 12
+word 1 ΌΛΑ 13 14 14
+word 1 Word 15 15 15 15
+word 1 Ssa 15 15 15
+word 1 Fine 15 15 15 15
+word 1 ʼNa 15 15 15
+word 1 ǲa 15 15
+word 1 Word 16 16 16 16
+word 1 İstanbul 16 16 16 16 16 16 16 16
+word 1 Ia 16 16
+word 1 word 17 17 17 17
+word 1 οδος. 17 17 17 17 17
+word 1 σα 17 17
+word 1 Word 18 18 18 18
+word 1 IJsland 18 18 18 18 18 18 18
+word 1 STRASSE 19 19 19 19 19 19 19
+word 1 GROSS 19 19 19 19 19
+word 1 WORD 20 20 20 20
+word 1 ǄUNGLA 20 20 20 20 20 20
+word 1 Word 21 21 21 21
+word 1 ǅungla 21 21 21 21 21 21
+word 1 word 22 22 22 22
+word 1 ǆungla 22 22 22 22 22 22
+word 1 ǆungla 22 22 22 22 22 22
+word 1 WORD 23 23 23 23
+word 1 FINE 23 23 23 23
+word 1 ʼN 23 23
+word 1 WORD 24 24 24 24
+word 1 İSTANBUL 24 24 24 24 24 24 24 24
+word 1 İĞNE 24 24 24 24
+word 1 word 25 25 25 25
+word 1 ıstanbul 25 25 25 25 25 25 25 25
+word 1 izmır 25 25 25 25 25
+word 1 WORD 26 26 26 26
+word 1 ISTANBUL 26 26 26 26 26 26 26 26
+word 1 IĞNE 26 26 26 26
+word 1 word 27 27 27 27
+word 1 οδος 27 27 27 27
+word 1 σοφος 27 27 27 27 27
+word 1 σ 27
+word 1 WORD 28 28 28 28
+word 1 ΑΔΕΙΑ 28 28 28 28 28
+word 1 ΟΛΑ 28 28 28
+word 1 WORD 29 29 29 29
+word 1 ΆΔΕΙΑ 30 31 31 31 31
+word 1 ΌΛΑ 32 33 33
+word 1 Word 34 34 34 34
+word 1 Ssa 34 34 34
+word 1 Fine 34 34 34 34
+word 1 ʼNa 34 34 34
+word 1 ǲa 34 34
+word 1 Word 35 35 35 35
+word 1 İstanbul 35 35 35 35 35 35 35 35
+word 1 Ia 35 35
+word 1 word 36 36 36 36
+word 1 οδος. 36 36 36 36 36
+word 1 σα 36 36

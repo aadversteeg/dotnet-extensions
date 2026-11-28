@@ -1,4 +1,7 @@
 a6-nested-header-h4425-n20.boxes.txt 22
+a6-nested-header-h4425-n20.clips.txt 21
+a6-nested-header-h4425-n20.glyphs.txt 21
 a6-nested-header-h4425-n20.lines.txt 74
+a6-nested-header-h4425-n20.order.txt 95
 a6-nested-header-h4425-n20.print.txt 98
 a6-nested-header-h4425-n20.words.txt 21

@@ -26,7 +26,9 @@ def value(document, xref, key):
 DESTINATION = re.compile(r"\[\s*(\d+)\s+0\s+R\s*/XYZ\s+(\S+)\s+(\S+)\s+(\S+)\s*\]")
 
 
-def destination(document, raw, number):
+def resolved(document, raw, number):
+    """The /XYZ array a destination names: the array itself, or the one a named destination names in the catalog's
+    /Dests; the match of its page, left, top and zoom."""
     if raw.startswith("/"):
         kind, text = document.xref_get_key(document.pdf_catalog(), "Dests")
         named = document.xref_object(int(text.split()[0])) if kind == "xref" else text
@@ -37,6 +39,11 @@ def destination(document, raw, number):
     found = DESTINATION.fullmatch(raw.strip())
     if found is None:
         raise ValueError(f"page {number}: a destination this read-back does not know: {raw}")
+    return found
+
+
+def destination(document, raw, number):
+    found = resolved(document, raw, number)
     pages = [page.xref for page in document]
     target = document[pages.index(int(found.group(1)))]
     top = (pymupdf.Point(0, float(found.group(3))) * target.transformation_matrix).y
@@ -55,13 +62,24 @@ def target(document, xref, number):
     raise ValueError(f"page {number}: a link this read-back does not know (action {action}, xref {xref})")
 
 
-document = pymupdf.open(sys.argv[1])
-for number, page in enumerate(document, start=1):
-    for xref, _, _ in page.annot_xrefs():
-        if value(document, xref, "Subtype") != ("name", "/Link"):
-            raise ValueError(f"page {number}: an annotation that is not a link: {document.xref_object(xref)}")
-        kind, text = value(document, xref, "Rect")
-        if kind != "array":
-            raise ValueError(f"page {number}: a link whose /Rect is a {kind}: {text}")
-        rect = (pymupdf.Rect([float(part) for part in text.strip("[]").split()]) * page.transformation_matrix).normalize()
+def annotations(document):
+    """Each link annotation of the document, page by page in the order of each page's /Annots: (page number, page, xref,
+    its rectangle in the page's top-left coordinates)."""
+    for number, page in enumerate(document, start=1):
+        for xref, _, _ in page.annot_xrefs():
+            if value(document, xref, "Subtype") != ("name", "/Link"):
+                raise ValueError(f"page {number}: an annotation that is not a link: {document.xref_object(xref)}")
+            kind, text = value(document, xref, "Rect")
+            if kind != "array":
+                raise ValueError(f"page {number}: a link whose /Rect is a {kind}: {text}")
+            yield number, page, xref, (pymupdf.Rect([float(part) for part in text.strip("[]").split()]) * page.transformation_matrix).normalize()
+
+
+def main(path):
+    document = pymupdf.open(path)
+    for number, _, xref, rect in annotations(document):
         print(f"{number} {rect.x0:.3f} {rect.y0:.3f} {rect.x1:.3f} {rect.y1:.3f} {target(document, xref, number)}")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])

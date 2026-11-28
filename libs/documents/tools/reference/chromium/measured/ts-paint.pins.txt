@@ -1,4 +1,7 @@
 ts-paint.boxes.txt 5
+ts-paint.clips.txt 5
+ts-paint.glyphs.txt 5
 ts-paint.lines.txt 2
+ts-paint.order.txt 11
 ts-paint.print.txt 24
 ts-paint.words.txt 5

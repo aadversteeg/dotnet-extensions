@@ -72,11 +72,12 @@ public class HtmlListedDifferenceTests
     /// past the engine's, each of its three spaces 0.25 pt wider. The engine justifies each line to the page area's end
     /// and has no page scale. With those spaces and the clipped border taken as the engine's, the print is the engine's.
     /// </summary>
-    [Fact]
-    public void Where_an_inline_box_ends_on_a_justified_line_Chromium_may_shrink_the_page_and_justify_it_a_pixel_wider()
+    [Theory]
+    [InlineData("ib-break-justify")]
+    public void Where_an_inline_box_ends_on_a_justified_line_Chromium_may_shrink_the_page_and_justify_it_a_pixel_wider(string name)
     {
         const double left = 18, top = 18, end = 102;
-        var (engine, chromium) = (Engine("ib-break-justify"), Chromium("ib-break-justify").Pages.Single());
+        var (engine, chromium) = (Engine(name), Chromium(name).Pages.Single());
         var ours = engine.Pages.Single();
 
         var scale = (chromium.Words[0].X1 - left) / (ours.Words[0].X1 - left);
@@ -121,21 +122,35 @@ public class HtmlListedDifferenceTests
     /// larger than the sheet, so the engine's ends at the sheet. Text and backgrounds end 0.54 pt short on the right, and
     /// 64 lines of 1123/64 px, which fill Chromium's page, need two. A right margin of 0.71 px (0.53 pt) or more and a
     /// bottom margin of 0.52 px (0.39 pt) or more bring the area inside the sheet: then both agree (case
-    /// <c>h-page-a4-margin-px</c>, 1 px margins, equal).
+    /// <c>h-page-a4-margin-px</c>, 1 px margins, equal). Each case shows one of the three: the right edge, a justified
+    /// line's end, the lines that fill the page.
     /// </summary>
-    [Fact]
-    public void The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet()
+    /// <param name="name">The case.</param>
+    /// <param name="shows">What the case shows: <c>right</c>, <c>justify</c> or <c>lines</c>.</param>
+    [Theory]
+    [InlineData("h-page-a4-zero-right", "right")]
+    [InlineData("h-page-a4-zero-justify", "justify")]
+    [InlineData("h-page-a4-zero-lines", "lines")]
+    public void The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet(string name, string shows)
     {
-        var (engine, chromium) = (Engine("h-page-a4-zero-right").Pages.Single(), Chromium("h-page-a4-zero-right").Pages.Single());
-        (chromium.Width, engine.Width).Should().Be((594.96, 594.96));
-        chromium.Rectangles.Single().X1.Should().Be(595.2, "Chromium draws it to 595.5, its page area 794 px wide, under a clip that ends at 595.2, past the sheet");
-        engine.Rectangles.Single().X1.Should().BeApproximately(594.96, 1e-6, "the engine's ends at the sheet");
-
-        LineEnds(Chromium("h-page-a4-zero-justify"))[0].Should().BeApproximately(595.5, 0.01);
-        LineEnds(Engine("h-page-a4-zero-justify"))[0].Should().BeApproximately(594.96, 0.01);
-
-        Chromium("h-page-a4-zero-lines").Pages.Should().ContainSingle("64 lines of 1123/64 px fill 1123 px");
-        Engine("h-page-a4-zero-lines").Pages.Should().HaveCount(2, "the engine's page area is 1122.56 px high");
+        var (engine, chromium) = (Engine(name), Chromium(name));
+        switch (shows)
+        {
+            case "right":
+                (chromium.Pages.Single().Width, engine.Pages.Single().Width).Should().Be((594.96, 594.96));
+                chromium.Pages.Single().Rectangles.Single().X1.Should().Be(595.2, "Chromium draws it to 595.5, its page area 794 px wide, under a clip that ends at 595.2, past the sheet");
+                engine.Pages.Single().Rectangles.Single().X1.Should().BeApproximately(594.96, 1e-6, "the engine's ends at the sheet");
+                break;
+            case "justify":
+                LineEnds(chromium)[0].Should().BeApproximately(595.5, 0.01);
+                LineEnds(engine)[0].Should().BeApproximately(594.96, 0.01);
+                break;
+            default:
+                shows.Should().Be("lines");
+                chromium.Pages.Should().ContainSingle("64 lines of 1123/64 px fill 1123 px");
+                engine.Pages.Should().HaveCount(2, "the engine's page area is 1122.56 px high");
+                break;
+        }
     }
 
     /// <summary>
@@ -144,10 +159,11 @@ public class HtmlListedDifferenceTests
     /// character it shows, so the text can be copied and searched (docs/architecture.md, the rule for shaping across runs).
     /// With Chromium's two words read as the engine's, the case is equal: the text is the whole difference.
     /// </summary>
-    [Fact]
-    public void A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run()
+    [Theory]
+    [InlineData("sr-same-font")]
+    public void A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run(string name)
     {
-        var (engine, chromium) = (Engine("sr-same-font"), Chromium("sr-same-font"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         chromium.Pages.Single().Text.Should().Contain("fix fx office ofce");
         engine.Pages.Single().Text.Should().NotContain("fx").And.NotContain("ofce");
         HtmlCases.Difference(engine, Read(chromium, text => text switch { "fx" => "fix", "ofce" => "office", _ => text })).Should().BeNull();
@@ -164,10 +180,11 @@ public class HtmlListedDifferenceTests
     /// "o"), and one that ends a word starts after the kerned "o" (22.947) and reaches 26.019, past the next "T" at 22.957.
     /// That end is left out; every other fact of the case is compared.
     /// </summary>
-    [Fact]
-    public void A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it()
+    [Theory]
+    [InlineData("sr-zwnj")]
+    public void A_zero_width_non_joiner_is_not_in_the_text_where_Chromium_keeps_it(string name)
     {
-        var (engine, chromium) = (Engine("sr-zwnj"), Chromium("sr-zwnj"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         chromium.Pages.Single().Words.Select(word => word.Text).Should().Equal("T\u200Co", "T", "\u200Co", "T", "o\u200C", "T");
         var trailing = chromium.Pages.Single().Words.Single(word => word.Text == "o\u200C");
         var mine = engine.Pages.Single().Words.Last(word => word.Text == "o");
@@ -185,7 +202,7 @@ public class HtmlListedDifferenceTests
 
     /// <summary>
     /// A link around generated text (case <c>mx-gen-link</c>: <c>a::before { content: "see " }</c> and
-    /// <c>a::after { content: " more" }</c>; case <c>tt-groups</c>: <c>a::before { content: "xy" }</c> on a line whose top
+    /// <c>a::after { content: " more" }</c>; case <c>mx-link-gen-after</c>: the second alone; case <c>tt-groups</c>: <c>a::before { content: "xy" }</c> on a line whose top
     /// lies between pixels): Chromium's print writes two link annotations for each such link, one around the generated text
     /// and one around the element's own (33.75 to 52.5 pt and 52.5 to 74.25 pt for "see page"; 84 to 96 pt and 96 to 105 pt
     /// for "xyef"), where the engine writes one area for the link's part on the line, from its first piece to its last (THE
@@ -198,6 +215,7 @@ public class HtmlListedDifferenceTests
     /// <param name="areas">How many link areas the engine writes: one for each pair of Chromium's and each other link.</param>
     [Theory]
     [InlineData("mx-gen-link", 4, 2)]
+    [InlineData("mx-link-gen-after", 2, 1)]
     [InlineData("tt-groups", 6, 5)]
     public void A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest(string name, int written, int areas)
     {
@@ -236,10 +254,11 @@ public class HtmlListedDifferenceTests
     /// whole difference: every word is on Chromium's baseline, the words of tables a and c and the first column's where
     /// Chromium prints them, and the second column's words of b and d one distance to the right of Chromium's.
     /// </summary>
-    [Fact]
-    public void A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow()
+    [Theory]
+    [InlineData("twd-table-narrow")]
+    public void A_table_of_a_given_width_in_the_fixed_layout_is_never_narrower_than_its_content_where_Chromium_lets_the_content_overflow(string name)
     {
-        var (engine, chromium) = (Engine("twd-table-narrow"), Chromium("twd-table-narrow"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         var ours = engine.Pages.Single().Words;
         var theirs = chromium.Pages.Single().Words;
         var starts = ours.Where(word => word.Text == "one").Select(word => word.Baseline).ToList();
@@ -405,10 +424,11 @@ public class HtmlListedDifferenceTests
     /// to Chromium's baseline the engine's pages are Chromium's; with a row after the table, which Chromium starts below the
     /// padding, the case is equal (<c>-next-row</c>).
     /// </summary>
-    [Fact]
-    public void What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding()
+    [Theory]
+    [InlineData("fr-continued-pad-past-taller-than-page")]
+    public void What_follows_bottom_padding_taller_than_a_page_starts_below_it_where_Chromium_draws_it_over_the_padding(string name)
     {
-        var (engine, chromium) = (Engine("fr-continued-pad-past-taller-than-page"), Chromium("fr-continued-pad-past-taller-than-page"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         var (theirs, ours) = (chromium.Pages[3], engine.Pages[3]);
 
         engine.PageTexts.Should().Equal(chromium.PageTexts);
@@ -435,10 +455,11 @@ public class HtmlListedDifferenceTests
     /// starts is the whole difference: with the engine's first page empty and the top line drawn at the top of its second
     /// page instead, what lies below it lowered by the line's 0.75 pt, the engine's pages are Chromium's.
     /// </summary>
-    [Fact]
-    public void A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank()
+    [Theory]
+    [InlineData("fr-old-row-taller-by-padding")]
+    public void A_row_taller_than_the_page_only_through_its_cell_padding_starts_on_a_page_that_Chromium_leaves_blank(string name)
     {
-        var (engine, chromium) = (Engine("fr-old-row-taller-by-padding"), Chromium("fr-old-row-taller-by-padding"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
 
         engine.PageTexts.Should().Equal(string.Empty, "w", "z");
         chromium.PageTexts.Should().Equal(engine.PageTexts);
@@ -464,10 +485,11 @@ public class HtmlListedDifferenceTests
     /// That height is the whole difference: the engine's second page with what lies below the row's rest moved 12 pt
     /// lower, and the cell's side lines 12 pt longer, is Chromium's.
     /// </summary>
-    [Fact]
-    public void A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height()
+    [Theory]
+    [InlineData("fr-old-margin-at-row-cut")]
+    public void A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height(string name)
     {
-        var (engine, chromium) = (Engine("fr-old-margin-at-row-cut"), Chromium("fr-old-margin-at-row-cut"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         double Z(PrintedPages pages) => pages.Pages[1].Words.Single(word => word.Text == "z").Baseline;
 
         engine.PageTexts.Should().Equal(chromium.PageTexts).And.Equal("i a", "b0 b1 z");
@@ -494,10 +516,11 @@ public class HtmlListedDifferenceTests
     /// <see cref="What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices"/>).
     /// The slices are the same on every page.
     /// </summary>
-    [Fact]
-    public void An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells()
+    [Theory]
+    [InlineData("a4-image-rowspan")]
+    public void An_image_in_a_cell_that_spans_two_rows_follows_the_engine_s_rules_for_rows_and_spanning_cells(string name)
     {
-        var (engine, chromium) = (Engine("a4-image-rowspan"), Chromium("a4-image-rowspan"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         static (int Page, double Baseline) At(PrintedPages pages, string text) =>
             pages.Pages.SelectMany(page => page.Words).Where(word => word.Text == text).Select(word => (word.Page, word.Baseline)).Single();
 
@@ -520,10 +543,11 @@ public class HtmlListedDifferenceTests
     /// <c>break-inside: auto</c> on the footer group Chromium does not repeat it either (case <c>tf-pages-auto</c>), and
     /// on one page both print the same (<c>tf-after</c>).
     /// </summary>
-    [Fact]
-    public void A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page()
+    [Theory]
+    [InlineData("tf-pages")]
+    public void A_footer_group_is_drawn_once_after_the_body_where_Chromium_repeats_it_on_every_page(string name)
     {
-        var (engine, chromium) = (Engine("tf-pages"), Chromium("tf-pages"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         static string[] Ends(PrintedPages pages) => [.. pages.Pages.Select(page => string.Join(" ", page.Words.Where(word => word.Text != "after").TakeLast(2).Select(word => word.Text)))];
 
         chromium.Pages.Should().HaveCount(4);
@@ -541,10 +565,11 @@ public class HtmlListedDifferenceTests
     /// equal). With Chromium's word read as the engine's (face, end and baseline), the case is equal: the face is the
     /// whole difference.
     /// </summary>
-    [Fact]
-    public void A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face()
+    [Theory]
+    [InlineData("pm-family-unused")]
+    public void A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face(string name)
     {
-        var (engine, chromium) = (Engine("pm-family-unused"), Chromium("pm-family-unused"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         var theirs = chromium.Pages.Single().Words.Single(word => word.Text == "Cc");
         var mine = engine.Pages.Single().Words.Single(word => word.Text == "Cc");
         (theirs.Face, mine.Face).Should().Be(("LiberationSerif-Bold", "Lato-Bold"));
@@ -566,7 +591,9 @@ public class HtmlListedDifferenceTests
     /// the pages of the slices the header lies over the slice in Chromium and above it in the engine; what follows the
     /// slices in the table starts that much lower in the engine, and where Chromium starts the next row in an empty part
     /// below the header on the page of the last slice, that row goes on half a grid line higher on the next page than the
-    /// engine's, which starts it there (0.375 pt, within the comparison's whole pixel until the end of the table).
+    /// engine's, which starts it there (0.375 pt; the comparison paints a baseline on the whole pixel, and on page 7 of
+    /// <c>a4-header-image-360-image</c> and <c>a4-header-two-image-rows</c> that half grid line crosses a pixel: "after" is
+    /// laid out at 88.875 and painted at 89.25, Chromium's at 88.5, a difference their status files list).
     /// Cases: a 360 pt image, then a 408 pt image (<c>a4-header-image-360-image</c>, pages 3 and 4); a row, a 408 pt image,
     /// a row (<c>a4-header-row-image-row</c>, pages 4 and 5); a 408 pt image, a row, a 408 pt image
     /// (<c>a4-header-image-row-image</c>, pages 3 and 4); two 408 pt images (<c>a4-header-two-image-rows</c>, pages 3 and 4).
@@ -723,10 +750,11 @@ public class HtmlListedDifferenceTests
     /// with each such "b" set after its hyphen on the hyphen's line and what follows moved up one line, Chromium's print
     /// is the engine's.
     /// </summary>
-    [Fact]
-    public void A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case()
+    [Theory]
+    [InlineData("ii-hyphen")]
+    public void A_hyphen_after_an_image_keeps_its_letter_as_after_a_space_where_Chromium_breaks_after_it_in_the_HTML_case(string name)
     {
-        var (engine, chromium) = (Engine("ii-hyphen"), HtmlCases.ChromiumPrint("ii-hyphen"));
+        var (engine, chromium) = (Engine(name), HtmlCases.ChromiumPrint(name));
         engine.Pages[0].Lines.Select(line => line.Text).Should().Equal("a", "-b", "a", "-b", "a-", "b", "x");
         chromium.Pages[0].Lines.Select(line => line.Text).Should().Equal("a", "-", "b", "a", "-", "b", "a-", "b", "x");
         chromium.Pages[0].Images.Single().Y1.Should().Be(43.5, "the image is on a line of its own in both");
@@ -743,10 +771,11 @@ public class HtmlListedDifferenceTests
     /// a word the PDF's default width (<c>/DW 256</c>, 3.072 pt at 12 pt), so such a word reads that much longer. With the
     /// joiners taken out of Chromium's words and that width out of their ends, the case is equal.
     /// </summary>
-    [Fact]
-    public void A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners()
+    [Theory]
+    [InlineData("ii-joiners")]
+    public void A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners(string name)
     {
-        var (engine, chromium) = (Engine("ii-joiners"), HtmlCases.ChromiumPrint("ii-joiners"));
+        var (engine, chromium) = (Engine(name), HtmlCases.ChromiumPrint(name));
         static bool Joiner(char character) => character is '⁠' or '‍';
         var ending = chromium.Pages[0].Words.Where(word => Joiner(word.Text[^1])).ToList();
         ending.Select(word => word.Text).Should().Equal("abc⁠", "abc‍");
@@ -774,10 +803,11 @@ public class HtmlListedDifferenceTests
     /// with each taken in the engine's print (the rest of the line moved to the start of the next, what follows one line
     /// lower), the engine's print is Chromium's.
     /// </summary>
-    [Fact]
-    public void Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case()
+    [Theory]
+    [InlineData("ws-border")]
+    public void Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case(string name)
     {
-        var (engine, chromium) = (Engine("ws-border"), HtmlCases.ChromiumPrint("ws-border"));
+        var (engine, chromium) = (Engine(name), HtmlCases.ChromiumPrint(name));
         string Line(PrintedPages pages, double baseline) => string.Join(" ", pages.Pages[0].Words.Where(word => On(word.Baseline, baseline)).Select(word => word.Text));
         (Line(engine, 187.5), Line(chromium, 187.5), Line(chromium, 205.5)).Should().Be(("aa- bb", "aa-", "bb"));
         (Line(engine, 367.5), Line(chromium, 385.5), Line(chromium, 403.5)).Should().Be(("aa bb", "aa", "bb"));
@@ -794,10 +824,11 @@ public class HtmlListedDifferenceTests
     /// nowrap element (paragraph 2), as the character before each opportunity does not wrap. Those two breaks are the
     /// whole difference: with each taken in the engine's print, the engine's print is Chromium's.
     /// </summary>
-    [Fact]
-    public void Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case()
+    [Theory]
+    [InlineData("ws-image-border")]
+    public void Beside_an_image_at_the_end_of_an_element_that_wraps_differently_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case(string name)
     {
-        var (engine, chromium) = (Engine("ws-image-border"), HtmlCases.ChromiumPrint("ws-image-border"));
+        var (engine, chromium) = (Engine(name), HtmlCases.ChromiumPrint(name));
         engine.Pages[0].Images[0].X0.Should().BeApproximately(24.691, 1e-3, "the image follows the nowrap \"ab\" on its line");
         engine.Pages[0].Images[0].Y1.Should().BeApproximately(25.5, 1e-3);
         (chromium.Pages[0].Images[0].X0, chromium.Pages[0].Images[0].Y1).Should().Be((12, 43.5), "Chromium breaks before it");
@@ -815,10 +846,11 @@ public class HtmlListedDifferenceTests
     /// that ends a word the PDF's default width (<c>/DW 256</c>, 3.072 pt at 12 pt). With Chromium's words read as the
     /// engine's text and that width out of their ends, the case is equal.
     /// </summary>
-    [Fact]
-    public void A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them()
+    [Theory]
+    [InlineData("ws-soft")]
+    public void A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them(string name)
     {
-        var (engine, chromium) = (Engine("ws-soft"), HtmlCases.ChromiumPrint("ws-soft"));
+        var (engine, chromium) = (Engine(name), HtmlCases.ChromiumPrint(name));
         chromium.Pages[0].Words.Select(word => word.Text).Should().StartWith(["aa­bb​cc", "aa­‐", "bb​", "cc"]);
         engine.Pages[0].Words.Select(word => word.Text).Should().StartWith(["aabbcc", "aa­", "bb", "cc"]);
 
@@ -840,10 +872,11 @@ public class HtmlListedDifferenceTests
     /// hyphen, where Chromium's PDF text adds U+2010 after it and the engine's has the soft hyphen only. With that character
     /// taken out of Chromium's words, the case is equal.
     /// </summary>
-    [Fact]
-    public void An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen()
+    [Theory]
+    [InlineData("sk-misc")]
+    public void An_image_a_shown_soft_hyphen_and_ligatures_cut_the_underline_like_Chromium_whose_text_adds_a_hyphen(string name)
     {
-        var (engine, chromium) = (Engine("sk-misc"), HtmlCases.ChromiumPrint("sk-misc"));
+        var (engine, chromium) = (Engine(name), HtmlCases.ChromiumPrint(name));
         chromium.Pages[0].Words.Should().ContainSingle(word => word.Text.Contains('‐')).Which.Text.Should().Be("jump­‐");
         engine.Pages[0].Words.Should().Contain(word => word.Text == "jump­");
 
@@ -914,10 +947,10 @@ public class HtmlListedDifferenceTests
     /// the header, at the same rectangle (case <c>lk-header-row</c>): an annotation is not printed, so Chromium's is a fact
     /// and not the rule. The print is the same, and the engine's one link is Chromium's first.
     /// </summary>
-    [Fact]
-    public void A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page()
+    [Theory]
+    [InlineData("lk-header-row")]
+    public void A_link_in_a_repeated_header_row_leads_from_its_first_copy_only_where_Chromium_writes_it_twice_on_every_page(string name)
     {
-        const string name = "lk-header-row";
         var boxes = HtmlCases.Boxes(name).Value;
         var pages = DocumentLayout.Run(boxes.Document, boxes.Fonts).Value;
         var chromium = HtmlCases.Links(HtmlCases.Cases, name);
@@ -938,10 +971,10 @@ public class HtmlListedDifferenceTests
     /// ISO 32000-1 §12.5.6.5 lets a link annotation's <c>/Rect</c> be any rectangle. The print is the same, and each of the
     /// engine's areas is the rectangle around Chromium's of that line, so no part of the link Chromium marks lies outside it.
     /// </summary>
-    [Fact]
-    public void A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it()
+    [Theory]
+    [InlineData("ib-link-span-inside")]
+    public void A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it(string name)
     {
-        const string name = "ib-link-span-inside";
         var boxes = HtmlCases.Boxes(name).Value;
         var pages = DocumentLayout.Run(boxes.Document, boxes.Fonts).Value;
         var chromium = HtmlCases.Links(HtmlCases.Cases, name);
@@ -980,10 +1013,11 @@ public class HtmlListedDifferenceTests
     /// label's structure element. The pixels are the same: Chromium's print with each disc moved to where the engine paints it
     /// is the engine's.
     /// </summary>
-    [Fact]
-    public void A_list_bullet_is_painted_before_its_rounded_item_where_Chromium_paints_it_after_every_item()
+    [Theory]
+    [InlineData("bri-list")]
+    public void A_list_bullet_is_painted_before_its_rounded_item_where_Chromium_paints_it_after_every_item(string name)
     {
-        var (engine, chromium) = (Engine("bri-list"), Chromium("bri-list"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         var theirs = chromium.Pages.Single();
         theirs.Paths.Select(path => path.Colour).Should().Equal("#f0e0a0", "#f0e0a0", "#c03020", "#f0e0a0", "#000000", "#000000", "#000000");
 
@@ -1000,10 +1034,11 @@ public class HtmlListedDifferenceTests
     /// So one sample at each edge, in each of the four rows of the side, is counted the other way; every other dash of the
     /// 47 measured sides is equal.
     /// </summary>
-    [Fact]
-    public void A_dash_whose_edge_lies_on_a_sample_differs_by_that_sample()
+    [Theory]
+    [InlineData("bd-lengths-thick")]
+    public void A_dash_whose_edge_lies_on_a_sample_differs_by_that_sample(string name)
     {
-        var (engine, chromium) = (Engine("bd-lengths-thick"), Chromium("bd-lengths-thick"));
+        var (engine, chromium) = (Engine(name), Chromium(name));
         var (ours, theirs) = (engine.Pages.Single().Paths, chromium.Pages.Single().Paths);
         ours.Should().HaveSameCount(theirs);
 

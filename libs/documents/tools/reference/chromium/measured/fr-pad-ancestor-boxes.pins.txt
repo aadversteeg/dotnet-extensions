@@ -1,4 +1,7 @@
 fr-pad-ancestor-boxes.boxes.txt 1
+fr-pad-ancestor-boxes.clips.txt 2
+fr-pad-ancestor-boxes.glyphs.txt 2
 fr-pad-ancestor-boxes.lines.txt 12
+fr-pad-ancestor-boxes.order.txt 14
 fr-pad-ancestor-boxes.print.txt 17
 fr-pad-ancestor-boxes.words.txt 2

@@ -1,4 +1,7 @@
 ls-values.boxes.txt 1
+ls-values.clips.txt 30
+ls-values.glyphs.txt 30
 ls-values.lines.txt 0
+ls-values.order.txt 30
 ls-values.print.txt 31
 ls-values.words.txt 30

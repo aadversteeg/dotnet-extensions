@@ -1,4 +1,7 @@
 pm-len-inline.boxes.txt 1
+pm-len-inline.clips.txt 7
+pm-len-inline.glyphs.txt 7
 pm-len-inline.lines.txt 6
+pm-len-inline.order.txt 13
 pm-len-inline.print.txt 14
 pm-len-inline.words.txt 7

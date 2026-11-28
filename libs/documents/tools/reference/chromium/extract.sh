@@ -28,5 +28,12 @@ for name in "$@"; do
   if [ ! -s "/out/$name.ink.txt" ]; then rm "/out/$name.ink.txt"; fi
   python3 /src/links.py "/out/$name.pdf" > "/out/$name.links.txt"
   if [ ! -s "/out/$name.links.txt" ]; then rm "/out/$name.links.txt"; fi
+  python3 /src/glyphs.py "/out/$name.pdf" > "/out/$name.glyphs.txt"
+  python3 /src/order.py "/out/$name.pdf" > "/out/$name.order.txt"
+  python3 /src/clips.py "/out/$name.pdf" > "/out/$name.clips.txt"
+  python3 /src/images.py "/out/$name.pdf" > "/out/$name.images.txt"
+  if [ ! -s "/out/$name.images.txt" ]; then rm "/out/$name.images.txt"; fi
+  python3 /src/destinations.py "/out/$name.pdf" > "/out/$name.destinations.txt"
+  if [ ! -s "/out/$name.destinations.txt" ]; then rm "/out/$name.destinations.txt"; fi
 done
 cat /out/tools-versions.txt

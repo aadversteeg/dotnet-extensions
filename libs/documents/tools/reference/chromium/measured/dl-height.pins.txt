@@ -1,4 +1,7 @@
 dl-height.boxes.txt 1
+dl-height.clips.txt 8
+dl-height.glyphs.txt 8
 dl-height.lines.txt 6
+dl-height.order.txt 14
 dl-height.print.txt 15
 dl-height.words.txt 8

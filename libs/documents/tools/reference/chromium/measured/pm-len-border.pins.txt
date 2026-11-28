@@ -1,4 +1,8 @@
 pm-len-border.boxes.txt 1
+pm-len-border.clips.txt 7
+pm-len-border.glyphs.txt 7
+pm-len-border.images.txt 6
 pm-len-border.lines.txt 12
+pm-len-border.order.txt 25
 pm-len-border.print.txt 26
 pm-len-border.words.txt 7

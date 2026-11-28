@@ -1,4 +1,7 @@
 ws-hang-pre-wrap.boxes.txt 1
+ws-hang-pre-wrap.clips.txt 52
+ws-hang-pre-wrap.glyphs.txt 52
 ws-hang-pre-wrap.lines.txt 0
+ws-hang-pre-wrap.order.txt 52
 ws-hang-pre-wrap.print.txt 53
 ws-hang-pre-wrap.words.txt 52

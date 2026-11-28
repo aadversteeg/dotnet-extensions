@@ -1,4 +1,7 @@
 bd-widths.boxes.txt 4
+bd-widths.clips.txt 6
+bd-widths.glyphs.txt 6
 bd-widths.lines.txt 0
+bd-widths.order.txt 22
 bd-widths.print.txt 23
 bd-widths.words.txt 6

@@ -1,4 +1,7 @@
 h-page-size-legal.boxes.txt 1
+h-page-size-legal.clips.txt 2
+h-page-size-legal.glyphs.txt 2
 h-page-size-legal.lines.txt 0
+h-page-size-legal.order.txt 2
 h-page-size-legal.print.txt 3
 h-page-size-legal.words.txt 2

@@ -1,4 +1,7 @@
 a2-blank-part.boxes.txt 6
+a2-blank-part.clips.txt 7
+a2-blank-part.glyphs.txt 7
 a2-blank-part.lines.txt 23
+a2-blank-part.order.txt 30
 a2-blank-part.print.txt 33
 a2-blank-part.words.txt 7

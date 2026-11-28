@@ -1,9 +1,9 @@
-fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header_is_printed: page 2 reads '', Chromium 'H' (print.txt)
+fr-header-pad-box-72 listed The_same_on_a_page_where_Chromium_repeats_the_header_is_printed: page 2 reads '', Chromium 'H'; the engine's page 2: digest f548a9b5483559c6 (print.txt)
 7 differences:
-- page 2 reads '', Chromium 'H' (print.txt)
+- page 2 reads '', Chromium 'H'; the engine's page 2: digest f548a9b5483559c6 (print.txt)
 - page 2 painted area: the pixel at (12, 12): the engine paints it and Chromium does not; the engine paints 384 px #000000, Chromium 288 px; 96 px differ so, from (12, 12) to (288, 30) (print.txt)
 - page 3 painted area: the pixel at (12, 12): Chromium paints it and the engine does not; the engine paints 736 px #000000, Chromium 832 px; 96 px differ so, from (12, 12) to (288, 30) (print.txt)
 - page 2 painted area: the pixel at (12, 12): the engine paints it and Chromium does not; the engine paints 384 px, Chromium 288 px; 96 px differ so, from (12, 12) to (288, 30) (lines.txt)
 - page 3 painted area: the pixel at (12, 12): Chromium paints it and the engine does not; the engine paints 736 px, Chromium 832 px; 96 px differ so, from (12, 12) to (288, 30) (lines.txt)
-- page 2 has 0 words inside the page, Chromium 1 (words.txt)
-- page 2 has no word 'H' (words.txt)
+- page 2 has 0 words inside the page, Chromium 1; the engine's words inside page 2: digest e3b0c44298fc1c14 (words.txt)
+- page 2 has no word 'H'; the engine's words inside page 2: digest e3b0c44298fc1c14 (words.txt)

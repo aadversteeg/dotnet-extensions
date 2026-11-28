@@ -1,4 +1,7 @@
 pm-zero.boxes.txt 1
+pm-zero.clips.txt 3
+pm-zero.glyphs.txt 3
 pm-zero.lines.txt 5
+pm-zero.order.txt 8
 pm-zero.print.txt 10
 pm-zero.words.txt 3

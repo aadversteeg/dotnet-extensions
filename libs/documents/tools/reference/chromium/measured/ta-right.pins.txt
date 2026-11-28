@@ -1,4 +1,7 @@
 ta-right.boxes.txt 1
+ta-right.clips.txt 30
+ta-right.glyphs.txt 30
 ta-right.lines.txt 0
+ta-right.order.txt 30
 ta-right.print.txt 31
 ta-right.words.txt 30

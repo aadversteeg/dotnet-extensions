@@ -1,0 +1,6 @@
+word 1 Upper 0 0 0 0 0
+word 1 roman 0 0 0 0 0
+word 1 MXCIX. 1 1 1 1 1 1
+word 1 Ur 2 2
+word 1 MXCIX. 3 3 3 3 3 3
+word 1 Ur 4 4

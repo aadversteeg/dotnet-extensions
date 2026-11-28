@@ -1,4 +1,7 @@
 tpa-beside.boxes.txt 18
+tpa-beside.clips.txt 37
+tpa-beside.glyphs.txt 37
 tpa-beside.lines.txt 27
+tpa-beside.order.txt 71
 tpa-beside.print.txt 93
 tpa-beside.words.txt 37

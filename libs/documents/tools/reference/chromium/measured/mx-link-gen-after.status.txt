@@ -1,0 +1,5 @@
+mx-link-gen-after listed A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest: link 1 on page 1: x1 82.266, Chromium 55.5 (links.txt)
+3 differences:
+- link 1 on page 1: x1 82.266, Chromium 55.5 (links.txt)
+- link 2: Chromium's rectangle on page 1 at (55.5, 12) to uri https://example.com/m has none in the engine, which has 1 (links.txt)
+- link 1 on page 1: x1 82.266 lies on the pixel 82.5, Chromium's on 55.5 (links.txt)

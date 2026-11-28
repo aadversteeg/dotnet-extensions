@@ -1,4 +1,7 @@
 fr-kwn-pad-on-outer-box.boxes.txt 1
+fr-kwn-pad-on-outer-box.clips.txt 6
+fr-kwn-pad-on-outer-box.glyphs.txt 6
 fr-kwn-pad-on-outer-box.lines.txt 0
+fr-kwn-pad-on-outer-box.order.txt 6
 fr-kwn-pad-on-outer-box.print.txt 10
 fr-kwn-pad-on-outer-box.words.txt 6

@@ -76,7 +76,7 @@ public class PathSamplerTests
     {
         HtmlCases.Difference(PrintedPages.Engine(PageWith(TestPaths.Disc(32.25, 201.375, 1.875, new Color(255, 0, 0)))), PrintedPages.Parse(Chromium))
             .Should().StartWith("page 1 path at (").And.EndWith("2cfc2/cfffc/fffff/cfffc/2cfc2 #ff0000 (print.txt)");
-        HtmlCases.Difference(PrintedPages.Engine(PageWith()), PrintedPages.Parse(Chromium)).Should().Be("page 1 has 0 painted paths, Chromium 1 (print.txt)");
+        HtmlCases.Difference(PrintedPages.Engine(PageWith()), PrintedPages.Parse(Chromium)).Should().Be($"page 1 has 0 painted paths, Chromium 1; the engine's paths: digest {HtmlCases.Digest([])} (print.txt)");
     }
 
     [Fact]

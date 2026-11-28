@@ -1,4 +1,7 @@
 a6-nested-late6-h1800.boxes.txt 33
+a6-nested-late6-h1800.clips.txt 41
+a6-nested-late6-h1800.glyphs.txt 41
 a6-nested-late6-h1800.lines.txt 150
+a6-nested-late6-h1800.order.txt 191
 a6-nested-late6-h1800.print.txt 197
 a6-nested-late6-h1800.words.txt 41

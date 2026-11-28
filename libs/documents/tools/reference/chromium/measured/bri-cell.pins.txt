@@ -1,4 +1,7 @@
 bri-cell.boxes.txt 6
+bri-cell.clips.txt 11
+bri-cell.glyphs.txt 11
 bri-cell.lines.txt 0
+bri-cell.order.txt 17
 bri-cell.print.txt 18
 bri-cell.words.txt 11

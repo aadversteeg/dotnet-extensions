@@ -1,0 +1,6 @@
+word 1 Empty 0 0 0 0 0
+word 1 and 1 1 1
+word 1 anchor 2 2 2 2 2 2
+word 1 and 3 3 3
+word 1 named 4 4 4 4 4
+word 1 after. 5 5 5 5 5

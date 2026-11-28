@@ -1,0 +1,120 @@
+word 1 m0 0 0
+word 1 b0 1 1
+word 1 c0 3 3
+word 1 m1 4 4
+word 1 b1 5 5
+word 1 c1 7 7
+word 1 m2 8 8
+word 1 b2 9 9
+word 1 c2 11 11
+word 1 m3 12 12
+word 1 b3 13 13
+word 1 c3 15 15
+word 1 m4 16 16
+word 1 b4 17 17
+word 1 c4 19 19
+word 1 m5 20 20
+word 1 b5 21 21
+word 1 c5 23 23
+word 1 m6 24 24
+word 1 b6 25 25
+word 1 c6 27 27
+word 1 m7 28 28
+word 1 b7 29 29
+word 1 c7 31 31
+word 1 m8 32 32
+word 1 b8 33 33
+word 1 c8 35 35
+word 1 m9 36 36
+word 1 b9 37 37
+word 1 c9 39 39
+word 2 m10 0 0 0
+word 2 b10 1 1 1
+word 2 c10 3 3 3
+word 2 m11 4 4 4
+word 2 b11 5 5 5
+word 2 c11 7 7 7
+word 2 m12 8 8 8
+word 2 b12 9 9 9
+word 2 c12 11 11 11
+word 2 m13 12 12 12
+word 2 b13 13 13 13
+word 2 c13 15 15 15
+word 2 m14 16 16 16
+word 2 b14 17 17 17
+word 2 c14 19 19 19
+word 2 m15 20 20 20
+word 2 b15 21 21 21
+word 2 c15 23 23 23
+word 2 m16 24 24 24
+word 2 b16 25 25 25
+word 2 c16 27 27 27
+word 2 m17 28 28 28
+word 2 b17 29 29 29
+word 2 c17 31 31 31
+word 2 m18 32 32 32
+word 2 b18 33 33 33
+word 2 c18 35 35 35
+word 2 m19 36 36 36
+word 2 b19 37 37 37
+word 2 c19 39 39 39
+word 3 m20 0 0 0
+word 3 b20 1 1 1
+word 3 c20 3 3 3
+word 3 m21 4 4 4
+word 3 b21 5 5 5
+word 3 c21 7 7 7
+word 3 m22 8 8 8
+word 3 b22 9 9 9
+word 3 c22 11 11 11
+word 3 m23 12 12 12
+word 3 b23 13 13 13
+word 3 c23 15 15 15
+word 3 m24 16 16 16
+word 3 b24 17 17 17
+word 3 c24 19 19 19
+word 3 m25 20 20 20
+word 3 b25 21 21 21
+word 3 c25 23 23 23
+word 3 m26 24 24 24
+word 3 b26 25 25 25
+word 3 c26 27 27 27
+word 3 m27 28 28 28
+word 3 b27 29 29 29
+word 3 c27 31 31 31
+word 3 m28 32 32 32
+word 3 b28 33 33 33
+word 3 c28 35 35 35
+word 3 m29 36 36 36
+word 3 b29 37 37 37
+word 3 c29 39 39 39
+word 4 m30 0 0 0
+word 4 b30 1 1 1
+word 4 c30 3 3 3
+word 4 m31 4 4 4
+word 4 b31 5 5 5
+word 4 c31 7 7 7
+word 4 m32 8 8 8
+word 4 b32 9 9 9
+word 4 c32 11 11 11
+word 4 m33 12 12 12
+word 4 b33 13 13 13
+word 4 c33 15 15 15
+word 4 m34 16 16 16
+word 4 b34 17 17 17
+word 4 c34 19 19 19
+word 4 m35 20 20 20
+word 4 b35 21 21 21
+word 4 c35 23 23 23
+word 4 m36 24 24 24
+word 4 b36 25 25 25
+word 4 c36 27 27 27
+word 4 m37 28 28 28
+word 4 b37 29 29 29
+word 4 c37 31 31 31
+word 4 m38 32 32 32
+word 4 b38 33 33 33
+word 4 c38 35 35 35
+word 4 m39 36 36 36
+word 4 b39 37 37 37
+word 4 c39 39 39 39

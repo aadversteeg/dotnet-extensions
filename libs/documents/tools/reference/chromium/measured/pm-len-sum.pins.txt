@@ -1,4 +1,8 @@
 pm-len-sum.boxes.txt 1
+pm-len-sum.clips.txt 7
+pm-len-sum.glyphs.txt 7
+pm-len-sum.images.txt 6
 pm-len-sum.lines.txt 6
+pm-len-sum.order.txt 19
 pm-len-sum.print.txt 20
 pm-len-sum.words.txt 7

@@ -1,0 +1,61 @@
+word 1 Decimal 0 0 0 0 0 0 0
+word 1 leading 0 0 0 0 0 0 0
+word 1 zero 0 0 0 0
+word 1 01. 1 1 1
+word 1 Dz 2 2
+word 1 09. 3 3 3
+word 1 Dz 4 4
+word 1 10. 5 5 5
+word 1 Dz 6 6
+word 1 100. 7 7 7 7
+word 1 Dz 8 8
+word 1 00. 9 9 9
+word 1 Dz 10 10
+word 1 -5. 11 11 11
+word 1 Dz 12 12
+word 1 Upper 13 13 13 13 13
+word 1 alpha 13 13 13 13 13
+word 1 A. 14 14
+word 1 Ua 15 15
+word 1 Z. 16 16
+word 1 Ua 17 17
+word 1 AA. 18 18 18
+word 1 Ua 19 19
+word 1 0. 20 20
+word 1 Ua 21 21
+word 1 Upper 22 22 22 22 22
+word 1 latin 22 22 22 22
+word 1 A. 23 23
+word 1 Ul 24 24
+word 1 Z. 25 25
+word 1 Ul 26 26
+word 1 AAA. 27 27 27 27
+word 1 Ul 28 28
+word 1 Lower 29 29 29 29 29
+word 1 latin 29 29 29 29
+word 1 b. 30 30
+word 1 Ll 31 31
+word 1 ab. 32 32 32
+word 1 Ll 33 33
+word 1 Lower 34 34 34 34 34
+word 1 roman 34 34 34 34 34
+word 1 i. 35 35
+word 1 Lr 36 36
+word 1 iv. 37 37 37
+word 1 Lr 38 38
+word 1 xl. 39 39 39
+word 1 Lr 40 40
+word 1 xc. 41 41 41
+word 1 Lr 42 42
+word 1 cd. 43 43 43
+word 1 Lr 44 44
+word 1 cm. 45 45 45
+word 1 Lr 46 46
+word 1 mmmdccclxxxviii. 47 47 47 47 47 47 47 47 47 47 47 47 47 47 47 47
+word 1 Lr 48 48
+word 1 mmmcmxcix. 49 49 49 49 49 49 49 49 49 49
+word 1 Lr 50 50
+word 1 4000. 51 51 51 51 51
+word 1 Lr 52 52
+word 1 -1. 53 53 53
+word 1 Lr 54 54

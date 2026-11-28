@@ -1,4 +1,7 @@
 a5-kept-cell-by-box.boxes.txt 4
+a5-kept-cell-by-box.clips.txt 26
+a5-kept-cell-by-box.glyphs.txt 26
 a5-kept-cell-by-box.lines.txt 15
+a5-kept-cell-by-box.order.txt 41
 a5-kept-cell-by-box.print.txt 44
 a5-kept-cell-by-box.words.txt 26

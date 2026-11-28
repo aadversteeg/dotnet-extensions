@@ -1,4 +1,7 @@
 dl-lato-italic.boxes.txt 1
+dl-lato-italic.clips.txt 12
+dl-lato-italic.glyphs.txt 12
 dl-lato-italic.lines.txt 6
+dl-lato-italic.order.txt 18
 dl-lato-italic.print.txt 19
 dl-lato-italic.words.txt 12

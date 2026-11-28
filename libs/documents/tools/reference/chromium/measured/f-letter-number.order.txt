@@ -1,0 +1,60 @@
+word 1 x0 0 0
+word 1 x1 1 1
+word 1 x2 2 2
+word 1 x3 3 3
+word 1 x4 4 4
+word 1 x5 5 5
+word 1 x6 6 6
+word 1 x7 7 7
+word 1 x8 8 8
+word 1 x9 9 9
+word 1 x10 10 10 10
+word 1 x11 11 11 11
+word 1 x12 12 12 12
+word 1 x13 13 13 13
+word 1 x14 14 14 14
+word 1 x15 15 15 15
+word 1 x16 16 16 16
+word 1 x17 17 17 17
+word 1 x18 18 18 18
+word 1 x19 19 19 19
+word 1 x20 20 20 20
+word 1 x21 21 21 21
+word 1 x22 22 22 22
+word 1 x23 23 23 23
+word 1 x24 24 24 24
+word 1 x25 25 25 25
+word 1 x26 26 26 26
+word 1 x27 27 27 27
+word 1 x28 28 28 28
+word 1 x29 29 29 29
+word 1 x30 30 30 30
+word 1 x31 31 31 31
+word 1 x32 32 32 32
+word 1 x33 33 33 33
+word 1 x34 34 34 34
+word 1 x35 35 35 35
+word 1 x36 36 36 36
+word 1 x37 37 37 37
+word 1 x38 38 38 38
+word 1 x39 39 39 39
+word 1 x40 40 40 40
+word 1 x41 41 41 41
+word 1 x42 42 42 42
+word 1 x43 43 43 43
+word 1 x44 44 44 44
+word 1 x45 45 45 45
+word 1 x46 46 46 46
+word 1 x47 47 47 47
+word 1 x48 48 48 48
+word 1 x49 49 49 49
+word 2 x50 0 0 0
+word 2 x51 1 1 1
+word 2 x52 2 2 2
+word 2 x53 3 3 3
+word 2 x54 4 4 4
+word 2 x55 5 5 5
+word 2 x56 6 6 6
+word 2 x57 7 7 7
+word 2 x58 8 8 8
+word 2 x59 9 9 9

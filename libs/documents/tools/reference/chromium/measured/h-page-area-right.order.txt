@@ -1,0 +1,6 @@
+word 1 right 1 1 1 1 1
+word 1 edge 1 1 1 1
+word 1 left 2 2 2
+word 1 edge 2 2 2 2
+word 1 fill 3 4 4
+paint 1 0 10.500 38.250 289.922 52.500 #cccccc

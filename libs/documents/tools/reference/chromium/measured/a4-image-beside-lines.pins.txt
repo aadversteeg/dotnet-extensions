@@ -1,4 +1,8 @@
 a4-image-beside-lines.boxes.txt 4
+a4-image-beside-lines.clips.txt 32
+a4-image-beside-lines.glyphs.txt 32
+a4-image-beside-lines.images.txt 3
 a4-image-beside-lines.lines.txt 24
+a4-image-beside-lines.order.txt 59
 a4-image-beside-lines.print.txt 63
 a4-image-beside-lines.words.txt 32

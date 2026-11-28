@@ -1,4 +1,7 @@
 c-orphans-one.boxes.txt 1
+c-orphans-one.clips.txt 13
+c-orphans-one.glyphs.txt 13
 c-orphans-one.lines.txt 0
+c-orphans-one.order.txt 13
 c-orphans-one.print.txt 15
 c-orphans-one.words.txt 13

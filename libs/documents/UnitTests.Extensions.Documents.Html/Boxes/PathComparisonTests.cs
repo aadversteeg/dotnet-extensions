@@ -23,8 +23,9 @@ public class PathComparisonTests
     [Fact]
     public void A_path_only_one_side_paints_is_a_difference()
     {
-        HtmlCases.Difference(PrintedPages.Parse(Page), PrintedPages.Parse(Page + Disc)).Should().Be("page 1 has 0 painted paths, Chromium 1 (print.txt)");
-        HtmlCases.Difference(PrintedPages.Parse(Page + Disc), PrintedPages.Parse(Page)).Should().Be("page 1 has 1 painted paths, Chromium 0 (print.txt)");
+        HtmlCases.Difference(PrintedPages.Parse(Page), PrintedPages.Parse(Page + Disc)).Should().Be($"page 1 has 0 painted paths, Chromium 1; the engine's paths: digest {HtmlCases.Digest([])} (print.txt)");
+        HtmlCases.Difference(PrintedPages.Parse(Page + Disc), PrintedPages.Parse(Page)).Should().MatchRegex(@"^page 1 has 1 painted paths, Chromium 0; the engine's paths: digest [0-9a-f]{16} \(print\.txt\)$")
+            .And.NotContain(HtmlCases.Digest([]), "the digest is of the one path");
     }
 
     [Theory]

@@ -1,5 +1,9 @@
 lk-relative.boxes.txt 1
+lk-relative.clips.txt 3
+lk-relative.destinations.txt 1
+lk-relative.glyphs.txt 3
 lk-relative.lines.txt 1
 lk-relative.links.txt 1
+lk-relative.order.txt 4
 lk-relative.print.txt 5
 lk-relative.words.txt 3

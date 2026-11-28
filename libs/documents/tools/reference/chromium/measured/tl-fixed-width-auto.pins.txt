@@ -1,4 +1,7 @@
 tl-fixed-width-auto.boxes.txt 8
+tl-fixed-width-auto.clips.txt 10
+tl-fixed-width-auto.glyphs.txt 10
 tl-fixed-width-auto.lines.txt 17
+tl-fixed-width-auto.order.txt 27
 tl-fixed-width-auto.print.txt 28
 tl-fixed-width-auto.words.txt 10

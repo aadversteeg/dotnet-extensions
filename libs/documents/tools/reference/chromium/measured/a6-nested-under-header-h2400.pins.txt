@@ -1,4 +1,7 @@
 a6-nested-under-header-h2400.boxes.txt 33
+a6-nested-under-header-h2400.clips.txt 40
+a6-nested-under-header-h2400.glyphs.txt 40
 a6-nested-under-header-h2400.lines.txt 145
+a6-nested-under-header-h2400.order.txt 185
 a6-nested-under-header-h2400.print.txt 190
 a6-nested-under-header-h2400.words.txt 40

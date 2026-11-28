@@ -1,4 +1,7 @@
 a6-nested-late-h2700.boxes.txt 37
+a6-nested-late-h2700.clips.txt 39
+a6-nested-late-h2700.glyphs.txt 39
 a6-nested-late-h2700.lines.txt 132
+a6-nested-late-h2700.order.txt 171
 a6-nested-late-h2700.print.txt 175
 a6-nested-late-h2700.words.txt 39

@@ -1,4 +1,7 @@
 tk-thick.boxes.txt 15
+tk-thick.clips.txt 17
+tk-thick.glyphs.txt 17
 tk-thick.lines.txt 30
+tk-thick.order.txt 52
 tk-thick.print.txt 68
 tk-thick.words.txt 17

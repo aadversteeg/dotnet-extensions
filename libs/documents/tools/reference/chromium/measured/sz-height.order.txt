@@ -1,0 +1,15 @@
+word 1 tall 2 2 2 2
+word 1 box 2 2 2
+word 1 after 3 3 3 3
+word 1 the 3 3 3
+word 1 tall 3 3 3 3
+word 1 box 3 3 3
+word 1 alpha 4 4 4 4 4
+word 1 beta 5 5 5 5
+word 1 after 7 7 7 7
+word 1 the 7 7 7
+word 1 short 7 7 7 7 7
+word 1 box 7 7 7
+word 1 gamma 6 6 6 6 6
+paint 1 0 12.000 12.000 288.000 72.000 #dddddd
+paint 1 1 12.000 90.750 288.000 100.500 #dddddd

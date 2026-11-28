@@ -1,4 +1,7 @@
 a2-row-end-nested-under-header-end.boxes.txt 5
+a2-row-end-nested-under-header-end.clips.txt 22
+a2-row-end-nested-under-header-end.glyphs.txt 22
 a2-row-end-nested-under-header-end.lines.txt 26
+a2-row-end-nested-under-header-end.order.txt 48
 a2-row-end-nested-under-header-end.print.txt 51
 a2-row-end-nested-under-header-end.words.txt 22

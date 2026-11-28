@@ -1,4 +1,7 @@
 sr-line-justify.boxes.txt 1
+sr-line-justify.clips.txt 60
+sr-line-justify.glyphs.txt 60
 sr-line-justify.lines.txt 0
+sr-line-justify.order.txt 60
 sr-line-justify.print.txt 61
 sr-line-justify.words.txt 40

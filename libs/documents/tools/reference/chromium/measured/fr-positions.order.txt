@@ -1,0 +1,13 @@
+word 1 alpha 0 0 0 0 0
+word 1 beta 0 0 0 0
+word 1 gamma 0 0 0 0 0
+word 1 delta 0 0 0 0 0
+word 1 epsilon 1 1 1 1 1 1 1
+word 1 zeta 1 1 1 1
+word 1 eta 1 1 1
+word 1 theta 2 2 2 2 2
+word 1 iota 2 2 2 2
+word 1 kappa 2 2 2 2 2
+word 1 lambda 2 2 2 2 2 2
+word 1 mu 3 3
+word 1 nu 3 3

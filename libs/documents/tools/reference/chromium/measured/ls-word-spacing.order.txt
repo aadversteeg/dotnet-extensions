@@ -1,0 +1,116 @@
+word 1 Word 0 0 0 0
+word 1 a 0
+word 1 b 0
+word 1 c 2
+word 1 d 2
+word 1 e 2
+word 1 f 2
+word 1 g 2
+word 1 Word 3 3 3 3
+word 1 a 3
+word 1 b 4
+word 1 c 5
+word 1 d 6
+word 1 e 7
+word 1 Word 8 8 8 8
+word 1 a 8
+word 1 b 8
+word 1 c 8
+word 1 d 8
+word 1 e 8
+word 1 Word 9 9 9 9
+word 1 a 9
+word 1 b 9
+word 1 c 9
+word 1 d 9
+word 1 e 9
+word 1 Word 10 10 10 10
+word 1 a 10
+word 1 b 10
+word 1 c 10
+word 1 d 10
+word 1 e 10
+word 1 f 10
+word 1 g 10
+word 1 h 10
+word 1 i 10
+word 1 j 10
+word 1 k 10
+word 1 l 10
+word 1 m 10
+word 1 n 10
+word 1 o 10
+word 1 p 10
+word 1 q 10
+word 1 r 10
+word 1 s 10
+word 1 t 10
+word 1 Word 11 11 11 11
+word 1 a 11
+word 1 b 11
+word 1 c 11
+word 1 d 11
+word 1 e 11
+word 1 Word 12 12 12 12
+word 1 alpha 12 12 12 12 12
+word 1 beta 12 12 12 12
+word 1 gamma 13 13 13 13 13
+word 1 delta 13 13 13 13 13
+word 1 Word 14 14 14 14
+word 1 a 14
+word 1 b 14
+word 1 c 16
+word 1 d 16
+word 1 e 16
+word 1 f 16
+word 1 g 16
+word 1 Word 17 17 17 17
+word 1 a 17
+word 1 b 18
+word 1 c 19
+word 1 d 20
+word 1 e 21
+word 1 Word 22 22 22 22
+word 1 a 22
+word 1 b 22
+word 1 c 22
+word 1 d 22
+word 1 e 22
+word 1 Word 23 23 23 23
+word 1 a 23
+word 1 b 23
+word 1 c 23
+word 1 d 23
+word 1 e 23
+word 1 Word 24 24 24 24
+word 1 a 24
+word 1 b 24
+word 1 c 24
+word 1 d 24
+word 1 e 24
+word 1 f 24
+word 1 g 24
+word 1 h 24
+word 1 i 24
+word 1 j 24
+word 1 k 24
+word 1 l 24
+word 1 m 24
+word 1 n 24
+word 1 o 24
+word 1 p 24
+word 1 q 24
+word 1 r 24
+word 1 s 24
+word 1 t 24
+word 1 Word 25 25 25 25
+word 1 a 25
+word 1 b 25
+word 1 c 25
+word 1 d 25
+word 1 e 25
+word 1 Word 26 26 26 26
+word 1 alpha 26 26 26 26 26
+word 1 beta 26 26 26 26
+word 1 gamma 27 27 27 27 27
+word 1 delta 27 27 27 27 27

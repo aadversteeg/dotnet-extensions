@@ -1,0 +1,26 @@
+word 1 Two 0 0 0
+word 1 lines 2 2 2 2 2
+word 1 of 2 2
+word 1 a 2
+word 1 rounded 4 4 4 4 4 4 4
+word 1 box 4 4 4
+word 1 here 4 4 4 4
+word 1 end. 5 5 5 5
+word 1 Three 6 6 6 6 6
+word 1 lines 8 8 8 8 8
+word 1 of 8 8
+word 1 a 8
+word 1 longer 10 10 10 10 10 10
+word 1 rounded 10 10 10 10 10 10 10
+word 1 box 10 10 10
+word 1 going 12 12 12 12 12
+word 1 on 12 12
+word 1 and 12 12 12
+word 1 on 12 12
+word 1 over 12 12 12 12
+word 1 end. 13 13 13 13
+paint 1 1 33.750 12.000 78.750 26.250 #f0e0a0
+paint 1 3 12.000 27.000 96.750 41.250 #f0e0a0
+paint 1 7 41.250 65.250 86.250 79.500 #f0e0a0
+paint 1 9 12.000 80.250 101.250 94.500 #f0e0a0
+paint 1 11 12.000 95.250 112.500 109.500 #f0e0a0

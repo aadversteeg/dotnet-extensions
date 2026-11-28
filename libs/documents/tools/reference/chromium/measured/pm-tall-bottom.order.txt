@@ -1,0 +1,16 @@
+word 1 Body 15 15 15 15
+word 1 Left 11 11 11
+word 1 Centre 6 6 6 6 6 6
+word 1 Right 1 1 1 1 1
+word 1 two 12 12 12
+word 1 two 7 7 7
+word 1 two 2 2 2
+word 1 three 13 13 13 13 13
+word 1 three 8 8 8 8 8
+word 1 three 3 3 3 3 3
+word 1 four 14 14 14 14
+word 1 four 9 9 9 9
+word 1 four 4 4 4 4
+paint 1 0 259.500 240.000 351.000 279.750 #0000ff
+paint 1 5 141.750 240.000 259.500 279.750 #00ff00
+paint 1 10 50.250 240.000 141.750 279.750 #ff0000

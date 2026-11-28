@@ -1,4 +1,7 @@
 tg-row.boxes.txt 15
+tg-row.clips.txt 19
+tg-row.glyphs.txt 19
 tg-row.lines.txt 28
+tg-row.order.txt 50
 tg-row.print.txt 60
 tg-row.words.txt 19

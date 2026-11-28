@@ -1,4 +1,7 @@
 gf-initial-body.boxes.txt 1
+gf-initial-body.clips.txt 28
+gf-initial-body.glyphs.txt 28
 gf-initial-body.lines.txt 0
+gf-initial-body.order.txt 28
 gf-initial-body.print.txt 29
 gf-initial-body.words.txt 28

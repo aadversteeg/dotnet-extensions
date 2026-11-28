@@ -1,4 +1,7 @@
 tj-four.boxes.txt 7
+tj-four.clips.txt 7
+tj-four.glyphs.txt 7
 tj-four.lines.txt 17
+tj-four.order.txt 24
 tj-four.print.txt 25
 tj-four.words.txt 7

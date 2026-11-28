@@ -1,0 +1,23 @@
+word 1 Contents: 0 0 0 0 0 0 0 0 0
+word 1 the 0 0 0
+word 1 results 2 2 2 2 2 2 2
+word 1 are 3 3 3
+word 1 on 3 3
+word 1 the 3 3 3
+word 1 next 3 3 3 3
+word 1 page. 3 3 3 3 3
+word 1 Some 4 4 4 4
+word 1 text 4 4 4 4
+word 1 between 4 4 4 4 4 4 4
+word 1 the 4 4 4
+word 1 contents 4 4 4 4 4 4 4 4
+word 1 and 4 4 4
+word 1 the 4 4 4
+word 1 results. 4 4 4 4 4 4 4 4
+paint 1 1 83.203 29.250 113.543 30.000 #0000ee
+word 2 Results 0 0 0 0 0 0 0
+word 2 The 1 1 1
+word 2 results 1 1 1 1 1 1 1
+word 2 follow 1 1 1 1 1 1
+word 2 the 1 1 1
+word 2 heading. 1 1 1 1 1 1 1 1

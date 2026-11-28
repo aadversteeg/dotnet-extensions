@@ -1,4 +1,7 @@
 gc-marker-font.boxes.txt 1
+gc-marker-font.clips.txt 14
+gc-marker-font.glyphs.txt 14
 gc-marker-font.lines.txt 8
+gc-marker-font.order.txt 24
 gc-marker-font.print.txt 25
 gc-marker-font.words.txt 14

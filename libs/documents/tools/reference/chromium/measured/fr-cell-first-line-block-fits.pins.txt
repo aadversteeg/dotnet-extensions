@@ -1,4 +1,7 @@
 fr-cell-first-line-block-fits.boxes.txt 2
+fr-cell-first-line-block-fits.clips.txt 3
+fr-cell-first-line-block-fits.glyphs.txt 3
 fr-cell-first-line-block-fits.lines.txt 8
+fr-cell-first-line-block-fits.order.txt 11
 fr-cell-first-line-block-fits.print.txt 13
 fr-cell-first-line-block-fits.words.txt 3

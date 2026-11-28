@@ -1,4 +1,8 @@
 hi-stretch.boxes.txt 1
+hi-stretch.clips.txt 4
+hi-stretch.glyphs.txt 4
+hi-stretch.images.txt 3
 hi-stretch.lines.txt 0
+hi-stretch.order.txt 7
 hi-stretch.print.txt 8
 hi-stretch.words.txt 4

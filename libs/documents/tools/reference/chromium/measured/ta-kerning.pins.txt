@@ -1,4 +1,7 @@
 ta-kerning.boxes.txt 1
+ta-kerning.clips.txt 60
+ta-kerning.glyphs.txt 60
 ta-kerning.lines.txt 0
+ta-kerning.order.txt 60
 ta-kerning.print.txt 61
 ta-kerning.words.txt 60

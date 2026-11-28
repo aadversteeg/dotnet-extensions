@@ -1,4 +1,7 @@
 te-table-border.boxes.txt 12
+te-table-border.clips.txt 12
+te-table-border.glyphs.txt 12
 te-table-border.lines.txt 29
+te-table-border.order.txt 41
 te-table-border.print.txt 42
 te-table-border.words.txt 12

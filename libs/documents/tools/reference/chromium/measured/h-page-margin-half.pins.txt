@@ -1,4 +1,7 @@
 h-page-margin-half.boxes.txt 1
+h-page-margin-half.clips.txt 2
+h-page-margin-half.glyphs.txt 2
 h-page-margin-half.lines.txt 1
+h-page-margin-half.order.txt 3
 h-page-margin-half.print.txt 4
 h-page-margin-half.words.txt 2

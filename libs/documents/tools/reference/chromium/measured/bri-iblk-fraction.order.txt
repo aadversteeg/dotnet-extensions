@@ -1,0 +1,23 @@
+word 1 First 0 0 0 0 0
+word 1 line 0 0 0 0
+word 1 above. 0 0 0 0 0 0
+word 1 Shifted 1 1 1 1 1 1
+word 1 badge 3 3 3 3 3
+word 1 and 4 4 4
+word 1 ring 7 7 7 7
+word 1 end. 8 8 8 8
+word 1 Moved 9 9 9 9 9
+word 1 badge 11 11 11 11 11
+word 1 and 12 12 12
+word 1 ring 15 15 15 15
+word 1 end. 16 16 16 16
+word 1 Third 17 17 17 17 17
+word 1 pill 19 19 19 19
+word 1 end. 20 20 20 20
+paint 1 2 48.000 33.750 84.750 50.250 #f0e0a0
+paint 1 5 107.625 33.375 134.625 50.625 #f0e0a0
+paint 1 5 107.250 33.000 135.000 51.000 #c03020
+paint 1 10 48.000 58.500 84.750 75.000 #f0e0a0
+paint 1 13 107.625 58.125 134.625 75.375 #f0e0a0
+paint 1 13 107.250 57.750 135.000 75.750 #c03020
+paint 1 18 39.750 81.750 61.500 98.250 #f0e0a0

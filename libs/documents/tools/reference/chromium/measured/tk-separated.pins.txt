@@ -1,4 +1,7 @@
 tk-separated.boxes.txt 32
+tk-separated.clips.txt 36
+tk-separated.glyphs.txt 36
 tk-separated.lines.txt 33
+tk-separated.order.txt 101
 tk-separated.print.txt 198
 tk-separated.words.txt 36

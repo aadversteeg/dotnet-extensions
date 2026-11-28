@@ -1,4 +1,7 @@
 pm-start-12pt.boxes.txt 1
+pm-start-12pt.clips.txt 5
+pm-start-12pt.glyphs.txt 5
 pm-start-12pt.lines.txt 4
+pm-start-12pt.order.txt 9
 pm-start-12pt.print.txt 10
 pm-start-12pt.words.txt 5

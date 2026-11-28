@@ -1,4 +1,8 @@
 a4-header-image-153.boxes.txt 2
+a4-header-image-153.clips.txt 2
+a4-header-image-153.glyphs.txt 2
+a4-header-image-153.images.txt 1
 a4-header-image-153.lines.txt 7
+a4-header-image-153.order.txt 10
 a4-header-image-153.print.txt 12
 a4-header-image-153.words.txt 2

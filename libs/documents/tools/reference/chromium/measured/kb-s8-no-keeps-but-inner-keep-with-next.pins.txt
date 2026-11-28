@@ -1,4 +1,7 @@
 kb-s8-no-keeps-but-inner-keep-with-next.boxes.txt 1
+kb-s8-no-keeps-but-inner-keep-with-next.clips.txt 26
+kb-s8-no-keeps-but-inner-keep-with-next.glyphs.txt 26
 kb-s8-no-keeps-but-inner-keep-with-next.lines.txt 0
+kb-s8-no-keeps-but-inner-keep-with-next.order.txt 26
 kb-s8-no-keeps-but-inner-keep-with-next.print.txt 29
 kb-s8-no-keeps-but-inner-keep-with-next.words.txt 26

@@ -1,0 +1,21 @@
+word 1 Lato 0 0 0 0
+word 1 line 0 0 0 0
+word 1 initial 1 1 1 1 1 1 1
+word 1 keyword 1 1 1 1 1 1 1
+word 1 inherit 2 2 2 2 2 2 2
+word 1 from 2 2 2 2
+word 1 initial 2 2 2 2 2 2 2
+word 1 unset 3 3 3 3 3
+word 1 from 3 3 3 3
+word 1 initial 3 3 3 3 3 3 3
+word 1 revert 4 4 4 4 4 4
+word 1 from 4 4 4 4
+word 1 initial 4 4 4 4 4 4 4
+word 1 nothing 5 5 5 5 5 5 5
+word 1 from 5 5 5 5
+word 1 initial 5 5 5 5 5 5 5
+word 1 span 6 6 6 6
+word 1 lato 8 8 8 8
+word 1 again 10 10 10 10 10
+word 1 written 11 11 11 11 11 11 11
+word 1 name 11 11 11 11

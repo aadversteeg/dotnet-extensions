@@ -1,4 +1,7 @@
 ib-break-space.boxes.txt 1
+ib-break-space.clips.txt 9
+ib-break-space.glyphs.txt 9
 ib-break-space.lines.txt 11
+ib-break-space.order.txt 20
 ib-break-space.print.txt 21
 ib-break-space.words.txt 9

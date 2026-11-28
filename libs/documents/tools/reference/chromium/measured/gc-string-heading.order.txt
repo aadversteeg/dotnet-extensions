@@ -1,0 +1,4 @@
+word 1 Part 0 0 0 0
+word 1 One 1 1 1
+word 1 text 2 2 2 2
+word 1 below 2 2 2 2 2

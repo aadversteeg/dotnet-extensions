@@ -1,4 +1,7 @@
 ts-break-move.boxes.txt 11
+ts-break-move.clips.txt 21
+ts-break-move.glyphs.txt 21
 ts-break-move.lines.txt 20
+ts-break-move.order.txt 49
 ts-break-move.print.txt 75
 ts-break-move.words.txt 21

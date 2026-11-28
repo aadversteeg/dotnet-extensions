@@ -1,4 +1,7 @@
 sz-height-break.boxes.txt 2
+sz-height-break.clips.txt 7
+sz-height-break.glyphs.txt 7
 sz-height-break.lines.txt 2
+sz-height-break.order.txt 9
 sz-height-break.print.txt 11
 sz-height-break.words.txt 7

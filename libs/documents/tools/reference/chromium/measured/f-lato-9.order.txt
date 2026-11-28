@@ -1,0 +1,40 @@
+word 1 l0 0 0
+word 1 l1 1 1
+word 1 l2 2 2
+word 1 l3 3 3
+word 1 l4 4 4
+word 1 l5 5 5
+word 1 l6 6 6
+word 1 l7 7 7
+word 1 l8 8 8
+word 1 l9 9 9
+word 1 l10 10 10 10
+word 1 l11 11 11 11
+word 1 l12 12 12 12
+word 1 l13 13 13 13
+word 1 l14 14 14 14
+word 1 l15 15 15 15
+word 2 l16 0 0 0
+word 2 l17 1 1 1
+word 2 l18 2 2 2
+word 2 l19 3 3 3
+word 2 l20 4 4 4
+word 2 l21 5 5 5
+word 2 l22 6 6 6
+word 2 l23 7 7 7
+word 2 l24 8 8 8
+word 2 l25 9 9 9
+word 2 l26 10 10 10
+word 2 l27 11 11 11
+word 2 l28 12 12 12
+word 2 l29 13 13 13
+word 2 l30 14 14 14
+word 2 l31 15 15 15
+word 3 l32 0 0 0
+word 3 l33 1 1 1
+word 3 l34 2 2 2
+word 3 l35 3 3 3
+word 3 l36 4 4 4
+word 3 l37 5 5 5
+word 3 l38 6 6 6
+word 3 l39 7 7 7

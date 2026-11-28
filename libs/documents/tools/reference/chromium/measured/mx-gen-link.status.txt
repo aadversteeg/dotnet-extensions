@@ -1,5 +1,5 @@
 mx-gen-link listed A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest: link 1 on page 1: x1 74.156, Chromium 52.5 (links.txt)
-8 differences:
+13 differences:
 - link 1 on page 1: x1 74.156, Chromium 52.5 (links.txt)
 - link 2 on page 1: x0 33.797, Chromium 52.5 (links.txt)
 - link 2 on page 1: y0 30.75, Chromium 12 (links.txt)
@@ -8,3 +8,8 @@ mx-gen-link listed A_link_around_generated_text_has_one_area_where_Chromium_writ
 - link 2 on page 1 leads to uri https://example.com/m, Chromium's to uri https://example.com/n (links.txt)
 - link 3: Chromium's rectangle on page 1 at (33.75, 30.75) to uri https://example.com/m has none in the engine, which has 2 (links.txt)
 - link 4: Chromium's rectangle on page 1 at (55.5, 30.75) to uri https://example.com/m has none in the engine, which has 2 (links.txt)
+- link 1 on page 1: x1 74.156 lies on the pixel 74.25, Chromium's on 52.5 (links.txt)
+- link 2 on page 1: x0 33.797 lies on the pixel 33.75, Chromium's on 52.5 (links.txt)
+- link 2 on page 1: y0 30.75 lies on the pixel 30.75, Chromium's on 12 (links.txt)
+- link 2 on page 1: x1 82.266 lies on the pixel 82.5, Chromium's on 74.25 (links.txt)
+- link 2 on page 1: y1 43.5 lies on the pixel 43.5, Chromium's on 24.75 (links.txt)

@@ -1,4 +1,7 @@
 fr-f4-one-line-cell-widows3.boxes.txt 2
+fr-f4-one-line-cell-widows3.clips.txt 5
+fr-f4-one-line-cell-widows3.glyphs.txt 5
 fr-f4-one-line-cell-widows3.lines.txt 7
+fr-f4-one-line-cell-widows3.order.txt 12
 fr-f4-one-line-cell-widows3.print.txt 14
 fr-f4-one-line-cell-widows3.words.txt 5

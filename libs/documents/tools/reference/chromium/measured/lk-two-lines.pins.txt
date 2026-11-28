@@ -1,5 +1,9 @@
 lk-two-lines.boxes.txt 1
+lk-two-lines.clips.txt 19
+lk-two-lines.destinations.txt 2
+lk-two-lines.glyphs.txt 19
 lk-two-lines.lines.txt 2
 lk-two-lines.links.txt 2
+lk-two-lines.order.txt 21
 lk-two-lines.print.txt 22
 lk-two-lines.words.txt 19

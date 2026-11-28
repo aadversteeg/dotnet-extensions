@@ -1,4 +1,7 @@
 ib-nested.boxes.txt 1
+ib-nested.clips.txt 15
+ib-nested.glyphs.txt 15
 ib-nested.lines.txt 5
+ib-nested.order.txt 20
 ib-nested.print.txt 21
 ib-nested.words.txt 15

@@ -1,5 +1,8 @@
 sk-part.boxes.txt 1
+sk-part.clips.txt 12
+sk-part.glyphs.txt 12
 sk-part.ink.txt 134
 sk-part.lines.txt 11
+sk-part.order.txt 23
 sk-part.print.txt 24
 sk-part.words.txt 12

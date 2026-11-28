@@ -1,4 +1,7 @@
 hb-first-last.boxes.txt 1
+hb-first-last.clips.txt 2
+hb-first-last.glyphs.txt 2
 hb-first-last.lines.txt 0
+hb-first-last.order.txt 2
 hb-first-last.print.txt 3
 hb-first-last.words.txt 2

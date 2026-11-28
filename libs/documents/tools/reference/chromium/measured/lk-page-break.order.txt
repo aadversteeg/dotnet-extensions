@@ -1,0 +1,44 @@
+word 1 One 0 0 0
+word 1 two 0 0 0
+word 1 three 0 0 0 0 0
+word 1 four 0 0 0 0
+word 1 five 1 2 2
+word 1 six 2 2 2
+word 1 seven 2 2 2 2 2
+word 1 nine 2 2 2 2
+word 1 ten 2 2 2
+word 1 eleven 2 2 2 2 2 2
+word 1 twelve 2 2 2 2 2 2
+word 1 thirteen 3 3 3 3 3 3 3 3
+word 1 fourteen 3 3 3 3 3 3 3 3
+word 1 fifteen 4 5 5 5 5
+word 1 sixteen 5 5 5 5 5 5 5
+word 1 seventeen 5 5 5 5 5 5 5 5 5
+word 1 nine 5 5 5 5
+word 1 ten 5 5 5
+word 1 eleven 6 6 6 6 6 6
+word 1 twelve 6 6 6 6 6 6
+word 1 thirteen 6 6 6 6 6 6 6 6
+word 1 fourteen 8 8 8 8 8 8 8 8
+word 1 fifteen 9 10 10 10 10
+word 1 sixteen 10 10 10 10 10 10 10
+word 1 seventeen 10 10 10 10 10 10 10 10 10
+paint 1 7 123.621 60.000 281.871 60.750 #0000ee
+word 2 thirteen 1 1 1 1 1 1 1 1
+word 2 fourteen 1 1 1 1 1 1 1 1
+word 2 fifteen 2 3 3 3 3
+word 2 sixteen 3 3 3 3 3 3 3
+word 2 seventeen 3 3 3 3 3 3 3 3 3
+word 2 thirteen 3 3 3 3 3 3 3 3
+word 2 fourteen 5 5 5 5 5 5 5 5
+word 2 fifteen 6 7 7 7 7
+word 2 sixteen 7 7 7 7 7 7 7
+word 2 seventeen 7 7 7 7 7 7 7 7 7
+word 2 end 8 8 8
+word 2 of 8 8
+word 2 the 8 8 8
+word 2 last 8 8 8 8
+word 2 line 8 8 8 8
+word 2 here. 9 9 9 9 9
+paint 2 0 18.000 30.000 254.930 30.750 #0000ee
+paint 2 4 18.000 45.000 176.250 45.750 #0000ee

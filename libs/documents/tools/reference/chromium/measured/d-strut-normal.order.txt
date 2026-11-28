@@ -1,0 +1,8 @@
+word 1 s0 0 0
+word 1 s1 1 1
+word 1 s2 2 2
+word 1 s3 3 3
+word 1 s4 4 4
+word 2 s5 0 0
+word 2 s6 1 1
+word 2 s7 2 2

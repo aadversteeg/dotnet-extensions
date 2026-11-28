@@ -1,0 +1,46 @@
+word 1 Eeeeeee 1 1 1 1 1 1 1
+word 1 Eeeeeee 1 1 1 1 1 1 1
+word 1 Dd 3 3
+word 1 one 12 12 12
+word 1 Wide 8 8 8 8
+word 1 centre 8 8 8 8 8 8
+word 1 text 8 8 8 8
+word 1 that 8 8 8 8
+word 1 takes 8 8 8 8 8
+word 1 much 8 8 8 8
+word 1 Right 5 5 5 5 5
+word 1 side 5 5 5 5
+word 1 text 5 5 5 5
+word 1 L 11
+word 1 more 9 9 9 9
+word 1 room 9 9 9 9
+word 1 than 9 9 9 9
+word 1 the 9 9 9
+word 1 sides 9 9 9 9 9
+word 1 that 6 6 6 6
+word 1 is 6 6
+word 1 longer 6 6 6 6 6 6
+paint 1 0 50.250 0.000 306.750 60.000 #ff0000
+paint 1 2 306.750 0.000 351.000 60.000 #00ff00
+paint 1 4 274.500 240.000 351.000 300.000 #00ff00
+paint 1 7 126.750 240.000 274.500 300.000 #0000ff
+paint 1 10 50.250 240.000 126.750 300.000 #ff0000
+word 2 Aaaa 1 1 1 1
+word 2 Bbbbbbbbbbbbbbbb 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+word 2 Bbbbbbbbbbbbbbbb 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+word 2 Bbbbbbbbbbbbbbbb 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+word 2 two 10 10 10
+word 2 L 9
+word 2 Centre 7 7 7 7 7 7
+word 2 text 7 7 7 7
+word 2 Right 5 5 5 5 5
+word 2 side 5 5 5 5
+word 2 text 5 5 5 5
+word 2 that 5 5 5 5
+word 2 is 5 5
+word 2 longer 5 5 5 5 5 5
+paint 2 0 50.250 0.000 72.000 60.000 #ff0000
+paint 2 2 72.000 0.000 351.000 60.000 #00ff00
+paint 2 4 225.750 240.000 351.000 300.000 #00ff00
+paint 2 6 175.500 240.000 225.750 300.000 #0000ff
+paint 2 8 50.250 240.000 175.500 300.000 #ff0000

@@ -1,4 +1,7 @@
 a2-row-end-first-row-half-emptyblock.boxes.txt 1
+a2-row-end-first-row-half-emptyblock.clips.txt 12
+a2-row-end-first-row-half-emptyblock.glyphs.txt 12
 a2-row-end-first-row-half-emptyblock.lines.txt 3
+a2-row-end-first-row-half-emptyblock.order.txt 15
 a2-row-end-first-row-half-emptyblock.print.txt 17
 a2-row-end-first-row-half-emptyblock.words.txt 12

@@ -1030,6 +1030,33 @@ through the whole HTML path unchanged and its pages are compared with every file
   one CSS pixel (`HtmlCases.DestinationBound`, 0.75 pt) of Chromium's top plus the page's top margin (Chromium writes a
   destination in page-area coordinates, one margin above the target, at a whole pixel). A case without the file has no
   link, and the engine must have none either.
+- `<case>.glyphs.txt`, the glyphs of each word read back by `glyphs.py` (PyMuPDF's text trace: the glyph id and the
+  origin of each glyph the PDF draws): on each page whose text is the same, each word drawn with as many glyphs, the
+  same glyph id for each (Chromium embeds font subsets that keep the font program's glyph ids), each glyph's distance
+  from the word's first glyph within 0.1 pt (the bound of a word's start and end; kerning and letter spacing inside a
+  word show here) and its distance below the baseline within 0.1 pt. The text reading of a PDF spreads a ligature over
+  its characters at positions of its own; the trace gives the glyph that is drawn, and that is what is compared.
+- `<case>.order.txt`, the place of every word, fill, stroke and image in the page's drawing sequence (`order.py`,
+  `sequence.py`): on each page whose text is the same, for each word, the colours (or images) painted after a text that
+  draws part of it over that part's box (its advances across, from 0.8 of the font size above the baseline to 0.2 below)
+  by more than one pixel (0.75 pt, `HtmlCases.PixelBound`) across and down are the same on both sides. The box is a
+  chosen one for "does this word's ink overlap that item", the same on both sides, not a measured one. A background
+  painted over its own text differs; the places themselves are not compared, as Chromium batches its drawings in a
+  sequence of its own.
+- `<case>.clips.txt`, the clip around each word's text (`clips.py`: the rectangle the clips leave, and whether each of
+  them is one rectangle): a word its clips hide wholly on one side and not on the other differs; otherwise how much the
+  clips cut off the word's box at each edge within one pixel (0.75 pt). A clip is taken as its box on both sides.
+- `<case>.images.txt`, only for a print that draws an image, the picture of each image (`images.py`: its size in pixels
+  and the SHA-256 of its pixels as 8-bit RGBA): the same, exactly, image by image in drawing order. Chromium writes a
+  picture given as a PNG losslessly at its own size; the engine's side is the pixels its own decoder gives.
+- `<case>.destinations.txt`, only for a print that has link annotations, the left of each link's destination
+  (`destinations.py`): for each pair of links into the document, Chromium's left plus the page's left margin within one
+  CSS pixel (`HtmlCases.DestinationBound`) of the engine's anchor, as for the top.
+- `<case>.links.txt` again, the edges of each pair of link areas on the same page on Chromium's pixel grid: each edge of
+  the engine's area taken to the nearest whole pixel within 0.1 pt of Chromium's, as image edges are compared
+  (`HtmlCases.LinkPixelDifferences`). Chromium writes each edge at the whole pixel nearest its place (measured: every
+  one of the 256 edges of the cases whose links agree otherwise), so the bound of one pixel above is the width of that
+  rounding, and this compares the rounding itself.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole
@@ -1038,8 +1065,8 @@ clip. It still draws what passes that clip: a grid line past the page end, a cut
 drawn again offset up by the page area's height. So the read-backs (`visible.py`, used by `positions.py`,
 `rectangles.py` and `ink.py`) write each rectangle and image area cut to the clips it is drawn under, and leave out what
 lies wholly outside them; the engine's pages are read through their page-model clips by the same rule
-(`PrintedPages.Engine`, `PrintedPages.Visible`). Words are compared whole: no word of a measured print lies wholly
-outside its clip. The engine clips the body to its area under `LayoutProfile.BodyClip` (`BodyArea`, the HTML front-end's
+(`PrintedPages.Engine`, `PrintedPages.Visible`). Words are compared whole in `print.txt`, and how their clips cut
+them in `clips.txt`. The engine clips the body to its area under `LayoutProfile.BodyClip` (`BodyArea`, the HTML front-end's
 value; `None`, the code front-end's default, clips nothing); the header and footer areas, where the HTML front-end puts
 the page-margin boxes, are not clipped, as Chromium draws tall margin-box content over the body (`pm-tall-over`).
 

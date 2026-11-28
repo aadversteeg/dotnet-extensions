@@ -1,0 +1,20 @@
+word 1 Leading 2 2 2 2 2 2 2
+word 1 paragraph 2 2 2 2 2 2 2 2 2
+word 1 Before 3 3 3 3 3 3
+word 1 block 3 3 3 3 3
+word 1 Middle 4 4 4 4 4 4
+word 1 text 4 4 4 4
+word 1 After 5 5 5 5
+word 1 block 5 5 5 5 5
+word 1 Following 6 6 6 6 6 6 6 6 6
+word 1 paragraph 6 6 6 6 6 6 6 6 6
+word 1 Framed 7 7 7 7 7 7
+word 1 before 7 7 7 7 7 7
+word 1 Framed 8 8 8 8 8 8
+word 1 text 8 8 8 8
+word 1 Framed 9 9 9 9 9 9
+word 1 after 9 9 9 9
+word 1 Closing 10 10 10 10 10 10 10
+word 1 paragraph 10 10 10 10 10 10 10 10 10
+paint 1 0 12.000 117.750 288.000 118.500 #000000
+paint 1 1 12.000 180.750 288.000 181.500 #000000

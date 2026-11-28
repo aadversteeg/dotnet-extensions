@@ -1,4 +1,8 @@
 a4-header-image-228-beside-fit.boxes.txt 4
+a4-header-image-228-beside-fit.clips.txt 13
+a4-header-image-228-beside-fit.glyphs.txt 13
+a4-header-image-228-beside-fit.images.txt 2
 a4-header-image-228-beside-fit.lines.txt 35
+a4-header-image-228-beside-fit.order.txt 50
 a4-header-image-228-beside-fit.print.txt 53
 a4-header-image-228-beside-fit.words.txt 13

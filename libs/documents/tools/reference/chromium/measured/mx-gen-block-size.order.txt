@@ -1,0 +1,14 @@
+word 1 Sized 3 3 3 3 3
+word 1 head 3 3 3 3
+word 1 Body 4 4 4 4
+word 1 of 4 4
+word 1 the 4 4 4
+word 1 box 4 4 4
+word 1 Half 5 5 5 5
+word 1 foot 5 5 5 5
+word 1 After 6 6 6 6
+word 1 the 6 6 6
+word 1 box 6 6 6
+paint 1 0 12.000 12.000 139.500 49.500 #e0e8f0
+paint 1 1 12.000 12.000 139.500 49.500 #336699
+paint 1 2 12.000 62.250 150.000 82.500 #f0e0e0

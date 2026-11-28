@@ -1,0 +1,46 @@
+word 1 2 2
+word 1 x 1
+word 1 Word 0 0 0 0
+word 1 e 0
+word 1 Word 3 3 3 3
+word 1 x 3
+word 1 2 6
+word 1 x 5
+word 1 Word 4 4 4 4
+word 1 e 4
+word 1 Word 7 7 7 7
+word 1 x 7
+word 1 2 10
+word 1 Big 9 9 9
+word 1 z 11
+word 1 Word 8 8 8 8
+word 1 y 12
+word 1 Word 13 13 13 13
+word 1 Big 14 14 14
+word 1 z 16
+word 1 y 17
+word 1 2 15
+word 1 2 20
+word 1 small 19 19 19 19 19
+word 1 z 21
+word 1 Word 18 18 18 18
+word 1 y 22
+word 1 2 25
+word 1 Word 23 23 23 23
+word 1 y 26
+word 1 Big 24 24 24
+word 1 2 30
+word 1 Word 28 28 28 28
+word 1 x 28
+word 1 y 32
+word 1 H 32
+word 1 O 36
+word 1 z 36
+word 1 2 34
+word 1 Word 37 37 37 37
+word 1 x 37
+paint 1 27 12.000 173.250 45.656 174.000 #000000
+paint 1 29 45.656 173.250 50.730 174.000 #000000
+paint 1 31 50.730 173.250 69.023 174.000 #000000
+paint 1 33 69.023 173.250 74.098 174.000 #000000
+paint 1 35 74.098 173.250 89.941 174.000 #000000

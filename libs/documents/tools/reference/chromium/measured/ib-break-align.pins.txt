@@ -1,4 +1,7 @@
 ib-break-align.boxes.txt 1
+ib-break-align.clips.txt 14
+ib-break-align.glyphs.txt 14
 ib-break-align.lines.txt 10
+ib-break-align.order.txt 24
 ib-break-align.print.txt 25
 ib-break-align.words.txt 14

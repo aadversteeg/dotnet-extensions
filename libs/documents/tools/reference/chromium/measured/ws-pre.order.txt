@@ -1,0 +1,21 @@
+word 1 a 0
+word 1 b 0
+word 1 c 0
+word 1 x 1
+word 1 lead 2 2 2 2
+word 1 x 3
+word 1 trail 4 4 4 4 4
+word 1 x 5
+word 1 one 6 6 6
+word 1 two 7 7 7
+word 1 x 8
+word 1 one 9 9 9
+word 1 two 10 10 10
+word 1 x 11
+word 1 one 12 12 12
+word 1 two 13 13 13
+word 1 x 14
+word 1 one 15 15 15
+word 1 x 16
+word 1 x 17
+word 1 x 19

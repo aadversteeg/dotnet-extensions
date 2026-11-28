@@ -1,4 +1,7 @@
 ib-margin.boxes.txt 1
+ib-margin.clips.txt 9
+ib-margin.glyphs.txt 9
 ib-margin.lines.txt 2
+ib-margin.order.txt 12
 ib-margin.print.txt 16
 ib-margin.words.txt 9

@@ -1,4 +1,8 @@
 a4-image-single-cell.boxes.txt 2
+a4-image-single-cell.clips.txt 1
+a4-image-single-cell.glyphs.txt 1
+a4-image-single-cell.images.txt 3
 a4-image-single-cell.lines.txt 13
+a4-image-single-cell.order.txt 17
 a4-image-single-cell.print.txt 21
 a4-image-single-cell.words.txt 1
