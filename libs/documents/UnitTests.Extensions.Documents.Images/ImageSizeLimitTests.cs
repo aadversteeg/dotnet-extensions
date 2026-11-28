@@ -129,18 +129,48 @@ public class ImageSizeLimitTests
     [Fact]
     public void The_images_of_one_document_decode_to_at_most_the_pixels_of_a_document()
     {
-        // Two headers of 8192 x 8192 take the whole budget of a document; the next pixel is refused. Nothing is decoded.
+        var budget = new ImagePixelBudget(200);
+
+        ImageDecoder.Decode(OneBitIndexed(10, 10), budget).IsSuccess.Should().BeTrue();
+        ImageDecoder.Decode(OneBitIndexed(10, 10), budget).IsSuccess.Should().BeTrue();
+        budget.Used.Should().Be(200);
+        var refused = ImageDecoder.Decode(OneBitIndexed(1, 1), budget);
+        refused.Error.Code.Should().Be(ImageErrorCodes.TooLarge);
+        refused.Error.Message.Should().Be("The image is 1x1 = 1 pixels; the images of one document decode to at most 200 pixels together, and other images of the document take 200 of them.");
+    }
+
+    [Fact]
+    public void An_image_alone_above_the_budget_is_refused_with_what_it_asks_and_the_limit()
+    {
+        var refused = ImageDecoder.Decode(OneBitIndexed(20, 10), new ImagePixelBudget(100));
+
+        refused.Error.Message.Should().Be("The image is 20x10 = 200 pixels; the images of one document decode to at most 100 pixels together.");
+    }
+
+    [Fact]
+    public void The_budget_is_charged_before_the_image_data_is_inflated()
+    {
+        // The header asks for more than is left: refused for its size, before the missing data is read.
+        ShouldBe(ImageDecoder.Decode(HeaderOnly(20, 20), new ImagePixelBudget(100)), ImageErrorCodes.TooLarge);
+    }
+
+    [Fact]
+    public void An_image_whose_data_does_not_decode_gives_its_pixels_back()
+    {
+        // Three files of a few bytes whose headers announce 8192 x 8192 pixels: each fails, none keeps a charge, and an
+        // honest image after them is decoded.
         var budget = new ImagePixelBudget();
         var allocated = GC.GetAllocatedBytesForCurrentThread();
 
-        for (var image = 0; image < ImageLimits.MaxDocumentPixels / ImageLimits.MaxPixels; image++)
+        for (var image = 0; image < 3; image++)
         {
-            ImageDecoder.Decode(HeaderOnly(8192, 8192), budget).IsFailure.Should().BeTrue("there is no image data");
+            ShouldBe(ImageDecoder.Decode(HeaderOnly(8192, 8192), budget), ImageErrorCodes.Invalid);
+            budget.Used.Should().Be(0, "a failed decode costs nothing");
         }
 
-        budget.Used.Should().Be(ImageLimits.MaxDocumentPixels);
-        ShouldBe(ImageDecoder.Decode(OneBitIndexed(1, 1), budget), ImageErrorCodes.TooLarge);
-        (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(16L * 1024 * 1024, "no image is decoded");
+        ImageDecoder.Decode(OneBitIndexed(16, 16), budget).IsSuccess.Should().BeTrue();
+        budget.Used.Should().Be(256);
+        (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(16L * 1024 * 1024, "no large image is decoded");
     }
 
     private static void ShouldBe(Ave.Extensions.Functional.Result<ImageData, Ave.Extensions.ErrorPaths.Error> result, Ave.Extensions.ErrorPaths.ErrorCode code) =>

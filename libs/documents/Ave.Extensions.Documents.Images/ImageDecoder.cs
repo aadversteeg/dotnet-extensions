@@ -44,8 +44,8 @@ public static class ImageDecoder
 
     /// <summary>
     /// The decoded samples of an image as <see cref="DecodeSamples(ImageData)"/> gives them, charging the image's pixels
-    /// to the budget first: a JPEG's before it is decoded, a <see cref="RasterImage"/>'s because the caller makes its
-    /// own copy of the samples to draw with.
+    /// to the budget first: a JPEG's before it is decoded (given back when its data does not decode), a
+    /// <see cref="RasterImage"/>'s because the caller makes its own copy of the samples to draw with.
     /// </summary>
     /// <param name="image">The image.</param>
     /// <param name="budget">The budget of the pixels decoded, or null for none.</param>
@@ -63,7 +63,9 @@ public static class ImageDecoder
         return image switch
         {
             RasterImage raster => Result<RasterImage, Error>.Success(raster),
-            JpegImage jpeg => JpegDecoder.Decode(jpeg),
+
+            // A JPEG whose data does not decode gives its pixels back.
+            JpegImage jpeg => budget is null ? JpegDecoder.Decode(jpeg) : budget.Kept(jpeg.PixelWidth, jpeg.PixelHeight, JpegDecoder.Decode(jpeg)),
 
             // ImageData's constructor is private to this assembly: these two are all there are.
             _ => throw new InvalidOperationException($"Unknown image type {image.GetType().Name}."),

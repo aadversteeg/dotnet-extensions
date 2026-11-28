@@ -585,4 +585,19 @@ public class PageRasterizerTests
         budget.Used.Should().Be((long)png.PixelWidth * png.PixelHeight);
         new ImagePixelBudget().MaxPixels.Should().Be(ImageLimits.MaxDocumentPixels);
     }
+
+    [Fact]
+    public void A_JPEG_whose_data_does_not_decode_gives_its_pixels_back()
+    {
+        // The header and the scan's header are whole, the coded data stops after a few bytes.
+        var file = TestImages.Bytes("jpeg-rgb.jpg");
+        var scan = Enumerable.Range(0, file.Length - 1).First(index => file[index] == 0xFF && file[index + 1] == 0xDA);
+        var length = (file[scan + 2] << 8) | file[scan + 3];
+        var cut = ImageDecoder.Decode(file.AsMemory(0, scan + 2 + length + 4)).Value;
+        var budget = new ImagePixelBudget();
+
+        ImageDecoder.DecodeSamples(cut, budget).IsFailure.Should().BeTrue();
+
+        budget.Used.Should().Be(0, "a failed decode costs nothing");
+    }
 }

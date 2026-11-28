@@ -43,13 +43,17 @@ internal static class PngDecoder
             return ImageErrors.Unsupported<ImageData>($"PNG with the unknown critical chunk {unknownCritical.Type}");
         }
 
-        // The document's budget is charged from the header, before the data is inflated or a sample is made.
+        // The document's budget is charged from the header, before the data is inflated or a sample is made, and given
+        // back when the data does not decode.
         return PngHeader.Parse(chunks[0]).OnSuccessBind(header =>
             PngPalette.Read(header, chunks).OnSuccessBind(palette =>
-                (budget is null ? Result<Unit, Error>.Success(Unit.Value) : budget.Charge(header.Width, header.Height)).OnSuccessBind(_ =>
-                Inflate(header, chunks)).OnSuccessBind(scanlines =>
-                    PngSamples.Expand(ImageId.Of(file.Span), header, palette, scanlines))));
+                budget is null ? Samples(file, header, palette, chunks)
+                : budget.Charge(header.Width, header.Height).OnSuccessBind(_ =>
+                    budget.Kept(header.Width, header.Height, Samples(file, header, palette, chunks)))));
     }
+
+    private static Result<ImageData, Error> Samples(ReadOnlyMemory<byte> file, PngHeader header, PngPalette palette, ImmutableArray<PngChunk> chunks) =>
+        Inflate(header, chunks).OnSuccessBind(scanlines => PngSamples.Expand(ImageId.Of(file.Span), header, palette, scanlines));
 
     /// <summary>
     /// The chunk ordering rules of §5.6 (Table 5.3) for the critical chunks, or null when they hold: IHDR first and only
