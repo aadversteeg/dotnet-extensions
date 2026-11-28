@@ -503,6 +503,10 @@ internal static class HtmlCases
     {
         /// <summary>For the engine's link to a place in the document, the left of the target's anchor; null otherwise.</summary>
         public double? Left { get; init; }
+
+        /// <summary>For the engine's link to a place in the document, the top of the target's anchor as laid out (the target
+        /// writes it to three decimals); null otherwise.</summary>
+        public double? Top { get; init; }
     }
 
     /// <summary>The link annotations of Chromium's print, from <c>&lt;case&gt;.links.txt</c> (README of
@@ -523,9 +527,9 @@ internal static class HtmlCases
     {
         var targets = new Dictionary<NodeId, string>();
         var links = new List<PrintedLink>();
-        var anchors = pages.Pages.SelectMany((page, index) => page.Items.OfType<Anchor>().Select(anchor => (anchor.Node, Place: $"dest {index + 1} {Of(anchor.At.Y)}", anchor.At.X)))
-            .ToDictionary(anchor => anchor.Node, anchor => (anchor.Place, anchor.X));
-        var lefts = new Dictionary<NodeId, double?>();
+        var anchors = pages.Pages.SelectMany((page, index) => page.Items.OfType<Anchor>().Select(anchor => (anchor.Node, Place: $"dest {index + 1} {Of(anchor.At.Y)}", anchor.At)))
+            .ToDictionary(anchor => anchor.Node, anchor => (anchor.Place, anchor.At));
+        var lefts = new Dictionary<NodeId, Point?>();
         foreach (var (page, number) in pages.Pages.Select((page, index) => (page, index + 1)))
         {
             foreach (var item in page.Items)
@@ -538,11 +542,11 @@ internal static class HtmlCases
                         break;
                     case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget node } } start:
                         targets[start.Node] = anchors.TryGetValue(node.Value, out var place) ? place.Place : $"dest none {node.Value}";
-                        lefts[start.Node] = anchors.TryGetValue(node.Value, out var anchor) ? anchor.X : null;
+                        lefts[start.Node] = anchors.TryGetValue(node.Value, out var anchor) ? anchor.At : null;
                         break;
                     case LinkArea area:
                         var rect = area.Area;
-                        links.Add(new PrintedLink(number, rect.Origin.X, rect.Origin.Y, rect.Origin.X + rect.Size.Width, rect.Origin.Y + rect.Size.Height, targets[area.Link]) { Left = lefts[area.Link] });
+                        links.Add(new PrintedLink(number, rect.Origin.X, rect.Origin.Y, rect.Origin.X + rect.Size.Width, rect.Origin.Y + rect.Size.Height, targets[area.Link]) { Left = lefts[area.Link]?.X, Top = lefts[area.Link]?.Y });
                         break;
                 }
             }
@@ -621,7 +625,7 @@ internal static class HtmlCases
             {
                 ours.Page != theirs.Page ? $"link {index + 1} is on page {ours.Page}, Chromium's on page {theirs.Page}" : null,
                 Edge(at, "x0", ours.X0, theirs.X0), Edge(at, "y0", ours.Y0, theirs.Y0), Edge(at, "x1", ours.X1, theirs.X1), Edge(at, "y1", ours.Y1, theirs.Y1),
-                TargetDifference(at, ours.Target, theirs.Target, marginTop),
+                TargetDifference(at, ours, theirs.Target, marginTop),
             };
             foreach (var difference in found.OfType<string>())
             {
@@ -737,14 +741,17 @@ internal static class HtmlCases
             Math.Abs(WholePixel(ours) - theirs) > Bound ? $"{what} {Of(ours)} lies on the pixel {Of(WholePixel(ours))}, Chromium's on {Of(theirs)}" : null;
     }
 
-    private static string? TargetDifference(string at, string ours, string theirs, double marginTop)
+    // The engine's top is floored to Chromium's pixel from the number as laid out (PrintedLink.Top), not from its text.
+    private static string? TargetDifference(string at, PrintedLink link, string theirs, double marginTop)
     {
+        var ours = link.Target;
         if (ours.Split(' ') is ["dest", var page, var top] && theirs.Split(' ') is ["dest", var theirPage, var theirTop])
         {
             var chromiumTop = Number(theirTop) + marginTop;
+            var engineTop = link.Top ?? (double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var written) ? written : (double?)null);
             return page != theirPage ? $"{at} leads to page {page}, Chromium's to page {theirPage}"
-                : !double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var engineTop) || Math.Abs(Number(theirTop) - DestinationPixel(engineTop, marginTop)) > ReaderStep + 1e-9
-                    ? $"{at} leads to the top {top} of page {page}, on Chromium's pixel {(double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var exact) ? Of(DestinationPixel(exact, marginTop)) : top)} of the page area, Chromium's to {theirTop} (plus the top margin {Of(marginTop)}: {Of(chromiumTop)})"
+                : engineTop is not { } exact || Math.Abs(Number(theirTop) - DestinationPixel(exact, marginTop)) > ReaderStep + 1e-9
+                    ? $"{at} leads to the top {top} of page {page}, on Chromium's pixel {(engineTop is { } value ? Of(DestinationPixel(value, marginTop)) : top)} of the page area, Chromium's to {theirTop} (plus the top margin {Of(marginTop)}: {Of(chromiumTop)})"
                     : null;
         }
 
