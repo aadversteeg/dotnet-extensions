@@ -1,0 +1,6 @@
+page 1 300.000 400.080
+word 1 12.000 34.013 22.500 10.500 Base #000000 Lato-Regular
+word 1 36.703 54.060 22.500 10.500 one #000000 Lato-Regular
+word 1 56.748 74.639 22.500 10.500 two #000000 Lato-Regular
+word 1 79.387 99.148 22.500 10.500 end. #000000 Lato-Regular
+rect 1 36.750 12.000 76.500 24.750 #ffe0a0

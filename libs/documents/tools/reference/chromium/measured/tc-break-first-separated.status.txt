@@ -1,1 +1,1 @@
-tc-break-first-separated refused Documents.Layout.TableBreak 33.504 at 5
+tc-break-first-separated refused Documents.Layout.TableBreak 14.754 at 5

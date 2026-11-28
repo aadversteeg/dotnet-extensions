@@ -1,8 +1,8 @@
 word 1 second 0 0 0 0 0 0
-word 1 Caption 1 1 1 1 1 1
-word 2 one 3 3 3
-word 2 two 4 4 4
-word 2 after 5 5 5 5
-paint 2 0 12.000 12.000 81.000 42.000 #ff0000
-paint 2 1 18.000 18.000 45.000 36.000 #0000ff
-paint 2 2 48.000 18.000 75.000 36.000 #0000ff
+word 2 Caption 3 3 3 3 3 3
+word 2 one 4 4 4
+word 2 two 5 5 5
+word 2 after 6 6 6 6
+paint 2 0 12.000 24.750 81.000 54.750 #ff0000
+paint 2 1 18.000 30.750 45.000 48.750 #0000ff
+paint 2 2 48.000 30.750 75.000 48.750 #0000ff

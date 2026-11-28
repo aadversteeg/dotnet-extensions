@@ -1,0 +1,7 @@
+twd-cell-span-auto.boxes.txt 3
+twd-cell-span-auto.clips.txt 4
+twd-cell-span-auto.glyphs.txt 4
+twd-cell-span-auto.lines.txt 11
+twd-cell-span-auto.order.txt 15
+twd-cell-span-auto.print.txt 16
+twd-cell-span-auto.words.txt 4
