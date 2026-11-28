@@ -16,7 +16,7 @@
 # /out/tools-versions.txt.
 set -eu -o pipefail
 {
-  pdftotext -v 2>&1 | head -1
+  pdftotext -v 2>&1 | sed -n 1p
   python3 -c "import pymupdf; print('PyMuPDF', pymupdf.VersionBind)"
 } > /out/tools-versions.txt
 for name in "$@"; do
