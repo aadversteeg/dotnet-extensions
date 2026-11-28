@@ -892,7 +892,7 @@ public class HtmlListedDifferenceTests
             + "See rules \u2013\u00A712 and \u2012\u00BD hour, the cut \u00AD \u00A74 and art \u00D72, a- -\u00E9lan, why?- \u00E9cole and x-- \u03A9mega here.', "
             + "Chromium 'See rules \u2013\u00A712 and \u2012\u00BD hour, the cut \u00A74 and art \u00AD \u00D72, a- -\u00E9lan, why?- \u00E9cole and x- -\u03A9mega here. "
             + "See rules \u2013\u00A712 and \u2012\u00BD hour, the cut \u00AD \u00A74 and art \u00D72, a- -\u00E9lan, why?- \u00E9cole and x-- \u03A9mega here.'; "
-            + "the engine's page 1: digest 90951a3dedeab262 (print.txt)");
+            + "the engine's page 1: digest f690b1f1bb1e9b18 (print.txt)");
     }
 
     /// <summary>
