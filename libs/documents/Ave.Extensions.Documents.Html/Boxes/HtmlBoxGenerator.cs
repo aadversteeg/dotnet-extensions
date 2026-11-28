@@ -97,7 +97,7 @@ public static partial class HtmlBoxGenerator
         }
 
         // The caller's resolver is asked at most once per URL in this generation and the style resolution before it.
-        var run = new Run(styled, options with { Resources = ResourceTable.Once(options.Resources, options.AllowedResourceSchemes, $"{nameof(HtmlBoxOptions)}.{nameof(HtmlBoxOptions.AllowedResourceSchemes)}", styled) });
+        var run = new Run(styled, options with { Resources = ResourceTable.Once(options.Resources, options.AllowedResourceSchemes ?? ResourceTable.SchemesOf(styled), $"{nameof(HtmlBoxOptions)}.{nameof(HtmlBoxOptions.AllowedResourceSchemes)}", styled) });
         var document = run.Generate();
         if (run.Failures.Count > 0)
         {

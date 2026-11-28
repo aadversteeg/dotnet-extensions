@@ -66,15 +66,35 @@ internal sealed class ResourceTable
     /// is ASCII case-insensitive on both sides (URL Standard §4.4, scheme state, writes a URL's scheme in lower case).
     /// </summary>
     /// <param name="schemes">The caller's set.</param>
+    /// <param name="option">The name of the option, for the exceptions.</param>
     /// <returns>The set itself when its names are already lower case and compared ordinally, else a lowered copy.</returns>
     /// <exception cref="ArgumentNullException">The set is null.</exception>
-    internal static ImmutableHashSet<string> Schemes(ImmutableHashSet<string> schemes)
+    /// <exception cref="ArgumentException">A name is null or not a scheme by the URL Standard's syntax (§4.4, scheme
+    /// state: an ASCII letter, then ASCII letters, digits, <c>+</c>, <c>-</c> or <c>.</c>, without the colon).</exception>
+    internal static ImmutableHashSet<string> Schemes(ImmutableHashSet<string> schemes, string option)
     {
-        ArgumentNullException.ThrowIfNull(schemes);
+        ArgumentNullException.ThrowIfNull(schemes, option);
+        foreach (var name in schemes)
+        {
+            if (name is null || Urls.Scheme(name + ":")?.Length != name.Length)
+            {
+                throw new ArgumentException(name is null
+                    ? "A scheme name is null; give names such as \"http\" or \"file\"."
+                    : $"'{InputQuote.Of(name)}' is not a scheme name (an ASCII letter, then ASCII letters, digits, '+', '-' or '.', without the colon); give names such as \"http\" or \"file\".", option);
+            }
+        }
+
         return schemes.KeyComparer == StringComparer.Ordinal && schemes.All(name => InfraAscii.ToLower(name) == name)
             ? schemes
             : schemes.Select(InfraAscii.ToLower).ToImmutableHashSet(StringComparer.Ordinal);
     }
+
+    /// <summary>The schemes the styled document was resolved with: those of its table, or the default when its style
+    /// resolution had no resolver.</summary>
+    /// <param name="styled">The styled document.</param>
+    /// <returns>The set.</returns>
+    public static ImmutableHashSet<string> SchemesOf(StyledHtmlDocument styled) =>
+        Tables.TryGetValue(styled, out var table) ? table._schemes : DefaultSchemes;
 
     /// <summary>Leaves the table of a style resolution with the document it made.</summary>
     /// <param name="styled">The styled document.</param>

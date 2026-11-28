@@ -11,7 +11,7 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <summary>How to turn a styled HTML document into the document model (<see cref="HtmlBoxGenerator"/>).</summary>
 public sealed record HtmlBoxOptions
 {
-    private readonly ImmutableHashSet<string> _schemes = ResourceTable.DefaultSchemes;
+    private readonly ImmutableHashSet<string>? _schemes;
 
     /// <summary>No fonts, no resources, refuse what is not drawn.</summary>
     public static HtmlBoxOptions Default { get; } = new();
@@ -35,13 +35,17 @@ public sealed record HtmlBoxOptions
     /// give both the same value). Default false.</summary>
     public bool AllowBaseElement { get; init; }
 
-    /// <summary>The URL schemes the resolver may be asked for (<see cref="HtmlStyleOptions.AllowedResourceSchemes"/>; give
-    /// both the same set). Default <c>http</c> and <c>https</c>.</summary>
-    /// <exception cref="ArgumentNullException">The set is null.</exception>
-    public ImmutableHashSet<string> AllowedResourceSchemes
+    /// <summary>The URL schemes the resolver may be asked for (<see cref="HtmlStyleOptions.AllowedResourceSchemes"/>), as
+    /// names in lower case. Null, the default, is the set the styled document was resolved with when its style resolution
+    /// had a resolver, else <c>http</c> and <c>https</c>; so a caller sets it once, on the style options, and here only
+    /// to differ.</summary>
+    /// <exception cref="ArgumentException">A name is null or not a scheme by the URL Standard's syntax (§4.4, scheme
+    /// state: an ASCII letter, then ASCII letters, digits, <c>+</c>, <c>-</c> or <c>.</c>, without the colon), such as
+    /// <c>"file:"</c>, <c>" file "</c>, <c>"*"</c> or <c>""</c>.</exception>
+    public ImmutableHashSet<string>? AllowedResourceSchemes
     {
         get => _schemes;
-        init => _schemes = ResourceTable.Schemes(value);
+        init => _schemes = value is null ? null : ResourceTable.Schemes(value, nameof(AllowedResourceSchemes));
     }
 
     /// <summary>Refuse (the default) or only warn; what <see cref="UnsupportedPolicy.Warn"/> does with a value that is not

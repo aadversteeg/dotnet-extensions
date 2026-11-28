@@ -113,6 +113,65 @@ public class ResourceUrlTests
         var asked = new List<string>();
         var html = $"<!doctype html><html lang=\"en\"><head><title>T</title><base href=\"{href}\"><style>@font-face {{ font-family: Body; src: url(lato.ttf) }} body {{ font-family: Body }}</style></head><body><p>x<img alt=x width=10 src=\"a.png\"></p></body></html>";
         var style = HtmlStyleOptions.Default with { AllowBaseElement = true, BaseUrl = baseUrl, Unsupported = UnsupportedPolicy.Warn, Resources = Recorder(asked) };
+
+        var rendered = HtmlRendering.ToPages(html, new HtmlRenderOptions { Style = style });
+
+        asked.Distinct().Should().Equal(expected);
+        rendered.Value.Diagnostics.Should().Contain(error => error.Message.StartsWith($"The <base href=\"{href}\"> {why}", StringComparison.Ordinal)
+            && error.Message.EndsWith("the document's URLs are resolved against the caller's base URL instead.", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("file:")]
+    [InlineData("file://")]
+    [InlineData(" file ")]
+    [InlineData("*")]
+    [InlineData("")]
+    [InlineData("1file")]
+    [InlineData("fi le")]
+    public void A_scheme_name_that_is_not_a_scheme_is_the_callers_error(string name)
+    {
+        var set = ImmutableHashSet.Create("http", name);
+
+        var style = () => HtmlStyleOptions.Default with { AllowedResourceSchemes = set };
+        var box = () => HtmlBoxOptions.Default with { AllowedResourceSchemes = set };
+
+        style.Should().Throw<ArgumentException>().Where(error => error.Message.Contains($"'{name}' is not a scheme name", StringComparison.Ordinal) && error.ParamName == "AllowedResourceSchemes");
+        box.Should().Throw<ArgumentException>().Where(error => error.Message.Contains($"'{name}' is not a scheme name", StringComparison.Ordinal) && error.ParamName == "AllowedResourceSchemes");
+    }
+
+    [Fact]
+    public void A_null_scheme_name_or_set_is_the_callers_error()
+    {
+        var set = ImmutableHashSet.Create<string>(StringComparer.Ordinal, "http", null!);
+
+        var name = () => HtmlStyleOptions.Default with { AllowedResourceSchemes = set };
+        var none = () => HtmlStyleOptions.Default with { AllowedResourceSchemes = null! };
+
+        name.Should().Throw<ArgumentException>().Where(error => error.Message.Contains("A scheme name is null", StringComparison.Ordinal));
+        none.Should().Throw<ArgumentNullException>().Where(error => error.ParamName == "AllowedResourceSchemes");
+        (HtmlStyleOptions.Default with { AllowedResourceSchemes = ImmutableHashSet.Create("HTTP", "x-app+v1.2") }).AllowedResourceSchemes.Should().BeEquivalentTo(["http", "x-app+v1.2"]);
+    }
+
+    [Fact]
+    public void Box_generation_takes_the_schemes_the_document_was_styled_with_unless_it_is_given_others()
+    {
+        HtmlBoxOptions.Default.AllowedResourceSchemes.Should().BeNull();
+        var html = "<!doctype html><html><head><title>T</title><style>@font-face { font-family: F; src: url(f.ttf) }</style></head><body><p style=\"font-family: F\">x</p></body></html>";
+        var style = new HtmlStyleOptions { Resources = _ => null, BaseUrl = "file:///d/doc.html", AllowedResourceSchemes = HtmlCases.FileSchemes, Unsupported = UnsupportedPolicy.Warn };
+        var styled = HtmlParser.Parse(html).OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, style)).Value;
+
+        List<string> Generated(ImmutableHashSet<string>? schemes)
+        {
+            var asked = new List<string>();
+            HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Recorder(asked), BaseUrl = "file:///d/doc.html", AllowedResourceSchemes = schemes, Unsupported = UnsupportedPolicy.Warn });
+            return [.. asked.Distinct()];
+        }
+
+        Generated(null).Should().Equal("file:///d/f.ttf");
+        Generated(ImmutableHashSet.Create("http", "https")).Should().BeEmpty();
+    }
+
     /// <summary>What the resolver is asked for one reference in one place, the body font aside, under Warn.</summary>
     private static List<string> Asked(string place, string reference, string? baseUrl)
     {

@@ -115,12 +115,16 @@ public sealed record HtmlStyleOptions
     /// URL whose own scheme is not in the set, every relative reference resolves to that scheme and is not there: a
     /// caller that sets a <c>file:</c> base URL must allow <c>file</c> (and then confine every URL to a folder, as
     /// <see cref="ResourceResolver"/> says). A <c>data:</c> URL is read by the engine and never asked, whatever the set
-    /// holds. Give <see cref="Boxes.HtmlBoxOptions.AllowedResourceSchemes"/> the same set.</summary>
+    /// holds. Box generation of the styled document takes the same set unless
+    /// <see cref="Boxes.HtmlBoxOptions.AllowedResourceSchemes"/> gives another.</summary>
     /// <exception cref="ArgumentNullException">The set is null.</exception>
+    /// <exception cref="ArgumentException">A name is null or not a scheme by the URL Standard's syntax (§4.4, scheme
+    /// state: an ASCII letter, then ASCII letters, digits, <c>+</c>, <c>-</c> or <c>.</c>, without the colon), such as
+    /// <c>"file:"</c>, <c>" file "</c>, <c>"*"</c> or <c>""</c>.</exception>
     public ImmutableHashSet<string> AllowedResourceSchemes
     {
         get => _schemes;
-        init => _schemes = ResourceTable.Schemes(value);
+        init => _schemes = ResourceTable.Schemes(value, nameof(AllowedResourceSchemes));
     }
 
     /// <summary>Refuse (the default) or only warn.</summary>

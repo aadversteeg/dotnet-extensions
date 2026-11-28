@@ -204,7 +204,8 @@ share written as `file://host/share/x.css`, `ftp:`, `javascript:`) is not there,
 the option. The scheme is read from the reference as the document writes it, by the URL Standard's syntax, before
 anything is resolved: a reference with a scheme is absolute (`x:` has the scheme `x`, `C:\x.png` the scheme `c`), one
 without takes the scheme of the `BaseUrl`, so a caller that sets a `file:` `BaseUrl` must allow `file` (the HtmlStyles
-sample does). A URL of an allowed scheme can still climb out of the base folder with `../`. So the resolver
+sample does). A scheme name in the option that is not a scheme (`"file:"`, `" file "`, `"*"`, `""`) throws
+`ArgumentException`. A URL of an allowed scheme can still climb out of the base folder with `../`. So the resolver
 decides what it serves: it maps a URL to a file only inside a folder it chose (the HtmlStyles sample checks
 `folder.IsBaseOf(uri)`), fetches only from hosts it trusts, and gives null for anything else. The engine itself opens
 no file, socket or process.
@@ -426,7 +427,8 @@ damaged or its checksum wrong is counted in full, so the failed decodes of a doc
 2^27 pixels plus one image.
 
 The resolver is asked only for URLs whose scheme is in `HtmlStyleOptions.AllowedResourceSchemes` (default `http` and
-`https`; `HtmlBoxOptions.AllowedResourceSchemes` for box generation on its own). A caller that reads the document's
+`https`; box generation takes the set the document was styled with unless `HtmlBoxOptions.AllowedResourceSchemes`
+gives another). A caller that reads the document's
 files from disk sets a `file:` `BaseUrl` and adds `file`:
 `style with { AllowedResourceSchemes = style.AllowedResourceSchemes.Add("file") }`. A PDF embeds a JPEG file as it
 is, so only a PNG counts there; the raster output (`ToPng`, `ToPngPages`, `ToImages`) decodes every image to pixels,
