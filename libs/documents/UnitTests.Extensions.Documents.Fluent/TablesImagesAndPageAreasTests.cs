@@ -194,6 +194,51 @@ public class TablesImagesAndPageAreasTests
         Fail(Doc(Row([Paragraph("a"), Paragraph("b")]).Columns(Fill(1)))).Code.Should().Be(DocumentErrorCodes.Input.Invalid.Columns);
     }
 
+    /// <summary>A PNG of 8192 x 8192 pixels, 1 bit per pixel with a palette, without image data: refused after its header
+    /// is read. <paramref name="mark"/> makes files that differ.</summary>
+    private static byte[] LargeHeader(byte mark)
+    {
+        static byte[] Chunk(string type, byte[] data)
+        {
+            var chunk = new byte[12 + data.Length];
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(chunk, (uint)data.Length);
+            System.Text.Encoding.ASCII.GetBytes(type).CopyTo(chunk, 4);
+            data.CopyTo(chunk, 8);
+            var crc = 0xFFFFFFFFu;
+            foreach (var value in chunk.AsSpan(4, 4 + data.Length))
+            {
+                crc ^= value;
+                for (var bit = 0; bit < 8; bit++)
+                {
+                    crc = (crc & 1) != 0 ? 0xEDB88320u ^ (crc >> 1) : crc >> 1;
+                }
+            }
+
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(chunk.AsSpan(8 + data.Length), ~crc);
+            return chunk;
+        }
+
+        var header = new byte[13];
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(header, 8192);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(4), 8192);
+        (header[8], header[9]) = (1, 3);
+        return [137, 80, 78, 71, 13, 10, 26, 10, .. Chunk("IHDR", header), .. Chunk("PLTE", [mark, 2, 3]), .. Chunk("IEND", [])];
+    }
+
+    [Fact]
+    public void The_images_of_a_document_decode_to_at_most_the_pixels_of_a_document_each_file_once()
+    {
+        // Two distinct files of the largest size take the document's pixels: the next image is refused at its call.
+        // One file shown three times is decoded and charged once, and leaves room for it.
+        var small = TestImages.Bytes("rgba8.png");
+        var line = CurrentLine() + 1;
+        var refused = Fail(Doc(Image(LargeHeader(1)), Image(LargeHeader(2)), Image(small))).Parts().Single(error => error.Message.Contains("of one document", StringComparison.Ordinal));
+
+        ShouldPointAt(refused, ImageErrorCodes.TooLarge, line);
+        Fail(Doc(Image(LargeHeader(1)), Image(LargeHeader(1)), Image(LargeHeader(1)), Image(small))).Parts()
+            .Should().NotContain(error => error.Message.Contains("of one document", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void An_image_that_cannot_be_decoded_is_reported_at_the_image_call()
     {

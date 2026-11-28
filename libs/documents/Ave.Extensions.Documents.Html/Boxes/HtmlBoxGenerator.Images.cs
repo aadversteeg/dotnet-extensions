@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Images;
+using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents.Html.Boxes;
 
@@ -12,6 +15,12 @@ public static partial class HtmlBoxGenerator
     {
         private string? _documentBase;
         private bool _documentBaseRead;
+
+        /// <summary>Per URL of an image (a <c>data:</c> URL by its text), its decoded image or why it did not decode.</summary>
+        private readonly Dictionary<string, Result<ImageData, Error>> _decodedImages = new(StringComparer.Ordinal);
+
+        /// <summary>The pixels the document's images decode to, all together (<see cref="ImageLimits.MaxDocumentPixels"/>).</summary>
+        private readonly ImagePixelBudget _imagePixels = new();
 
         /// <summary>A block-level <c>img</c> (CSS 2.1 §10.3.2, §10.6.2): its box (<see cref="ImageBox"/>) among the block
         /// boxes, with a forced break before or after it as any block box has.</summary>
@@ -116,7 +125,7 @@ public static partial class HtmlBoxGenerator
         {
             var html = element.Element;
             var source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
-            var bytes = ImageBytes(source);
+            var (bytes, url) = ImageBytes(source);
             if (bytes is null)
             {
                 Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, $"The image '{InputQuote.Of(source ?? string.Empty)}' of <img> is not there (no src, or neither a data: URL nor the resource resolver gives it), and what Chromium shows instead is not drawn in this version.",
@@ -124,7 +133,7 @@ public static partial class HtmlBoxGenerator
                 return null;
             }
 
-            var decoded = ImageDecoder.Decode(bytes.Value);
+            var decoded = DecodeOnce(url!, bytes.Value);
             if (decoded.IsFailure)
             {
                 Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, $"The image '{InputQuote.Of(source!)}' of <img> does not decode ({decoded.Error.Message}), and what Chromium shows instead is not drawn in this version.",
@@ -156,20 +165,37 @@ public static partial class HtmlBoxGenerator
 
         /// <summary>The bytes of an image's file: the body of a <c>data:</c> URL, or what the resolver gives for the URL
         /// resolved against the document's base URL (HTML Standard §2.4.1: the first <c>base</c> element with an
-        /// <c>href</c>, else the document's URL); null when there are none.</summary>
-        private ReadOnlyMemory<byte>? ImageBytes(string? source)
+        /// <c>href</c>, else the document's URL); null when there are none. With them the URL that names the image: the
+        /// <c>data:</c> URL itself or the absolute one.</summary>
+        private (ReadOnlyMemory<byte>? Bytes, string? Url) ImageBytes(string? source)
         {
             if (string.IsNullOrEmpty(source))
             {
-                return null;
+                return (default(ReadOnlyMemory<byte>?), null);
             }
 
             if (DataUrl.Body(source) is { } inline)
             {
-                return inline;
+                return (inline, source);
             }
 
-            return Urls.Absolute(source, DocumentBase()) is { } url && options.Resources?.Invoke(url) is { } resource ? resource.Bytes : null;
+            return Urls.Absolute(source, DocumentBase()) is { } url && options.Resources?.Invoke(url) is { } resource ? (resource.Bytes, url) : (default(ReadOnlyMemory<byte>?), null);
+        }
+
+        /// <summary>
+        /// The decoded image of a URL, decoded once per render however many elements use it, and charged once to the
+        /// document's budget of decoded pixels (<see cref="ImageLimits.MaxDocumentPixels"/>), from its header before any
+        /// sample is made. A URL whose image did not decode stays refused, without being decoded again.
+        /// </summary>
+        private Result<ImageData, Error> DecodeOnce(string url, ReadOnlyMemory<byte> bytes)
+        {
+            if (!_decodedImages.TryGetValue(url, out var decoded))
+            {
+                decoded = ImageDecoder.Decode(bytes, _imagePixels);
+                _decodedImages[url] = decoded;
+            }
+
+            return decoded;
         }
 
         /// <summary>The document base URL, by the style resolver's rule (<see cref="Urls.DocumentBase"/>), against this

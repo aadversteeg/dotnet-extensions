@@ -570,4 +570,19 @@ public class PageRasterizerTests
 
         Red(second, 19, 100).Should().Be(0);
     }
+
+    [Fact]
+    public void The_images_one_render_draws_are_decoded_once_each_within_one_budget_of_pixels()
+    {
+        var png = TestImages.Load("rgb8.png");
+        var jpeg = TestImages.Load("jpeg-rgb.jpg");
+        var budget = new ImagePixelBudget((long)png.PixelWidth * png.PixelHeight);
+        var images = new PagePainter.Images(budget);
+
+        images.Of(png).IsSuccess.Should().BeTrue();
+        images.Of(png).IsSuccess.Should().BeTrue("drawn again, it is not decoded or charged again");
+        images.Of(jpeg).Error.Code.Should().Be(ImageErrorCodes.TooLarge, "the JPEG does not fit in what is left");
+        budget.Used.Should().Be((long)png.PixelWidth * png.PixelHeight);
+        new ImagePixelBudget().MaxPixels.Should().Be(ImageLimits.MaxDocumentPixels);
+    }
 }

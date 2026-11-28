@@ -107,4 +107,42 @@ public class ImageSizeLimitTests
         ((RasterImage)result.Value).Alpha.Should().NotBeNull();
         allocated.Should().BeLessThan(decoded + scanlines + 4L * 1024 * 1024);
     }
+
+    /// <summary>A PNG whose header announces the size and that has no image data: refused when it is decoded, after
+    /// the header was charged, without a sample made.</summary>
+    private static byte[] HeaderOnly(int width, int height) => Png(Header((uint)width, (uint)height, 1, 3), Chunk("PLTE", [1, 2, 3]), Chunk("IEND", []));
+
+    [Fact]
+    public void A_budget_is_charged_from_the_header_and_an_image_that_does_not_fit_is_refused_before_it_is_decoded()
+    {
+        var budget = new ImagePixelBudget(100);
+
+        ImageDecoder.Decode(OneBitIndexed(10, 10), budget).IsSuccess.Should().BeTrue();
+        budget.Used.Should().Be(100);
+        var refused = ImageDecoder.Decode(OneBitIndexed(1, 1), budget);
+        refused.Error.Code.Should().Be(ImageErrorCodes.TooLarge);
+        refused.Error.Message.Should().Contain("of one document");
+        budget.Used.Should().Be(100, "a refused image is not charged");
+        ImageDecoder.Decode(OneBitIndexed(1, 1)).IsSuccess.Should().BeTrue("without a budget only the limit of one image holds");
+    }
+
+    [Fact]
+    public void The_images_of_one_document_decode_to_at_most_the_pixels_of_a_document()
+    {
+        // Two headers of 8192 x 8192 take the whole budget of a document; the next pixel is refused. Nothing is decoded.
+        var budget = new ImagePixelBudget();
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+
+        for (var image = 0; image < ImageLimits.MaxDocumentPixels / ImageLimits.MaxPixels; image++)
+        {
+            ImageDecoder.Decode(HeaderOnly(8192, 8192), budget).IsFailure.Should().BeTrue("there is no image data");
+        }
+
+        budget.Used.Should().Be(ImageLimits.MaxDocumentPixels);
+        ShouldBe(ImageDecoder.Decode(OneBitIndexed(1, 1), budget), ImageErrorCodes.TooLarge);
+        (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(16L * 1024 * 1024, "no image is decoded");
+    }
+
+    private static void ShouldBe(Ave.Extensions.Functional.Result<ImageData, Ave.Extensions.ErrorPaths.Error> result, Ave.Extensions.ErrorPaths.ErrorCode code) =>
+        result.Error.Code.Should().Be(code);
 }

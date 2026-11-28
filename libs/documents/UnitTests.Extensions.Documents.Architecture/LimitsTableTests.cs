@@ -20,6 +20,8 @@ public class LimitsTableTests
         ["work of a layout table parse"] = ("8 units per byte, at least 16 384",
             [C("Fonts", "Fonts.OpenType.TableReader", "WorkPerByte", 8), C("Fonts", "Fonts.OpenType.TableReader", "MinimumWork", 16_384)]),
         ["decoded image (PNG, and JPEG decoded to samples)"] = ("2^26 pixels", [C("Images", "Images.ImageLimits", "MaxPixels", 1L << 26)]),
+        ["decoded images of one document, all together"] = ("2^27 pixels (two images at the limit of one, or about 60 screenshots of 1920 × 1080), charged from each image's header before it is decoded; each distinct image decoded and charged once (in HTML by its URL, in the code front-end and the raster back-end by its file); a JPEG that is only embedded is not decoded and not charged",
+            [C("Images", "Images.ImageLimits", "MaxDocumentPixels", 1L << 27)]),
         ["blocks the scans of one JPEG visit together"] = ("32 times the blocks of its frame", [C("Images", "Images.Jpeg.JpegDecoder", "MaxPasses", 32)]),
         ["glyphs of one text"] = ("64 per input glyph, at least 16 384",
             [C("Typesetting", "Typesetting.Shaping.GlyphSubstitution", "MaxGrowthFactor", 64), C("Typesetting", "Typesetting.Shaping.GlyphSubstitution", "MinGlyphLimit", 16_384)]),
@@ -90,6 +92,7 @@ public class LimitsTableTests
     {
         ["work of a layout table parse"] = ("`Fonts/OpenType/TableReader.cs`", "`Documents.Font.Parse.InvalidValue`"),
         ["decoded image (PNG, and JPEG decoded to samples)"] = ("`Images/ImageLimits.cs`", "`Documents.Image.TooLarge`"),
+        ["decoded images of one document, all together"] = ("`Images/ImageLimits.cs` (`MaxDocumentPixels`), `Images/ImagePixelBudget.cs`", "`Documents.Image.TooLarge`, from the code front-end (at the image) and the raster back-end; from HTML `Documents.Html.Unsupported.Rendering` (at the `img` or the `content` declaration, left out under Warn)"),
         ["blocks the scans of one JPEG visit together"] = ("`Images/Jpeg/JpegDecoder.cs`", "`Documents.Image.TooMuchWork`"),
         ["glyphs of one text"] = ("`Typesetting/Shaping/GlyphSubstitution.cs`", "`Documents.Typesetting.TooManyGlyphs`"),
         ["shaping operations of one text"] = ("`Typesetting/Shaping/ShapingBudget.cs`", "`Documents.Typesetting.TooMuchWork`"),

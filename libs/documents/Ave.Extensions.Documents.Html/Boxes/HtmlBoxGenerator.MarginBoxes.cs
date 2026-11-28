@@ -6,7 +6,6 @@ using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html.Parsing;
-using Ave.Extensions.Documents.Images;
 using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Html.Boxes;
@@ -207,7 +206,7 @@ public static partial class HtmlBoxGenerator
                 return null;
             }
 
-            var decoded = ImageDecoder.Decode(bytes.Value);
+            var decoded = DecodeOnce(url, bytes.Value);
             if (decoded.IsFailure)
             {
                 Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} does not decode ({decoded.Error.Message}), and what Chromium shows instead is not drawn in this version.",

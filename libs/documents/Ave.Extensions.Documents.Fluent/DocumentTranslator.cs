@@ -3,7 +3,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
-using Ave.Extensions.Documents.Images;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
@@ -60,7 +59,7 @@ public static class DocumentTranslator
             },
             format.TextAlign ?? TextAlign.Left,
             format.Orphans ?? BoxStyle.Initial.Orphans,
-            format.Widows ?? BoxStyle.Initial.Widows).Decorated(format);
+            format.Widows ?? BoxStyle.Initial.Widows) { Images = new ImageDecodes() }.Decorated(format);
         var links = new InternalLinks();
         var root = Children(document.Body, new NodeId(1), inherited with { Links = links }).OnSuccessMap(children =>
             new Box(new NodeId(0), SemanticRole.Document, LayoutAlgorithmId.Flow, BoxStyle.Initial, children, document.Source))
@@ -92,6 +91,9 @@ public static class DocumentTranslator
         /// <summary>The anchors and the links to them of the body; null in a page area, where neither may stand.</summary>
         public InternalLinks? Links { get; init; }
 
+        /// <summary>The images of the document, each file decoded once (<see cref="ImageDecodes"/>); null for none yet.</summary>
+        public ImageDecodes? Images { get; init; }
+
         /// <summary>CSS inheritance (CSS Cascade 4 §7.2): what an element does not specify is its parent's value. A line
         /// height the element specifies is computed with its own font size (CSS 2.1 §10.8.1).</summary>
         public Inherited With(TextFormat format)
@@ -113,7 +115,7 @@ public static class DocumentTranslator
                 },
                 format.TextAlign ?? Align,
                 format.Orphans ?? Orphans,
-                format.Widows ?? Widows) { Lists = Lists, Links = Links }.Decorated(format);
+                format.Widows ?? Widows) { Lists = Lists, Links = Links, Images = Images }.Decorated(format);
         }
 
         /// <summary>The decorations an element applies (CSS Text Decoration 3 §2: "When specified on or propagated to a
@@ -231,7 +233,7 @@ public static class DocumentTranslator
     {
         BlockElement block => Block(block, id, pageBreakBefore, inherited),
         ParagraphElement paragraph => Paragraph(paragraph, id, pageBreakBefore, inherited),
-        ImageElement image => Image(image, id, pageBreakBefore),
+        ImageElement image => Image(image, id, pageBreakBefore, inherited),
         TableElement table => TableTranslator.Table(table, id, pageBreakBefore, inherited),
         RowElement row => TableTranslator.Row(row, id, pageBreakBefore, inherited),
         ListElement list => ListTranslator.List(list, id, pageBreakBefore, inherited),
@@ -289,7 +291,7 @@ public static class DocumentTranslator
             return (Span: span, Id: spanId);
         }).ToImmutableArray();
         var runs = spans.TraverseAll(item => item.Span.Image is { } image
-            ? Image(image, item.Id, pageBreakBefore: false)
+            ? Image(image, item.Id, pageBreakBefore: false, inherited)
             : Result<Node, Error>.Success(item.Span.Link is { } || item.Span.LinkAnchor is { }
                 ? LinkGroup(item.Span, item.Id, own.With(Cascade.Text(item.Span.Format, item.Span.Style)).Text, inherited.Links)
                 : item.Span.LanguageTag is { } language
@@ -339,7 +341,7 @@ public static class DocumentTranslator
     /// An image becomes a box laid out by the image algorithm with the decoded image as its only child. The bytes
     /// are decoded here, so a damaged or unsupported file is reported with the element's source location.
     /// </summary>
-    private static Result<Node, Error> Image(ImageElement image, NodeId id, bool pageBreakBefore)
+    private static Result<Node, Error> Image(ImageElement image, NodeId id, bool pageBreakBefore, Inherited inherited)
     {
         var box = Cascade.Box(image.Format, image.Style);
         // An image takes text values too (they inherit to nothing, but are the author's input): checked as any element's.
@@ -349,7 +351,7 @@ public static class DocumentTranslator
             .Concat(InputChecks.ImageDescription(image))
             .Concat(InputChecks.Characters(image.AlternativeText, "alt", image.Source))
             .ToImmutableArray();
-        var decoded = ImageDecoder.Decode(image.File.Bytes.AsMemory()).MapError(error => error.WithSource(image.Source));
+        var decoded = (inherited.Images ?? new ImageDecodes()).Decode(image.File).MapError(error => error.WithSource(image.Source));
         return WithProblems(problems, decoded).OnSuccessMap(data => (Node)new Box(
             id,
             image.IsDecorative ? SemanticRole.Decorative : SemanticRole.Figure(image.AlternativeText),

@@ -27,10 +27,10 @@ internal static class PngDecoder
 
     public static bool HasSignature(ReadOnlySpan<byte> file) => file.StartsWith(Signature);
 
-    public static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file) =>
-        PngChunk.ReadAll(file, Signature.Length).OnSuccessBind(chunks => Decode(file, chunks));
+    public static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file, ImagePixelBudget? budget) =>
+        PngChunk.ReadAll(file, Signature.Length).OnSuccessBind(chunks => Decode(file, chunks, budget));
 
-    private static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file, ImmutableArray<PngChunk> chunks)
+    private static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file, ImmutableArray<PngChunk> chunks, ImagePixelBudget? budget)
     {
         if (OrderProblem(chunks) is { } problem)
         {
@@ -43,9 +43,11 @@ internal static class PngDecoder
             return ImageErrors.Unsupported<ImageData>($"PNG with the unknown critical chunk {unknownCritical.Type}");
         }
 
+        // The document's budget is charged from the header, before the data is inflated or a sample is made.
         return PngHeader.Parse(chunks[0]).OnSuccessBind(header =>
             PngPalette.Read(header, chunks).OnSuccessBind(palette =>
-                Inflate(header, chunks).OnSuccessBind(scanlines =>
+                (budget is null ? Result<Unit, Error>.Success(Unit.Value) : budget.Charge(header.Width, header.Height)).OnSuccessBind(_ =>
+                Inflate(header, chunks)).OnSuccessBind(scanlines =>
                     PngSamples.Expand(ImageId.Of(file.Span), header, palette, scanlines))));
     }
 

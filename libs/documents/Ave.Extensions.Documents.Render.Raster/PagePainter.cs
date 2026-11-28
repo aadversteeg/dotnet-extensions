@@ -79,10 +79,20 @@ internal static class PagePainter
     }
 
     /// <summary>The decoded pixels of the images one render call draws, by image id: each distinct image is decoded and
-    /// converted once, however often it is drawn.</summary>
+    /// converted once, however often it is drawn, and all of them together decode to at most
+    /// <see cref="ImageLimits.MaxDocumentPixels"/> pixels (<see cref="ImagePixelBudget"/>).</summary>
     internal sealed class Images
     {
         private readonly Dictionary<ImageId, RgbaImage> _decoded = [];
+        private readonly ImagePixelBudget _budget;
+
+        public Images()
+            : this(new ImagePixelBudget())
+        {
+        }
+
+        /// <summary>With a budget of its own (a smaller one in tests).</summary>
+        internal Images(ImagePixelBudget budget) => _budget = budget;
 
         public Result<RgbaImage, Error> Of(ImageData image)
         {
@@ -91,7 +101,7 @@ internal static class PagePainter
                 return Result<RgbaImage, Error>.Success(known);
             }
 
-            var decoded = ImageDecoder.DecodeSamples(image).OnSuccessMap(Rgba);
+            var decoded = ImageDecoder.DecodeSamples(image, _budget).OnSuccessMap(Rgba);
             if (decoded.IsSuccess)
             {
                 _decoded[image.Id] = decoded.Value;
