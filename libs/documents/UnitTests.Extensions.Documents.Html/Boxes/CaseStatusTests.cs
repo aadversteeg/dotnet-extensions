@@ -16,7 +16,8 @@ namespace UnitTests.Extensions.Documents.Html.Boxes;
 /// <c>listed</c> or <c>open</c> file then holds every difference of the case (<see cref="HtmlCases.DifferenceList"/>). A case
 /// that lays out and differs otherwise fails, and so does a status that changes without its file changing, a case without
 /// a status file and a status file without a case: the status files are the list of what the HTML front-end draws, and
-/// what it refuses is the work list of the packages after this one. The test prints how many cases have each status. With
+/// what it refuses is the work list of the packages after this one. The test prints how many cases have each status, and
+/// each open case with its reason (<c>open-cases.txt</c>), so every run shows what is parked as open. With
 /// <c>DOCUMENTS_UPDATE_HTML_STATUS=1</c> the test writes the status files instead (and deletes those without a case); a
 /// case is <c>open</c> or <c>listed</c> only where its committed file already says so, so a written file never accepts a
 /// difference of another case; of a listed or open case it writes the differences found, for the diff to show. Each case's status is a file of its own, so two changes that add different cases touch no status
@@ -55,8 +56,14 @@ public class CaseStatusTests(ITestOutputHelper output)
 
         var counts = statuses.GroupBy(status => HtmlCases.Fields(status).Status).OrderByDescending(group => group.Count()).ThenBy(group => group.Key, StringComparer.Ordinal);
         output.WriteLine($"{statuses.Count} files: {string.Join(", ", counts.Select(group => $"{group.Count()} {group.Key}"))}");
-        var open = statuses.Where(status => HtmlCases.Fields(status).Status == "open").Select(status => status.Split('\n')[0]).ToList();
-        output.WriteLine($"{open.Count} open: {string.Join("; ", open)}");
+        var open = statuses.Where(status => HtmlCases.Fields(status).Status == "open").Select(status => HtmlCases.Fields(status).Name).ToHashSet(StringComparer.Ordinal);
+        var reasons = OpenCases().Where(line => open.Contains(line.Name)).ToList();
+        output.WriteLine($"{open.Count} open, each with its reason in open-cases.txt:");
+        foreach (var (name, reason) in reasons)
+        {
+            output.WriteLine($"  {name}: {reason}");
+        }
+
         statuses.Where(status => !HtmlCases.Accepted.Contains(HtmlCases.Fields(status).Status))
             .Should().BeEmpty("a file that lays out is laid out as Chromium prints it");
         folder.StatusNames.Should().Equal(folder.Names, "every file has a status file, and every status file is of a file");
