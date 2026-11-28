@@ -121,8 +121,9 @@ internal static class PngDecoder
         var expected = header.Height * (header.Stride + 1);
         var compressed = idat.SelectMany(chunk => chunk.Data.ToArray()).ToArray();
 
-        // The buffer grows with the data, four times at a time up to what the header announces: a header that announces
-        // more than its data holds costs what the data holds, not what the header announces.
+        // The buffer grows with the data, four times at a time, and goes to what the header announces at once when four
+        // times would reach half of it or more: a header that announces more than its data holds costs what the data holds
+        // (at most eight times it), and an honest image allocates its buffers once and less than two thirds again.
         var scanlines = new byte[Math.Min(expected, FirstBuffer)];
         inflated = 0;
         bool trailing;
@@ -138,7 +139,7 @@ internal static class PngDecoder
                         break;
                     }
 
-                    Array.Resize(ref scanlines, (int)Math.Min(expected, 4L * scanlines.Length));
+                    Array.Resize(ref scanlines, (int)Grown(scanlines.Length, expected));
                 }
 
                 var read = zlib.Read(scanlines.AsSpan((int)inflated, (int)Math.Min(Piece, scanlines.Length - inflated)));
@@ -170,4 +171,7 @@ internal static class PngDecoder
             : ImageErrors.Invalid<byte[]>($"scanline {badRow} has an undefined filter type.", idat[0].Offset);
     }
 
+    /// <summary>The next size of the inflate buffer: four times the last, or the announced size when four times would
+    /// reach half of it or more.</summary>
+    internal static long Grown(long length, long expected) => 8L * length >= expected ? expected : 4L * length;
 }

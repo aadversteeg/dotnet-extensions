@@ -252,6 +252,24 @@ public class ImageSizeLimitTests
         ShouldBe(ImageDecoder.Decode(file, budget), ImageErrorCodes.TooLarge);
     }
 
+    [Fact]
+    public void An_image_just_above_a_step_of_the_buffer_allocates_it_once()
+    {
+        // 4096 x 1024 grey: 4 MiB + 1024 bytes of scanlines, just above the step of 4 MiB. The buffer goes from 1 MiB to the
+        // announced size at once, not to 4 MiB first.
+        var expected = 1024L * 4097;
+        var file = Png(Header(4096, 1024, 8, 0), Chunk("IDAT", Deflate(expected)), Chunk("IEND", []));
+        PngDecoder.Grown(1 << 20, expected).Should().Be(expected);
+        PngDecoder.Grown(1 << 20, 64L << 20).Should().Be(4L << 20);
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+
+        var result = ImageDecoder.Decode(file);
+
+        result.IsSuccess.Should().BeTrue();
+        var used = GC.GetAllocatedBytesForCurrentThread() - allocated;
+        used.Should().BeLessThan(expected * 26 / 10, $"the scanlines once, the steps before them and the samples ({used} bytes)");
+    }
+
     private static void ShouldBe(Ave.Extensions.Functional.Result<ImageData, Ave.Extensions.ErrorPaths.Error> result, Ave.Extensions.ErrorPaths.ErrorCode code) =>
         result.Error.Code.Should().Be(code);
 }
