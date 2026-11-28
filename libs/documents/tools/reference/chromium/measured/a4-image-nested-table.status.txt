@@ -1,1 +1,12 @@
 a4-image-nested-table listed What_follows_the_row_of_an_image_sliced_in_a_table_starts_below_its_last_slice_where_Chromium_draws_it_over_the_slices: page 4 'after' baseline 73.5 (laid out at 73.125), Chromium 24.75 (print.txt)
+10 differences:
+- page 4 'after' baseline 73.5 (laid out at 73.125), Chromium 24.75 (print.txt)
+- page 4 'below' baseline 89.25 (laid out at 88.875), Chromium 40.5 (print.txt)
+- page 4 painted area: the pixel at (13.5, 27.75): Chromium paints it and the engine does not; the engine paints 1400 px #000000, Chromium 988 px; 364 px differ so, from (13.5, 27.75) to (286.5, 28.5) (print.txt)
+- page 4 painted area: the pixel at (12, 60.75): the engine paints it and Chromium does not; the engine paints 1400 px #000000, Chromium 988 px; 776 px differ so, from (12, 60.75) to (288, 77.25) (print.txt)
+- page 4 painted area: the pixel at (13.5, 27.75): Chromium paints it and the engine does not; the engine paints 1400 px, Chromium 988 px; 364 px differ so, from (13.5, 27.75) to (286.5, 28.5) (lines.txt)
+- page 4 painted area: the pixel at (12, 60.75): the engine paints it and Chromium does not; the engine paints 1400 px, Chromium 988 px; 776 px differ so, from (12, 60.75) to (288, 77.25) (lines.txt)
+- page 4 'after' yMin 61.656, Chromium 12.906 (words.txt)
+- page 4 'after' yMax 76.056, Chromium 27.306 (words.txt)
+- page 4 'below' yMin 77.406, Chromium 28.656 (words.txt)
+- page 4 'below' yMax 91.806, Chromium 43.056 (words.txt)

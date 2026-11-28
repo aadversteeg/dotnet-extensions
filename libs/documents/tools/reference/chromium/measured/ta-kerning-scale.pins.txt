@@ -1,4 +1,4 @@
 ta-kerning-scale.boxes.txt 1
 ta-kerning-scale.lines.txt 0
-ta-kerning-scale.print.txt 7
-ta-kerning-scale.words.txt 6
+ta-kerning-scale.print.txt 4
+ta-kerning-scale.words.txt 3

@@ -1,1 +1,10 @@
 h-page-a4-zero-right listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: page 1 'right' x0 541.944, Chromium 542.484 (print.txt)
+8 differences:
+- page 1 'right' x0 541.944, Chromium 542.484 (print.txt)
+- page 1 'right' x1 566.346, Chromium 566.892 (print.txt)
+- page 1 'edge' x0 569.418, Chromium 569.958 (print.txt)
+- page 1 'edge' x1 594.954, Chromium 595.494 (print.txt)
+- page 1 'right' xMin 541.944, Chromium 542.484 (words.txt)
+- page 1 'right' xMax 566.346, Chromium 566.886 (words.txt)
+- page 1 'edge' xMin 569.418, Chromium 569.958 (words.txt)
+- page 1 'edge' xMax 594.954, Chromium 595.494 (words.txt)

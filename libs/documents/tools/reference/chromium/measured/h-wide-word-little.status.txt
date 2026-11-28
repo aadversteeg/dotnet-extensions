@@ -1,1 +1,13 @@
 h-wide-word-little listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.019, Chromium 290.241 (print.txt)
+11 differences:
+- page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.019, Chromium 290.241 (print.txt)
+- page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' baseline 21.75 (laid out at 21.75), Chromium 21.508 (print.txt)
+- page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' font size 12, Chromium 11.758 (print.txt)
+- page 1 'after' x1 34.512, Chromium 34.012 (print.txt)
+- page 1 'after' baseline 36 (laid out at 36), Chromium 35.47 (print.txt)
+- page 1 'after' font size 12, Chromium 11.758 (print.txt)
+- page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' xMax 296.019, Chromium 290.241 (words.txt)
+- page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' yMax 24.306, Chromium 24.012 (words.txt)
+- page 1 'after' xMax 34.512, Chromium 34.012 (words.txt)
+- page 1 'after' yMin 24.156, Chromium 23.865 (words.txt)
+- page 1 'after' yMax 38.556, Chromium 37.975 (words.txt)

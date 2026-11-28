@@ -1,1 +1,9 @@
 fr-old-margin-at-row-cut listed A_margin_dropped_at_a_row_cut_does_not_stay_in_the_row_s_height: page 2 'z' baseline 62.25 (laid out at 62.25), Chromium 74.25 (print.txt)
+7 differences:
+- page 2 'z' baseline 62.25 (laid out at 62.25), Chromium 74.25 (print.txt)
+- page 2 painted area: the pixel at (12.75, 48): the engine paints it and Chromium does not; the engine paints 464 px #000000, Chromium 496 px; 366 px differ so, from (12.75, 48) to (287.25, 48.75) (print.txt)
+- page 2 painted area: the pixel at (12, 48.75): Chromium paints it and the engine does not; the engine paints 464 px #000000, Chromium 496 px; 398 px differ so, from (12, 48.75) to (288, 60.75) (print.txt)
+- page 2 painted area: the pixel at (12.75, 48): the engine paints it and Chromium does not; the engine paints 464 px, Chromium 496 px; 366 px differ so, from (12.75, 48) to (287.25, 48.75) (lines.txt)
+- page 2 painted area: the pixel at (12, 48.75): Chromium paints it and the engine does not; the engine paints 464 px, Chromium 496 px; 398 px differ so, from (12, 48.75) to (288, 60.75) (lines.txt)
+- page 2 'z' yMin 50.406, Chromium 62.406 (words.txt)
+- page 2 'z' yMax 64.806, Chromium 76.806 (words.txt)

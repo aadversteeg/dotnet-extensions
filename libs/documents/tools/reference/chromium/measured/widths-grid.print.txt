@@ -1,0 +1,9 @@
+page 1 612.000 792.000
+word 1 0.000 16.524 9.750 9.997 one #000000 Lato-Regular
+word 1 52.934 69.968 9.750 9.997 two #000000 Lato-Regular
+word 1 72.321 99.141 9.750 9.997 words #000000 Lato-Regular
+word 1 158.801 299.991 9.750 9.997 Supercalifragilisticexpialidocious #000000 Lato-Regular
+word 1 0.000 4.969 21.750 9.997 a #000000 Lato-Regular
+word 1 42.094 47.692 21.750 9.997 b #000000 Lato-Regular
+word 1 92.625 97.404 21.750 9.997 c #000000 Lato-Regular
+word 1 261.035 299.996 21.750 9.997 Duration #000000 Lato-Regular
