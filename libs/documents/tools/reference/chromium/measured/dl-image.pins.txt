@@ -1,6 +1,7 @@
 dl-image.boxes.txt 1
 dl-image.clips.txt 6
 dl-image.glyphs.txt 6
+dl-image.images.txt 4
 dl-image.lines.txt 6
 dl-image.order.txt 16
 dl-image.print.txt 17

@@ -1,6 +1,7 @@
 a4-header-image-150-image.boxes.txt 3
 a4-header-image-150-image.clips.txt 4
 a4-header-image-150-image.glyphs.txt 4
+a4-header-image-150-image.images.txt 4
 a4-header-image-150-image.lines.txt 25
 a4-header-image-150-image.order.txt 33
 a4-header-image-150-image.print.txt 38

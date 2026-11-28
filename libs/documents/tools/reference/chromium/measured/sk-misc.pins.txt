@@ -1,6 +1,7 @@
 sk-misc.boxes.txt 1
 sk-misc.clips.txt 12
 sk-misc.glyphs.txt 12
+sk-misc.images.txt 1
 sk-misc.ink.txt 39
 sk-misc.lines.txt 8
 sk-misc.order.txt 21

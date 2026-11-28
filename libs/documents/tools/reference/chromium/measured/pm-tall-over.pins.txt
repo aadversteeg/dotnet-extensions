@@ -1,6 +1,7 @@
 pm-tall-over.boxes.txt 1
 pm-tall-over.clips.txt 13
 pm-tall-over.glyphs.txt 13
+pm-tall-over.images.txt 1
 pm-tall-over.lines.txt 4
 pm-tall-over.order.txt 18
 pm-tall-over.print.txt 19

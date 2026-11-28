@@ -1,6 +1,7 @@
 ws-image-border.boxes.txt 1
 ws-image-border.clips.txt 9
 ws-image-border.glyphs.txt 9
+ws-image-border.images.txt 4
 ws-image-border.lines.txt 0
 ws-image-border.order.txt 13
 ws-image-border.print.txt 14

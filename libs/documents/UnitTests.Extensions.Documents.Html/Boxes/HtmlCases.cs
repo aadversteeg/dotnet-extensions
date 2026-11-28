@@ -224,7 +224,8 @@ internal static class HtmlCases
         var engine = PrintedPages.Engine(pages.Value);
         var clips = Clips(folder, name);
         var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt")).WithGlyphs(File.ReadAllText(Measured(folder, name) + ".glyphs.txt"))
-            .WithOrder(File.ReadAllText(Measured(folder, name) + ".order.txt")).WithClips(File.ReadAllText(Measured(folder, name) + ".clips.txt"));
+            .WithOrder(File.ReadAllText(Measured(folder, name) + ".order.txt")).WithClips(File.ReadAllText(Measured(folder, name) + ".clips.txt"))
+            .WithImages(File.Exists(Measured(folder, name) + ".images.txt") ? File.ReadAllText(Measured(folder, name) + ".images.txt") : string.Empty);
         var unused = clips.ToList();
         chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
         var lines = Cut(Rows(folder, name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
@@ -238,6 +239,7 @@ internal static class HtmlCases
             .Concat(GlyphDifferences(engine, chromium))
             .Concat(OrderDifferences(engine, chromium))
             .Concat(ClipDifferences(engine, chromium))
+            .Concat(ImageDifferences(engine, chromium))
             .Take(DifferenceBound + 1).ToList();
         var (status, listed) = CommittedStatus(committed);
         if (differences.Count == 0)
@@ -786,6 +788,29 @@ internal static class HtmlCases
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Every difference between the pictures the engine's images show and those of Chromium's print (<c>images.txt</c>,
+    /// <see cref="PrintedPage.Pictures"/>), image by image in drawing order on each page where both have as many images
+    /// (<see cref="Differences"/> names a page where they do not): the same size in pixels and the same pixels, exactly.
+    /// Chromium writes a picture it was given as a PNG losslessly at its own size, and both sides decode to 8-bit RGBA, so
+    /// there is no bound.
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with its pictures (<see cref="PrintedPages.WithImages"/>).</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> ImageDifferences(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages).Where(pair => pair.First.Pictures.Length == pair.Second.Pictures.Length))
+        {
+            foreach (var (picture, number) in ours.Pictures.Zip(theirs.Pictures).Select((pair, index) => (pair, index + 1)).Where(item => item.pair.First != item.pair.Second))
+            {
+                yield return $"page {ours.Number} image {number} shows {Short(picture.First)}, Chromium's {Short(picture.Second)} (images.txt)";
+            }
+        }
+
+        static string Short(string picture) => picture.Split(' ') is [var width, var height, var hash] ? $"{width}x{height} px {hash[..Math.Min(16, hash.Length)]}" : picture;
     }
 
     /// <summary>The engine's words, joined as Chromium's print reads them (<see cref="Joined"/>), paired with Chromium's, on

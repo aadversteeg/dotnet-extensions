@@ -1,6 +1,7 @@
 pm-image-exact.boxes.txt 1
 pm-image-exact.clips.txt 3
 pm-image-exact.glyphs.txt 3
+pm-image-exact.images.txt 1
 pm-image-exact.lines.txt 1
 pm-image-exact.order.txt 5
 pm-image-exact.print.txt 6

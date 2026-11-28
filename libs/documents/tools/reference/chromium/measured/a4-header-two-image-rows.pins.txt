@@ -1,6 +1,7 @@
 a4-header-two-image-rows.boxes.txt 3
 a4-header-two-image-rows.clips.txt 6
 a4-header-two-image-rows.glyphs.txt 6
+a4-header-two-image-rows.images.txt 6
 a4-header-two-image-rows.lines.txt 39
 a4-header-two-image-rows.order.txt 51
 a4-header-two-image-rows.print.txt 58

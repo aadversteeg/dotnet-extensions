@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Ave.Extensions.Documents.Images;
 using Ave.Extensions.Documents.PageModel;
 
 namespace Ave.Extensions.Documents.TestSupport;
@@ -165,6 +166,10 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
     /// the engine's pages and, for a print read back from its PDF, from its <c>order.txt</c>; empty where not known.</summary>
     public ImmutableArray<PrintedPaint> Paints { get; init; } = [];
 
+    /// <summary>Which picture each of <see cref="Images"/> shows, in the same order: <c>width height sha256</c>, its size in
+    /// pixels and the SHA-256 (lowercase hexadecimal) of its pixels as 8-bit RGBA, row by row from the top (<see cref="PrintedPages.Picture"/>);
+    /// set in the engine's pages and, for a print read back from its PDF, from its <c>images.txt</c>; empty where not known.</summary>
+    public ImmutableArray<string> Pictures { get; init; } = [];
 
     /// <summary>The words of the page joined by single spaces, in reading order (baseline, then x).</summary>
     public string Text => string.Join(" ", Words.Select(word => word.Text));
@@ -408,6 +413,65 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     }
 
     /// <summary>
+    /// The print with the picture each image shows (<see cref="PrintedPage.Pictures"/>), from the text <c>images.py</c>
+    /// writes (<c>images.txt</c>): per image of <c>print.txt</c>, page by page in drawing order, <c>page width height sha256</c>.
+    /// </summary>
+    /// <param name="text">The file's text (empty for a print without images).</param>
+    /// <returns>The pages with their pictures.</returns>
+    /// <exception cref="FormatException">A line is not of that form, or a page has another number of lines than images.</exception>
+    public PrintedPages WithImages(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Split(' ')).ToList();
+        foreach (var fields in lines.Where(fields => fields.Length != 4))
+        {
+            throw new FormatException($"Not a line of images.py: '{string.Join(' ', fields)}'.");
+        }
+
+        return new([.. Pages.Select(page =>
+        {
+            var rows = lines.Where(fields => fields[0] == page.Number.ToString(CultureInfo.InvariantCulture)).ToList();
+            return rows.Count == page.Images.Length ? page with { Pictures = [.. rows.Select(fields => $"{fields[1]} {fields[2]} {fields[3]}")] }
+                : throw new FormatException($"Page {page.Number} has {page.Images.Length} images and {rows.Count} lines of images.txt.");
+        })]);
+    }
+
+    /// <summary>
+    /// Which picture an image of the page model shows, in the form of <c>images.txt</c>: <c>width height sha256</c>, the
+    /// SHA-256 of its pixels as 8-bit RGBA, row by row from the top, as the engine embeds them: the samples the family's own
+    /// decoder gives (<see cref="RasterImage.Samples"/>; a grey sample as three equal ones) and their alpha
+    /// (<see cref="RasterImage.Alpha"/>), 255 where the image has none. The bytes are the same on every platform. An image the
+    /// engine embeds as its file (a JPEG, <see cref="JpegImage"/>) has no decoded pixels here: its line names the file's hash,
+    /// so it never equals a picture read back from a print.
+    /// </summary>
+    /// <param name="image">The image.</param>
+    /// <returns>Its line.</returns>
+    public static string Picture(ImageData image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        if (image is not RasterImage raster)
+        {
+            var file = image is JpegImage jpeg ? jpeg.File.ToArray() : [];
+            return FormattableString.Invariant($"{image.PixelWidth} {image.PixelHeight} file-{Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(file))}");
+        }
+
+        var pixels = raster.PixelWidth * raster.PixelHeight;
+        var rgba = new byte[pixels * 4];
+        var channels = raster.ColorSpace == ImageColorSpace.Gray ? 1 : 3;
+        for (var index = 0; index < pixels; index++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+            {
+                rgba[(4 * index) + channel] = raster.Samples[(channels * index) + (channels == 1 ? 0 : channel)];
+            }
+
+            rgba[(4 * index) + 3] = raster.Alpha is { } alpha ? alpha[index] : (byte)255;
+        }
+
+        return FormattableString.Invariant($"{raster.PixelWidth} {raster.PixelHeight} {Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(rgba))}");
+    }
+
+    /// <summary>
     /// The engine's page model in the same form. A word is a run of glyphs whose text has no white space; a glyph with no
     /// text of its own continues the word before it (the later glyphs of a one-to-many substitution). Its baseline is its
     /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance; its colour
@@ -426,6 +490,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             var (rectangles, images) = (ImmutableArray.CreateBuilder<PrintedBox>(), ImmutableArray.CreateBuilder<PrintedBox>());
             var paths = ImmutableArray.CreateBuilder<PrintedPath>();
             var paints = ImmutableArray.CreateBuilder<PrintedPaint>();
+            var pictures = ImmutableArray.CreateBuilder<string>();
             var runs = new System.Collections.Generic.List<(GlyphRun Run, int Place, PrintedBox? Clip)>();
             var clips = new System.Collections.Generic.Stack<Core.Rect>();
             foreach (var (item, place) in page.Items.Select((item, place) => (item, place)))
@@ -441,6 +506,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                         break;
                     case DrawImage image when Visible(Box(number, image.Area), clip) is { } shown:
                         paints.Add(new PrintedPaint(place, shown.X0, shown.Y0, shown.X1, shown.Y1, "image"));
+                        pictures.Add(Picture(image.Image));
                         break;
                     case FillPath path when Visible(Bounds(number, path), clip) is { } shown:
                         paints.Add(new PrintedPaint(place, shown.X0, shown.Y0, shown.X1, shown.Y1, Hex(path.Color)));
@@ -472,6 +538,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                     .Select((word, place) => word is null ? null : word with { Drawn = place }).OfType<PrintedWord>()), rectangles.ToImmutable(), images.ToImmutable(), paths.ToImmutable())
             {
                 Paints = paints.ToImmutable(),
+                Pictures = pictures.ToImmutable(),
             };
         })]);
 

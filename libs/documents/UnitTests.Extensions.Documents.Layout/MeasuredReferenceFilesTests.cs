@@ -26,7 +26,7 @@ public class MeasuredReferenceFilesTests(ITestOutputHelper output)
     /// gaps of a print that skips ink (<c>ink.py</c>), the link annotations of a print that has any (<c>links.py</c>) with
     /// the left of their destinations (<c>destinations.py</c>), and the pixels of the images of a print that draws any
     /// (<c>images.py</c>).</summary>
-    private static readonly string[] Kinds = ["boxes", "clips", "glyphs", "lines", "order", "print", "words", "ink", "links"];
+    private static readonly string[] Kinds = ["boxes", "clips", "glyphs", "lines", "order", "print", "words", "ink", "links", "images"];
 
     /// <summary>How many of <see cref="Kinds"/> every case has.</summary>
     private const int Always = 7;

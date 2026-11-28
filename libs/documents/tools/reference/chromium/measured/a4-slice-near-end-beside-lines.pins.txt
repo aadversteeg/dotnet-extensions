@@ -1,6 +1,7 @@
 a4-slice-near-end-beside-lines.boxes.txt 4
 a4-slice-near-end-beside-lines.clips.txt 42
 a4-slice-near-end-beside-lines.glyphs.txt 42
+a4-slice-near-end-beside-lines.images.txt 2
 a4-slice-near-end-beside-lines.lines.txt 24
 a4-slice-near-end-beside-lines.order.txt 68
 a4-slice-near-end-beside-lines.print.txt 72

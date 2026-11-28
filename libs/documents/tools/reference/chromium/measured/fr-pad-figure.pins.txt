@@ -1,6 +1,7 @@
 fr-pad-figure.boxes.txt 1
 fr-pad-figure.clips.txt 2
 fr-pad-figure.glyphs.txt 2
+fr-pad-figure.images.txt 1
 fr-pad-figure.lines.txt 0
 fr-pad-figure.order.txt 3
 fr-pad-figure.print.txt 6

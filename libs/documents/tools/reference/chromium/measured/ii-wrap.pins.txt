@@ -1,6 +1,7 @@
 ii-wrap.boxes.txt 1
 ii-wrap.clips.txt 28
 ii-wrap.glyphs.txt 28
+ii-wrap.images.txt 7
 ii-wrap.lines.txt 0
 ii-wrap.order.txt 35
 ii-wrap.print.txt 36

@@ -1,6 +1,7 @@
 a4-header2-image-228.boxes.txt 3
 a4-header2-image-228.clips.txt 4
 a4-header2-image-228.glyphs.txt 4
+a4-header2-image-228.images.txt 2
 a4-header2-image-228.lines.txt 21
 a4-header2-image-228.order.txt 27
 a4-header2-image-228.print.txt 30

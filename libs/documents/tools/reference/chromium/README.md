@@ -73,6 +73,8 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
   and `image page place x0 y0 x1 y1` per image, cut to their clips (`order.py`, `sequence.py`, PyMuPDF);
 - `<case>.clips.txt`: per word of `print.txt`, in its order, `page text x0 y0 x1 y1 rect|path` (the rectangle the clips
   around its text leave, and whether each of them is one rectangle) or `page text none` (`clips.py`, PyMuPDF);
+- `<case>.images.txt`, only for a print that draws an image: per image of `print.txt`, `page width height sha256`, the
+  image's size in pixels and the SHA-256 of its pixels as 8-bit RGBA (`images.py`, PyMuPDF);
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
@@ -257,6 +259,12 @@ to 0.2 below) by more than one pixel across and down
 `clips.txt` gives the clip around each word's text, as its box; no word of a case is drawn under a clip that is not one
 rectangle. The case comparison takes a word as hidden where its clips leave nothing of its box, and otherwise compares
 how much they cut off at each edge within one pixel (`HtmlCases.ClipDifferences`).
+
+`images.txt` gives the picture of each image: Chromium writes an image it was given as a PNG with a lossless filter
+(`FlateDecode`) at the PNG's own size, gray or RGB, its alpha as a soft mask; `images.py` decodes it (PyMuPDF's Pixmap)
+to 8-bit RGBA, a gray sample as three equal ones, alpha 255 without a mask, and hashes those bytes. The engine's side
+decodes with the family's own PNG decoder to the same form (`PrintedPages.Picture`). So the pixels are compared exactly;
+no case draws a JPEG, and a JPEG would differ until a case measures how Chromium writes one.
 
 ## Whole documents
 

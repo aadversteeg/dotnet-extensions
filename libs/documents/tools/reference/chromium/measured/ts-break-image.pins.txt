@@ -1,6 +1,7 @@
 ts-break-image.boxes.txt 7
 ts-break-image.clips.txt 8
 ts-break-image.glyphs.txt 8
+ts-break-image.images.txt 2
 ts-break-image.lines.txt 33
 ts-break-image.order.txt 47
 ts-break-image.print.txt 63

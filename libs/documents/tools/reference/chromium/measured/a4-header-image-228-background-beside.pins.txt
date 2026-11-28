@@ -1,6 +1,7 @@
 a4-header-image-228-background-beside.boxes.txt 4
 a4-header-image-228-background-beside.clips.txt 7
 a4-header-image-228-background-beside.glyphs.txt 7
+a4-header-image-228-background-beside.images.txt 2
 a4-header-image-228-background-beside.lines.txt 38
 a4-header-image-228-background-beside.order.txt 47
 a4-header-image-228-background-beside.print.txt 50

@@ -1,6 +1,7 @@
 a4-slice2-beside-lines.boxes.txt 4
 a4-slice2-beside-lines.clips.txt 32
 a4-slice2-beside-lines.glyphs.txt 32
+a4-slice2-beside-lines.images.txt 2
 a4-slice2-beside-lines.lines.txt 21
 a4-slice2-beside-lines.order.txt 55
 a4-slice2-beside-lines.print.txt 58

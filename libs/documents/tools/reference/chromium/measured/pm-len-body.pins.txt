@@ -1,6 +1,7 @@
 pm-len-body.boxes.txt 1
 pm-len-body.clips.txt 6
 pm-len-body.glyphs.txt 6
+pm-len-body.images.txt 6
 pm-len-body.lines.txt 7
 pm-len-body.order.txt 19
 pm-len-body.print.txt 20

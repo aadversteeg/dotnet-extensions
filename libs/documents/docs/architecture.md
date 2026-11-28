@@ -1045,6 +1045,9 @@ through the whole HTML path unchanged and its pages are compared with every file
 - `<case>.clips.txt`, the clip around each word's text (`clips.py`: the rectangle the clips leave, and whether each of
   them is one rectangle): a word its clips hide wholly on one side and not on the other differs; otherwise how much the
   clips cut off the word's box at each edge within one pixel (0.75 pt). A clip is taken as its box on both sides.
+- `<case>.images.txt`, only for a print that draws an image, the picture of each image (`images.py`: its size in pixels
+  and the SHA-256 of its pixels as 8-bit RGBA): the same, exactly, image by image in drawing order. Chromium writes a
+  picture given as a PNG losslessly at its own size; the engine's side is the pixels its own decoder gives.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole

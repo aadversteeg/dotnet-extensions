@@ -1,6 +1,7 @@
 pm-paint-order.boxes.txt 1
 pm-paint-order.clips.txt 7
 pm-paint-order.glyphs.txt 7
+pm-paint-order.images.txt 6
 pm-paint-order.lines.txt 6
 pm-paint-order.order.txt 19
 pm-paint-order.print.txt 20

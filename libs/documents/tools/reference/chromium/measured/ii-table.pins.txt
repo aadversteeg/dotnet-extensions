@@ -1,6 +1,7 @@
 ii-table.boxes.txt 6
 ii-table.clips.txt 9
 ii-table.glyphs.txt 9
+ii-table.images.txt 3
 ii-table.lines.txt 21
 ii-table.order.txt 33
 ii-table.print.txt 34

@@ -1,6 +1,7 @@
 pm-image-url.boxes.txt 1
 pm-image-url.clips.txt 2
 pm-image-url.glyphs.txt 2
+pm-image-url.images.txt 1
 pm-image-url.lines.txt 1
 pm-image-url.order.txt 4
 pm-image-url.print.txt 5
