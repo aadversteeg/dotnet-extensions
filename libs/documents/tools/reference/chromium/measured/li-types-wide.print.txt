@@ -1,0 +1,7 @@
+page 1 300.000 700.080
+word 1 12.000 40.702 22.500 10.500 Upper #000000 Lato-Regular
+word 1 43.169 72.443 22.500 10.500 roman #000000 Lato-Regular
+word 1 3.802 39.308 39.000 10.500 MXCIX. #000000 Lato-Regular
+word 1 42.000 53.387 39.000 10.500 Ur #000000 Lato-Regular
+word 1 3.801 39.306 51.750 10.500 MXCIX. #000000 Lato-Regular
+word 1 42.000 53.387 51.750 10.500 Ur #000000 Lato-Regular

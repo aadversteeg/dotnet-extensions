@@ -1,0 +1,1 @@
+ta-kerning-none refused Documents.Css.Unsupported.Value font-kerning: none at 4:28

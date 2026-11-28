@@ -1,1 +1,11 @@
 a4-header-nested-image-228 listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 'after' baseline 105 (laid out at 104.625), Chromium 88.5 (print.txt)
+9 differences:
+- page 3 'after' baseline 105 (laid out at 104.625), Chromium 88.5 (print.txt)
+- page 3 painted area: the pixel at (12.75, 12.75): Chromium paints it and the engine does not; the engine paints 1852 px #000000, Chromium 1804 px; 768 px differ so, from (12.75, 12.75) to (287.25, 77.25) (print.txt)
+- page 3 painted area: the pixel at (12, 77.25): the engine paints it and Chromium does not; the engine paints 1852 px #000000, Chromium 1804 px; 816 px differ so, from (12, 77.25) to (288, 93.75) (print.txt)
+- page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
+- page 3 image 1 y1 92.25 (laid out at 92.25), Chromium 76.5 (print.txt)
+- page 3 painted area: the pixel at (12.75, 12.75): Chromium paints it and the engine does not; the engine paints 1852 px, Chromium 1804 px; 768 px differ so, from (12.75, 12.75) to (287.25, 77.25) (lines.txt)
+- page 3 painted area: the pixel at (12, 77.25): the engine paints it and Chromium does not; the engine paints 1852 px, Chromium 1804 px; 816 px differ so, from (12, 77.25) to (288, 93.75) (lines.txt)
+- page 3 'after' yMin 94.637, Chromium 78.136 (words.txt)
+- page 3 'after' yMax 107.237, Chromium 90.736 (words.txt)

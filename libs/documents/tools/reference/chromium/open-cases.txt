@@ -1,0 +1,8 @@
+# The reference cases and documents whose status is open: a difference from Chromium that is known and not yet a
+# documented limit. One line each, in ordinal order: the name, a space, and why it is open. The status test fails for an
+# open case that is not here, and for a line here whose case is not open (CaseStatusTests).
+a2-row-end-nested-under-header-13875 with 13.875 pt of top padding the engine goes on without the outer header where Chromium repeats it and cuts the row (docs/architecture.md, row end (v))
+a2-row-end-nested-under-header-end the rest of the inner table fits below the repeated header but for the outer bottom line; Chromium repeats the header, the engine goes on without it (docs/architecture.md, row end (v))
+a4-header-image-228-background-beside beside the rest of the image on page 3 the engine paints the empty cell's background, 15,288 px of #c0c0c0 from (150.75, 28.5) to (287.25, 92.25), where Chromium paints none; the header over the slice does not explain it
+br-boxes-inside the sizes of the boxes 'item' and 'plain' are not compared: their source line holds five div elements and two generic boxes, so the comparison cannot pair them
+font-sizes the lines of 100 "n" are wider than the page area, so Chromium shrinks the whole print (font size 9 printed at 8.226, factor 0.914) and the engine does not; and its boxes on one line cannot be paired

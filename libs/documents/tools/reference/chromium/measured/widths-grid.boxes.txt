@@ -1,0 +1,9 @@
+div 300.000 12.000 w3
+div 52.934 12.000 one
+div 105.867 12.000 two words
+div 141.199 12.000 Supercalifragilisticexpi
+div 300.000 12.000 w4
+div 42.094 12.000 a
+div 50.531 12.000 b
+div 168.410 12.000 c
+div 38.965 12.000 Duration

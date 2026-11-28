@@ -111,7 +111,7 @@ public class ChromiumReferenceTests
     [InlineData(new[] { 2.5, 3.0, 10.0, 2.0 }, new[] { "a", "b", "c", "Duration" }, new[] { 41.777, 50.145, 167.145, 40.934 }, new[] { 2, 2, 2, 1 })]
     public void Fill_columns_share_the_leftover_like_CSS_grid_fr_in_Chromium(double[] weights, string[] texts, double[] chromium, int[] layoutUnits)
     {
-        // Chromium (widths-exact, w3 and w4): display: grid; grid-template-columns: 1fr 2fr 1fr (and 2.5fr 3fr 10fr 2fr);
+        // Chromium (widths-exact-grid, w3 and w4): display: grid; grid-template-columns: 1fr 2fr 1fr (and 2.5fr 3fr 10fr 2fr);
         // width 300pt. A column whose content is wider than its share keeps its min-content and the others share the rest
         // (§11.7.1). n: the column held at its min-content is one ceiled text item (1); every other column is a truncated
         // share of the leftover, which holds that text item (2). Chromium carries the truncated fractions to the next track.
@@ -146,7 +146,7 @@ public class ChromiumReferenceTests
         ShouldMatchChromium(Frame + (cells[1] - Frame) * factor, 31.547, 3, "2 truncated paddings, 1 ceiled text item, text scaled by the factor");
         ShouldMatchChromium(Frame + (cells[2] - Frame) * factor, 103.992, 3, "2 truncated paddings, 1 ceiled text item, text scaled by the factor");
 
-        // w3 and w4 at 10pt: the columns held at their min-content are one text item each: n = 1.
+        // w3 and w4 at 10pt (widths-grid): the columns held at their min-content are one text item each: n = 1.
         var super = CellWidths(Paginate(FillColumns(new TableModels(10), [1, 2, 1], ["one", "two words", "Supercalifragilisticexpialidocious"])).Single())[2];
         var duration = CellWidths(Paginate(FillColumns(new TableModels(10), [2.5, 3, 10, 2], ["a", "b", "c", "Duration"])).Single())[3];
         ShouldMatchChromium(super * factor, 141.199, 1, "1 ceiled text item, scaled by the factor");

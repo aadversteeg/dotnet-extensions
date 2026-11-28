@@ -1,1 +1,12 @@
 tt-groups listed A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest: link 3 on page 1: x1 104.859, Chromium 96 (links.txt)
+10 differences:
+- link 3 on page 1: x1 104.859, Chromium 96 (links.txt)
+- link 4 on page 1: x0 66.703, Chromium 96 (links.txt)
+- link 4 on page 1: y0 127.242, Chromium 108.75 (links.txt)
+- link 4 on page 1: x1 81.27, Chromium 105 (links.txt)
+- link 4 on page 1: y1 139.992, Chromium 121.5 (links.txt)
+- link 5 on page 1: x0 84.727, Chromium 66.75 (links.txt)
+- link 5 on page 1: y0 145.992, Chromium 127.5 (links.txt)
+- link 5 on page 1: x1 90.891, Chromium 81 (links.txt)
+- link 5 on page 1: y1 158.742, Chromium 140.25 (links.txt)
+- link 6: Chromium's rectangle on page 1 at (84.75, 146.25) to uri https://example.com/ has none in the engine, which has 5 (links.txt)

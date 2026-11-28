@@ -713,7 +713,8 @@ with no counter in scope, whose scope runs on through the following siblings (ca
 `div` items after a disc one); `ol start`, `ol reversed` (from the number of items down) and `li value`; the text in the
 item's `list-style-type` with the suffix ". " (CSS Counter Styles 3 §6.1: `decimal` with "-" before a negative number,
 `decimal-leading-zero` padded to two with the sign counted, the alphabetic styles from 1 and the roman ones from 1 to
-3999, `decimal` outside those ranges; cases `li-counter-styles`, `li-types`, `li-ol-attrs`); a disc, circle or square
+3999, `decimal` outside those ranges; cases `li-counter-styles`, `li-types`, `li-ol-attrs`; `li-types` is equal to Chromium's
+print, its two widest upper-roman labels a case of their own, `li-types-wide`); a disc, circle or square
 for the symbols, whose tag carries U+2022, U+25E6 or U+25AA; no label for `none` (the item still counts, case
 `li-none`). The label is in the item's own font, size and colour, not its first line's (case `li-font`). An item
 outside a list element (a bare `li`, case `li-bare`, or a `div` of `display: list-item`) draws as in a list; each run
@@ -726,7 +727,7 @@ continue the counter of an item with another parent; the marker of an item with 
 16 or longer than 10 000 items fail under both policies. The style sheet refuses `list-style-position: inside`
 (case `li-inside`), `list-style-image`, the `::marker` declarations the marker does not draw (below) and writes to the
 `list-item` counter (**Counters**); layout
-refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types`).
+refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types-wide`).
 
 **Generated text** (`Css/Cascade/StyleComputer.PseudoElements.cs`, `HtmlStyleResolver.Generated`; CSS Pseudo 4 §4.1, CSS
 Generated Content 3 §1). A rule whose selector ends in `::before` or `::after` (or `:before`, `:after`) matches the
@@ -871,7 +872,7 @@ columns to what the percentages leave, `tp-beside-length`), and percentages of 1
 width (Chromium gives that column no width); in the automatic layout, not measured, percentages of 100 or more beside
 other columns, a percentage beside another width in one column, a percentage on a cell over several columns and a cell
 over several columns beside a percent column; a percentage on a cell in the fixed layout; a width on a column group with
-column elements (one table of `tpa-colgroup` shows it unused, not enough for a rule). A percent column, like a fill column, is never narrower than its
+column elements (case `tpa-colgroup-cols` shows it unused, not enough for a rule). A percent column, like a fill column, is never narrower than its
 content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
 (§17.2.1); a table part on another element than its HTML element; a second caption, a block inside a caption, a width on
@@ -997,8 +998,8 @@ prints 594.96 × 841.92 pt; at the tie 75 pt prints 75.12, case `h-page-size-hun
 `li-page-break`). The right and bottom margins are what the sheet leaves beside the page area, 0 where the
 area reaches past the sheet (cases `h-page-size-*`, `h-page-area-*`, `h-page-margin-*`).
 
-**The status file.** Each reference case has a status file, `tools/reference/chromium/measured/<case>.status.txt`, of
-one line, written by `UnitTests.Extensions.Documents.Html/Boxes/CaseStatusTests.cs` (with
+**The status file.** Each reference case has a status file, `tools/reference/chromium/measured/<case>.status.txt`,
+whose first line is its status, written by `UnitTests.Extensions.Documents.Html/Boxes/CaseStatusTests.cs` (with
 `DOCUMENTS_UPDATE_HTML_STATUS=1`): the case runs
 through the whole HTML path unchanged and its pages are compared with every file measured for the case
 (`HtmlCases`, where each comparison names its file and bound; `HtmlCases.Bound` is 0.1 pt):
@@ -1053,13 +1054,32 @@ refusal, counted as one by its exact code: the next packages' work list; for con
 `Documents.Layout.DoesNotFit`, the value is the room it had in points and the place only the line, the one a box
 keeps; for an inline box layout does not draw where it stands, `Documents.Input.Unsupported.InlineBox`, the line and
 column of the element that made it); `<case> listed <test>: <difference>` for a
-difference of layout already listed and pinned by that test of the code front-end, which must stay the same
-difference; or `<case> open <difference>` for a known difference, engine against Chromium, that is not fixed yet (no
-pull request while one is open). The status is the line's second field. A case that lays out and differs otherwise
-fails the test, and so does a status that changes without its file, a case without a status file and a status file
-without a case; writing the files anew makes no case `open` or `listed` that its committed file does not already name.
-The test prints how many cases have each status. To read them: `cat measured/*.status.txt | cut -d' ' -f2 | sort | uniq -c`
-gives the picture; grep a code or a property in `measured/*.status.txt` for the cases it holds back. A case's status is a
+difference of layout already listed in "Known limits" and pinned by that test; or `<case> open <difference>` for a known
+difference, engine against Chromium, that is not fixed yet (no pull request while one is open). The status is the first
+line's second field, and the difference on it the first the comparison finds. Every open case is named, one line each with
+why it is open, in `tools/reference/chromium/open-cases.txt`: a case is open only where that file names it, and the file
+names no other (`CaseStatusTests`), so a difference cannot be set aside by its status file alone.
+
+A `listed` or an `open` case differs from Chromium in exactly the differences its file holds. The comparison does not
+stop at the first difference: it goes on through every file and every page and writes each difference in a fixed order
+(`HtmlCases.Status`: the files in the order above; in `print.txt` the page count, then page by page its size, its text
+or else each word's start, end, baseline, font size, colour and face, the painted area once for each pair of colours a
+pixel differs by, with the number of such pixels and their box, the images and the paths; a page whose text differs
+is that one difference, as its words cannot be paired, and the pages one side has past the other's last are counted,
+not compared). After the first line the file holds the count and the differences one per line, each number rounded as
+the comparison prints it (three decimals at most), so the list is the same on every platform; a list of more than 60
+differences (`HtmlCases.ShownDifferences`) writes the first 60 and, on the count's line, the SHA-256 of the whole list.
+A case with more than 500 differences (`HtmlCases.DifferenceBound`) cannot be listed or open: so many say the case is
+compared out of step, not a limit. One more difference, one fewer or one changed changes the file, and the test fails.
+The test that a listed case names is a test of `UnitTests.Extensions.Documents.Html` that lays out that case by its
+name (its attributes or its body hold the name as a string) and pins the cause in numbers; the code front-end's tests of
+the same limits pin it with documents of their own (`HtmlListedBreakTests` names the ones of page breaks and line
+heights after them). The status files are read with every line ending a line feed, whatever the checkout wrote.
+
+A case that lays out and differs otherwise fails the test, and so does a status that changes without its file, a case
+without a status file and a status file without a case; writing the files anew makes no case `open` or `listed` that its
+committed file does not already name. The test prints how many cases have each status. To read them:
+`head -qn1 measured/*.status.txt | cut -d' ' -f2 | sort | uniq -c` gives the picture; grep a code or a property in `measured/*.status.txt` for the cases it holds back. A case's status is a
 file of its own, as its pins are (`measured/<case>.pins.txt`, `MeasuredReferenceFilesTests`), so two changes that add
 different cases touch no file in common.
 
@@ -1083,8 +1103,10 @@ Each is documented next to its code as well.
 - **A list bullet beside a rounded box (HTML):** Chromium paints a list item's marker after the backgrounds and borders
   of every block box in the flow (CSS 2.1 Appendix E, step 4 before step 7); the engine paints the label before the
   item's body. The pixels are the same, the order of the painted paths is not: a rounded box inside a list item comes
-  after the bullet (cases `br-boxes-inside` and `bri-list`, a rounded list item, listed; `HtmlListedDifferenceTests`: with
-  the discs moved to the engine's place Chromium's print is the engine's).
+  after the bullet (case `bri-list`, a rounded list item, listed; `HtmlListedDifferenceTests`: with the discs moved to the
+  engine's place Chromium's print is the engine's). Case `br-boxes-inside`, rounded boxes inside an item, shows the same
+  order and is open: the sizes of two of its boxes are not compared, as the comparison cannot pair them with their
+  elements (five on one source line, two boxes).
 - **Sizes of block boxes (HTML):** `width`, `min-width`, `max-width`, `box-sizing` and auto horizontal margins are drawn
   on a block box in block flow (cases `sz-*`), not on a box inside a table cell or a page-margin box, whose columns are
   sized by the intrinsic widths of their content: a sized box's share in them is not built
@@ -1155,10 +1177,12 @@ Each is documented next to its code as well.
   the image's row beside it goes on (text, or the cell's empty part down to the row's end): the text beside the rest and
   what follows the table start 16.125 pt lower in the engine, by the header's room, and in a cell of thirty lines one
   line moves on to the next page (`a4-header-image-beside-lines`, `a4-header-image-228-beside-fit`, `-beside-line`,
-  `-beside-two-pages`, `-background-beside`, `a4-header-row-image-228-beside-line`; over the rest of an image in a
+  `-beside-two-pages`, `a4-header-row-image-228-beside-line`; over the rest of an image in a
   table nested in the cell, `a4-header-nested-image-228`). That is the whole difference (cases
   `a4-header-image-360-image`, `a4-header-row-image-row`, `a4-header-image-row-image`, `a4-header-two-image-rows` and
-  those seven, listed; `HtmlListedDifferenceTests`). A writer does not want a header over an image, so the engine does
+  those six, listed; `HtmlListedDifferenceTests`). Beside an empty cell with a background
+  (`a4-header-image-228-background-beside`, open) the engine also paints that background on the page of the rest, 15,288
+  px of it from 28.5 to 92.25 pt, where Chromium paints none: the header does not explain that. A writer does not want a header over an image, so the engine does
   not copy it.
 - **Percent columns (HTML):** drawn in the fixed layout of a table of any width, alone or beside columns without a
   width (cases `tp-*`), and in the automatic layout (cases `tpa-*`); in the fixed layout beside a column of a length,
