@@ -123,6 +123,15 @@ public class ImageLimitTests
         Boxes(body).IsSuccess.Should().BeTrue();
     }
 
+    [Fact]
+    public void A_fragment_does_not_make_an_image_another_one()
+    {
+        // g.png#0, #1 and #2 name one file: decoded and charged once, it leaves room for the small image.
+        var body = $"<p>{Img("g.png#0")}{Img("g.png#1")}{Img("g.png#2")}</p>\n<p>{Img(Small)}</p>";
+
+        Boxes(body, resources: url => url == "g.png" ? new HtmlResource(Largest.Value) : null).IsSuccess.Should().BeTrue();
+    }
+
     [Theory]
     [InlineData(UnsupportedPolicy.Warn)]
     [InlineData(UnsupportedPolicy.Refuse)]

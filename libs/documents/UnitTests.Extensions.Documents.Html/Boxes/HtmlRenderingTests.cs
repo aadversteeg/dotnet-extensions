@@ -114,6 +114,20 @@ public class HtmlRenderingTests
     }
 
     [Fact]
+    public void A_fragment_is_not_part_of_what_the_resolver_is_asked()
+    {
+        var asked = new List<string>();
+        var png = TestImages.Bytes("rgb8.png");
+        var options = Options with { Style = Options.Style with { Resources = url => { asked.Add(url); return url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : url == "g.png" ? new HtmlResource(png) : url == "a.css" ? new HtmlResource("p { margin: 0 }"u8.ToArray()) : null; } } };
+        var html = Html.Replace("<p>Hello</p>", "<p>" + string.Concat(Enumerable.Range(0, 9).Select(image => $"<img alt=x width=10 src=\"g.png#{image}\">")) + "</p>", StringComparison.Ordinal)
+            .Replace("<title>T</title>", "<title>T</title><link rel=stylesheet href=\"a.css#one\"><link rel=stylesheet href=\"a.css#two\">", StringComparison.Ordinal);
+
+        HtmlRendering.ToPages(html, options).IsSuccess.Should().BeTrue();
+
+        asked.Should().BeEquivalentTo(["lato.ttf", "a.css", "g.png"], "one ask for each file, without the fragments of its references");
+    }
+
+    [Fact]
     public void The_page_limit_stops_a_document_of_many_pages_before_it_lays_them_out()
     {
         // 20 000 forced breaks would be 20 000 pages; with a limit of 10 the work ends at page 11.

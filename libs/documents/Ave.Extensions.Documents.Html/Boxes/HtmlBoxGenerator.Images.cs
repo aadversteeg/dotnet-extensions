@@ -169,7 +169,8 @@ public static partial class HtmlBoxGenerator
         /// <summary>The bytes of an image's file: the body of a <c>data:</c> URL, or what the resolver gives for the URL
         /// resolved against the document's base URL (HTML Standard §2.4.1: the first <c>base</c> element with an
         /// <c>href</c>, else the document's URL); null when there are none. With them the URL that names the image: the
-        /// <c>data:</c> URL itself or the absolute one (also when the resolver gives nothing for it).</summary>
+        /// <c>data:</c> URL itself or the absolute one without its fragment (also when the resolver gives nothing for
+        /// it).</summary>
         private (ReadOnlyMemory<byte>? Bytes, string? Url) ImageBytes(string? source)
         {
             if (string.IsNullOrEmpty(source))
@@ -182,7 +183,7 @@ public static partial class HtmlBoxGenerator
                 return (inline, source);
             }
 
-            var url = Urls.Absolute(source, DocumentBase());
+            var url = Urls.Absolute(source, DocumentBase()) is { } absolute ? Urls.WithoutFragment(absolute) : null;
             return url is not null && options.Resources?.Invoke(url) is { } resource ? (resource.Bytes, url) : (default(ReadOnlyMemory<byte>?), url);
         }
 

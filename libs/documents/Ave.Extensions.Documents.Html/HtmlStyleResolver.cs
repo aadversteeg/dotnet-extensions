@@ -621,10 +621,12 @@ public static class HtmlStyleResolver
                     : ImageState.Missing;
             }
 
-            if (Urls.Absolute(source, _documentBase) is not { } url)
+            if (Urls.Absolute(source, _documentBase) is not { } absolute)
             {
                 return ImageState.Missing;
             }
+
+            var url = Urls.WithoutFragment(absolute);
 
             if (options.Resources is null)
             {
@@ -1011,9 +1013,8 @@ public static class HtmlStyleResolver
             [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(InfraAscii.ToLower)];
 
         /// <summary>The document's own address without its fragment, or null when it has none.</summary>
-        private string? DocumentAddress => options.BaseUrl is { } address && Urls.Absolute(address, null) is { } absolute ? WithoutFragment(absolute) : null;
+        private string? DocumentAddress => options.BaseUrl is { } address && Urls.Absolute(address, null) is { } absolute ? Urls.WithoutFragment(absolute) : null;
 
-        private static string WithoutFragment(string url) => url.IndexOf('#') is var hash and >= 0 ? url[..hash] : url;
 
         /// <summary>An @import: its URL resolved against the importing sheet's URL.</summary>
         private StyleSheet? Import(ImportRule import, StyleSheet importer) =>
@@ -1027,7 +1028,7 @@ public static class HtmlStyleResolver
         private StyleSheet? Fetch(string url, string? baseUrl, string referrer, TextPosition position)
         {
             var absolute = Urls.Absolute(url, baseUrl);
-            if (url.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || (absolute is not null && WithoutFragment(absolute) == DocumentAddress))
+            if (url.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || (absolute is not null && Urls.WithoutFragment(absolute) == DocumentAddress))
             {
                 return ReadOrNull(CssParser.ParseStyleSheet(ReadOnlyMemory<byte>.Empty, new CssSourceOptions(absolute ?? referrer)));
             }

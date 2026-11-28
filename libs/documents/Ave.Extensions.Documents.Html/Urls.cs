@@ -27,6 +27,10 @@ internal static class Urls
         return HasScheme(baseUrl) && Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) && Uri.TryCreate(baseUri, url, out var resolved) ? resolved.AbsoluteUri : null;
     }
 
+    /// <summary>A URL without its fragment (URL Standard §4.1: the part from the first <c>#</c>): a fragment names a
+    /// place inside a resource, never another resource, so it is not part of what the resolver is asked.</summary>
+    internal static string WithoutFragment(string url) => url.IndexOf('#') is var hash and >= 0 ? url[..hash] : url;
+
     /// <summary>The document base URL (HTML Standard §2.4.1): the href of the first base element in tree order that has
     /// one, resolved against the document's URL, when the caller allows a base element
     /// (<see cref="HtmlStyleOptions.AllowBaseElement"/>); else the document's URL, the caller's. One rule for the style

@@ -11,7 +11,8 @@ namespace Ave.Extensions.Documents.Html;
 /// render to the next. A URL longer than <see cref="MaxUrlLength"/>, and every distinct URL past
 /// <see cref="MaxResources"/>, is not asked: the place that names it reports why (<see cref="Refusal"/>). Style
 /// resolution makes the table and leaves it with the styled document it returns; box generation of that document with
-/// the same resolver goes on with the same table, so one render asks each URL once.
+/// the same resolver goes on with the same table, so one render asks each URL once. A URL's fragment is not part of
+/// it: the resolver is asked, and the answer kept, for the URL without it (<see cref="Urls.WithoutFragment"/>).
 /// </summary>
 internal sealed class ResourceTable
 {
@@ -58,7 +59,7 @@ internal sealed class ResourceTable
     /// <param name="url">The absolute URL.</param>
     /// <returns>The reason, as the end of a sentence, or null.</returns>
     public static string? Refusal(ResourceResolver? resolver, string url) =>
-        resolver?.Target is ResourceTable table ? table.Why(url) : null;
+        resolver?.Target is ResourceTable table ? table.Why(Urls.WithoutFragment(url)) : null;
 
     private string? Why(string url) =>
         url.Length > MaxUrlLength ? $"is longer than the {MaxUrlLength} characters a resource URL may have, so the resolver is not asked"
@@ -67,6 +68,7 @@ internal sealed class ResourceTable
 
     private HtmlResource? Get(string url)
     {
+        url = Urls.WithoutFragment(url);
         if (_asked.TryGetValue(url, out var known))
         {
             return known;
