@@ -126,10 +126,9 @@ public static partial class HtmlBoxGenerator
         {
             var html = element.Element;
             var source = html.Attribute("src") is { } src ? Urls.Cleaned(src) : null;
-            var (bytes, url) = ImageBytes(source);
+            var (bytes, url, why) = ImageBytes(source);
             if (bytes is null)
             {
-                var why = url is null ? null : ResourceTable.Refusal(options.Resources, url);
                 Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, why is null
                         ? $"The image '{InputQuote.Of(source ?? string.Empty)}' of <img> is not there (no src, or neither a data: URL nor the resource resolver gives it), and what Chromium shows instead is not drawn in this version."
                         : $"The image '{InputQuote.Of(source!)}' of <img> {why}; what Chromium shows instead is not drawn in this version.",
@@ -172,21 +171,23 @@ public static partial class HtmlBoxGenerator
         /// <c>href</c>, else the document's URL); null when there are none. With them the URL that names the image, without
         /// its fragment: the <c>data:</c> URL itself or the absolute one (also when the resolver gives nothing for it). A
         /// <c>data:</c> URL is never handed to the resolver, and neither is a reference that is empty without its fragment
-        /// (<see cref="ResourceTable"/>).</summary>
-        private (ReadOnlyMemory<byte>? Bytes, string? Url) ImageBytes(string? source)
+        /// (<see cref="ResourceTable"/>). With them too why the resolver is not asked (<see cref="ResourceTable.Locate"/>),
+        /// or null.</summary>
+        private (ReadOnlyMemory<byte>? Bytes, string? Url, string? Why) ImageBytes(string? source)
         {
             if (string.IsNullOrEmpty(source))
             {
-                return (default(ReadOnlyMemory<byte>?), null);
+                return (default(ReadOnlyMemory<byte>?), null, null);
             }
 
             if (DataUrl.Body(source) is { } inline)
             {
-                return (inline, Urls.WithoutFragment(source));
+                return (inline, Urls.WithoutFragment(source), null);
             }
 
-            var url = Urls.Absolute(source, DocumentBase()) is { } absolute ? Urls.WithoutFragment(absolute) : null;
-            return url is not null && options.Resources?.Invoke(url) is { } resource ? (resource.Bytes, url) : (default(ReadOnlyMemory<byte>?), url);
+            var (absolute, why) = ResourceTable.Locate(options.Resources, source, DocumentBase());
+            var url = absolute is null ? null : Urls.WithoutFragment(absolute);
+            return url is not null && why is null && options.Resources?.Invoke(url) is { } resource ? (resource.Bytes, url, null) : (default(ReadOnlyMemory<byte>?), url, why);
         }
 
         /// <summary>

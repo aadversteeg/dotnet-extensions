@@ -18,9 +18,11 @@ namespace Ave.Extensions.Documents.Html;
 /// resolver is never asked for a URL that is empty without its fragment (a reference such as <c>#top</c> with no base
 /// URL), nor for a <c>data:</c> URL: the front-end reads that itself (<see cref="DataUrl"/>), and one it cannot read is
 /// not there. Nor is it asked for a URL whose scheme the caller does not allow
-/// (<see cref="HtmlStyleOptions.AllowedResourceSchemes"/>): the scheme is read from the URL as it is handed on, after it
-/// is resolved against the base URL, so a relative reference without a base URL, which has none, is handed on. Every
-/// test is made on the URL <see cref="Urls.Cleaned"/>.
+/// (<see cref="HtmlStyleOptions.AllowedResourceSchemes"/>). Every place that names a resource finds its URL by one rule,
+/// <see cref="Locate"/>: the reference resolved by <see cref="Urls.Resolved"/>, which reads the scheme from the
+/// reference itself and refuses a reference that names a host it cannot resolve, then tested here. So the resolver is
+/// asked for an absolute URL of an allowed scheme, or, without a base URL, for a reference without a scheme and without
+/// a host, as the document writes it. Every test is made on the URL <see cref="Urls.Cleaned"/>.
 /// </summary>
 internal sealed class ResourceTable
 {
@@ -85,11 +87,24 @@ internal sealed class ResourceTable
         }
     }
 
+    /// <summary>The URL a reference names and why the resolver is not asked for it (<see cref="Urls.Resolved"/>, then
+    /// <see cref="Refusal"/>): the one way from a reference in a document to the resolver. When the reason is null the
+    /// URL may be asked; when the URL is null so is what the resolver could be asked.</summary>
+    /// <param name="resolver">The resolver of the render, or null.</param>
+    /// <param name="reference">The reference as the document writes it.</param>
+    /// <param name="baseUrl">The base URL it is resolved against, or null.</param>
+    /// <returns>The URL (with its fragment) or null, and the reason as the end of a sentence or null.</returns>
+    public static (string? Url, string? Why) Locate(ResourceResolver? resolver, string reference, string? baseUrl)
+    {
+        var (url, why) = Urls.Resolved(reference, baseUrl);
+        return url is null ? (null, why) : (url, Refusal(resolver, url));
+    }
+
     /// <summary>Why a URL is not asked of the resolver, or null when it is (or the resolver is not one of a render).</summary>
     /// <param name="resolver">The resolver of the render.</param>
     /// <param name="url">The absolute URL.</param>
     /// <returns>The reason, as the end of a sentence, or null.</returns>
-    public static string? Refusal(ResourceResolver? resolver, string url) =>
+    private static string? Refusal(ResourceResolver? resolver, string url) =>
         resolver?.Target is ResourceTable table ? table.Why(Urls.WithoutFragment(Urls.Cleaned(url))) : null;
 
     private string? Why(string url) =>

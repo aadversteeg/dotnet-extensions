@@ -24,7 +24,9 @@ public sealed record HtmlResource(ReadOnlyMemory<byte> Bytes)
 /// untrusted: it can have any scheme (<c>file:</c>, a Windows share written as <c>file://host/share/x</c>, <c>ftp:</c>,
 /// <c>javascript:</c>) and climb out of the base with <c>../</c>, but it reaches the resolver only when its scheme is one
 /// the caller allows (<see cref="HtmlStyleOptions.AllowedResourceSchemes"/>, default <c>http</c> and <c>https</c>), or when
-/// it is a relative reference without a base URL; a <c>base</c> element moves it only when the caller
+/// it is a reference without a scheme and without a host (<c>/images/x.png</c>, <c>../x.png</c>) and there is no base
+/// URL; a reference that names a host without a scheme (<c>//host/x</c>, <c>\\host\share\x</c>) is never handed on as
+/// written; a <c>base</c> element moves it only when the caller
 /// allows it (<see cref="HtmlStyleOptions.AllowBaseElement"/>). The URL never has a fragment and is never empty: a
 /// reference that is only a fragment, with no base URL, is not there. A <c>data:</c> URL never reaches the resolver,
 /// with or without a fragment: the engine decodes it itself. So the resolver must not map a URL to a file path without confining it to a folder, nor fetch
@@ -101,8 +103,11 @@ public sealed record HtmlStyleOptions
     /// <summary>The URL schemes the resolver may be asked for (<see cref="Resources"/>), as names in lower case. Default
     /// <c>http</c> and <c>https</c>. The scheme of a URL (URL Standard §4.4, scheme state: an ASCII letter, then letters,
     /// digits, <c>+</c>, <c>-</c> and <c>.</c>, before the first colon) is compared ASCII case-insensitively, so
-    /// <c>FILE:</c> is <c>file:</c>; names given in another case are lowered. It is read after the URL is resolved
-    /// against the base URL (<see cref="BaseUrl"/>, or the style sheet that names it). A URL of a scheme not in the set
+    /// <c>FILE:</c> is <c>file:</c>; names given in another case are lowered. It is read from the reference as the
+    /// document writes it, before anything is resolved: a reference with a scheme is absolute (<c>x:</c> has the scheme
+    /// <c>x</c>, <c>C:\x</c> the scheme <c>c</c>), and one without takes the scheme of the base URL (<see cref="BaseUrl"/>,
+    /// or the style sheet that names it). A reference that names a host without a scheme (two slashes or backslashes) is
+    /// refused without a base URL, and with one when it has a backslash or more than two slashes. A URL of a scheme not in the set
     /// is not there: it is refused (<c>Documents.Html.Resource.NotFound</c>, or for an image
     /// <c>Documents.Html.Unsupported.Rendering</c>), or under <see cref="UnsupportedPolicy.Warn"/> reported and left out,
     /// and the resolver is not asked. Without a base URL a relative reference has no scheme: it is handed on as the

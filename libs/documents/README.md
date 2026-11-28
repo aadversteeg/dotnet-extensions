@@ -182,9 +182,17 @@ fonts of the `@font-face` rules, the logo and the style sheets come from the res
 template names. What the HTML front-end draws, refuses and ignores is the HTML profile, `docs/html-css-profile.md`.
 
 The resolver is the one place where a document reaches the caller's files or network, so every URL in the document
-is untrusted input. With a `BaseUrl` the engine resolves every reference against it and hands the resolver absolute
-URLs; without one it hands the reference as the document writes it (`logo.png`, `//host/share/x.png`), so set a
-`BaseUrl`. A `<base>` element in the document counts only when the caller sets `AllowBaseElement`; otherwise it is
+is untrusted input. Every place that names a resource (`<img>`, `<link>`, `@import`, an `@font-face` source, an
+image in a page-margin box) finds its URL by one rule. With a `BaseUrl` the engine resolves every reference against it
+and hands the resolver only absolute URLs; a reference it cannot resolve is not there, and the message says why.
+Without one it hands a reference without a scheme as the document writes it (`logo.png`, `/images/x.png`,
+`../x.png`), so set a `BaseUrl`. A reference that names a host without a scheme (two slashes or backslashes at its
+start, in any mix: `//host/x.png`, `\\host\share\x.png`, also behind white space) is never handed on as written:
+without a `BaseUrl` it is refused; with one, `//host/x.png` written with forward slashes takes the scheme of the
+`BaseUrl`, and three or more slashes are refused. With a `BaseUrl` a reference with a backslash before its `?` or `#`
+is refused: a browser reads that backslash as a slash and the engine does not, so write a slash. A path-absolute
+reference (`/images/x.png`) or one that climbs with `../` is, without a `BaseUrl`, the caller's own naming: the
+resolver must confine what it opens to a folder it chose. A `<base>` element in the document counts only when the caller sets `AllowBaseElement`; otherwise it is
 refused. Tabs and newlines inside a URL are removed first, as a browser removes them, and so is its fragment (`#…`),
 as it never names another resource; a reference that is then empty (`#top` without a `BaseUrl`) is not there, and the
 resolver is not asked. The resolver is asked each URL at most once per render, for at most 4 096 of them, each at most
@@ -193,9 +201,10 @@ for images only (a `data:` style sheet or font is refused: put the sheet in a `<
 the resolver). Of the other URLs, the resolver is handed only those whose scheme the caller allows:
 `HtmlStyleOptions.AllowedResourceSchemes`, by default `http` and `https`. A URL of another scheme (`file:`, a Windows
 share written as `file://host/share/x.css`, `ftp:`, `javascript:`) is not there, and the message names the scheme and
-the option. The scheme is read after the URL is resolved against the `BaseUrl`, so a caller that sets a `file:`
-`BaseUrl` must allow `file` (the HtmlStyles sample does); without a `BaseUrl` a relative reference has no scheme and is
-handed on as written. A URL of an allowed scheme can still climb out of the base folder with `../`. So the resolver
+the option. The scheme is read from the reference as the document writes it, by the URL Standard's syntax, before
+anything is resolved: a reference with a scheme is absolute (`x:` has the scheme `x`, `C:\x.png` the scheme `c`), one
+without takes the scheme of the `BaseUrl`, so a caller that sets a `file:` `BaseUrl` must allow `file` (the HtmlStyles
+sample does). A URL of an allowed scheme can still climb out of the base folder with `../`. So the resolver
 decides what it serves: it maps a URL to a file only inside a folder it chose (the HtmlStyles sample checks
 `folder.IsBaseOf(uri)`), fetches only from hosts it trusts, and gives null for anything else. The engine itself opens
 no file, socket or process.

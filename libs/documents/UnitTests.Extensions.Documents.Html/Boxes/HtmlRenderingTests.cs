@@ -352,9 +352,10 @@ public class HtmlRenderingTests
     [InlineData("java&#9;script:alert(1)", null, null, "")]
     [InlineData("x-app:logo.png", null, null, "")]
     [InlineData("https://e.test/a.png", null, null, "https://e.test/a.png")]
-    // Without a base URL a relative reference has no scheme: it is handed on as the document writes it.
+    // Without a base URL a relative reference has no scheme: it is handed on as the document writes it, unless it names
+    // a host (ResourceUrlTests).
     [InlineData("a.png", null, null, "a.png")]
-    [InlineData("//host/x.png", null, null, "//host/x.png")]
+    [InlineData("//host/x.png", null, null, "")]
     // With a base URL the scheme is the resolved URL's: an https base gives https, a file: base needs file allowed.
     [InlineData("a.png", "https://e.test/d/doc.html", null, "https://e.test/d/a.png")]
     [InlineData("//host/x.png", "https://e.test/d/doc.html", null, "https://host/x.png")]
