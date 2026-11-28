@@ -46,8 +46,9 @@ public static class DocumentRendering
     /// its own.</summary>
     /// <param name="document">The document.</param>
     /// <param name="fonts">The fonts the document may use.</param>
-    /// <param name="maxPages">The most pages the document may have (the other overloads take
-    /// <see cref="LayoutEnvironment.DefaultMaxPages"/>): a longer one is refused with <c>Documents.Layout.TooManyPages</c>.</param>
+    /// <param name="maxPages">The most pages the document may have, at least 1 (the other overloads take
+    /// <see cref="LayoutEnvironment.DefaultMaxPages"/>): a longer one is refused with <c>Documents.Layout.TooManyPages</c>,
+    /// a value below 1 with <c>Documents.Layout.InvalidOptions</c>.</param>
     /// <returns>The pages, or the error with the source location of the call that caused it.</returns>
     /// <exception cref="ArgumentNullException">The document or the font set is null.</exception>
     public static Result<PageDocument, Error> ToPages(this Document document, FontSet fonts, int maxPages) =>
@@ -79,7 +80,7 @@ public static class DocumentRendering
     /// <param name="document">The document.</param>
     /// <param name="fonts">The fonts the document may use.</param>
     /// <param name="options">The PDF file's creation date and identifier.</param>
-    /// <param name="maxPages">The most pages the document may have.</param>
+    /// <param name="maxPages">The most pages the document may have, at least 1.</param>
     /// <returns>The PDF bytes, or the error with the source location of the call that caused it.</returns>
     public static Result<ImmutableArray<byte>, Error> ToPdf(this Document document, FontSet fonts, PdfRenderOptions options, int maxPages) =>
         document.ToPages(fonts, maxPages).OnSuccessBind(pages => pages.ToPdf(options));
@@ -109,7 +110,7 @@ public static class DocumentRendering
     /// <param name="fonts">The fonts the document may use.</param>
     /// <param name="pageNumber">The page, counting from 1.</param>
     /// <param name="options">The resolution and background.</param>
-    /// <param name="maxPages">The most pages the document may have.</param>
+    /// <param name="maxPages">The most pages the document may have, at least 1.</param>
     /// <returns>The PNG file, or the error.</returns>
     public static Result<ImmutableArray<byte>, Error> ToPng(this Document document, FontSet fonts, int pageNumber, RasterOptions options, int maxPages) =>
         Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToPng(pageNumber, options));
@@ -138,7 +139,7 @@ public static class DocumentRendering
     /// <param name="document">The document.</param>
     /// <param name="fonts">The fonts the document may use.</param>
     /// <param name="options">The resolution and background.</param>
-    /// <param name="maxPages">The most pages the document may have.</param>
+    /// <param name="maxPages">The most pages the document may have, at least 1.</param>
     /// <returns>One PNG file per page, in order, or the error.</returns>
     public static Result<ImmutableArray<ImmutableArray<byte>>, Error> ToPngPages(this Document document, FontSet fonts, RasterOptions options, int maxPages) =>
         Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToPngPages(options));
@@ -178,7 +179,7 @@ public static class DocumentRendering
     /// <param name="document">The document.</param>
     /// <param name="fonts">The fonts the document may use.</param>
     /// <param name="options">The resolution and background.</param>
-    /// <param name="maxPages">The most pages the document may have.</param>
+    /// <param name="maxPages">The most pages the document may have, at least 1.</param>
     /// <returns>One image per page (8-bit RGBA, sRGB), in order, or the error.</returns>
     public static Result<ImmutableArray<RgbaImage>, Error> ToImages(this Document document, FontSet fonts, RasterOptions options, int maxPages) =>
         Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToImages(options));

@@ -139,6 +139,20 @@ public class HtmlRenderingTests
         }
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-7)]
+    public void A_page_limit_below_one_is_refused_by_every_entry_with_the_option_and_its_value(int maxPages)
+    {
+        foreach (var (entry, error) in EveryEntry(1, maxPages))
+        {
+            error!.Value.Code.Should().Be(LayoutErrorCodes.InvalidOptions, entry);
+            error.Value.Message.Should().Be($"HtmlRenderOptions.MaxPages is {maxPages}; a document has at least one page, so the page limit must be at least 1.", entry);
+            error.Value.Metadata![ErrorMetadataKeys.Property].Should().Be("HtmlRenderOptions.MaxPages");
+            error.Value.Metadata[ErrorMetadataKeys.Value].Should().Be(maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+    }
+
     [Fact]
     public void A_fragment_is_not_part_of_what_the_resolver_is_asked()
     {

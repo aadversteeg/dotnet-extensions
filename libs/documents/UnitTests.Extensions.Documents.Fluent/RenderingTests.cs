@@ -208,6 +208,18 @@ public class RenderingTests
         EveryEntry(document, LayoutEnvironment.DefaultMaxPages + 1, pngPages: false).Should().OnlyContain(entry => entry.Error == null);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-7)]
+    public void A_page_limit_below_one_is_refused_by_every_call_on_a_document(int maxPages)
+    {
+        foreach (var (entry, error) in EveryEntry(Pages(1), maxPages))
+        {
+            error!.Value.Code.Should().Be(LayoutErrorCodes.InvalidOptions, entry);
+            error.Value.Message.Should().Be($"The maxPages parameter of DocumentRendering is {maxPages}; a document has at least one page, so the page limit must be at least 1.", entry);
+        }
+    }
+
     private static int CurrentLine([CallerLineNumber] int line = 0) => line;
 
     private static string ThisFile([CallerFilePath] string file = "") => file;

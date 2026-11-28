@@ -41,8 +41,9 @@ public sealed record HtmlRenderOptions
     public string SourceName { get; init; } = string.Empty;
 
     /// <summary>The most pages the document may have (<see cref="LayoutEnvironment.MaxPages"/>; default
-    /// <see cref="LayoutEnvironment.DefaultMaxPages"/>): a longer one is refused with <c>Documents.Layout.TooManyPages</c>
-    /// when pagination reaches the limit.</summary>
+    /// <see cref="LayoutEnvironment.DefaultMaxPages"/>, at least 1): a longer one is refused with
+    /// <c>Documents.Layout.TooManyPages</c> when pagination reaches the limit; a value below 1 is refused when the layout
+    /// starts (<c>Documents.Layout.InvalidOptions</c>).</summary>
     public int MaxPages { get; init; } = LayoutEnvironment.DefaultMaxPages;
 }
 

@@ -30,22 +30,18 @@ public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<Layout
     /// </summary>
     public const int DefaultMaxPages = 10_000;
 
-    private readonly int _maxPages = DefaultMaxPages;
-
     /// <summary>
-    /// The most pages a document may have (at least 1; default <see cref="DefaultMaxPages"/>). The work of a layout
-    /// grows with its pages, and a few bytes of input can ask for a page each, so the paginator stops before the first
-    /// page past the limit: <c>Documents.Layout.TooManyPages</c>. Raise it to render a longer document.
+    /// The most pages a document may have (default <see cref="DefaultMaxPages"/>). The work of a layout grows with its
+    /// pages, and a few bytes of input can ask for a page each, so the paginator stops before the first page past the
+    /// limit: <c>Documents.Layout.TooManyPages</c>. Raise it to render a longer document. A value below 1 is refused
+    /// when the layout runs (<c>Documents.Layout.InvalidOptions</c>).
     /// </summary>
-    public int MaxPages
-    {
-        get => _maxPages;
-        init => _maxPages = System.Math.Max(1, value);
-    }
+    public int MaxPages { get; init; } = DefaultMaxPages;
 
     /// <summary>How the layout's messages name <see cref="MaxPages"/> (default <c>LayoutEnvironment.MaxPages</c>): a
     /// render call that sets the limit from an option or parameter of its own sets the name of that one, so that the
-    /// refusal of a document (<c>Documents.Layout.TooManyPages</c>) names what its caller sets.</summary>
+    /// refusal of a document (<c>Documents.Layout.TooManyPages</c>) or of the value (<c>Documents.Layout.InvalidOptions</c>)
+    /// names what its caller sets.</summary>
     public string MaxPagesName { get; init; } = "LayoutEnvironment.MaxPages";
 
     /// <summary>The environment with the engine's algorithms: <see cref="FlowLayout"/>, <see cref="InlineLayout"/>,

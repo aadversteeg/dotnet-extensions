@@ -223,6 +223,16 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture))
             .WithSource(root.Source);
 
+    /// <summary>A page limit below 1: a document has at least one page.</summary>
+    /// <param name="option">The option or parameter, as the caller wrote it.</param>
+    /// <param name="maxPages">Its value.</param>
+    public static Error InvalidMaxPages(string option, int maxPages) =>
+        new Error(
+                LayoutErrorCodes.InvalidOptions,
+                $"{char.ToUpperInvariant(option[0])}{option[1..]} is {maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture)}; a document has at least one page, so the page limit must be at least 1.")
+            .With(ErrorMetadataKeys.Property, option)
+            .With(ErrorMetadataKeys.Value, maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";
 

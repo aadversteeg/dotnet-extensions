@@ -29,6 +29,11 @@ public static class LayoutErrorCodes
     /// Metadata: Node (the document's root), Value (the limit), SourceFile, SourceLine.</summary>
     public static readonly ErrorCode TooManyPages = _ / "TooManyPages";
 
+    /// <summary>Options the layout cannot run with, a caller's error: a page limit below 1
+    /// (<see cref="LayoutEnvironment.MaxPages"/>, or the page limit of a render call). Metadata: Property (the option),
+    /// Value.</summary>
+    public static readonly ErrorCode InvalidOptions = _ / "InvalidOptions";
+
     /// <summary>A node whose layout algorithm is unknown, or whose children that algorithm cannot lay out.
     /// Metadata: Node, Value, SourceFile, SourceLine.</summary>
     public static readonly ErrorCode InvalidContent = _ / "InvalidContent";

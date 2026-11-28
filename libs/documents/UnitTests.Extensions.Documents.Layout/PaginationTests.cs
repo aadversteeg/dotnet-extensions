@@ -70,7 +70,20 @@ public class PaginationTests
         var refused = Paginator.Paginate(environment with { MaxPages = 2 }, document).Error;
         refused.Code.Should().Be(LayoutErrorCodes.TooManyPages);
         refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be("2");
-        (environment with { MaxPages = 0 }).MaxPages.Should().Be(1, "a document has at least one page");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-7)]
+    public void A_page_limit_below_one_is_refused_with_the_option_and_its_value(int maxPages)
+    {
+        var document = Document(Paragraph(1, Words(2), BoxStyle.Initial));
+
+        var refused = DocumentLayout.Run(document, LayoutEnvironment.Create(TestFonts.Set) with { MaxPages = maxPages }).Error;
+
+        refused.Code.Should().Be(LayoutErrorCodes.InvalidOptions);
+        refused.Message.Should().Be($"LayoutEnvironment.MaxPages is {maxPages}; a document has at least one page, so the page limit must be at least 1.");
+        refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Property].Should().Be("LayoutEnvironment.MaxPages");
     }
 
     [Fact]
