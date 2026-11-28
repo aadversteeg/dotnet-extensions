@@ -4,6 +4,8 @@ are checked against (Ave.Extensions.Documents.Typesetting, LineBreaking/Chromium
 
   python3 line-breaks.py write <folder>                     writes the matrix documents, <folder>/lb-*.html
   python3 line-breaks.py read <out> <resource>              reads <out>/lb-*.print.txt back into <resource>
+  python3 line-breaks.py write-running <folder>             writes the running-text documents, <folder>/rt-*.html
+  python3 line-breaks.py read-running <out> <resource>      reads <out>/rt-*.print.txt back into <resource>
 
 Each document holds one row per paragraph, in a box 1 pt wide, so that Chromium breaks a row at every place where it
 may: the lines of the print ARE the break opportunities. A break is counted between two visible characters; spaces
@@ -12,11 +14,21 @@ and the invisible characters (INVISIBLE) are not counted, so a break before or a
 To measure again, from this folder (Docker, as measure.ps1 needs it):
 
   python3 line-breaks.py write out/line-breaks
-  pwsh -NoProfile -File measure.ps1 -CaseFolder out/line-breaks
+  pwsh -NoProfile -File measure.ps1 -PrintOnly -CaseFolder out/line-breaks
   python3 line-breaks.py read out ../../../UnitTests.Extensions.Documents.Typesetting/Reference/Chromium/line-breaks.txt
 
 The resource is written in the format its README gives (Reference/Chromium/README.md beside it). Every row's print
 must be read back, and a row in two documents must break alike in both, or the read stops with an error.
+
+The running-text documents show what a box 1 pt wide cannot: an opportunity that is not the first one after a line
+start. Each holds one block per string and position: the block is as wide as the string up to that position plus half
+of the next character (a hidden ruler on one line sets the width; the string is laid out over it in that width), so
+Chromium's first line ends at the last place at or before the position where it may break, or, where there is none,
+at the first one after it. Positions before a space or a character without width are left out. To measure again:
+
+  python3 line-breaks.py write-running out/line-breaks-running
+  pwsh -NoProfile -File measure.ps1 -PrintOnly -CaseFolder out/line-breaks-running
+  python3 line-breaks.py read-running out ../../../UnitTests.Extensions.Documents.Typesetting/Reference/Chromium/line-breaks-running.txt
 """
 import os
 import sys
@@ -106,6 +118,141 @@ EDGE_ROWS = ['12\u00B7\u00A334', '12\u2046\u00A334', '12\u037E\u00A334', '12\u2E
              '12\u037E\u00A234', 'ab\u2046\u00A3cd', 'ab\u00A0\u00AD1cd', 'ab\u00A0\u00AD12', '12\u00A0\u00AD1cd',
              'a\u00A0\u00AD1', 'ab \u00A0\u00AD1cd', '\u2013cd', '\u2012cd', '\u2013\u00E9d', '\u2012\u03A9d', '\u2013a',
              '\u2013\u00A7d']
+
+
+# The running-text documents, in the order of the resource: one for each rule of the line-break rules that looks at the
+# characters before a place, one for the hyphen pairs before letters beyond ASCII, one for the ASCII pairs whose first
+# character follows a place where a line may break.
+RUNNING = ['rt-hyphen-pairs', 'rt-minus-sign', 'rt-dash-after-space', 'rt-soft-hyphen', 'rt-break-before-glue',
+           'rt-latin-1-signs', 'rt-middle-dots-and-ambiguous', 'rt-ascii-pairs']
+
+# The letters beyond ASCII, characters of class AI and middle dots after a pair -- or ?-, and an ASCII letter to compare.
+RUNNING_AFTER_PAIRS = [0xE9, 0xFC, 0xDF, 0xF1, 0xC9, 0x3A9, 0x430, 0xA7, 0xBD, 0xB7, 0x65]
+RUNNING_PAIR_STARTS = ['a', 'ab', 'we say a', '1', 'a.', '\u00E9']
+RUNNING_DASHES = [0x2013, 0x2012, 0x2014]
+RUNNING_BEFORE_DASHES = [' ', '\u00A0', '\u200B', '', '-', '?']
+RUNNING_AFTER_DASHES = ['cd', '\u00A7cd', '\u00E9d', '(cd', '12', '\u00B7cd']
+RUNNING_BEFORE_SOFT_HYPHENS = ['\u00A0', '\u200B', '', ' ', '-', '\u2013', '/', '?', '\u00A0\u00A0']
+RUNNING_AFTER_SOFT_HYPHENS = ['cd', '\u00A7cd', '12', '\u00E9d', '(cd', '-cd']
+RUNNING_BEFORE_GLUE = [0x2013, 0x2012, 0x2014, 0x2026, 0x7C, 0x2D, 0x2F, 0x21, 0x3F, 0xAD]
+RUNNING_GLUE = [0xA0, 0x202F]
+RUNNING_AFTER_GLUE = ['cd', '\u00A7cd', '-cd']
+RUNNING_SIGNS = [0xA3, 0xA2, 0xA4, 0xA5, 0xB0, 0xB1, 0x20AC, 0x24, 0x25]
+RUNNING_SIGN_BEFORE = '/.,:;)]}-?'
+RUNNING_SIGN_AFTER = [0x28, 0x5B, 0x7B, 0xA1, 0xBF]
+RUNNING_DOT_CONTEXTS = ['ab!%scd', 'ab%s(cd', 'a%s$!d', 'ab/%scd', 'ab-%scd', 'ab %scd', 'ab--%scd', 'ab?-%scd',
+                        'ab \u2013%scd', 'ab\u00A0\u00AD%scd']
+RUNNING_DOTS = [0xB7, 0x387, 0xA7, 0xBD, 0xD7]
+
+
+def running_rows_of(document):
+    """The strings of a running-text document."""
+    punctuation = [chr(code) for code in range(0x21, 0x7F) if not chr(code).isalnum()]
+    if document == 'rt-hyphen-pairs':
+        return [start + pair + chr(after) + 'lan' for start in RUNNING_PAIR_STARTS for pair in ('--', '?-')
+                for after in RUNNING_AFTER_PAIRS]
+    if document == 'rt-minus-sign':
+        before = punctuation + ['', ' ', '\u00A0', '\u200B', '\u2013', '\u2026', '\u00A3', '\u20AC', '\u00B0', '\u00A7', '\u00E9']
+        return ['12' + mark + '-34' for mark in before] + ['a' + mark + '-5' for mark in before]
+    if document == 'rt-dash-after-space':
+        return ['ab' + before + chr(dash) + after for dash in RUNNING_DASHES for before in RUNNING_BEFORE_DASHES
+                for after in RUNNING_AFTER_DASHES]
+    if document == 'rt-soft-hyphen':
+        return ['ab' + before + '\u00AD' + after for before in RUNNING_BEFORE_SOFT_HYPHENS for after in RUNNING_AFTER_SOFT_HYPHENS]
+    if document == 'rt-break-before-glue':
+        return ['ab' + chr(mark) + chr(glue) + after for mark in RUNNING_BEFORE_GLUE for glue in RUNNING_GLUE
+                for after in RUNNING_AFTER_GLUE]
+    if document == 'rt-latin-1-signs':
+        return (['12' + mark + chr(sign) + '34' for sign in RUNNING_SIGNS for mark in RUNNING_SIGN_BEFORE]
+                + ['12' + chr(sign) + chr(mark) + '34' for sign in RUNNING_SIGNS for mark in RUNNING_SIGN_AFTER])
+    if document == 'rt-middle-dots-and-ambiguous':
+        return [context % chr(dot) for dot in RUNNING_DOTS for context in RUNNING_DOT_CONTEXTS]
+    if document == 'rt-ascii-pairs':
+        return ['a ' + x + y + 'b' for x in punctuation for y in punctuation]
+    raise SystemExit('unknown document ' + document)
+
+
+def running_positions(row):
+    """The positions of a row's blocks: every code point but the first, unless it is a space or has no width, or a
+    hyphen after a soft hyphen: the block there holds the hyphen the soft hyphen shows, as wide as the hyphen after it,
+    so a line that ends after that hyphen fits as well and the block cannot tell the two places apart."""
+    return [index for index in range(1, len(row)) if ord(row[index]) not in (0x20, 0xAD, 0x200B, 0x2060)
+            and not (row[index] in HYPHENS and row[index - 1] == '\u00AD')]
+
+
+def running_block(row, position):
+    """One block: a hidden ruler as wide as the row up to the position plus half of the next character, and the row laid
+    out in that width. A row that would end its line at a soft hyphen there shows a hyphen: the ruler then holds one."""
+    prefix = row[:position]
+    if prefix.endswith('\u00AD'):
+        ruler = escaped(prefix) + '&#x2010;<span class="p"></span>'
+    else:
+        ruler = escaped(prefix) + '<span class="h">%s</span>' % escaped(row[position])
+    return '<div class="o"><span class="w"><div class="r">%s</div><div class="t">%s</div></span></div>\n' % (ruler, escaped(row))
+
+
+def write_running(folder):
+    os.makedirs(folder, exist_ok=True)
+    here = os.path.dirname(os.path.abspath(__file__))
+    font = os.path.relpath(os.path.join(here, '..', '..', '..', 'assets', 'fonts', 'lato', 'Lato-Regular.ttf'),
+                           os.path.abspath(folder)).replace(os.sep, '/')
+    head = ('<!doctype html><html><head><meta charset="utf-8"><style>'
+            '@font-face { font-family: Lato; src: url(%s); } '
+            'html, body { margin: 0; } body { font-family: Lato; font-size: 10.5pt; line-height: 12pt; } '
+            '@page { size: 600pt 14000pt; margin: 18pt; } '
+            'div.o { height: 90pt; margin: 0 0 40pt 0; break-inside: avoid; } '
+            'span.w { display: inline-block; position: relative; vertical-align: top; } '
+            'div.r { white-space: nowrap; visibility: hidden; } span.h { font-size: 50%%; } span.p { padding-left: 0.3pt; } '
+            'div.t { position: absolute; left: 0; right: 0; top: 0; } '
+            '</style></head><body>\n') % font
+    for document in RUNNING:
+        with open(os.path.join(folder, document + '.html'), 'w', encoding='utf-8', newline='\n') as html:
+            html.write(head)
+            for row in running_rows_of(document):
+                for position in running_positions(row):
+                    html.write(running_block(row, position))
+            html.write('</body></html>\n')
+
+
+def read_running(out, resource):
+    seen = set()
+    page_ends = []
+    sections = []
+    for document in RUNNING:
+        rows = running_rows_of(document)
+        blocks = [(row, position) for row in rows for position in running_positions(row)]
+        paragraphs = printed_paragraphs(os.path.join(out, document + '.print.txt'))
+        if len(paragraphs) != len(blocks):
+            raise SystemExit('%s: %d paragraphs printed for %d blocks' % (document, len(paragraphs), len(blocks)))
+        read = {}
+        for (row, position), lines in zip(blocks, paragraphs):
+            breaks = breaks_of(row, lines)
+            if breaks is None and lines[-1].endswith('\u00AD\u2010') and not row.endswith('\u00AD'):
+                # At a page's end the print's text can give the last block's last line the text of a shown soft hyphen,
+                # drawn nowhere (no width): a hyphen shows only where a line that is not the last ends.
+                breaks = breaks_of(row, lines[:-1] + [lines[-1][:-2]])
+                page_ends.append((document, row, position))
+            if breaks is None:
+                raise SystemExit('%s: the print of %r at %d is not the row: %r' % (document, row, position, lines))
+            read.setdefault(row, []).append((position, breaks))
+        kept = []
+        for row in dict.fromkeys(rows):
+            if row in seen:
+                continue
+            seen.add(row)
+            kept.append((row, read[row]))
+        sections.append((document, kept))
+    with open(resource, 'w', encoding='ascii', newline='\n') as text:
+        text.write('# Where Chromium 159.0.8154.6 ends the lines of running text: its print of the running-text documents,\n')
+        text.write('# measured by tools/reference/chromium/line-breaks.py (format: README.md in this folder).\n')
+        for document, kept in sections:
+            text.write('@%s\n' % document)
+            for row, blocks in kept:
+                text.write('%s;%s\n' % (' '.join('%X' % ord(c) for c in row),
+                                        ';'.join(' '.join(str(n) for n in [position] + breaks) for position, breaks in blocks)))
+    print('%d strings, %d blocks; %d read without the text of a soft hyphen at a page end: %s' % (
+        sum(len(kept) for _, kept in sections), sum(len(blocks) for _, kept in sections for _, blocks in kept),
+        len(page_ends), ', '.join('%s %r at %d' % found for found in page_ends)))
 
 
 def rows_of(document):
@@ -286,5 +433,9 @@ if __name__ == '__main__':
         write(sys.argv[2])
     elif len(sys.argv) == 4 and sys.argv[1] == 'read':
         read(sys.argv[2], sys.argv[3])
+    elif len(sys.argv) == 3 and sys.argv[1] == 'write-running':
+        write_running(sys.argv[2])
+    elif len(sys.argv) == 4 and sys.argv[1] == 'read-running':
+        read_running(sys.argv[2], sys.argv[3])
     else:
         raise SystemExit(__doc__)

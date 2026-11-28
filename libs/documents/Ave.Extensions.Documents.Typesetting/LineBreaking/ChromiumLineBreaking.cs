@@ -91,9 +91,17 @@ namespace Ave.Extensions.Documents.Typesetting.LineBreaking;
 /// row <c>a--</c> E WITH ACUTE <c>d</c> breaks after the first hyphen only, as the second hyphen then starts a line and
 /// UAX #14 LB20a keeps the letter after a hyphen at the start of a text; in running text Chromium breaks after both
 /// hyphens (case <c>lb-dash-before-sign</c>: <c>a--</c> / <c>élan</c>). Every row of the matrix is reproduced so, with
-/// the rules found anew from each line start. LIMIT: this class finds the opportunities once, for the whole text, so a
-/// line that starts at an opportunity may break again where Chromium's does not; the matrix holds 476 such rows, all in a
-/// box too narrow for the shorter line (<c>ChromiumLineBreakingTests</c>).</para>
+/// the rules found anew from each line start. LIMIT: this class finds the opportunities once, for the whole text. That
+/// differs from Chromium only where a HYPHEN-MINUS starts a line after a hyphen-minus or a question mark (a line ends
+/// between the two characters of <c>--</c> or <c>?-</c>) and a letter beyond ASCII, a character of class AI or a middle
+/// dot follows it: this class has an opportunity after that hyphen, Chromium has none. It has two effects. In a box
+/// narrower than the hyphen with the piece after it, the engine breaks again after the hyphen where Chromium lets the
+/// piece overflow (case <c>lb-dash-before-sign</c>, 30 pt paragraph: Chromium <c>x-</c> / <c>-Ωmega</c>, the engine
+/// <c>x-</c> / <c>-</c> / <c>Ωmega</c>; 476 rows of the matrix, <c>ChromiumLineBreakingTests</c>). And a
+/// shrink-to-fit width (a table column in the automatic layout, an inline-block) is narrower by the hyphen's width while
+/// every line is equal, as Chromium measures the smallest width with the hyphen and the piece after it (case
+/// <c>lb-line-start-width</c>, a table 1 pt wide with automatic layout: 3.89 pt narrower). The running-text resource of
+/// the tests shows the first effect only on a later line, never on the first line of a block.</para>
 /// <para>BOUNDED WORK: one copy of the text where it holds a middle dot, one pass of <see cref="UnicodeLineBreaking.Find"/>,
 /// then one pass over the code points, each decided by a table lookup and a look-behind of at most two code points.</para>
 /// </remarks>

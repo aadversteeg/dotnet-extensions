@@ -657,11 +657,17 @@ currency, percent and degree signs beside the punctuation of a number and before
 all of these characters and between pairs of ASCII punctuation; 30 characters of class AI after a dash, after a soft
 hyphen and beside ASCII punctuation; a hyphen after punctuation before Latin, Greek and Cyrillic letters: 34 223 rows,
 every one reproduced (the matrix of `tools/reference/chromium/line-breaks.py`, kept as
-`Reference/Chromium/line-breaks.txt` of the typesetting tests), and the cases `lb-*`. Other characters beyond ASCII
+`Reference/Chromium/line-breaks.txt` of the typesetting tests), and the cases `lb-*`. In running text too: a block as
+wide as a string up to one of its characters ends its first line where Chromium does, for 6 362 such blocks of 1 646
+strings (`Reference/Chromium/line-breaks-running.txt`). Other characters beyond ASCII
 follow the same rules by their class, without rows of their own. Chromium finds the places of each line anew from the
-line's start, the engine once for the whole paragraph: in a box so narrow that a line starts right where the one
-before ended, the engine may break again where Chromium does not (`a-` / `-` / `élan` for Chromium's `a-` / `-élan`;
-476 rows of the matrix). Not measured, and so laid out by the standard rules:
+line's start, the engine once for the whole paragraph. That differs only where a line ends between the two characters
+of `--` or `?-` and a letter beyond ASCII, a character of class AI or a middle dot follows: Chromium then keeps that
+letter with the hyphen that starts the next line, the engine may break after the hyphen. In a box narrower than the
+hyphen with the word after it, the engine breaks again (`x-` / `-` / `Ωmega` for Chromium's `x-` / `-Ωmega`; 476
+rows of the matrix). And a width that follows the content, such as a table column in the automatic layout or an
+inline-block, is narrower by the hyphen's width while every line is the same (`a--élanxxxx` in a table 1 pt wide:
+3.89 pt). Not measured, and so laid out by the standard rules:
 text in the scripts no font of the repository draws (Chinese, Japanese, Korean, Thai and the other scripts that UAX #14
 breaks by dictionary or by syllable), which is refused today for its glyphs.
 

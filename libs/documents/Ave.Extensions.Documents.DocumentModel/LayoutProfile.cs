@@ -104,11 +104,16 @@ public enum LineBreakRules
     /// <c>¡</c> and <c>¿</c>; a dash may break before a no-break space; a soft hyphen may break
     /// after a no-break space; an en dash or a figure dash after a space stays with the word (or a sign such as <c>§</c>) after it. Measured against
     /// Chromium's print (<c>tools/reference/chromium</c>): the matrix <c>line-breaks.py</c> (34 223 rows, every one
-    /// reproduced with the rules found anew from each line start, as Chromium finds them; the engine finds them once for the
-    /// whole text, which differs only where a line starts right at a break, 476 rows), and the cases <c>lb-url</c>, <c>lb-path</c>, <c>lb-date</c>, <c>lb-slash-word</c>, <c>lb-amount</c>,
-    /// <c>lb-phone</c>, <c>lb-space-closer</c>, <c>lb-hyphens</c>, <c>lb-dash-space</c>, <c>lb-table</c>,
-    /// <c>lb-justify</c>, <c>lb-list</c>, <c>lb-middle-dot</c> and <c>lb-dash-before-sign</c>, where the standard ends
-    /// lines elsewhere.
+    /// reproduced with the rules found anew from each line start, as Chromium finds them), and the cases <c>lb-url</c>,
+    /// <c>lb-path</c>, <c>lb-date</c>, <c>lb-slash-word</c>, <c>lb-amount</c>, <c>lb-phone</c>, <c>lb-space-closer</c>,
+    /// <c>lb-hyphens</c>, <c>lb-dash-space</c>, <c>lb-table</c>, <c>lb-justify</c>, <c>lb-list</c>, <c>lb-middle-dot</c>
+    /// and <c>lb-dash-before-sign</c>, where the standard ends lines elsewhere. A limit: the engine finds the places once
+    /// for the whole text, Chromium anew from each line's start. That differs only where a hyphen-minus starts a line after
+    /// <c>-</c> or <c>?</c>, before a letter beyond ASCII, a character of class AI or a middle dot: in a box narrower than
+    /// that hyphen with the piece after it the engine breaks again after the hyphen (476 rows of the matrix; case
+    /// <c>lb-dash-before-sign</c>: <c>x-</c> / <c>-</c> / <c>Ωmega</c> for Chromium's <c>x-</c> / <c>-Ωmega</c>), and a
+    /// shrink-to-fit width (a table column in the automatic layout, an inline-block) is narrower by the hyphen's width
+    /// while every line is equal (case <c>lb-line-start-width</c>: 3.89 pt).
     /// </summary>
     Chromium,
 }

@@ -32,3 +32,16 @@ in an earlier document is not written again (it breaks alike in both). 34,223 ro
 `tools/reference/chromium/line-breaks.py` (how to measure again: the README there, "The line-break matrix"), Lato
 Regular 10 pt in a box 1 pt wide, with Chromium 159.0.8154.6 in the pinned Playwright image, `--font-render-hinting=none`,
 PyMuPDF 1.25.4. The test reads the file with its line endings normalised, so a checkout's line endings do not matter.
+
+`line-breaks-running.txt` is Chromium's print of the running-text documents, which `ChromiumRunningTextTests` checks
+the same rules against, run once over each string as the engine runs them over a paragraph. The matrix's box 1 pt wide
+shows only the first place after each line's start; these blocks show the places a line of some width ends at. Format:
+as `line-breaks.txt`, but each row is `<code points>;<block>;<block>…`, one block per position of the string, in order:
+the position (in code points: the block is as wide as the string up to that position plus half of the next character)
+and then the places where Chromium's print ends the block's lines, counted as above, all separated by spaces.
+Positions before a space, a soft hyphen, a zero width space or a word joiner have no block. A string met in an earlier
+document is not written again. 1,646 strings, 6,362 blocks. Measured by `tools/reference/chromium/line-breaks.py` (`write-running`,
+`read-running`; the README there, "The line-break matrix"), Lato Regular 10.5 pt on 12 pt lines, with the same Chromium,
+image, flag and PyMuPDF as `line-breaks.txt`. A position after a soft hyphen before a hyphen has no block either: the block
+there holds the hyphen the soft hyphen shows, as wide as the hyphen after it, so it cannot tell the two places apart.
+Read with its line endings normalised.

@@ -28,6 +28,8 @@ for name in "$@"; do
   if [ ! -s "/out/$name.ink.txt" ]; then rm "/out/$name.ink.txt"; fi
   python3 /src/links.py "/out/$name.pdf" > "/out/$name.links.txt"
   if [ ! -s "/out/$name.links.txt" ]; then rm "/out/$name.links.txt"; fi
+  # EXTRACT_PRINT_ONLY=1 (measure.ps1 -PrintOnly): the line-break documents need nothing past this.
+  if [ "${EXTRACT_PRINT_ONLY:-}" = 1 ]; then continue; fi
   python3 /src/glyphs.py "/out/$name.pdf" > "/out/$name.glyphs.txt"
   python3 /src/order.py "/out/$name.pdf" > "/out/$name.order.txt"
   python3 /src/clips.py "/out/$name.pdf" > "/out/$name.clips.txt"
