@@ -32,8 +32,10 @@ public static class ImageLimits
     /// decode that fails gives its charge of <see cref="MaxDocumentPixels"/> back, so that a few files whose headers lie
     /// do not keep honest images out; what it produced is counted here instead and never given back (a PNG: the
     /// pixels of the rows its data filled or began; a JPEG: its whole frame). Once the count reaches the limit, no later
-    /// image of the document is decoded (<see cref="ImagePixelBudget"/>), so failed decodes produce less than this
-    /// limit plus one image (<see cref="MaxPixels"/>).
+    /// image of the document is decoded (<see cref="ImagePixelBudget"/>). The count follows the work: a PNG's data is
+    /// inflated in reads of at most 64 KiB and counted after each; when the data fails inside the inflate (a wrong
+    /// checksum, damaged data), the read in which it failed is counted in full. So the failed decodes of a document
+    /// inflate the rows of less than this limit plus one image (<see cref="MaxPixels"/>).
     /// </summary>
     public const long MaxFailedDocumentPixels = 1L << 27;
 }

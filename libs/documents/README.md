@@ -411,7 +411,15 @@ below 1 is refused with `Documents.Layout.InvalidOptions`.
 
 The images of one document decode to at most 2^27 pixels together: each is charged from its header before it is
 decoded, and given back when its data does not decode. What the decodes that fail produced is counted apart and kept,
-also up to 2^27 pixels per document; after that no image of the document is decoded. A PDF embeds a JPEG file as it
+also up to 2^27 pixels per document; after that no image of the document is decoded. The count follows the work: a
+PNG's data is inflated in reads of at most 64 KiB and counted after each, and the read in which the data turns out
+damaged or its checksum wrong is counted in full, so the failed decodes of a document inflate the rows of less than
+2^27 pixels plus one image.
+
+The resolver is asked only for URLs whose scheme is in `HtmlStyleOptions.AllowedResourceSchemes` (default `http` and
+`https`; `HtmlBoxOptions.AllowedResourceSchemes` for box generation on its own). A caller that reads the document's
+files from disk sets a `file:` `BaseUrl` and adds `file`:
+`style with { AllowedResourceSchemes = style.AllowedResourceSchemes.Add("file") }`. A PDF embeds a JPEG file as it
 is, so only a PNG counts there; the raster output (`ToPng`, `ToPngPages`, `ToImages`) decodes every image to pixels,
 so the same document can render to PDF and be refused as PNG. The refusal names the image and where it is.
 

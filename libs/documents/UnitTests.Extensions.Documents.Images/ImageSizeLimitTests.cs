@@ -232,6 +232,26 @@ public class ImageSizeLimitTests
         budget.Used.Should().Be(0);
     }
 
+    [Fact]
+    public void A_decode_that_fails_inside_the_inflate_counts_what_it_inflated()
+    {
+        // The data of 8192 x 8192 grey pixels in full, with a wrong Adler-32: the inflate fails at its end, so the decode
+        // has produced every row, and two such files reach the limit of the document.
+        var data = Deflate(8192L * 8193);
+        data[^1] ^= 0xFF;
+        var file = Png(Header(8192, 8192, 8, 0), Chunk("IDAT", data), Chunk("IEND", []));
+        var budget = new ImagePixelBudget();
+
+        var first = ImageDecoder.Decode(file, budget);
+
+        ShouldBe(first, ImageErrorCodes.Invalid);
+        first.Error.Message.Should().Contain("not valid zlib data");
+        budget.FailedPixels.Should().Be(8192L * 8192, "all that was inflated");
+        ShouldBe(ImageDecoder.Decode(file, budget), ImageErrorCodes.Invalid);
+        budget.FailedPixels.Should().Be(ImageLimits.MaxFailedDocumentPixels);
+        ShouldBe(ImageDecoder.Decode(file, budget), ImageErrorCodes.TooLarge);
+    }
+
     private static void ShouldBe(Ave.Extensions.Functional.Result<ImageData, Ave.Extensions.ErrorPaths.Error> result, Ave.Extensions.ErrorPaths.ErrorCode code) =>
         result.Error.Code.Should().Be(code);
 }
