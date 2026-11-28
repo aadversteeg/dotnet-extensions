@@ -1,0 +1,7 @@
+lb-hyphens.boxes.txt 1
+lb-hyphens.clips.txt 43
+lb-hyphens.glyphs.txt 43
+lb-hyphens.lines.txt 0
+lb-hyphens.order.txt 43
+lb-hyphens.print.txt 44
+lb-hyphens.words.txt 43

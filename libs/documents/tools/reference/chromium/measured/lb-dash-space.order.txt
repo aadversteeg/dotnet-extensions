@@ -1,0 +1,39 @@
+word 1 Trains 0 0 0 0 0 0
+word 1 run 1 1 1
+word 1 Rotterdam 2 2 2 2 2 2 2 2
+word 1 –Den 3 3 3 3
+word 1 Haag 4 4 4 4
+word 1 and 5 5 5
+word 1 Utrecht 6 6 6 6 6 6 6
+word 1 ‒Amersfoort, 7 7 7 7 7 7 7 7 7 7 7 7
+word 1 or 8 8
+word 1 10 9 9
+word 1 –twelve 11 11 11 11 11 11 11
+word 1 at 12 12
+word 1 night. 12 12 12 12 12 12
+word 1 Trains 13 13 13 13 13 13
+word 1 run 13 13 13
+word 1 Rotterdam 14 14 14 14 14 14 14 14
+word 1 –Den 15 15 15 15
+word 1 Haag 15 15 15 15
+word 1 and 16 16 16
+word 1 Utrecht 16 16 16 16 16 16 16
+word 1 ‒Amersfoort, 17 17 17 17 17 17 17 17 17 17 17 17
+word 1 or 18 18
+word 1 10 19 19
+word 1 –twelve 21 21 21 21 21 21 21
+word 1 at 22 22
+word 1 night. 22 22 22 22 22 22
+word 1 Trains 23 23 23 23 23 23
+word 1 run 23 23 23
+word 1 Rotterdam 24 24 24 24 24 24 24 24
+word 1 –Den 24 24 24 24
+word 1 Haag 25 25 25 25
+word 1 and 25 25 25
+word 1 Utrecht 26 26 26 26 26 26 26
+word 1 ‒Amersfoort, 27 27 27 27 27 27 27 27 27 27 27 27
+word 1 or 27 27
+word 1 10 28 28
+word 1 –twelve 30 30 30 30 30 30 30
+word 1 at 30 30
+word 1 night. 31 31 31 31 31 31

@@ -1,0 +1,12 @@
+word 1 a-- 0 0 0
+word 1 M 2
+word 1 élanxxxx 1 1 1 1 1 1 1 1
+word 1 why?- 3 3 3 3 3
+word 1 M 5
+word 1 écolexx 4 4 4 4 4 4 4
+word 1 x-- 6 6 6
+word 1 M 8
+word 1 Ωmegaxxx 7 7 7 7 7 7 7 7
+word 1 a-- 9 9 9
+word 1 M 11
+word 1 elanxxxx 10 10 10 10 10 10 10 10

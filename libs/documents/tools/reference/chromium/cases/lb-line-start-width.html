@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- Tables 1pt wide with automatic layout: the first column is as wide as the widest piece of its cell that does not break. After two hyphens before an accented letter, Chromium measures that piece with the second hyphen (-élanxxxx), as the place after a hyphen that starts a line, and lays the lines out with a break after the pair (a-- | élanxxxx). With ASCII letters only the piece is the word (elanxxxx). -->
+<style>@page { size: 300pt 300pt; margin: 18pt; } body { font-size: 10.5pt; line-height: 12pt; } table { border-collapse: separate; width: 1pt; margin-bottom: 24pt; } td { border: 0; padding: 0; }</style></head><body>
+<table><tr><td>a--&#xE9;lanxxxx</td><td>M</td></tr></table>
+<table><tr><td>why?-&#xE9;colexx</td><td>M</td></tr></table>
+<table><tr><td>x--&#x3A9;megaxxx</td><td>M</td></tr></table>
+<table><tr><td>a--elanxxxx</td><td>M</td></tr></table>
+</body></html>

@@ -1,0 +1,7 @@
+lb-line-start-width.boxes.txt 8
+lb-line-start-width.clips.txt 12
+lb-line-start-width.glyphs.txt 12
+lb-line-start-width.lines.txt 0
+lb-line-start-width.order.txt 12
+lb-line-start-width.print.txt 13
+lb-line-start-width.words.txt 12

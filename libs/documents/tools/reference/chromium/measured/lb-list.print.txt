@@ -1,0 +1,21 @@
+page 1 300.000 499.920
+word 1 30.000 57.163 23.250 10.500 Order #000000 Lato-Regular
+word 1 59.631 134.580 23.250 10.500 REF-2026-0042 #000000 Lato-Regular
+word 1 30.000 39.523 38.250 10.500 of #000000 Lato-Regular
+word 1 42.012 98.533 38.250 10.500 2026-11-28 #000000 Lato-Regular
+word 1 101.221 124.578 38.250 10.500 ships #000000 Lato-Regular
+word 1 127.266 136.958 38.250 10.500 to #000000 Lato-Regular
+word 1 30.000 136.449 53.250 10.500 /srv/outgoing/batch/7. #000000 Lato-Regular
+word 1 30.000 52.879 68.250 10.500 Read #000000 Lato-Regular
+word 1 30.000 171.555 83.250 10.500 https://example.com/help/faq? #000000 Lato-Regular
+word 1 30.000 92.160 98.250 10.500 topic=returns #000000 Lato-Regular
+word 1 94.848 125.849 98.250 10.500 and/or #000000 Lato-Regular
+word 1 30.000 45.188 113.250 10.500 call #000000 Lato-Regular
+word 1 47.876 96.885 113.250 10.500 555-0142. #000000 Lato-Regular
+word 1 30.000 46.648 128.250 10.500 Pay #000000 Lato-Regular
+word 1 49.073 113.585 128.250 10.500 12.50/£15.00 #000000 Lato-Regular
+word 1 116.273 138.507 128.250 10.500 now. #000000 Lato-Regular
+word 1 12.000 29.283 143.250 10.500 end #000000 Lato-Regular
+path 1 18.000 18.000 21.750 21.750 #000000 2cfc2/cfffc/fffff/cfffc/2cfc2
+path 1 18.000 63.000 21.750 66.750 #000000 2cfc2/cfffc/fffff/cfffc/2cfc2
+path 1 18.000 123.000 21.750 126.750 #000000 2cfc2/cfffc/fffff/cfffc/2cfc2
