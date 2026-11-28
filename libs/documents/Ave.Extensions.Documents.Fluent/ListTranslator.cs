@@ -42,7 +42,7 @@ internal static class ListTranslator
             .ToImmutableArray();
         if (!problems.IsEmpty)
         {
-            return Result<Node, Error>.Failure(Errors.Aggregate(problems));
+            return Result<Node, Error>.Failure(DiagnosticLimits.Aggregate(problems));
         }
 
         var numbering = list.IsNumbered ? ListNumbering.Decimal : (list.BulletShape ?? LevelBullet(own.Lists)) switch

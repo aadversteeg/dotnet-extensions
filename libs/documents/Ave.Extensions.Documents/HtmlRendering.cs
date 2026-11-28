@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using Ave.Extensions.Documents.Core;
+using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Graphics;
 using Ave.Extensions.Documents.Html;
@@ -12,6 +13,7 @@ using Ave.Extensions.Documents.Render.Pdf;
 using Ave.Extensions.Documents.Render.Raster;
 using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents;
@@ -38,6 +40,12 @@ public sealed record HtmlRenderOptions
 
     /// <summary>The document's name in every diagnostic (for example its file name).</summary>
     public string SourceName { get; init; } = string.Empty;
+
+    /// <summary>The most pages the document may have (<see cref="LayoutEnvironment.MaxPages"/>; default
+    /// <see cref="LayoutEnvironment.DefaultMaxPages"/>, at least 1): a longer one is refused with
+    /// <c>Documents.Layout.TooManyPages</c> when pagination reaches the limit; a value below 1 is refused when the layout
+    /// starts (<c>Documents.Layout.InvalidOptions</c>).</summary>
+    public int MaxPages { get; init; } = LayoutEnvironment.DefaultMaxPages;
 }
 
 /// <summary>What an <see cref="HtmlRendering"/> call gives: its output and the diagnostics of every stage.</summary>
@@ -62,7 +70,11 @@ public static class HtmlRendering
     /// <param name="options">The fonts, the style options and the document's name.</param>
     /// <returns>The pages and the diagnostics, or the error with the document's line and column.</returns>
     /// <exception cref="ArgumentNullException">The text or the options are null.</exception>
-    public static Result<HtmlRendered<PageDocument>, Error> ToPages(string html, HtmlRenderOptions options)
+    public static Result<HtmlRendered<PageDocument>, Error> ToPages(string html, HtmlRenderOptions options) =>
+        Laid(html, options).OnSuccessMap(laid => laid.Pages);
+
+    /// <summary>The pages of <see cref="ToPages"/> and the document model they were laid out from.</summary>
+    private static Result<(HtmlRendered<PageDocument> Pages, StyledDocument Model), Error> Laid(string html, HtmlRenderOptions options)
     {
         ArgumentNullException.ThrowIfNull(html);
         ArgumentNullException.ThrowIfNull(options);
@@ -75,10 +87,13 @@ public static class HtmlRendering
                 GenericFamilies = options.GenericFamilies,
                 Resources = style.Resources,
                 BaseUrl = style.BaseUrl,
+                AllowBaseElement = style.AllowBaseElement,
                 Unsupported = style.Unsupported,
                 MissingCharacters = Shaper.MissingCharacters,
             }))
-            .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, boxes.Fonts).OnSuccessMap(pages => new HtmlRendered<PageDocument>(pages, boxes.Diagnostics)));
+            .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, LayoutEnvironment.Create(boxes.Fonts) with { MaxPages = options.MaxPages })
+                .MapError(error => RenderErrors.PageLimit(error, $"{nameof(HtmlRenderOptions)}.{nameof(HtmlRenderOptions.MaxPages)}"))
+                .OnSuccessMap(pages => (new HtmlRendered<PageDocument>(pages, boxes.Diagnostics), boxes.Document)));
     }
 
     /// <summary>Renders an HTML document to PDF: <see cref="ToPages"/>, then the PDF back-end.</summary>
@@ -96,7 +111,7 @@ public static class HtmlRendering
     /// <param name="raster">The resolution and background.</param>
     /// <returns>The PNG file and the diagnostics, or the error.</returns>
     public static Result<HtmlRendered<ImmutableArray<byte>>, Error> ToPng(string html, HtmlRenderOptions options, int pageNumber, RasterOptions raster) =>
-        ToPages(html, options).OnSuccessBind(pages => Beside(pages, pages.Output.ToPng(pageNumber, raster)));
+        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToPng(pageNumber, raster).MapError(error => RenderErrors.ImagePlace(error, laid.Model))));
 
     /// <summary>Draws every page of an HTML document as a PNG file.</summary>
     /// <param name="html">The HTML text.</param>
@@ -104,7 +119,7 @@ public static class HtmlRendering
     /// <param name="raster">The resolution and background.</param>
     /// <returns>One PNG file per page, in order, and the diagnostics, or the error.</returns>
     public static Result<HtmlRendered<ImmutableArray<ImmutableArray<byte>>>, Error> ToPngPages(string html, HtmlRenderOptions options, RasterOptions raster) =>
-        ToPages(html, options).OnSuccessBind(pages => Beside(pages, pages.Output.ToPngPages(raster)));
+        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToPngPages(raster).MapError(error => RenderErrors.ImagePlace(error, laid.Model))));
 
     /// <summary>Draws every page of an HTML document as pixels.</summary>
     /// <param name="html">The HTML text.</param>
@@ -112,7 +127,7 @@ public static class HtmlRendering
     /// <param name="raster">The resolution and background.</param>
     /// <returns>One image per page (8-bit RGBA, sRGB), in order, and the diagnostics, or the error.</returns>
     public static Result<HtmlRendered<ImmutableArray<RgbaImage>>, Error> ToImages(string html, HtmlRenderOptions options, RasterOptions raster) =>
-        ToPages(html, options).OnSuccessBind(pages => Beside(pages, pages.Output.ToImages(raster)));
+        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToImages(raster).MapError(error => RenderErrors.ImagePlace(error, laid.Model))));
 
     /// <summary>A back-end's output with the diagnostics of the pages it was made from.</summary>
     private static Result<HtmlRendered<T>, Error> Beside<T>(HtmlRendered<PageDocument> pages, Result<T, Error> output) =>

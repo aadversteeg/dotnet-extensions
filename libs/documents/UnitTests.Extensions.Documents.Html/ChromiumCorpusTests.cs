@@ -56,7 +56,9 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
         var measured = Path.Combine(Styling.Reference(), "measured", $"{name}.txt");
         File.Exists(measured).Should().BeTrue($"the case {name} is measured (computed-style/measure.ps1 -Step corpus, then copy out/{name}.txt to measured/)");
         var html = File.ReadAllText(Path.Combine(Styling.Reference(), "cases", $"{name}.html"));
-        var styled = Styling.Styled(html, Styling.MeasuredPage);
+        // The corpus documents were measured with their base element in effect: the harness allows it.
+        var options = Styling.MeasuredPage with { AllowBaseElement = true };
+        var styled = Styling.Styled(html, options);
         var ours = new Dictionary<string, StyledElement>(StringComparer.Ordinal);
         Paths(styled.Root, "", 1, ours);
         var refused = RefusedElements(styled);
@@ -97,7 +99,7 @@ public class ChromiumCorpusTests(ITestOutputHelper output)
             }
         }
 
-        var refusals = Styling.Resolve(html, Styling.MeasuredPage with { Unsupported = UnsupportedPolicy.Refuse })
+        var refusals = Styling.Resolve(html, options with { Unsupported = UnsupportedPolicy.Refuse })
             .Match(_ => 0, error => error.Code == ErrorCodes.Aggregate ? error.Parts().Count() : 1);
         output.WriteLine($"{name}: {values} values: {equal} equal, {refusedValues} refused, {failures.Count} different; default mode: {refusals} refusals");
         failures.Take(200).ToList().ForEach(output.WriteLine);

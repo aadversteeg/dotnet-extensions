@@ -58,6 +58,37 @@ public class PaginationTests
     }
 
     [Fact]
+    public void A_document_of_more_pages_than_the_environment_allows_is_refused_at_the_limit()
+    {
+        // The paragraph of 14 one-word lines takes 3 pages (above).
+        var narrow = BoxStyle.Initial with { Margin = new Edges(0.Pt(), 160.Pt(), 0.Pt(), 0.Pt()) };
+        var document = Document(Paragraph(1, Words(14), narrow));
+        var environment = LayoutEnvironment.Create(TestFonts.Set);
+
+        environment.MaxPages.Should().Be(LayoutEnvironment.DefaultMaxPages);
+        Paginator.Paginate(environment with { MaxPages = 3 }, document).Value.Should().HaveCount(3);
+        var refused = Paginator.Paginate(environment with { MaxPages = 2 }, document).Error;
+        refused.Code.Should().Be(LayoutErrorCodes.TooManyPages);
+        refused.Message.Should().Be("The document would have more than 2 pages, the page limit of this render call; pagination stopped there. Raise the page limit of the render call (default 10000) to render a longer document.");
+        refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Value].Should().Be("2");
+        refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Property].Should().Be("LayoutEnvironment.MaxPages");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-7)]
+    public void A_page_limit_below_one_is_refused_with_the_option_and_its_value(int maxPages)
+    {
+        var document = Document(Paragraph(1, Words(2), BoxStyle.Initial));
+
+        var refused = DocumentLayout.Run(document, LayoutEnvironment.Create(TestFonts.Set) with { MaxPages = maxPages }).Error;
+
+        refused.Code.Should().Be(LayoutErrorCodes.InvalidOptions);
+        refused.Message.Should().Be($"The page limit of this render call is {maxPages}; a document has at least one page, so the page limit must be at least 1.");
+        refused.Metadata![Ave.Extensions.Documents.Core.ErrorMetadataKeys.Property].Should().Be("LayoutEnvironment.MaxPages");
+    }
+
+    [Fact]
     public void A_block_whose_padding_does_not_fit_moves_whole_to_the_next_page()
     {
         // Five lines use 60 pt of the 80 pt page area; the next block needs 25 pt of padding before any content.

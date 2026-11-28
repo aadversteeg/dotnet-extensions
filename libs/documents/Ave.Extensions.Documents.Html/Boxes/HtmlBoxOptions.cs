@@ -29,6 +29,10 @@ public sealed record HtmlBoxOptions
     /// (<see cref="Css.Rules.FontFaceRule.BaseUrl"/>); null when it has none (URLs are then passed as written).</summary>
     public string? BaseUrl { get; init; }
 
+    /// <summary>Whether a <c>base</c> element may replace <see cref="BaseUrl"/> (<see cref="HtmlStyleOptions.AllowBaseElement"/>;
+    /// give both the same value). Default false.</summary>
+    public bool AllowBaseElement { get; init; }
+
     /// <summary>Refuse (the default) or only warn; what <see cref="UnsupportedPolicy.Warn"/> does with a value that is not
     /// drawn is said at <see cref="HtmlBoxGenerator"/>.</summary>
     public UnsupportedPolicy Unsupported { get; init; } = UnsupportedPolicy.Refuse;

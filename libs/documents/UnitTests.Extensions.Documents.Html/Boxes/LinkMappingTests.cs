@@ -25,8 +25,8 @@ public class LinkMappingTests
 
     private static Result<HtmlBoxes, Error> Boxes(string html, string? documentUrl = null, UnsupportedPolicy policy = UnsupportedPolicy.Refuse) =>
         HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Unsupported = policy, Resources = Resources, BaseUrl = documentUrl }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Unsupported = policy, Resources = Resources, BaseUrl = documentUrl }));
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Unsupported = policy, Resources = Resources, BaseUrl = documentUrl, AllowBaseElement = true }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Unsupported = policy, Resources = Resources, BaseUrl = documentUrl, AllowBaseElement = true }));
 
     private static readonly byte[] Figure = System.IO.File.ReadAllBytes(System.IO.Path.Combine(HtmlCases.Folder(), "figure.png"));
 

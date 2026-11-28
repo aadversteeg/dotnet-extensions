@@ -35,6 +35,11 @@ public static class TableSlots
 
         /// <summary>A span of less than one column or one row.</summary>
         SpanBelowOne,
+
+        /// <summary>The grid would have more than <see cref="MaxColumns"/> columns or more than <see cref="MaxSlots"/>
+        /// slots. The filling stops at the cell that would pass the limit (or, with a column count given, before the
+        /// first cell, at row 0 and cell −1): the grid returned has no slots and only the cells placed before it.</summary>
+        TooLarge,
     }
 
     /// <summary>
@@ -46,6 +51,57 @@ public static class TableSlots
 
     /// <summary>The largest row span: HTML's limit for <c>rowspan</c> ("less than or equal to 65534", same section).</summary>
     public const int MaxRowSpan = 65534;
+
+    /// <summary>
+    /// The most columns one table's grid has. A single cell can span <see cref="MaxColumnSpan"/>, and the cells of a row
+    /// add up, so a row's width is not bounded by the spans alone: the column count is. 4 096 columns on the widest page
+    /// (14 400 pt) leave each column 3.5 pt; the widest table of the reference cases has 6. Checked before a slot is
+    /// filled, so the grid is never made larger than the limit.
+    /// </summary>
+    public const int MaxColumns = 4096;
+
+    /// <summary>
+    /// The most slots (rows times columns) one table's grid has: 2^22, as many as the PDF/UA check of a table fills.
+    /// The grid is made as rows of that many columns, so it costs memory and work in proportion to its slots, not to the
+    /// cells of the input. The largest table of the reference documents has 780 slots (195 rows of 4); a table of
+    /// 100 000 rows and 40 columns still fits.
+    /// </summary>
+    public const int MaxSlots = 1 << 22;
+
+    /// <summary>
+    /// The most slots of all tables of one document together: 2^24, four tables at <see cref="MaxSlots"/>. Counted by
+    /// the front-ends and the model check, which see the whole document (<see cref="DocumentSlots"/>).
+    /// </summary>
+    public const int MaxDocumentSlots = 1 << 24;
+
+    /// <summary>The slots a grid of the given rows and columns has, in 64 bits so the product cannot wrap.</summary>
+    /// <param name="rows">The rows.</param>
+    /// <param name="columns">The columns.</param>
+    /// <returns>Rows times columns.</returns>
+    public static long SlotsOf(int rows, int columns) => (long)System.Math.Max(0, rows) * System.Math.Max(0, columns);
+
+    /// <summary>The slots of the tables of one document, added table by table against
+    /// <see cref="MaxDocumentSlots"/>.</summary>
+    public sealed class DocumentSlots
+    {
+        /// <summary>The slots added so far.</summary>
+        public long Count { get; private set; }
+
+        /// <summary>Adds a table's slots.</summary>
+        /// <param name="slots">The table's slots (rows times columns).</param>
+        /// <returns>False when the document's tables together pass <see cref="MaxDocumentSlots"/>; the count is then left
+        /// as it was.</returns>
+        public bool TryAdd(long slots)
+        {
+            if (slots < 0 || slots > MaxDocumentSlots - Count)
+            {
+                return false;
+            }
+
+            Count += slots;
+            return true;
+        }
+    }
 
     /// <summary>The rule for a span, in one place for every layer: at least one column and one row, at most
     /// <see cref="MaxColumnSpan"/> columns and <see cref="MaxRowSpan"/> rows.</summary>
@@ -82,7 +138,9 @@ public static class TableSlots
 
     /// <summary>
     /// Fills the slots. Every problem is reported, not only the first; a cell with a problem is placed as far as it
-    /// fits, so that later cells are still placed where the author meant them and their own problems are found.
+    /// fits, so that later cells are still placed where the author meant them and their own problems are found. The one
+    /// exception is a grid past <see cref="MaxColumns"/> or <see cref="MaxSlots"/> (<see cref="ProblemKind.TooLarge"/>):
+    /// the filling stops there, so the work and the memory stay within the limits whatever the spans say.
     /// </summary>
     /// <param name="groups">The table's row groups in order; per group its rows; per row the spans of its cells.</param>
     /// <param name="columnCount">The table's column count, or null to take as many as the widest row reaches.</param>
@@ -93,6 +151,15 @@ public static class TableSlots
         var slots = groups.SelectMany(group => group).Select(_ => new List<int>()).ToArray();
         var cells = ImmutableArray.CreateBuilder<Placement>();
         var problems = ImmutableArray.CreateBuilder<Problem>();
+        if (columnCount is { } given && (given > MaxColumns || SlotsOf(slots.Length, given) > MaxSlots))
+        {
+            problems.Add(new Problem(ProblemKind.TooLarge, 0, -1));
+            return new Grid(cells.ToImmutable(), [], problems.ToImmutable());
+        }
+
+        // The width the grid has so far: a cell that would widen it past the limits stops the filling before a slot of
+        // it is made, so no row grows longer than MaxColumns and the grid never holds more than MaxSlots.
+        var reach = 0L;
         var firstRow = 0;
         foreach (var group in groups)
         {
@@ -141,6 +208,13 @@ public static class TableSlots
                     var placed = new CellSpan(
                         System.Math.Max(1, (int)System.Math.Min(columns, (long)limit - column)),
                         System.Math.Min(rows, lastRowOfGroup - row + 1));
+                    reach = System.Math.Max(reach, column < limit ? (long)column + placed.Columns : 0);
+                    if (reach > MaxColumns || reach * slots.Length > MaxSlots)
+                    {
+                        problems.Add(new Problem(ProblemKind.TooLarge, row, cell));
+                        return new Grid(cells.ToImmutable(), [], problems.ToImmutable());
+                    }
+
                     if (column < limit && Cover(slots, row, column, placed, cells.Count))
                     {
                         problems.Add(new Problem(ProblemKind.Overlap, row, cell));

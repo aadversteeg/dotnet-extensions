@@ -141,4 +141,60 @@ public class TableSlotsTests
         grid.Slots.Length.Should().Be(4_194);
         allocated.Should().BeLessThan(64L * 1024 * 1024, $"{allocated / (1024.0 * 1024):0.0} MiB allocated");
     }
+
+    [Fact]
+    public void A_grid_of_the_most_columns_and_slots_fills_and_one_column_or_row_more_is_too_large()
+    {
+        IReadOnlyList<IReadOnlyList<CellSpan>> Rows(int count) => [.. Enumerable.Range(0, count).Select(_ => (IReadOnlyList<CellSpan>)[One])];
+
+        TableSlots.Fill([Rows(1)], TableSlots.MaxColumns).Problems.Should().BeEmpty();
+        TableSlots.Fill([Rows(1)], TableSlots.MaxColumns + 1).Problems.Should().Equal(new TableSlots.Problem(TableSlots.ProblemKind.TooLarge, 0, -1));
+        var rows = TableSlots.MaxSlots / TableSlots.MaxColumns;
+        TableSlots.Fill([Rows(rows)], TableSlots.MaxColumns).Problems.Should().BeEmpty();
+        var tooMany = TableSlots.Fill([Rows(rows + 1)], TableSlots.MaxColumns);
+        tooMany.Problems.Should().Equal(new TableSlots.Problem(TableSlots.ProblemKind.TooLarge, 0, -1));
+        tooMany.Slots.Should().BeEmpty("nothing is filled");
+    }
+
+    [Fact]
+    public void Without_a_column_count_the_cell_that_would_pass_the_limits_stops_the_filling()
+    {
+        // Cells of 1 000 columns side by side: 4 of them and one of 96 are the most columns; one column more is refused at
+        // that cell. Under that width, 1 024 rows are the most slots; with a 1 025th row the same cell passes them.
+        IReadOnlyList<CellSpan> Wide(int last) => [new(1_000, 1), new(1_000, 1), new(1_000, 1), new(1_000, 1), new(last, 1)];
+        IReadOnlyList<IReadOnlyList<CellSpan>> Group(int last, int rows) => [Wide(last), .. Enumerable.Range(1, rows - 1).Select(_ => (IReadOnlyList<CellSpan>)[One])];
+
+        TableSlots.Fill([Group(96, 1)]).ColumnCount.Should().Be(TableSlots.MaxColumns);
+        TableSlots.Fill([Group(97, 1)]).Problems.Should().Equal(new TableSlots.Problem(TableSlots.ProblemKind.TooLarge, 0, 4));
+        TableSlots.Fill([Group(96, 1_024)]).Problems.Should().BeEmpty();
+        TableSlots.Fill([Group(96, 1_025)]).Problems.Should().Equal(new TableSlots.Problem(TableSlots.ProblemKind.TooLarge, 0, 4));
+    }
+
+    [Fact]
+    public void A_staircase_of_spans_is_stopped_before_its_grid_is_made()
+    {
+        // Each row's cell starts after the columns the rows above still cover, so 1 000 rows of rowspan=1000
+        // colspan=1000 would make a grid of 1 000 000 columns. The fifth cell passes the slots and stops the filling,
+        // after about 4 million slots, not 10^9: pinned below 64 MiB. Measured, not timed.
+        IReadOnlyList<IReadOnlyList<IReadOnlyList<CellSpan>>> groups = [[.. Enumerable.Range(0, 1_000).Select(_ => (IReadOnlyList<CellSpan>)[new CellSpan(1_000, 1_000)])]];
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        var grid = TableSlots.Fill(groups);
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        grid.Problems[^1].Should().Be(new TableSlots.Problem(TableSlots.ProblemKind.TooLarge, 4, 0), "the rows before it run past their group, the fifth stops the filling");
+        allocated.Should().BeLessThan(64L * 1024 * 1024, $"{allocated / (1024.0 * 1024):0.0} MiB allocated");
+    }
+
+    [Fact]
+    public void The_slots_of_a_document_are_added_up_to_their_limit()
+    {
+        var slots = new TableSlots.DocumentSlots();
+
+        slots.TryAdd(TableSlots.MaxDocumentSlots - 1).Should().BeTrue();
+        slots.TryAdd(1).Should().BeTrue();
+        slots.TryAdd(1).Should().BeFalse();
+        slots.Count.Should().Be(TableSlots.MaxDocumentSlots);
+        TableSlots.SlotsOf(int.MaxValue, int.MaxValue).Should().Be((long)int.MaxValue * int.MaxValue, "the product does not wrap");
+    }
 }

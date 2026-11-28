@@ -70,7 +70,7 @@ internal sealed class InternalLinks
             .ToList();
         if (missing.Count > 0)
         {
-            return Result<Box, Error>.Failure(missing.Count == 1 ? missing[0] : Errors.Aggregate(missing));
+            return Result<Box, Error>.Failure(DiagnosticLimits.Aggregate(missing));
         }
 
         return Result<Box, Error>.Success(LinkTargets.Resolve(body, links.ToDictionary(link => link.Link, link => (LinkTarget?)LinkTarget.Node(anchors[link.Anchor].Node))));

@@ -47,4 +47,14 @@ public static class ErrorMetadataKeys
     /// <summary>Of the diagnostics a <see cref="DocumentErrorCodes.TooManyDiagnostics"/> leaves out, how many refuse the
     /// document (int).</summary>
     public const string Refusals = "Refusals";
+
+    /// <summary>Of the diagnostics a <see cref="DocumentErrorCodes.TooManyDiagnostics"/> leaves out, the message of the
+    /// first that refuses the document (string), which the summary quotes; a later summary that takes in its counts
+    /// quotes it too.</summary>
+    public const string FirstRefusal = "FirstRefusal";
+
+    /// <summary>The image an error is about, as a content digest: its <c>ImageId</c> digest (string), not a name or URL,
+    /// so not for people to read. The raster back-end sets it on the refusal of an image it cannot decode to pixels, so
+    /// that a caller that has the document can find the image and name it.</summary>
+    public const string Image = "Image";
 }

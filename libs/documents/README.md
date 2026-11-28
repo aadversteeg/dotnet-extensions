@@ -181,6 +181,19 @@ templating library. In a real caller's hands the data is untrusted: every value 
 fonts of the `@font-face` rules, the logo and the style sheets come from the resolver, which gives only the files the
 template names. What the HTML front-end draws, refuses and ignores is the HTML profile, `docs/html-css-profile.md`.
 
+The resolver is the one place where a document reaches the caller's files or network, so every URL in the document
+is untrusted input. With a `BaseUrl` the engine resolves every reference against it and hands the resolver absolute
+URLs; without one it hands the reference as the document writes it (`logo.png`, `//host/share/x.png`), so set a
+`BaseUrl`. A `<base>` element in the document counts only when the caller sets `AllowBaseElement`; otherwise it is
+refused. A URL's fragment (`#…`) is removed first, as it never names another resource; a reference that is then empty
+(`#top` without a `BaseUrl`) is not there, and the resolver is not asked. The resolver is asked each URL at most once
+per render, for at most 4 096 of them, each at most 32 767 characters. `data:` URLs never reach the resolver, with or
+without a fragment: the engine decodes them itself. Every other URL does, whatever its scheme: `file:`, a Windows
+share written as `file://host/share/x.css`, `ftp:`, `javascript:`, or a path with `../` that leaves the base folder. So the resolver
+decides what it serves: it maps a URL to a file only inside a folder it chose (the HtmlStyles sample checks
+`folder.IsBaseOf(uri)`), fetches only from hosts it trusts, and gives null for anything else. The engine itself opens
+no file, socket or process.
+
 The HTML the sample writes is, byte for byte, the document the family measures against Chromium 159's print
 (`tools/reference/chromium/documents/timesheet-*.html`; `HtmlSampleTests`), so the sample's pages are the ones that
 comparison holds equal. They are the pages of the code-built timesheet, but not the same page model
@@ -378,6 +391,23 @@ Golden files live in `Golden/` folders next to the tests. After a deliberate cha
 `UPDATE_GOLDEN=1`, review the diff, and commit it. The Unicode property table in
 `Ave.Extensions.Documents.Typesetting/Unicode/` is generated from the committed data files in `assets/unicode/`; after
 updating them, run the tests with `UPDATE_GENERATED=1`.
+
+## Limits a caller may need to set
+
+The engine bounds its work and memory on any input; `docs/architecture.md` lists every limit. One of them is a
+setting: a document may have at most 10 000 pages, so that a few bytes of input that ask for a page each cannot make
+a render run for minutes. A longer document is refused with `Documents.Layout.TooManyPages`, whose message names the
+setting of the call that was used. To render one, raise the limit: `HtmlRenderOptions.MaxPages` for the HTML entries,
+`DocumentRenderOptions.MaxPages` for the calls on a document
+(`document.ToPdf(fonts, options, new DocumentRenderOptions { MaxPages = 20_000 })`, and the same on `ToPages`, `ToPng`,
+`ToPngPages` and `ToImages`), or `LayoutEnvironment.MaxPages` for `DocumentLayout.Run`. A value
+below 1 is refused with `Documents.Layout.InvalidOptions`.
+
+The images of one document decode to at most 2^27 pixels together: each is charged from its header before it is
+decoded, and given back when its data does not decode. What the decodes that fail produced is counted apart and kept,
+also up to 2^27 pixels per document; after that no image of the document is decoded. A PDF embeds a JPEG file as it
+is, so only a PNG counts there; the raster output (`ToPng`, `ToPngPages`, `ToImages`) decodes every image to pixels,
+so the same document can render to PDF and be refused as PNG. The refusal names the image and where it is.
 
 ## Scope and known limits
 

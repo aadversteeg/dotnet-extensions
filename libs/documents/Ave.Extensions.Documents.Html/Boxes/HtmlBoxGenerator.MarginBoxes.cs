@@ -6,7 +6,6 @@ using Ave.Extensions.Documents.Css.Properties;
 using Ave.Extensions.Documents.Css.Values;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Html.Parsing;
-using Ave.Extensions.Documents.Images;
 using Ave.Extensions.ErrorPaths;
 
 namespace Ave.Extensions.Documents.Html.Boxes;
@@ -198,16 +197,18 @@ public static partial class HtmlBoxGenerator
         /// <returns>The image's box; null when it is refused.</returns>
         private Box? ContentImage(MarginBoxStyle box, CssContentImage image, TextStyle text)
         {
-            var url = DataUrl.Body(image.Url) is null ? Urls.Absolute(image.Url, box.BaseUrl ?? options.BaseUrl) ?? image.Url : image.Url;
+            var url = Urls.WithoutFragment(DataUrl.Is(image.Url) ? image.Url : Urls.Absolute(image.Url, box.BaseUrl ?? options.BaseUrl) ?? image.Url);
             var bytes = DataUrl.Body(url) ?? options.Resources?.Invoke(url)?.Bytes;
             if (bytes is null)
             {
-                Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} is not there (neither a data: URL nor the resource resolver gives it), and what Chromium shows instead is not drawn in this version.",
+                Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, ResourceTable.Refusal(options.Resources, url) is { } why
+                        ? $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} {why}; what Chromium shows instead is not drawn in this version."
+                        : $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} is not there (neither a data: URL nor the resource resolver gives it), and what Chromium shows instead is not drawn in this version.",
                     image.ToString(), box.Position, "content");
                 return null;
             }
 
-            var decoded = ImageDecoder.Decode(bytes.Value);
+            var decoded = DecodeOnce(url, bytes.Value);
             if (decoded.IsFailure)
             {
                 Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, $"The image '{InputQuote.Of(url)}' in the content of @{Name(box.Box)} does not decode ({decoded.Error.Message}), and what Chromium shows instead is not drawn in this version.",
@@ -220,7 +221,7 @@ public static partial class HtmlBoxGenerator
             const double point = 0.75;
             var width = Length.FromPoints(decoded.Value.PixelWidth * point / image.Resolution);
             var height = Length.FromPoints(decoded.Value.PixelHeight * point / image.Resolution);
-            var node = new ImageNode(NewId(), decoded.Value, width, height, source);
+            var node = new ImageNode(NewId(), decoded.Value, width, height, source) { Name = url };
 
             // CSS Text Decoration 3 §2: decorations are not propagated into an atomic inline.
             return new Box(NewId(), SemanticRole.Decorative, LayoutAlgorithmId.Image, BoxStyle.Initial with { Text = text with { Decorations = [] } }, [node], source);

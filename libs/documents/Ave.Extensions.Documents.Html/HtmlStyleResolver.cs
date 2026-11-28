@@ -47,15 +47,19 @@ public static class HtmlStyleResolver
                 .With(ErrorMetadataKeys.SourceFile, parsed.SourceName));
         }
 
-        var run = new Run(parsed, options);
+        // The caller's resolver is asked at most once per URL in this resolution, and in the box generation of its result.
+        var resources = ResourceTable.Once(options.Resources);
+        var run = new Run(parsed, options with { Resources = resources });
         if (run.Resolve() is not { } styled)
         {
             return Result<StyledHtmlDocument, Error>.Failure(run.Limit!.Value);
         }
 
+        ResourceTable.Remember(styled, resources);
+
         var refusals = styled.Diagnostics.Where(error => HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal).ToList();
         return options.Unsupported == UnsupportedPolicy.Refuse && refusals.Count > 0
-            ? Result<StyledHtmlDocument, Error>.Failure(refusals.Count == 1 ? refusals[0] : Errors.Aggregate(refusals))
+            ? Result<StyledHtmlDocument, Error>.Failure(DiagnosticLimits.Aggregate(refusals))
             : Result<StyledHtmlDocument, Error>.Success(styled);
     }
 
@@ -97,7 +101,7 @@ public static class HtmlStyleResolver
         private readonly List<Error> _diagnostics = [];
         private int _suppressed;
         private int _suppressedRefusals;
-        private Error? _firstSuppressedRefusal;
+        private string? _firstSuppressedRefusal;
         private readonly HashSet<int> _renamed = [];
         private readonly Dictionary<StyleSheet, string?> _baseOf = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<string, StyleSheet?> _fetched = new(StringComparer.Ordinal);
@@ -123,7 +127,15 @@ public static class HtmlStyleResolver
             var tree = StyleElement.Tree(document);
             var elements = Descendants(tree).ToList();
             _body = elements.Select(item => item.Element).FirstOrDefault(element => element.IsHtml("body"));
-            _documentBase = Urls.DocumentBase(document, options.BaseUrl);
+            _documentBase = Urls.DocumentBase(document, options.BaseUrl, options.AllowBaseElement);
+            if (!options.AllowBaseElement && Urls.BaseElement(document) is { } baseElement)
+            {
+                // The caller's base URL is the trust anchor: a document may not move its URLs elsewhere unless allowed.
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Element,
+                        $"The <base href=\"{InputQuote.Of(baseElement.Attribute("href")!)}\"> is not honoured: the document's URLs are resolved against the caller's base URL. Remove the base element, or let the caller allow it (HtmlStyleOptions.AllowBaseElement).")
+                    .With(ErrorMetadataKeys.Value, "base")
+                    .WithSource(_sourceName, baseElement.Position));
+            }
 
             var sheets = new List<CascadeSheet> { new(UserAgentStyleSheet.Sheet, CascadeOrigin.UserAgent) };
             sheets.AddRange(AuthorSheets(elements).Select(sheet => new CascadeSheet(sheet, CascadeOrigin.Author)));
@@ -167,6 +179,7 @@ public static class HtmlStyleResolver
                 // A part's own summary: its counts join these, so the last summary counts everything left out.
                 _suppressed += Count(error, ErrorMetadataKeys.Value, 1);
                 _suppressedRefusals += Count(error, ErrorMetadataKeys.Refusals, 0);
+                _firstSuppressedRefusal ??= error.Metadata is { } metadata && metadata.TryGetValue(ErrorMetadataKeys.FirstRefusal, out var first) ? first as string : null;
                 return;
             }
 
@@ -180,7 +193,7 @@ public static class HtmlStyleResolver
             if (HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal)
             {
                 _suppressedRefusals++;
-                _firstSuppressedRefusal ??= error;
+                _firstSuppressedRefusal ??= error.Message;
             }
         }
 
@@ -224,11 +237,14 @@ public static class HtmlStyleResolver
         private ValueList<Error> Capped(List<Error> diagnostics) =>
             _suppressed == 0
                 ? [.. diagnostics]
-                : [.. diagnostics, new Error(DocumentErrorCodes.TooManyDiagnostics,
-                        $"{_suppressed} more diagnostics are left out, {_suppressedRefusals} of them refusals{(_firstSuppressedRefusal is { } first ? $" (the first: {first.Message})" : string.Empty)}; {HtmlInputLimits.MaxDiagnostics} are kept.")
+                : [.. diagnostics, WithFirstRefusal(new Error(DocumentErrorCodes.TooManyDiagnostics,
+                        $"{_suppressed} more diagnostics are left out, {_suppressedRefusals} of them refusals{(_firstSuppressedRefusal is { } first ? $" (the first: {first})" : string.Empty)}; {HtmlInputLimits.MaxDiagnostics} are kept.")
                     .With(ErrorMetadataKeys.Value, _suppressed)
                     .With(ErrorMetadataKeys.Refusals, _suppressedRefusals)
-                    .With(ErrorMetadataKeys.SourceFile, _sourceName)];
+                    .With(ErrorMetadataKeys.SourceFile, _sourceName))];
+
+        private Error WithFirstRefusal(Error summary) =>
+            _firstSuppressedRefusal is { } first ? summary.With(ErrorMetadataKeys.FirstRefusal, first) : summary;
 
         /// <summary>The start tag as the author wrote it, with its first attributes (a user-agent rule may select the
         /// element by one of them, as <c>[dir=rtl]</c> does): at most four, each value cut at 40 characters.</summary>
@@ -609,10 +625,12 @@ public static class HtmlStyleResolver
                     : ImageState.Missing;
             }
 
-            if (Urls.Absolute(source, _documentBase) is not { } url)
+            if (Urls.Absolute(source, _documentBase) is not { } absolute)
             {
                 return ImageState.Missing;
             }
+
+            var url = Urls.WithoutFragment(absolute);
 
             if (options.Resources is null)
             {
@@ -999,9 +1017,8 @@ public static class HtmlStyleResolver
             [.. value.Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Select(InfraAscii.ToLower)];
 
         /// <summary>The document's own address without its fragment, or null when it has none.</summary>
-        private string? DocumentAddress => options.BaseUrl is { } address && Urls.Absolute(address, null) is { } absolute ? WithoutFragment(absolute) : null;
+        private string? DocumentAddress => options.BaseUrl is { } address && Urls.Absolute(address, null) is { } absolute ? Urls.WithoutFragment(absolute) : null;
 
-        private static string WithoutFragment(string url) => url.IndexOf('#') is var hash and >= 0 ? url[..hash] : url;
 
         /// <summary>An @import: its URL resolved against the importing sheet's URL.</summary>
         private StyleSheet? Import(ImportRule import, StyleSheet importer) =>
@@ -1015,7 +1032,7 @@ public static class HtmlStyleResolver
         private StyleSheet? Fetch(string url, string? baseUrl, string referrer, TextPosition position)
         {
             var absolute = Urls.Absolute(url, baseUrl);
-            if (url.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || (absolute is not null && WithoutFragment(absolute) == DocumentAddress))
+            if (url.Trim(' ', '\t', '\n', '\f', '\r').Length == 0 || (absolute is not null && Urls.WithoutFragment(absolute) == DocumentAddress))
             {
                 return ReadOrNull(CssParser.ParseStyleSheet(ReadOnlyMemory<byte>.Empty, new CssSourceOptions(absolute ?? referrer)));
             }
@@ -1036,7 +1053,8 @@ public static class HtmlStyleResolver
             }
             else
             {
-                var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given" : "was not found by the resource resolver";
+                var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given"
+                    : ResourceTable.Refusal(options.Resources, absolute) ?? "was not found by the resource resolver";
                 Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{InputQuote.Of(url)}' {why}.")
                     .With(ErrorMetadataKeys.Value, InputQuote.Of(absolute ?? url))
                     .WithSource(referrer, position));

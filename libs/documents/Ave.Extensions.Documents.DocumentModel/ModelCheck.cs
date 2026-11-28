@@ -86,6 +86,7 @@ public static class ModelCheck
     private static Error? Nodes(StyledDocument document)
     {
         var pending = new Stack<(Node Node, int Depth, Place Place, bool Measured, int Lists, bool InLink, bool InBox)>();
+        var tableSlots = new TableSlots.DocumentSlots();
         pending.Push((document.Root, 0, Place.Other, false, 0, false, false));
         foreach (var area in new[] { document.Page.Template.Header, document.Page.Template.Footer, document.Page.FirstPage?.Header, document.Page.FirstPage?.Footer })
         {
@@ -139,6 +140,11 @@ public static class ModelCheck
                 {
                     pending.Push((child, depth + 1, Place.InLine, measured, lists, inLink || grouping.Role is SemanticRole.LinkRole, inBox || grouping.Box is not null));
                 }
+            }
+
+            if (node is Box table && table.Layout == LayoutAlgorithmId.Tracks && TableSize(table, tableSlots) is { } tableSize)
+            {
+                return tableSize;
             }
 
             if (node is Box placed && MarginBoxes(placed, place) is { } marginBoxes)
@@ -899,6 +905,32 @@ public static class ModelCheck
         return oneLine
             ? null
             : Problem(DocumentErrorCodes.Input.Unsupported.BorderRadius, $"Rounded corners on {what} whose border sides are not all solid, of one width and one colour are not drawn in this version.", radius.ToString(), "border-radius", node);
+    }
+
+    /// <summary>The size of a table's grid (<see cref="TableSlots"/>): its columns times the rows of its row groups, at
+    /// most <see cref="TableSlots.MaxColumns"/> columns and <see cref="TableSlots.MaxSlots"/> slots, and the slots of all
+    /// tables of the document at most <see cref="TableSlots.MaxDocumentSlots"/> (else Input.Invalid.Table, at the table).
+    /// Counted from the column count and the rows, before layout fills any grid.</summary>
+    private static Error? TableSize(Box table, TableSlots.DocumentSlots documentSlots)
+    {
+        var rows = 0;
+        foreach (var group in table.Children)
+        {
+            rows += group is Box { Style.TableDisplay: TableDisplay.HeaderGroup or TableDisplay.RowGroup } rowGroup ? rowGroup.Children.Count : 0;
+        }
+
+        var columns = table.Style.Columns.Count;
+        var slots = TableSlots.SlotsOf(rows, columns);
+        if (columns > TableSlots.MaxColumns || slots > TableSlots.MaxSlots)
+        {
+            return Problem(DocumentErrorCodes.Input.Invalid.Table, $"A table has at most {TableSlots.MaxColumns} columns and {TableSlots.MaxSlots} slots (rows times columns).",
+                $"{columns}x{rows}", "columns", table);
+        }
+
+        return documentSlots.TryAdd(slots)
+            ? null
+            : Problem(DocumentErrorCodes.Input.Invalid.Table, $"The tables of a document have at most {TableSlots.MaxDocumentSlots} slots (rows times columns) together; this table passes that limit.",
+                $"{columns}x{rows}", "columns", table);
     }
 
     /// <summary>A border model and a caption side the model has (else Input.Invalid.Table), a table height of zero or more,
