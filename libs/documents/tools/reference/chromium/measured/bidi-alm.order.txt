@@ -1,0 +1,5 @@
+word 1 Mark 0 0 0 0
+word 1 abc 0 0 0
+word 1 ؜?!؜ 2 2
+word 1 def 4 4 4
+word 1 here. 4 4 4 4 4

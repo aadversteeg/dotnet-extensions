@@ -1,0 +1,19 @@
+word 1 Name 0 0 0 0
+word 1 x 0
+word 1 abc! 1 1 1 1
+word 1 y 2
+word 1 here. 2 2 2 2 2
+word 1 Span 3 3 3 3
+word 1 x 3
+word 1 (abc) 4 4 4 4 4
+word 1 12. 4 4 4
+word 1 y 5
+word 1 here. 5 5 5 5 5
+word 1 Left 6 6 6
+word 1 to 6 6
+word 1 right 6 6 6 6 6
+word 1 abc. 6 6 6 6
+word 1 Left 7 7 7
+word 1 to 7 7
+word 1 right 7 7 7 7 7
+word 1 def. 7 7 7 7

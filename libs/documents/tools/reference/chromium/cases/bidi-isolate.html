@@ -1,0 +1,8 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- bdi, unicode-bidi: isolate, dir="ltr" and direction: ltr in left-to-right text: printed as without them. -->
+<style>@page { size: 300pt 300pt; margin: 12pt; } body { font-size: 10.5pt; line-height: 15pt; } p { margin-bottom: 6pt; }</style></head><body>
+<p>Name x <bdi>abc!</bdi> y here.</p>
+<p>Span x <span style="unicode-bidi: isolate">(abc) 12.</span> y here.</p>
+<p dir="ltr">Left to right abc.</p>
+<p style="direction: ltr">Left to right def.</p>
+</body></html>

@@ -1,0 +1,6 @@
+word 1 Note 0 0 0 0
+word 1 x 0
+word 1 .‫abc 1 3 3 3
+word 1 def‬ 3 3 3
+word 1 y 5
+word 1 here. 5 5 5 5 5

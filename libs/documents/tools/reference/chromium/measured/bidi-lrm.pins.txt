@@ -1,0 +1,7 @@
+bidi-lrm.boxes.txt 1
+bidi-lrm.clips.txt 16
+bidi-lrm.glyphs.txt 16
+bidi-lrm.lines.txt 0
+bidi-lrm.order.txt 16
+bidi-lrm.print.txt 17
+bidi-lrm.words.txt 16

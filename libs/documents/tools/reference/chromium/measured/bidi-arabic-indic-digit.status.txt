@@ -1,0 +1,1 @@
+bidi-arabic-indic-digit refused Documents.Input.Unsupported.RightToLeft U+0660 at 4:11

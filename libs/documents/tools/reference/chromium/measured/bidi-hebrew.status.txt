@@ -1,0 +1,1 @@
+bidi-hebrew refused Documents.Input.Unsupported.RightToLeft U+05D0 at 4:12

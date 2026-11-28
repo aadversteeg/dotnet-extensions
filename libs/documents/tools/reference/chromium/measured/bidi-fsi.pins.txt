@@ -1,0 +1,7 @@
+bidi-fsi.boxes.txt 1
+bidi-fsi.clips.txt 10
+bidi-fsi.glyphs.txt 10
+bidi-fsi.lines.txt 0
+bidi-fsi.order.txt 10
+bidi-fsi.print.txt 11
+bidi-fsi.words.txt 10

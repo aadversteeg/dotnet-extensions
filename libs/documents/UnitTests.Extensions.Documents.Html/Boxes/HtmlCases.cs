@@ -65,7 +65,8 @@ internal static class HtmlCases
     /// (<see cref="LayoutErrorCodes.TableBreak"/>: the room it had, at the table's source line), or an inline box layout
     /// does not draw where it stands (<see cref="DocumentErrorCodes.Input.Unsupported.InlineBox"/>, at the line and column
     /// of the element that made it; the front-end's own <see cref="HtmlStyleErrorCodes.Unsupported.InlineBox"/> is in the
-    /// list as one of its codes). Any other error, also another code under the same parent, is a failure of the case.</summary>
+    /// list as one of its codes), or a character that asks for right-to-left text (<see cref="DocumentErrorCodes.Input.Unsupported.RightToLeft"/>,
+    /// at its line and column: cases <c>bidi-*</c>). Any other error, also another code under the same parent, is a failure of the case.</summary>
     private static readonly HashSet<string> Refusals = new(StringComparer.Ordinal)
     {
         CssErrorCodes.Unsupported.Property.ToString(),
@@ -106,6 +107,7 @@ internal static class HtmlCases
         LayoutErrorCodes.TableBreak.ToString(),
         LayoutErrorCodes.RoundedBorderLineBreak.ToString(),
         DocumentErrorCodes.Input.Unsupported.InlineBox.ToString(),
+        DocumentErrorCodes.Input.Unsupported.RightToLeft.ToString(),
     };
 
     /// <summary>The cases folder in the source tree.</summary>

@@ -1,0 +1,7 @@
+bidi-rlm.boxes.txt 1
+bidi-rlm.clips.txt 5
+bidi-rlm.glyphs.txt 5
+bidi-rlm.lines.txt 0
+bidi-rlm.order.txt 5
+bidi-rlm.print.txt 6
+bidi-rlm.words.txt 5

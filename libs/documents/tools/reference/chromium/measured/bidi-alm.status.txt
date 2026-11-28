@@ -1,0 +1,1 @@
+bidi-alm refused Documents.Input.Unsupported.RightToLeft U+061C at 4:13

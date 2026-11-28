@@ -1,0 +1,7 @@
+bidi-hebrew.boxes.txt 1
+bidi-hebrew.clips.txt 5
+bidi-hebrew.glyphs.txt 5
+bidi-hebrew.lines.txt 0
+bidi-hebrew.order.txt 5
+bidi-hebrew.print.txt 6
+bidi-hebrew.words.txt 3
