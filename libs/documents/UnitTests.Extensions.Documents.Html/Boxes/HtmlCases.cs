@@ -669,9 +669,9 @@ internal static class HtmlCases
     /// <summary>
     /// Every difference between the left edge of the engine's link destinations and Chromium's (<c>destinations.txt</c>),
     /// link by link in the order <see cref="LinkDifferences"/> pairs them, for each pair of links that both lead to a place
-    /// in the document: Chromium's left where it writes the engine's left (<see cref="DestinationPixel"/>: the left less the
-    /// page's left margin, on the whole pixel at or before it), within <see cref="ReaderStep"/>. The page and the top are
-    /// compared in <see cref="LinkDifferences"/>.
+    /// in the document: the same page, and Chromium's left where it writes the engine's left (<see cref="DestinationPixel"/>:
+    /// the left less the page's left margin, on the whole pixel at or before it), within <see cref="ReaderStep"/>. The page
+    /// and the top of <c>links.txt</c> are compared in <see cref="LinkDifferences"/>.
     /// </summary>
     /// <param name="pages">The engine's pages.</param>
     /// <param name="chromium">Chromium's destinations, per link (<see cref="Destinations"/>).</param>
@@ -679,9 +679,10 @@ internal static class HtmlCases
     /// <returns>The differences.</returns>
     public static IEnumerable<string> DestinationDifferences(PageDocument pages, IReadOnlyList<(int Page, double Left)?> chromium, double marginLeft)
     {
-        var lefts = pages.Pages.SelectMany(page => page.Items.OfType<Anchor>()).ToDictionary(anchor => anchor.Node, anchor => anchor.At.X);
-        var engine = new List<double?>();
-        var links = new Dictionary<NodeId, double?>();
+        var lefts = pages.Pages.SelectMany((page, index) => page.Items.OfType<Anchor>().Select(anchor => (anchor, Page: index + 1)))
+            .ToDictionary(pair => pair.anchor.Node, pair => (pair.Page, Left: pair.anchor.At.X));
+        var engine = new List<(int Page, double Left)?>();
+        var links = new Dictionary<NodeId, (int Page, double Left)?>();
         foreach (var item in pages.Pages.SelectMany(page => page.Items))
         {
             switch (item)
@@ -697,7 +698,11 @@ internal static class HtmlCases
 
         foreach (var (ours, theirs, number) in engine.Zip(chromium).Select((pair, index) => (pair.First, pair.Second, index + 1)))
         {
-            if (ours is { } x && theirs is { } place && Math.Abs(place.Left - DestinationPixel(x, marginLeft)) > ReaderStep + 1e-9)
+            if (ours is { } target && theirs is { } other && target.Page != other.Page)
+            {
+                yield return $"link {number} leads to page {target.Page}, Chromium's to page {other.Page} (destinations.txt)";
+            }
+            else if (ours is { Left: var x } && theirs is { } place && Math.Abs(place.Left - DestinationPixel(x, marginLeft)) > ReaderStep + 1e-9)
             {
                 yield return $"link {number} leads to the left {Of(x)}, on Chromium's pixel {Of(DestinationPixel(x, marginLeft))} of the page area, Chromium's to {Of(place.Left)} (plus the left margin {Of(marginLeft)}: {Of(place.Left + marginLeft)}) (destinations.txt)";
             }

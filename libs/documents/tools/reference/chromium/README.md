@@ -337,8 +337,8 @@ no case draws a JPEG, and a JPEG would differ until a case measures how Chromium
 
 `destinations.txt` gives the left of each link's destination, which `links.txt` does not hold, one line per link of
 `links.txt` in its order; a case with links whose file is missing, or has another number of lines, or a line on another
-page or of another kind than its link (`dest` or `uri`), fails, so no link into the document passes unseen. The case comparison
-compares it as the top: Chromium writes the target's place in the coordinates of the page area (`lk-later-heading`: a
+page or of another kind than its link (`dest` or `uri`), fails, so no link into the document passes unseen. The page a
+`dest` line leads to must be the page of the engine's target. The case comparison compares the left as the top: Chromium writes the target's place in the coordinates of the page area (`lk-later-heading`: a
 heading at the top left of the page area, 18 pt from the page's top and left, gets the top 0 and the left 0) on the
 whole CSS pixel at or before it, as all 16 tops and lefts of the cases' destinations show (`lk-cell`: the left 38.648 pt
 in the page area is written 38.25; `va-link`: the top 115.734 pt is written 115.5). So the engine's anchor less the
