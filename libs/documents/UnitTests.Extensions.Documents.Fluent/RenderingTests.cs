@@ -165,6 +165,49 @@ public class RenderingTests
         page.ToPdf(Options).IsSuccess.Should().BeTrue();
     }
 
+    /// <summary>A document of the given number of pages, one short paragraph on each.</summary>
+    private static Document Pages(int count) =>
+        Document([.. Enumerable.Range(0, count).SelectMany(page => page == 0 ? [Paragraph("p")] : new Element[] { PageBreak(), Paragraph("p") })]).FontFamily("Lato");
+
+    /// <summary>What every call on a document gives under a page limit: null when it renders, else the error.</summary>
+    private static IEnumerable<(string Entry, Ave.Extensions.ErrorPaths.Error? Error)> EveryEntry(Document document, int? maxPages, bool pngPages = true)
+    {
+        var raster = new RasterOptions(9);
+        static Ave.Extensions.ErrorPaths.Error? ErrorOf<T>(Ave.Extensions.Functional.Result<T, Ave.Extensions.ErrorPaths.Error> result) => result.IsSuccess ? null : result.Error;
+        yield return ("ToPages", ErrorOf(maxPages is { } m1 ? document.ToPages(TestFonts.Set, m1) : document.ToPages(TestFonts.Set)));
+        yield return ("ToPdf", ErrorOf(maxPages is { } m2 ? document.ToPdf(TestFonts.Set, Options, m2) : document.ToPdf(TestFonts.Set, Options)));
+        yield return ("ToPng", ErrorOf(maxPages is { } m3 ? document.ToPng(TestFonts.Set, 1, raster, m3) : document.ToPng(TestFonts.Set, 1, raster)));
+        if (pngPages)
+        {
+            yield return ("ToPngPages", ErrorOf(maxPages is { } m4 ? document.ToPngPages(TestFonts.Set, raster, m4) : document.ToPngPages(TestFonts.Set, raster)));
+        }
+
+        yield return ("ToImages", ErrorOf(maxPages is { } m5 ? document.ToImages(TestFonts.Set, raster, m5) : document.ToImages(TestFonts.Set, raster)));
+    }
+
+    [Fact]
+    public void Every_call_on_a_document_renders_up_to_its_page_limit_and_refuses_one_page_past_it_naming_its_parameter()
+    {
+        EveryEntry(Pages(3), 3).Should().OnlyContain(entry => entry.Error == null, "just inside the limit");
+
+        foreach (var (entry, error) in EveryEntry(Pages(3), 2))
+        {
+            error!.Value.Code.Should().Be(LayoutErrorCodes.TooManyPages, entry);
+            error.Value.Message.Should().Contain("more than 2 pages", entry).And.Contain("the maxPages parameter of DocumentRendering (default 10000)", entry)
+                .And.NotContain("HtmlRenderOptions", entry).And.NotContain("LayoutEnvironment", entry);
+        }
+    }
+
+    [Fact]
+    public void The_calls_on_a_document_stop_at_the_default_page_limit_and_render_past_it_when_it_is_raised()
+    {
+        // One page past the default: refused without the parameter, rendered with a raised limit.
+        var document = Pages(LayoutEnvironment.DefaultMaxPages + 1);
+
+        EveryEntry(document, null, pngPages: false).Should().OnlyContain(entry => entry.Error != null && entry.Error.Value.Code == LayoutErrorCodes.TooManyPages);
+        EveryEntry(document, LayoutEnvironment.DefaultMaxPages + 1, pngPages: false).Should().OnlyContain(entry => entry.Error == null);
+    }
+
     private static int CurrentLine([CallerLineNumber] int line = 0) => line;
 
     private static string ThisFile([CallerFilePath] string file = "") => file;

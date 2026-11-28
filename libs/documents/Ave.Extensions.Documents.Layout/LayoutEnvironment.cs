@@ -43,6 +43,11 @@ public sealed record LayoutEnvironment(FontSet Fonts, ImmutableDictionary<Layout
         init => _maxPages = System.Math.Max(1, value);
     }
 
+    /// <summary>How the layout's messages name <see cref="MaxPages"/> (default <c>LayoutEnvironment.MaxPages</c>): a
+    /// render call that sets the limit from an option or parameter of its own sets the name of that one, so that the
+    /// refusal of a document (<c>Documents.Layout.TooManyPages</c>) names what its caller sets.</summary>
+    public string MaxPagesName { get; init; } = "LayoutEnvironment.MaxPages";
+
     /// <summary>The environment with the engine's algorithms: <see cref="FlowLayout"/>, <see cref="InlineLayout"/>,
     /// <see cref="TracksLayout"/>, <see cref="ImageLayout"/>, <see cref="MarginBoxesLayout"/> and <see cref="ListItemLayout"/>; page 1 of 1.</summary>
     /// <param name="fonts">The fonts text may use.</param>

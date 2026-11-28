@@ -213,11 +213,12 @@ internal static class LayoutErrors
     /// <summary>A document that would have more than <paramref name="maxPages"/> pages (<see cref="LayoutEnvironment.MaxPages"/>).</summary>
     /// <param name="root">The document's root box.</param>
     /// <param name="maxPages">The page limit of the render call.</param>
-    public static Error TooManyPages(Box root, int maxPages) =>
+    /// <param name="name">How the caller names the limit (<see cref="LayoutEnvironment.MaxPagesName"/>).</param>
+    public static Error TooManyPages(Box root, int maxPages, string name) =>
         new Error(
                 LayoutErrorCodes.TooManyPages,
                 $"The document would have more than {maxPages} pages, the page limit of this render call; pagination stopped there. "
-                + $"Raise the limit with the render option MaxPages (HtmlRenderOptions.MaxPages, LayoutEnvironment.MaxPages; default {LayoutEnvironment.DefaultMaxPages}) to render a longer document.")
+                + $"Raise the limit with {name} (default {LayoutEnvironment.DefaultMaxPages}) to render a longer document.")
             .With(ErrorMetadataKeys.Node, root.Id.ToString())
             .With(ErrorMetadataKeys.Value, maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture))
             .WithSource(root.Source);

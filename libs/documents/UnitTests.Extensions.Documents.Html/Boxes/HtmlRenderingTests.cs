@@ -110,7 +110,33 @@ public class HtmlRenderingTests
         var refused = HtmlRendering.ToPages(Pages(4), Options with { MaxPages = 3 });
 
         refused.Error.Code.Should().Be(LayoutErrorCodes.TooManyPages);
-        refused.Error.Message.Should().Contain("more than 3 pages").And.Contain("MaxPages");
+        refused.Error.Message.Should().Contain("more than 3 pages").And.Contain("HtmlRenderOptions.MaxPages").And.NotContain("LayoutEnvironment");
+    }
+
+    /// <summary>What every entry gives for a document of <paramref name="pages"/> pages under a page limit: null when it
+    /// renders, else the error.</summary>
+    private static IEnumerable<(string Entry, Ave.Extensions.ErrorPaths.Error? Error)> EveryEntry(int pages, int maxPages)
+    {
+        var (html, options, raster) = (Pages(pages), Options with { MaxPages = maxPages }, new RasterOptions(9));
+        static Ave.Extensions.ErrorPaths.Error? ErrorOf<T>(Ave.Extensions.Functional.Result<T, Ave.Extensions.ErrorPaths.Error> result) => result.IsSuccess ? null : result.Error;
+        yield return ("ToPages", ErrorOf(HtmlRendering.ToPages(html, options)));
+        yield return ("ToPdf", ErrorOf(HtmlRendering.ToPdf(html, options, new PdfRenderOptions(new DateTimeOffset(2026, 11, 28, 12, 0, 0, TimeSpan.Zero)))));
+        yield return ("ToPng", ErrorOf(HtmlRendering.ToPng(html, options, 1, raster)));
+        yield return ("ToPngPages", ErrorOf(HtmlRendering.ToPngPages(html, options, raster)));
+        yield return ("ToImages", ErrorOf(HtmlRendering.ToImages(html, options, raster)));
+    }
+
+    [Fact]
+    public void Every_entry_renders_up_to_its_page_limit_and_refuses_one_page_past_it_naming_its_option()
+    {
+        EveryEntry(3, 3).Should().OnlyContain(entry => entry.Error == null, "just inside the limit");
+        EveryEntry(3, 4).Should().OnlyContain(entry => entry.Error == null, "the limit raised past the document");
+
+        foreach (var (entry, error) in EveryEntry(4, 3))
+        {
+            error!.Value.Code.Should().Be(LayoutErrorCodes.TooManyPages, entry);
+            error.Value.Message.Should().Contain("more than 3 pages", entry).And.Contain("HtmlRenderOptions.MaxPages (default 10000)", entry);
+        }
     }
 
     [Fact]

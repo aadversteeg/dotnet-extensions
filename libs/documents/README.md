@@ -391,6 +391,15 @@ Golden files live in `Golden/` folders next to the tests. After a deliberate cha
 `Ave.Extensions.Documents.Typesetting/Unicode/` is generated from the committed data files in `assets/unicode/`; after
 updating them, run the tests with `UPDATE_GENERATED=1`.
 
+## Limits a caller may need to set
+
+The engine bounds its work and memory on any input; `docs/architecture.md` lists every limit. One of them is a
+setting: a document may have at most 10 000 pages, so that a few bytes of input that ask for a page each cannot make
+a render run for minutes. A longer document is refused with `Documents.Layout.TooManyPages`, whose message names the
+setting of the call that was used. To render one, raise the limit: `HtmlRenderOptions.MaxPages` for the HTML entries,
+the `maxPages` parameter of the calls on a document (`document.ToPdf(fonts, options, maxPages: 20_000)`, and the same
+on `ToPages`, `ToPng`, `ToPngPages` and `ToImages`), or `LayoutEnvironment.MaxPages` for `DocumentLayout.Run`.
+
 ## Scope and known limits
 
 In: PDF/A-3b, PDF/A-3a and PDF/UA-1 profiles (tagged PDF, XMP, sRGB output intent, embedded files with their

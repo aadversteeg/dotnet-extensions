@@ -147,7 +147,7 @@ public static class Paginator
             // The page limit of the render call: stop before the first page past it, not after laying it out.
             if (pages.Count >= environment.MaxPages)
             {
-                return Result<Pass, Error>.Failure(LayoutErrors.TooManyPages(document.Root, environment.MaxPages));
+                return Result<Pass, Error>.Failure(LayoutErrors.TooManyPages(document.Root, environment.MaxPages, environment.MaxPagesName));
             }
 
             var number = pages.Count + 1;
