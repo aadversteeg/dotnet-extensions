@@ -176,6 +176,23 @@ public class HtmlRenderingTests
     }
 
     [Fact]
+    public void The_raster_refusal_of_an_image_used_in_several_places_names_its_first_place()
+    {
+        // One file under three URLs: in a paragraph, in a table cell, in a list item. The refusal names the paragraph.
+        var jpeg = TestImages.Bytes("jpeg-rgb.jpg");
+        var frame = Enumerable.Range(0, jpeg.Length - 1).First(index => jpeg[index] == 0xFF && jpeg[index + 1] == 0xC0);
+        jpeg[frame + 5] = jpeg[frame + 7] = 16000 >> 8;
+        jpeg[frame + 6] = jpeg[frame + 8] = 16000 & 0xFF;
+        var options = Options with { Style = Options.Style with { Resources = url => url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : url.EndsWith("big.jpg", StringComparison.Ordinal) ? new HtmlResource(jpeg) : null } };
+        var html = Html.Replace("<p>Hello</p>", "<p>Hello</p>\n<p><img alt=x width=100 src=big.jpg></p>\n<table><tr><td><img alt=x width=100 src=x/big.jpg></td></tr></table>\n<ul><li><img alt=x width=100 src=y/big.jpg></li></ul>", StringComparison.Ordinal);
+
+        var refused = HtmlRendering.ToPng(html, options, 1, new RasterOptions(72)).Error;
+
+        refused.Code.Should().Be(Ave.Extensions.Documents.Images.ImageErrorCodes.TooLarge);
+        refused.Message.Should().StartWith("The image 'big.jpg' at hello.html:2:4 (jpeg 16000x16000 rgb)");
+    }
+
+    [Fact]
     public void A_fragment_is_not_part_of_what_the_resolver_is_asked()
     {
         var asked = new List<string>();

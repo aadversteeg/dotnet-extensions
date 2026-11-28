@@ -59,8 +59,9 @@ internal static class RenderErrors
         return Renamed(error, message, null).With(ErrorMetadataKeys.Node, image.Id.ToString()).WithSource(image.Source);
     }
 
-    /// <summary>The image node of the document whose image has the digest, or null; the body and the page areas are
-    /// walked with an explicit stack.</summary>
+    /// <summary>The first image node of the document, in document order, whose image has the digest, or null: the body,
+    /// then the page areas, walked with an explicit stack (each list of children pushed last to first, so that it is
+    /// popped first to last).</summary>
     private static ImageNode? Find(StyledDocument document, string? digest)
     {
         if (digest is null)
@@ -69,10 +70,9 @@ internal static class RenderErrors
         }
 
         var pending = new Stack<Node>();
-        pending.Push(document.Root);
-        foreach (var template in new[] { document.Page.Template, document.Page.FirstPage })
+        foreach (var template in new[] { document.Page.FirstPage, document.Page.Template })
         {
-            foreach (var area in new[] { template?.Header, template?.Footer })
+            foreach (var area in new[] { template?.Footer, template?.Header })
             {
                 if (area is not null)
                 {
@@ -81,6 +81,7 @@ internal static class RenderErrors
             }
         }
 
+        pending.Push(document.Root);
         while (pending.Count > 0)
         {
             switch (pending.Pop())
@@ -88,16 +89,16 @@ internal static class RenderErrors
                 case ImageNode image when image.Image.Id.Digest == digest:
                     return image;
                 case Box box:
-                    foreach (var child in box.Children)
+                    for (var child = box.Children.Count - 1; child >= 0; child--)
                     {
-                        pending.Push(child);
+                        pending.Push(box.Children[child]);
                     }
 
                     break;
                 case InlineGroup group:
-                    foreach (var child in group.Children)
+                    for (var child = group.Children.Count - 1; child >= 0; child--)
                     {
-                        pending.Push(child);
+                        pending.Push(group.Children[child]);
                     }
 
                     break;
