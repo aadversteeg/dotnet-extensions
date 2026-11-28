@@ -1,0 +1,43 @@
+word 1 Pages 0 0 0 0 0
+word 1 10– 1 1 1
+word 1 12 3 3
+word 1 and 4 4 4
+word 1 20– 5 5 5
+word 1 ‑21, 6 7 7 7
+word 1 a 8
+word 1 ­long 11 11 11 11
+word 1 compound, 12 12 12 12 12 12 12 12 12
+word 1 the 13 13 13
+word 1 e‑mail 14 15 16 16 16 16
+word 1 ­‐ 19
+word 1 address 20 20 20 20 20 20 20
+word 1 here. 21 21 21 21 21
+word 1 Pages 22 22 22 22 22
+word 1 10– 23 23 23
+word 1 12 25 25
+word 1 and 26 26 26
+word 1 20– 26 26 26
+word 1 ‑21, 27 28 28 28
+word 1 a 28
+word 1 ­‐ 31
+word 1 long 32 32 32 32
+word 1 compound, 33 33 33 33 33 33 33 33 33
+word 1 the 34 34 34
+word 1 e‑mail 35 36 37 37 37 37
+word 1 ­‐ 40
+word 1 address 41 41 41 41 41 41 41
+word 1 here. 42 42 42 42 42
+word 1 Pages 43 43 43 43 43
+word 1 10– 43 43 43
+word 1 12 45 45
+word 1 and 45 45 45
+word 1 20– 45 45 45
+word 1 ‑21, 46 47 47 47
+word 1 a 47
+word 1 ­long 50 50 50 50
+word 1 compound, 51 51 51 51 51 51 51 51 51
+word 1 the 52 52 52
+word 1 e‑mail 52 53 54 54 54 54
+word 1 ­‐ 57
+word 1 address 58 58 58 58 58 58 58
+word 1 here. 59 59 59 59 59

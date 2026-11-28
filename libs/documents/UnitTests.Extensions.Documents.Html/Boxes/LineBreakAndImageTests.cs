@@ -34,8 +34,8 @@ public class LineBreakAndImageTests
 
     private static Result<HtmlBoxes, Error> Boxes(string html, string? baseUrl = "file:///docs/t.html") =>
         HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resources, BaseUrl = baseUrl }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resources, BaseUrl = baseUrl }));
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resources, BaseUrl = baseUrl, AllowBaseElement = true }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resources, BaseUrl = baseUrl, AllowBaseElement = true }));
 
     private static Box Body(string html, string? baseUrl = "file:///docs/t.html")
     {
@@ -213,6 +213,52 @@ public class LineBreakAndImageTests
         Body(img.Replace("<title>", "<base href=\"https://example.com/x/\"><title>", StringComparison.Ordinal), baseUrl: "file:///wrong/t.html")
             .Children.Should().ContainSingle();
         Boxes(img, baseUrl: "file:///wrong/t.html").IsFailure.Should().BeTrue();
+    }
+
+    [Fact]
+    public void The_diagnostics_of_box_generation_count_toward_the_one_bound_of_a_render()
+    {
+        // 12 000 images that are not there: one refusal each, in box generation.
+        var html = Doc(string.Concat(Enumerable.Repeat("<img src=\"missing.png\" alt=\"a\">", 12_000)));
+
+        var warned = HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resources, BaseUrl = "file:///docs/t.html", Unsupported = UnsupportedPolicy.Warn }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resources, BaseUrl = "file:///docs/t.html", Unsupported = UnsupportedPolicy.Warn }))
+            .Value.Diagnostics;
+
+        warned.Should().HaveCount(DiagnosticLimits.MaxDiagnostics + 1);
+        (warned[^1].Code, warned[^1].Metadata![ErrorMetadataKeys.Value]).Should().Be((DocumentErrorCodes.TooManyDiagnostics, 2_000));
+        var refused = Boxes(html).Error;
+        refused.Parts().Count.Should().BeLessThanOrEqualTo(DiagnosticLimits.MaxDiagnostics + 1);
+        refused.Parts()[^1].Code.Should().Be(DocumentErrorCodes.TooManyDiagnostics);
+        refused.Message.Length.Should().BeLessThan(DiagnosticLimits.MaxAggregateLength + 1_000);
+    }
+
+    [Fact]
+    public void A_base_element_is_refused_unless_the_caller_allows_it_and_the_caller_s_base_URL_stays()
+    {
+        // The base element would move the image's URL to example.com; the caller's base URL is the one used.
+        var html = Doc("<img src=\"figure.png\" alt=\"a\">").Replace("<title>", "\n<base href=\"https://example.com/x/\"><title>", StringComparison.Ordinal);
+        var asked = new List<string>();
+        HtmlResource? Resolver(string url)
+        {
+            asked.Add(url);
+            return Resources(url);
+        }
+
+        Result<HtmlBoxes, Error> Generate(UnsupportedPolicy policy) =>
+            HtmlParser.Parse(html, new HtmlParseOptions("t.html"))
+                .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, BaseUrl = "file:///docs/t.html", Unsupported = policy }))
+                .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Fonts = TestFonts.SetWithItalic, Resources = Resolver, BaseUrl = "file:///docs/t.html", Unsupported = policy }));
+
+        var refusal = Generate(UnsupportedPolicy.Refuse).Error.Parts().Single();
+        (refusal.Code, refusal.Metadata![ErrorMetadataKeys.Value], refusal.Metadata[ErrorMetadataKeys.SourceLine]).Should().Be((HtmlStyleErrorCodes.Unsupported.Element, "base", 2));
+        refusal.Message.Should().Contain("AllowBaseElement");
+
+        asked.Clear();
+        var warned = Generate(UnsupportedPolicy.Warn);
+        warned.Value.Diagnostics.Should().ContainSingle(error => error.Code == HtmlStyleErrorCodes.Unsupported.Element);
+        asked.Should().Equal("file:///docs/figure.png");
     }
 
     [Theory]

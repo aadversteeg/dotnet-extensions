@@ -25,12 +25,15 @@ internal static class PngDecoder
     /// <summary>The PNG signature, §5.2: 137 80 78 71 13 10 26 10.</summary>
     private static readonly byte[] Signature = [137, 80, 78, 71, 13, 10, 26, 10];
 
+    /// <summary>The first buffer the data is inflated into: 4 KiB, or the announced size when that is less.</summary>
+    internal const int FirstBuffer = 4096;
+
     public static bool HasSignature(ReadOnlySpan<byte> file) => file.StartsWith(Signature);
 
-    public static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file) =>
-        PngChunk.ReadAll(file, Signature.Length).OnSuccessBind(chunks => Decode(file, chunks));
+    public static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file, ImagePixelBudget? budget) =>
+        PngChunk.ReadAll(file, Signature.Length).OnSuccessBind(chunks => Decode(file, chunks, budget));
 
-    private static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file, ImmutableArray<PngChunk> chunks)
+    private static Result<ImageData, Error> Decode(ReadOnlyMemory<byte> file, ImmutableArray<PngChunk> chunks, ImagePixelBudget? budget)
     {
         if (OrderProblem(chunks) is { } problem)
         {
@@ -43,10 +46,31 @@ internal static class PngDecoder
             return ImageErrors.Unsupported<ImageData>($"PNG with the unknown critical chunk {unknownCritical.Type}");
         }
 
+        // The document's budget is charged from the header, before the data is inflated or a sample is made, and given
+        // back when the data does not decode; what such a failed decode produced stays counted (ImagePixelBudget).
         return PngHeader.Parse(chunks[0]).OnSuccessBind(header =>
             PngPalette.Read(header, chunks).OnSuccessBind(palette =>
-                Inflate(header, chunks).OnSuccessBind(scanlines =>
-                    PngSamples.Expand(ImageId.Of(file.Span), header, palette, scanlines))));
+                budget is null ? Samples(file, header, palette, chunks, out _)
+                : budget.Charge(header.Width, header.Height).OnSuccessBind(_ =>
+                {
+                    var samples = Samples(file, header, palette, chunks, out var produced);
+                    if (samples.IsFailure)
+                    {
+                        budget.Failed(header.Width, header.Height, produced);
+                    }
+
+                    return samples;
+                })));
+    }
+
+    /// <summary>The samples of the image, with the pixels its data produced: those of the rows the inflated data filled
+    /// or began, at least one row; all of them once the data inflated in full.</summary>
+    private static Result<ImageData, Error> Samples(ReadOnlyMemory<byte> file, PngHeader header, PngPalette palette, ImmutableArray<PngChunk> chunks, out long produced)
+    {
+        var scanlines = Inflate(header, chunks, out var inflated);
+        var rows = Math.Clamp((inflated + header.Stride) / (header.Stride + 1), 1, header.Height);
+        produced = rows * header.Width;
+        return scanlines.OnSuccessBind(lines => PngSamples.Expand(ImageId.Of(file.Span), header, palette, lines));
     }
 
     /// <summary>
@@ -75,10 +99,12 @@ internal static class PngDecoder
     /// <summary>
     /// Concatenates the IDAT chunks (§11.2.4: "the compressed datastream is then the concatenation of the contents of
     /// the data fields of all the IDAT chunks"), inflates them (zlib, §10) and undoes the filters. The data must be
-    /// exactly height × (1 + stride) bytes: less means a damaged file, more is not allowed either.
+    /// exactly height × (1 + stride) bytes: less means a damaged file, more is not allowed either. With the bytes it
+    /// inflated, also when it fails.
     /// </summary>
-    private static Result<byte[], Error> Inflate(PngHeader header, ImmutableArray<PngChunk> chunks)
+    private static Result<byte[], Error> Inflate(PngHeader header, ImmutableArray<PngChunk> chunks, out long inflated)
     {
+        inflated = 0;
         var idat = chunks.Where(chunk => chunk.Type == "IDAT").ToImmutableArray();
         if (idat.IsEmpty)
         {
@@ -89,21 +115,34 @@ internal static class PngDecoder
         // filter byte per row (PngHeader.Parse).
         var expected = header.Height * (header.Stride + 1);
         var compressed = idat.SelectMany(chunk => chunk.Data.ToArray()).ToArray();
-        var scanlines = new byte[expected];
-        int read;
+
+        // The buffer grows with the data, four times at a time up to what the header announces: a header that announces
+        // more than its data holds costs what the data holds, not what the header announces.
+        var scanlines = new byte[Math.Min(expected, FirstBuffer)];
+        inflated = 0;
         bool trailing;
         try
         {
             using var zlib = new ZLibStream(new MemoryStream(compressed), CompressionMode.Decompress);
-            read = zlib.ReadAtLeast(scanlines, scanlines.Length, throwOnEndOfStream: false);
-            trailing = read == scanlines.Length && zlib.ReadByte() >= 0;
+            while (true)
+            {
+                inflated += zlib.ReadAtLeast(scanlines.AsSpan((int)inflated), scanlines.Length - (int)inflated, throwOnEndOfStream: false);
+                if (inflated < scanlines.Length || scanlines.Length == expected)
+                {
+                    break;
+                }
+
+                Array.Resize(ref scanlines, (int)Math.Min(expected, 4L * scanlines.Length));
+            }
+
+            trailing = inflated == expected && zlib.ReadByte() >= 0;
         }
         catch (InvalidDataException exception)
         {
             return ImageErrors.Invalid<byte[]>($"the IDAT data is not valid zlib data ({exception.Message})", idat[0].Offset);
         }
 
-        if (read != scanlines.Length || trailing)
+        if (inflated != expected || trailing)
         {
             return ImageErrors.Invalid<byte[]>($"the image data does not decompress to the {expected} bytes the header announces.", idat[0].Offset);
         }

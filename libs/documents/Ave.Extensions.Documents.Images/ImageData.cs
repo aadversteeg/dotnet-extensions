@@ -5,7 +5,7 @@ namespace Ave.Extensions.Documents.Images;
 /// <summary>
 /// A decoded image, ready to be placed on a page: its size in pixels, its colour space and the data a back-end
 /// needs. Images are explicit input (bytes from the caller), like fonts; create one with
-/// <see cref="ImageDecoder.Decode"/>. Two images are equal when their files are byte-identical.
+/// <see cref="ImageDecoder.Decode(System.ReadOnlyMemory{byte})"/>. Two images are equal when their files are byte-identical.
 /// </summary>
 /// <remarks>
 /// A closed set of two cases, so a back-end can handle each: <see cref="RasterImage"/> (decoded samples, from PNG)

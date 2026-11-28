@@ -1,0 +1,44 @@
+word 1 Visit 0 0 0 0 0
+word 1 Leiden·(Centraal), 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+word 1 tickets·$12 2 2 2 2 2 2 2 2 2 2
+word 1 or 3 3
+word 1 12·(34), 4 4 4 4 4 4 4 4
+word 1 really! 5 5 5 5 5 5 5
+word 1 ·Yes, 6 6 6 6 6
+word 1 open 7 7 7 7
+word 1 Mon– 8 8 8 8
+word 1 ·Fri 9 9 9 9
+word 1 and 10 10 10
+word 1 a/ 10 10
+word 1 ·b, 11 11 11
+word 1 the 11 11 11
+word 1 και·(α) 12 12 12 12 12 12 12
+word 1 note. 13 13 13 13 13
+word 1 Visit 14 14 14 14 14
+word 1 Leiden·(Centraal), 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15
+word 1 tickets·$12 16 16 16 16 16 16 16 16 16 16
+word 1 or 17 17
+word 1 12·(34), 18 18 18 18 18 18 18 18
+word 1 really! 19 19 19 19 19 19 19
+word 1 ·Yes, 20 20 20 20 20
+word 1 open 21 21 21 21
+word 1 Mon–·Fri 22 22 22 22 22 22 22 22
+word 1 and 23 23 23
+word 1 a/·b, 23 23 23 23 23
+word 1 the 24 24 24
+word 1 και·(α) 25 25 25 25 25 25 25
+word 1 note. 26 26 26 26 26
+word 1 Visit 27 27 27 27 27
+word 1 Leiden·(Centraal), 28 28 28 28 28 28 28 28 28 28 28 28 28 28 28 28 28 28
+word 1 tickets·$12 29 29 29 29 29 29 29 29 29 29
+word 2 or 0 0
+word 2 12·(34), 0 0 0 0 0 0 0 0
+word 2 really!·Yes, 1 1 1 1 1 1 1 1 1 1 1 1
+word 2 open 2 2 2 2
+word 2 Mon– 2 2 2 2
+word 2 ·Fri 3 3 3 3
+word 2 and 3 3 3
+word 2 a/·b, 3 3 3 3 3
+word 2 the 4 4 4
+word 2 και·(α) 4 4 4 4 4 4 4
+word 2 note. 5 5 5 5 5

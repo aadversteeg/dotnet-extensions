@@ -304,7 +304,8 @@ internal static class BreakableSegments
 
     /// <summary>
     /// Prepares a paragraph: places every glyph in the text and splits the text at its break opportunities, found on the
-    /// paragraph's whole text by <see cref="UnicodeLineBreaking"/>. The glyphs' texts are the text in its order: a
+    /// paragraph's whole text by <see cref="UnicodeLineBreaking"/>, or by <see cref="ChromiumLineBreaking"/> as
+    /// <paramref name="tailoring"/> says. The glyphs' texts are the text in its order: a
     /// ligature shows its components and the glyphs it skipped (<c>GlyphSubstitution</c>), the later glyphs of a cluster
     /// show nothing. An opportunity inside a cluster — at a soft hyphen a ligature skipped — is used only when
     /// <paramref name="canShapeAgain"/>, since a line can end there only if both sides are shaped again; without it, as
@@ -313,8 +314,9 @@ internal static class BreakableSegments
     /// <param name="runs">The shaped glyphs of each run, in order.</param>
     /// <param name="modes">The white-space properties of each run, in order.</param>
     /// <param name="canShapeAgain">Whether the breaker may shape pieces of the text again.</param>
+    /// <param name="tailoring">Which rules find the break opportunities.</param>
     /// <returns>The paragraph.</returns>
-    public static Paragraph Split(IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, bool canShapeAgain)
+    public static Paragraph Split(IReadOnlyList<ValueList<ShapedGlyph>> runs, IReadOnlyList<RunWhiteSpace> modes, bool canShapeAgain, LineBreakTailoring tailoring = LineBreakTailoring.None)
     {
         var rules = new LineEndRules(modes);
         var glyphs = ImmutableArray.CreateBuilder<Placed>();
@@ -368,7 +370,8 @@ internal static class BreakableSegments
         var segments = ImmutableArray.CreateBuilder<Segment>();
         var start = 0;
         var cursor = 0;
-        foreach (var opportunity in WithAtomicInlines(UnicodeLineBreaking.Find(text), placed, text.Length, rules))
+        var found = tailoring == LineBreakTailoring.Chromium ? ChromiumLineBreaking.Find(text) : UnicodeLineBreaking.Find(text);
+        foreach (var opportunity in WithAtomicInlines(found, placed, text.Length, rules))
         {
             // THE RULE FOR NOWRAP: a soft wrap opportunity belongs to the run of the character before it, and is not taken when
             // that run does not wrap (CSS Text 4 §5.1, text-wrap-mode; forced breaks break "regardless of the text-wrap-mode

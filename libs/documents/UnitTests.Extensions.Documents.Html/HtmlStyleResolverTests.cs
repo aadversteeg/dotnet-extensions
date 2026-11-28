@@ -77,7 +77,7 @@ public class HtmlStyleResolverTests
 
         var html = Doctype + "<head><base href=\"https://example.org/doc/\"><link rel=stylesheet href=\"../css/site.css\">"
             + "<link rel=\"stylesheet\" href=\"/other.css\"><link rel=\"alternate stylesheet\" href=\"alt.css\"><link rel=stylesheet href=\"print.css\" media=\"screen\"></head><p>x</p>";
-        var styled = Styled(html, Warn with { Resources = Resolve, BaseUrl = "https://example.org/index.html" });
+        var styled = Styled(html, Warn with { Resources = Resolve, BaseUrl = "https://example.org/index.html", AllowBaseElement = true });
 
         var p = styled.ByName("p");
         p.Value("color").Should().Be("rgb(1, 2, 3)");

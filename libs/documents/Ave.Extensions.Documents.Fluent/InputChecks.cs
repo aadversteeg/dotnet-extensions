@@ -404,14 +404,15 @@ internal static class InputChecks
     /// </summary>
     /// <param name="groups">The table's row groups, each a list of rows.</param>
     /// <param name="columnCount">The number of columns.</param>
-    public static IEnumerable<Error> TableShape(IReadOnlyList<IReadOnlyList<TableRowElement>> groups, int columnCount)
+    /// <param name="table">Where the table is: a grid past the limits of <see cref="TableSlots"/> is reported there.</param>
+    public static IEnumerable<Error> TableShape(IReadOnlyList<IReadOnlyList<TableRowElement>> groups, int columnCount, SourceLocation table)
     {
         var rows = groups.SelectMany(group => group).ToImmutableArray();
         var grid = TableSlots.Fill([.. groups.Select(group => (IReadOnlyList<IReadOnlyList<CellSpan>>)[.. group.Select(row => (IReadOnlyList<CellSpan>)[.. row.Cells.Select(cell => cell.Span)])])], columnCount);
         return grid.Problems.Select(problem =>
         {
             var row = rows[problem.Row];
-            var source = problem.Cell < 0 ? row.Source : row.Cells[problem.Cell].Source;
+            var source = problem.Kind == TableSlots.ProblemKind.TooLarge ? table : problem.Cell < 0 ? row.Source : row.Cells[problem.Cell].Source;
             var message = problem.Kind switch
             {
                 TableSlots.ProblemKind.PastLastColumn => $"The cell does not fit in the table's {columnCount} columns: the row has more cells than columns, or the cell spans past the last column.",
@@ -419,9 +420,10 @@ internal static class InputChecks
                 TableSlots.ProblemKind.Overlap => "The cell overlaps a cell that spans rows from above.",
                 TableSlots.ProblemKind.SpanTooLarge => $"The cell spans more than {TableSlots.MaxColumnSpan} columns or {TableSlots.MaxRowSpan} rows, the largest spans a table allows.",
                 TableSlots.ProblemKind.SpanBelowOne => "A cell spans at least one column and one row.",
+                TableSlots.ProblemKind.TooLarge => $"A table has at most {TableSlots.MaxColumns} columns and {TableSlots.MaxSlots} slots (rows times columns); this one has {columnCount} columns and {rows.Length} rows.",
                 _ => "A table row needs at least one cell.",
             };
-            return Problem(DocumentErrorCodes.Input.Invalid.Table, message, problem.Kind.ToString(), problem.Cell < 0 ? "cells" : "span", source);
+            return Problem(DocumentErrorCodes.Input.Invalid.Table, message, problem.Kind.ToString(), problem.Kind == TableSlots.ProblemKind.TooLarge ? "columns" : problem.Cell < 0 ? "cells" : "span", source);
         });
     }
 

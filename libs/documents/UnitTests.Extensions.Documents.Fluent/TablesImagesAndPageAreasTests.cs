@@ -194,6 +194,61 @@ public class TablesImagesAndPageAreasTests
         Fail(Doc(Row([Paragraph("a"), Paragraph("b")]).Columns(Fill(1)))).Code.Should().Be(DocumentErrorCodes.Input.Invalid.Columns);
     }
 
+    /// <summary>A greyscale PNG of 8192 x 8192 black pixels, the largest image one call may show (2^26 pixels, one byte
+    /// each). <paramref name="mark"/> makes files that differ.</summary>
+    private static byte[] Largest(byte mark)
+    {
+        static byte[] Chunk(string type, byte[] data)
+        {
+            var chunk = new byte[12 + data.Length];
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(chunk, (uint)data.Length);
+            System.Text.Encoding.ASCII.GetBytes(type).CopyTo(chunk, 4);
+            data.CopyTo(chunk, 8);
+            var crc = 0xFFFFFFFFu;
+            foreach (var value in chunk.AsSpan(4, 4 + data.Length))
+            {
+                crc ^= value;
+                for (var bit = 0; bit < 8; bit++)
+                {
+                    crc = (crc & 1) != 0 ? 0xEDB88320u ^ (crc >> 1) : crc >> 1;
+                }
+            }
+
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(chunk.AsSpan(8 + data.Length), ~crc);
+            return chunk;
+        }
+
+        var header = new byte[13];
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(header, 8192);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(header.AsSpan(4), 8192);
+        (header[8], header[9]) = (8, 0);
+        using var data = new System.IO.MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(data, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+        {
+            var row = new byte[8193];
+            for (var y = 0; y < 8192; y++)
+            {
+                zlib.Write(row);
+            }
+        }
+
+        return [137, 80, 78, 71, 13, 10, 26, 10, .. Chunk("IHDR", header), .. Chunk("tEXt", [(byte)'k', 0, mark]), .. Chunk("IDAT", data.ToArray()), .. Chunk("IEND", [])];
+    }
+
+    [Fact]
+    public void The_images_of_a_document_decode_to_at_most_the_pixels_of_a_document_each_file_once()
+    {
+        // Two distinct files of the largest size take the document's pixels: the next image is refused at its call.
+        // One file shown three times is decoded and charged once, and leaves room for it.
+        var small = TestImages.Bytes("rgba8.png");
+        var line = CurrentLine() + 1;
+        var refused = Fail(Doc(Image(Largest(1)).Alt("a"), Image(Largest(2)).Alt("b"), Image(small).Alt("c"))).Parts().Single(error => error.Message.Contains("of one document", StringComparison.Ordinal));
+
+        ShouldPointAt(refused, ImageErrorCodes.TooLarge, line);
+        var once = Largest(1);
+        Model(Doc(Image(once).Alt("a"), Image(once).Alt("a"), Image(once).Alt("a"), Image(small).Alt("c")));
+    }
+
     [Fact]
     public void An_image_that_cannot_be_decoded_is_reported_at_the_image_call()
     {

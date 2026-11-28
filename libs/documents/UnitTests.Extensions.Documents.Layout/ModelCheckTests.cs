@@ -297,4 +297,38 @@ public class ModelCheckTests
         Refused(WithStyle(BoxStyle.Initial with { Border = new Border(inset, outset, inset, inset) })).Code.Should().Be(DocumentErrorCodes.Input.Unsupported.BorderStyle);
         DocumentLayout.Run(WithStyle(BoxStyle.Initial with { Border = new Border(inset, outset with { Width = 0.Pt() }, inset, inset) }), TestFonts.Set).IsSuccess.Should().BeTrue();
     }
+
+    /// <summary>A table of the given columns and rows (rows without cells: the model check counts the grid before any
+    /// cell is placed).</summary>
+    private static Box GridTable(int id, int columns, int rows) =>
+        new(new NodeId(id), SemanticRole.Table, LayoutAlgorithmId.Tracks, BoxStyle.Initial with { Columns = [.. Enumerable.Range(0, columns).Select(_ => (TrackSize)new TrackSize.Fill(1))] },
+            [new Box(new NodeId(id + 1), SemanticRole.TableBody, LayoutAlgorithmId.Flow, BoxStyle.Initial with { TableDisplay = TableDisplay.RowGroup },
+                [.. Enumerable.Range(0, rows).Select(row => (Node)new Box(new NodeId(id + 2 + row), SemanticRole.TableRow, LayoutAlgorithmId.Flow, BoxStyle.Initial with { TableDisplay = TableDisplay.Row }, [], At(0)))], At(0))], At(0));
+
+    [Fact]
+    public void A_table_of_more_columns_or_slots_than_a_table_may_have_is_refused_at_the_table()
+    {
+        var rows = TableSlots.MaxSlots / TableSlots.MaxColumns;
+
+        ModelCheck.Check(Document(GridTable(1_000, TableSlots.MaxColumns, rows))).IsSuccess.Should().BeTrue();
+        foreach (var table in new[] { GridTable(1_000, TableSlots.MaxColumns + 1, 1), GridTable(1_000, TableSlots.MaxColumns, rows + 1) })
+        {
+            var error = ModelCheck.Check(Document(table)).Error;
+            error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Table);
+            error.Metadata![ErrorMetadataKeys.Node].Should().Be("#1000");
+        }
+    }
+
+    [Fact]
+    public void The_tables_of_a_document_together_have_at_most_the_slots_of_a_document()
+    {
+        var rows = TableSlots.MaxSlots / TableSlots.MaxColumns;
+        var full = Enumerable.Range(0, TableSlots.MaxDocumentSlots / TableSlots.MaxSlots).Select(table => (Node)GridTable(10_000 * (table + 1), TableSlots.MaxColumns, rows)).ToArray();
+
+        ModelCheck.Check(Document(full)).IsSuccess.Should().BeTrue();
+        var error = ModelCheck.Check(Document([.. full, GridTable(90_000, 1, 1)])).Error;
+        error.Code.Should().Be(DocumentErrorCodes.Input.Invalid.Table);
+        error.Metadata![ErrorMetadataKeys.Node].Should().BeOneOf("#10000", "#20000", "#30000", "#40000", "#90000");
+        error.Message.Should().Contain(TableSlots.MaxDocumentSlots.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    }
 }

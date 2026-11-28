@@ -210,6 +210,33 @@ internal static class LayoutErrors
             .With(ErrorMetadataKeys.Value, $"{slices}>{MonolithicSlices.MaxSlicesPerDocument}")
             .WithSource(root.Source);
 
+    /// <summary>The option the page limit is, in the metadata (Property) of both page-limit errors: a front-end that
+    /// takes the limit from an option of its own names that one instead.</summary>
+    private const string MaxPagesOption = $"{nameof(LayoutEnvironment)}.{nameof(LayoutEnvironment.MaxPages)}";
+
+    /// <summary>A document that would have more than <paramref name="maxPages"/> pages (<see cref="LayoutEnvironment.MaxPages"/>).
+    /// The message names the limit as the page limit of the render call; the entry that was called says how it is set.</summary>
+    /// <param name="root">The document's root box.</param>
+    /// <param name="maxPages">The page limit of the render call.</param>
+    public static Error TooManyPages(Box root, int maxPages) =>
+        new Error(
+                LayoutErrorCodes.TooManyPages,
+                $"The document would have more than {maxPages} pages, the page limit of this render call; pagination stopped there. "
+                + $"Raise the page limit of the render call (default {LayoutEnvironment.DefaultMaxPages}) to render a longer document.")
+            .With(ErrorMetadataKeys.Node, root.Id.ToString())
+            .With(ErrorMetadataKeys.Property, MaxPagesOption)
+            .With(ErrorMetadataKeys.Value, maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            .WithSource(root.Source);
+
+    /// <summary>A page limit below 1: a document has at least one page.</summary>
+    /// <param name="maxPages">The page limit of the render call.</param>
+    public static Error InvalidMaxPages(int maxPages) =>
+        new Error(
+                LayoutErrorCodes.InvalidOptions,
+                $"The page limit of this render call is {maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture)}; a document has at least one page, so the page limit must be at least 1.")
+            .With(ErrorMetadataKeys.Property, MaxPagesOption)
+            .With(ErrorMetadataKeys.Value, maxPages.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
     private static string Room(double available) =>
         available > 0 ? $"the {InvariantNumber.Format(available)}pt left for it on the page" : "the page, which has no room left for it,";
 

@@ -27,19 +27,28 @@ internal static class Urls
         return HasScheme(baseUrl) && Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) && Uri.TryCreate(baseUri, url, out var resolved) ? resolved.AbsoluteUri : null;
     }
 
+    /// <summary>A URL without its fragment (URL Standard §4.1: the part from the first <c>#</c>): a fragment names a
+    /// place inside a resource, never another resource, so it is not part of what the resolver is asked.</summary>
+    internal static string WithoutFragment(string url) => url.IndexOf('#') is var hash and >= 0 ? url[..hash] : url;
+
     /// <summary>The document base URL (HTML Standard §2.4.1): the href of the first base element in tree order that has
-    /// one, resolved against the document's URL; else the document's URL. One rule for the style resolver and box
-    /// generation. The tree is walked with an explicit stack.</summary>
-    internal static string? DocumentBase(HtmlDocument document, string? documentUrl)
+    /// one, resolved against the document's URL, when the caller allows a base element
+    /// (<see cref="HtmlStyleOptions.AllowBaseElement"/>); else the document's URL, the caller's. One rule for the style
+    /// resolver and box generation. The tree is walked with an explicit stack.</summary>
+    internal static string? DocumentBase(HtmlDocument document, string? documentUrl, bool allowBaseElement) =>
+        allowBaseElement && BaseElement(document)?.Attribute("href") is { } href ? Absolute(href.Trim(), documentUrl) ?? documentUrl : documentUrl;
+
+    /// <summary>The first <c>base</c> element with an <c>href</c> in tree order, or null.</summary>
+    internal static HtmlElement? BaseElement(HtmlDocument document)
     {
         var pending = new Stack<HtmlNode>(document.Children.Reverse());
         while (pending.Count > 0)
         {
             if (pending.Pop() is HtmlElement element)
             {
-                if (element.IsHtml("base") && element.Attribute("href") is { } href)
+                if (element.IsHtml("base") && element.Attribute("href") is not null)
                 {
-                    return Absolute(href.Trim(), documentUrl) ?? documentUrl;
+                    return element;
                 }
 
                 for (var i = element.Children.Count - 1; i >= 0; i--)
@@ -49,7 +58,7 @@ internal static class Urls
             }
         }
 
-        return documentUrl;
+        return null;
     }
 
     /// <summary>Whether a URL starts with a scheme (URL Standard §4.4: an ASCII alpha, then alphanumerics, +, - or .,

@@ -6,6 +6,7 @@ using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.DocumentModel;
 using Ave.Extensions.Documents.Fonts;
 using Ave.Extensions.Documents.Typesetting;
+using Ave.Extensions.Documents.Typesetting.LineBreaking;
 using Ave.Extensions.ErrorPaths;
 using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
@@ -51,7 +52,7 @@ public static class InlineLayout
         return ShapeRuns(environment, box).OnSuccessBind(shaped => WithDecorationFonts(environment, shaped)).OnSuccessBind(items => StrutOf(environment, box).OnSuccessBind(strut =>
             SlicedBox.Layout(box, space, incoming, start, (width, height, breakAt) =>
                 LaidOut(environment, items, width).OnSuccessBind(runs =>
-                    StackLines(runs, strut, box, start, slices, atPageStart, environment.Profile.FontMetricRounding, environment.Profile.FontSizeRounding, environment.Profile.LengthRounding, width, height, breakAt switch
+                    StackLines(runs, strut, box, start, slices, atPageStart, environment.Profile, width, height, breakAt switch
                     {
                         null => null,
                         InlineEarlyBreak line => line,
@@ -113,7 +114,7 @@ public static class InlineLayout
         ShapeRuns(environment, box).OnSuccessBind(items => Measured(environment, items).OnSuccessBind(sized =>
         {
             Result<double, Error> Widest(IReadOnlyList<LineBoxes.Item> runs, double width) =>
-                BreakLines(runs, width, box.Style, environment.Profile.FontSizeRounding, environment.Profile.LengthRounding).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
+                BreakLines(runs, width, box.Style, environment.Profile).OnSuccessMap(lines => lines.Select(line => line.Width).DefaultIfEmpty(0).Max());
             return Widest(sized.Least, 0).OnSuccessBind(least => Widest(sized.Most, double.PositiveInfinity).OnSuccessMap(most =>
                 new IntrinsicWidths(least, most).Plus(SlicedBox.HorizontalInsets(box.Style))));
         }));
@@ -164,20 +165,22 @@ public static class InlineLayout
     /// <summary>The paragraph's lines at a width, each shaped as the line it is: where a line ends or starts at a place
     /// that is not safe to break, its end is shaped again with the run's font (<see cref="GreedyLineBreaker"/>, THE RULE
     /// FOR SHAPING AT A BREAK), each text item's width on the step the profile's <see cref="LengthRounding"/> gives
-    /// (<see cref="GreedyLineBreaker"/>, THE RULE FOR THE TEXT ITEM WIDTH). A shaping error names the run.</summary>
+    /// (<see cref="GreedyLineBreaker"/>, THE RULE FOR THE TEXT ITEM WIDTH), its break opportunities by the profile's
+    /// <see cref="LineBreakRules"/>. A shaping error names the run.</summary>
     /// <remarks>An atomic inline is one glyph of its margin box's width (<see cref="ShapedGlyph.AtomicInline"/>), never
     /// shaped: both its edges are safe places to break, so the breaker never asks for it again; if it did, it gets the same
     /// glyph.</remarks>
-    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, BoxStyle paragraph, FontSizeRounding sizes, LengthRounding lengths) =>
+    private static Result<ValueList<TextLine>, Error> BreakLines(IReadOnlyList<LineBoxes.Item> runs, double width, BoxStyle paragraph, LayoutProfile profile) =>
         OnlyEdges(runs) is { } edges ? Result<ValueList<TextLine>, Error>.Success(edges) : GreedyLineBreaker.BreakLines([.. runs.Select(LineBoxes.GlyphsOf)], WhiteSpaceOf(runs, paragraph), width, (run, text, showsHyphen, budget) => runs[run] switch
             {
-                LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, ShapingSizeOf(sizes, shaped.Run.Style.FontSize.Points), showsHyphen, budget, FeaturesOf(shaped.Run.Style))
+                LineBoxes.ShapedRun shaped => Shaper.ShapeLinePiece(text, shaped.Font, ShapingSizeOf(profile.FontSizeRounding, shaped.Run.Style.FontSize.Points), showsHyphen, budget, FeaturesOf(shaped.Run.Style))
                     .OnSuccessMap(glyphs => (ValueList<ShapedGlyph>)[.. Spaced(glyphs, shaped.Run.Style)])
                     .MapError(error => error.WithSource(shaped.Run.Source)),
                 var atomic => Result<ValueList<ShapedGlyph>, Error>.Success(LineBoxes.GlyphsOf(atomic)),
             },
             LineEndAtSpace(runs, paragraph.TextAlign),
-            lengths == LengthRounding.SixtyFourthPixels ? SixtyFourthPixel : 0);
+            profile.LengthRounding == LengthRounding.SixtyFourthPixels ? SixtyFourthPixel : 0,
+            profile.LineBreakRules == LineBreakRules.Chromium ? LineBreakTailoring.Chromium : LineBreakTailoring.None);
 
     /// <summary>
     /// The lines of a paragraph whose only content is the edges of inline boxes and white space that collapses away (an
@@ -693,11 +696,12 @@ public static class InlineLayout
     /// decides where the page breaks; the best breakpoint of a complete fragment (<see cref="BestBreakInside"/>) is
     /// reported as its early break.</summary>
     private static Result<Maybe<SlicedBox.Content>, Error> StackLines(
-        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, bool atPageStart, FontMetricRounding rounding, FontSizeRounding sizes, LengthRounding lengths, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
+        IReadOnlyList<LineBoxes.Item> runs, LineBoxes.Strut? strut, Box box, InlineBreakToken start, bool slices, bool atPageStart, LayoutProfile profile, double contentWidth, double contentHeight, InlineEarlyBreak? breakAt)
     {
+        var rounding = profile.FontMetricRounding;
         var style = box.Style;
         var firstLine = start.LineIndex;
-        var broken = BreakLines(runs, contentWidth, style, sizes, lengths);
+        var broken = BreakLines(runs, contentWidth, style, profile);
         if (broken.IsFailure)
         {
             return Result<Maybe<SlicedBox.Content>, Error>.Failure(broken.Error);

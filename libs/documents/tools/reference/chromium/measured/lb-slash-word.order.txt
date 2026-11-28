@@ -1,0 +1,39 @@
+word 1 Sign 0 0 0 0
+word 1 and/or 1 1 1 1 1 1
+word 1 return 2 2 2 2 2 2
+word 1 the 3 3 3
+word 1 form; 4 4 4 4 4
+word 1 he/she 5 5 5 5 5 5
+word 1 may 6 6 6
+word 1 choose 7 7 7 7 7 7
+word 1 input/output 8 8 8 8 8 8 8 8 8 8 8 8
+word 1 A|B 9 9 9
+word 1 or 9 9
+word 1 C++ 10 10 10
+word 1 now. 11 11 11 11
+word 1 Sign 12 12 12 12
+word 1 and/or 12 12 12 12 12 12
+word 1 return 13 13 13 13 13 13
+word 1 the 13 13 13
+word 1 form; 14 14 14 14 14
+word 1 he/she 14 14 14 14 14 14
+word 1 may 15 15 15
+word 1 choose 15 15 15 15 15 15
+word 1 input/output 16 16 16 16 16 16 16 16 16 16 16 16
+word 1 A|B 17 17 17
+word 1 or 17 17
+word 1 C++ 17 17 17
+word 1 now. 18 18 18 18
+word 1 Sign 19 19 19 19
+word 1 and/or 19 19 19 19 19 19
+word 1 return 19 19 19 19 19 19
+word 1 the 20 20 20
+word 1 form; 20 20 20 20 20
+word 1 he/she 20 20 20 20 20 20
+word 1 may 20 20 20
+word 1 choose 21 21 21 21 21 21
+word 1 input/output 21 21 21 21 21 21 21 21 21 21 21 21
+word 1 A|B 22 22 22
+word 1 or 22 22
+word 1 C++ 22 22 22
+word 1 now. 22 22 22 22

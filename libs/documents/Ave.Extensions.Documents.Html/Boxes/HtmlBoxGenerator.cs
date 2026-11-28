@@ -42,7 +42,7 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <c>tools/reference/chromium</c>, printed on US Letter, 612 × 792 pt, no margins). The layout policies are Chromium's
 /// (<see cref="LayoutProfile"/>: <see cref="MonolithicOverflow.Slice"/>, <see cref="EmptyRowParts.Allow"/>,
 /// <see cref="FontMetricRounding.WholePixels"/>, <see cref="FontSizeRounding.FlooredToPixelFractions"/>,
-/// <see cref="LengthRounding.SixtyFourthPixels"/>). The metadata: the title element's text (HTML Standard §4.2.2) and the
+/// <see cref="LengthRounding.SixtyFourthPixels"/>, <see cref="LineBreakRules.Chromium"/>). The metadata: the title element's text (HTML Standard §4.2.2) and the
 /// root element's language (§3.2.6.2).</para>
 /// <para>The tree is walked with an explicit stack, never by recursion, so the depth of the input costs heap, not call
 /// frames.</para>
@@ -78,6 +78,7 @@ public static partial class HtmlBoxGenerator
         InlineBoxSnapping = InlineBoxSnapping.WholePixels,
         MarkerSnapping = MarkerSnapping.WholePixels,
         InkGapBand = InkGapBand.AtUnroundedLine,
+        LineBreakRules = LineBreakRules.Chromium,
     };
 
     /// <summary>Generates the boxes of a styled document.</summary>
@@ -95,7 +96,8 @@ public static partial class HtmlBoxGenerator
             return Result<HtmlBoxes, Error>.Failure(Combined(problems));
         }
 
-        var run = new Run(styled, options);
+        // The caller's resolver is asked at most once per URL in this generation and the style resolution before it.
+        var run = new Run(styled, options with { Resources = ResourceTable.Once(options.Resources, styled) });
         var document = run.Generate();
         if (run.Failures.Count > 0)
         {
@@ -107,10 +109,12 @@ public static partial class HtmlBoxGenerator
             return Result<HtmlBoxes, Error>.Failure(Combined(run.Refusals));
         }
 
-        return Result<HtmlBoxes, Error>.Success(new HtmlBoxes(document, run.Fonts.Used, [.. styled.Diagnostics, .. run.Refusals]));
+        // One bound for the diagnostics of the parse, the style resolution and the box generation together.
+        return Result<HtmlBoxes, Error>.Success(new HtmlBoxes(document, run.Fonts.Used,
+            [.. DiagnosticLimits.Kept([.. styled.Diagnostics, .. run.Refusals], error => HtmlStyleDiagnostics.ClassOf(error.Code) == Css.DiagnosticClass.Refusal)]));
     }
 
-    private static Error Combined(IReadOnlyList<Error> errors) => errors.Count == 1 ? errors[0] : Errors.Aggregate([.. errors]);
+    private static Error Combined(IReadOnlyList<Error> errors) => DiagnosticLimits.Aggregate(errors);
 
     /// <summary>A block box being built: its element, its id, its level and what goes into it.</summary>
     private sealed class BlockFrame(StyledElement element, NodeId id, int depth, bool[] kinds, bool[] dropped)

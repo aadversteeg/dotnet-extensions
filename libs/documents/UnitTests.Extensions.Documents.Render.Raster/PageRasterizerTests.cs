@@ -570,4 +570,34 @@ public class PageRasterizerTests
 
         Red(second, 19, 100).Should().Be(0);
     }
+
+    [Fact]
+    public void The_images_one_render_draws_are_decoded_once_each_within_one_budget_of_pixels()
+    {
+        var png = TestImages.Load("rgb8.png");
+        var jpeg = TestImages.Load("jpeg-rgb.jpg");
+        var budget = new ImagePixelBudget((long)png.PixelWidth * png.PixelHeight);
+        var images = new PagePainter.Images(budget);
+
+        images.Of(png).IsSuccess.Should().BeTrue();
+        images.Of(png).IsSuccess.Should().BeTrue("drawn again, it is not decoded or charged again");
+        images.Of(jpeg).Error.Code.Should().Be(ImageErrorCodes.TooLarge, "the JPEG does not fit in what is left");
+        budget.Used.Should().Be((long)png.PixelWidth * png.PixelHeight);
+        new ImagePixelBudget().MaxPixels.Should().Be(ImageLimits.MaxDocumentPixels);
+    }
+
+    [Fact]
+    public void A_JPEG_whose_data_does_not_decode_gives_its_pixels_back()
+    {
+        // The header and the scan's header are whole, the coded data stops after a few bytes.
+        var file = TestImages.Bytes("jpeg-rgb.jpg");
+        var scan = Enumerable.Range(0, file.Length - 1).First(index => file[index] == 0xFF && file[index + 1] == 0xDA);
+        var length = (file[scan + 2] << 8) | file[scan + 3];
+        var cut = ImageDecoder.Decode(file.AsMemory(0, scan + 2 + length + 4)).Value;
+        var budget = new ImagePixelBudget();
+
+        ImageDecoder.DecodeSamples(cut, budget).IsFailure.Should().BeTrue();
+
+        budget.Used.Should().Be(0, "a failed decode costs nothing");
+    }
 }

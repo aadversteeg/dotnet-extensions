@@ -1,0 +1,49 @@
+word 1 Delivered 0 0 0 0 0 0 0 0 0
+word 1 on 1 1
+word 1 2026- 2 2 2 2 2
+word 1 11-28, 3 3 3 3 3 3
+word 1 order 4 4 4 4 4
+word 1 REF- 5 5 5 5
+word 1 2026- 6 6 6 6 6
+word 1 0042, 7 7 7 7 7
+word 1 item 8 8 8 8
+word 1 AB-12- 9 9 9 9 9 9
+word 1 CD, 10 10 10
+word 1 invoice 11 11 11 11 11 11 11
+word 1 28-11- 12 12 12 12 12 12
+word 1 2026 13 13 13 13
+word 1 and 14 14 14
+word 1 ISBN 15 15 15 15
+word 1 978-90- 16 16 16 16 16 16 16
+word 1 12345- 17 17 17 17 17 17
+word 1 67-8. 18 18 18 18 18
+word 1 Delivered 19 19 19 19 19 19 19 19 19
+word 1 on 19 19
+word 1 2026-11-28, 20 20 20 20 20 20 20 20 20 20 20
+word 1 order 21 21 21 21 21
+word 1 REF- 21 21 21 21
+word 1 2026-0042, 22 22 22 22 22 22 22 22 22 22
+word 1 item 23 23 23 23
+word 1 AB-12- 23 23 23 23 23 23
+word 1 CD, 24 24 24
+word 1 invoice 24 24 24 24 24 24 24
+word 1 28-11-2026 25 25 25 25 25 25 25 25 25 25
+word 1 and 26 26 26
+word 1 ISBN 26 26 26 26
+word 1 978-90- 27 27 27 27 27 27 27
+word 1 12345-67-8. 28 28 28 28 28 28 28 28 28 28 28
+word 2 Delivered 0 0 0 0 0 0 0 0 0
+word 2 on 0 0
+word 2 2026-11-28, 1 1 1 1 1 1 1 1 1 1 1
+word 2 order 2 2 2 2 2
+word 2 REF-2026- 2 2 2 2 2 2 2 2 2
+word 2 0042, 3 3 3 3 3
+word 2 item 3 3 3 3
+word 2 AB- 3 3 3
+word 2 12-CD, 4 4 4 4 4 4
+word 2 invoice 4 4 4 4 4 4 4
+word 2 28-11-2026 5 5 5 5 5 5 5 5 5 5
+word 2 and 5 5 5
+word 2 ISBN 6 6 6 6
+word 2 978-90- 6 6 6 6 6 6 6
+word 2 12345-67-8. 7 7 7 7 7 7 7 7 7 7 7

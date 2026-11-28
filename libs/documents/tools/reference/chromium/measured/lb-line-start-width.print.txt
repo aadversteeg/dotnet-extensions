@@ -1,0 +1,13 @@
+page 1 300.000 300.000
+word 1 18.000 31.025 27.750 10.500 a-- #000000 Lato-Regular
+word 1 61.910 71.665 27.750 10.500 M #000000 Lato-Regular
+word 1 18.000 58.015 39.750 10.500 élanxxxx #000000 Lato-Regular
+word 1 18.000 45.993 75.750 10.500 why?- #000000 Lato-Regular
+word 1 56.730 66.485 75.750 10.500 M #000000 Lato-Regular
+word 1 18.000 52.828 87.750 10.500 écolexx #000000 Lato-Regular
+word 1 18.000 30.868 123.750 10.500 x-- #000000 Lato-Regular
+word 1 70.934 80.688 123.750 10.500 M #000000 Lato-Regular
+word 1 18.000 67.030 135.750 10.500 Ωmegaxxx #000000 Lato-Regular
+word 1 18.000 31.025 171.750 10.500 a-- #000000 Lato-Regular
+word 1 58.008 67.762 171.750 10.500 M #000000 Lato-Regular
+word 1 18.000 58.015 183.750 10.500 elanxxxx #000000 Lato-Regular

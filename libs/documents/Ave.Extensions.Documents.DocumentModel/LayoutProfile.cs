@@ -14,7 +14,8 @@ public sealed record LayoutProfile
     /// <see cref="SplitLineHalves.Exact"/>, <see cref="TableEndOverflow.EndsOnPage"/>, <see cref="BodyClip.None"/>,
     /// <see cref="CellsBesideSlices.GoOn"/>, <see cref="RepeatedHeaderRows.AboveEverySlice"/>,
     /// <see cref="SliceRestEnd.InsideCell"/>, <see cref="CutRowAlignment.RestAlignedInItsPart"/>,
-    /// <see cref="InlineBoxSnapping.Exact"/>, <see cref="MarkerSnapping.Exact"/> and <see cref="InkGapBand.AtText"/>.</summary>
+    /// <see cref="InlineBoxSnapping.Exact"/>, <see cref="MarkerSnapping.Exact"/>, <see cref="InkGapBand.AtText"/> and
+    /// <see cref="LineBreakRules.Standard"/>.</summary>
     public static LayoutProfile Default { get; } = new();
 
     /// <summary>What happens to an image or a line box taller than the page area (<see cref="DocumentModel.MonolithicOverflow"/>).</summary>
@@ -73,6 +74,48 @@ public sealed record LayoutProfile
     /// <summary>Where the band lies that an underline's or an overline's gaps around the glyphs' ink are cut with, relative
     /// to the text (<see cref="DocumentModel.InkGapBand"/>).</summary>
     public InkGapBand InkGapBand { get; init; } = InkGapBand.AtText;
+
+    /// <summary>Which rules decide where a line may end: the Unicode standard's, or the same with Chromium's departures
+    /// (<see cref="DocumentModel.LineBreakRules"/>).</summary>
+    public LineBreakRules LineBreakRules { get; init; } = LineBreakRules.Standard;
+}
+
+/// <summary>
+/// Which rules decide where a line of text may end (a soft wrap opportunity, CSS Text 3 §5). Mandatory breaks, the
+/// white-space properties, atomic inlines and soft hyphens act the same under both values; only the places between two
+/// characters where a line may end differ.
+/// </summary>
+public enum LineBreakRules
+{
+    /// <summary>The Unicode Line Breaking Algorithm, UAX #14 revision 57 (Unicode 18.0.0), with its default rules and no
+    /// tailoring, as its conformance file LineBreakTest.txt checks it (<c>Typesetting.LineBreaking.UnicodeLineBreaking</c>).</summary>
+    Standard,
+
+    /// <summary>
+    /// As Chromium prints it: the standard with seven departures (<c>Typesetting.LineBreaking.ChromiumLineBreaking</c>,
+    /// where each rule names its measured rows). In words: a middle dot counts as a letter, and so does a character of
+    /// class AI in the departures; after a space a line may always break, also before closing
+    /// punctuation; between two ASCII characters Chromium decides by a fixed table, so a line does not break after a slash
+    /// or a backslash before a letter or a digit (<c>and/or</c>, <c>/usr/local</c>), after <c>!</c> or <c>|</c> between
+    /// letters, or between the two plus signs of <c>C++</c>, and it may break after a hyphen in a number (<c>2026-</c>
+    /// <c>11-28</c>, <c>REF-2026-0042</c>) but not after a minus sign (<c>-5</c>, <c>12 -34</c>); a line may break after
+    /// <c>?</c> in an address; the signs ¢ £ ¤ ¥ ° ± are not held to a number across ASCII punctuation (<c>12/£34</c> may
+    /// break after the slash, <c>12/€34</c> may not), and the signs of class PR or PO up to U+00FF may break before
+    /// <c>¡</c> and <c>¿</c>; a dash may break before a no-break space; a soft hyphen may break
+    /// after a no-break space; an en dash or a figure dash after a space stays with the word (or a sign such as <c>§</c>) after it. Measured against
+    /// Chromium's print (<c>tools/reference/chromium</c>): the matrix <c>line-breaks.py</c> (34 223 rows, every one
+    /// reproduced with the rules found anew from each line start, as Chromium finds them), and the cases <c>lb-url</c>,
+    /// <c>lb-path</c>, <c>lb-date</c>, <c>lb-slash-word</c>, <c>lb-amount</c>, <c>lb-phone</c>, <c>lb-space-closer</c>,
+    /// <c>lb-hyphens</c>, <c>lb-dash-space</c>, <c>lb-table</c>, <c>lb-justify</c>, <c>lb-list</c>, <c>lb-middle-dot</c>
+    /// and <c>lb-dash-before-sign</c>, where the standard ends lines elsewhere. A limit: the engine finds the places once
+    /// for the whole text, Chromium anew from each line's start. That differs only where a hyphen-minus starts a line after
+    /// <c>-</c> or <c>?</c>, before a letter beyond ASCII, a character of class AI or a middle dot: in a box narrower than
+    /// that hyphen with the piece after it the engine breaks again after the hyphen (476 rows of the matrix; case
+    /// <c>lb-dash-before-sign</c>: <c>x-</c> / <c>-</c> / <c>Ωmega</c> for Chromium's <c>x-</c> / <c>-Ωmega</c>), and a
+    /// shrink-to-fit width (a table column in the automatic layout, an inline-block) is narrower by the hyphen's width
+    /// while every line is equal (case <c>lb-line-start-width</c>: 3.89 pt).
+    /// </summary>
+    Chromium,
 }
 
 /// <summary>

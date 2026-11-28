@@ -25,6 +25,11 @@
     The folder of the HTML files, relative to this folder (default: cases). The whole documents are in documents; a
     folder elsewhere in the family works too, as long as the files it links to are inside the family folder.
 
+.PARAMETER PrintOnly
+    Reads the prints back for their words and positions only (print.txt, words.txt and the files that need no word of
+    a case): the line-break documents of line-breaks.py need no more, and the glyph, paint order, clip, image and
+    destination files are read for the cases.
+
 .PARAMETER PlaywrightImage
     The Playwright image: v1.65.1-noble by digest, the version package.json pins (Chromium 159).
 
@@ -40,6 +45,7 @@ param(
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Cases = @(),
     [string]$CaseFolder = 'cases',
+    [switch]$PrintOnly,
     [string]$PlaywrightImage = 'mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579'
 )
 
@@ -65,7 +71,8 @@ $dockerfile = Join-Path $here '../tools.Dockerfile'
 $tools = 'ave-extensions-documents-tools:' + (Get-FileHash $dockerfile -Algorithm SHA256).Hash.ToLowerInvariant().Substring(0, 12)
 Get-Content -Raw $dockerfile | docker build -q -t $tools -
 if ($LASTEXITCODE -ne 0) { throw "building $tools failed" }
-docker run --rm @user -v "${out}:/out" -v "${here}:/src:ro" $tools bash /src/extract.sh @names
+$only = if ($PrintOnly) { @('-e', 'EXTRACT_PRINT_ONLY=1') } else { @() }
+docker run --rm @user @only -v "${out}:/out" -v "${here}:/src:ro" $tools bash /src/extract.sh @names
 if ($LASTEXITCODE -ne 0) { throw 'the extract step failed' }
 
 Write-Host '== 3. box sizes at the page area''s width, words and versions'

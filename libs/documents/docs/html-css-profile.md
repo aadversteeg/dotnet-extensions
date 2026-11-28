@@ -617,6 +617,67 @@ read back as U+2011). Refused, because Chromium takes them from a font of the sy
 has only U+002D (case `gm-nbhyphen-theano`), and the spaces U+00A0, U+202F, U+2009, U+2002, U+2003, U+2007, U+2008 and
 U+200A in a face without them (case `gm-spaces-roboto`).
 
+## Where a line may end
+
+The HTML front-end ends lines where Chromium 159's print ends them. Its rules are the Unicode Line Breaking Algorithm
+(UAX #14, Unicode 18.0.0) with the departures Chromium's line breaker shows (the layout policy
+`LineBreakRules.Chromium`; the rules and the rows that show each: `Typesetting/LineBreaking/ChromiumLineBreaking.cs`).
+For a template author that means:
+
+- A line may break after every space, also before a closing bracket, a semicolon, an exclamation mark or a middle dot
+  that follows a space (`( see table 2 )`, `Street · Town`).
+- A middle dot (·, and the Greek ano teleia) counts as a letter: a line breaks beside it where it would break beside a
+  letter. `Leiden·(Centraal)` and `tickets·$12` stay in one piece; `really!·Yes` may break after the `!`.
+- A line does not break after a slash or a backslash before a letter or a digit: `and/or`, `he/she`, `/usr/local/share`,
+  `C:\Users\Public` and `INV/2026/0042` each stay in one piece. Nor after `!` or `|` between letters, nor between
+  the two plus signs of `C++`.
+- A line may break after a hyphen in a number or a code when a letter or a digit comes before the hyphen:
+  `2026-` / `11-` / `28`, `REF-` / `2026-` / `0042`, `06-` / `12345678`. A minus sign stays with its number: `-5`,
+  `12 -34`.
+- In an address a line may break after `?` and after a hyphen, not after each slash:
+  `https://example.com/orders/2026/11/overview?` / `page=2&sort=date`.
+- The signs ¢ £ ¤ ¥ ° ± may move to the next line after a slash, a colon, a semicolon, a comma, a full stop or a closing
+  bracket in a number, and a line may break after them before an opening bracket: `12.50/` / `£15.00`. The euro and
+  dollar signs, and every sign beyond U+00FF, stay with the number: `12,50/€15,00` is one piece. Before an inverted
+  ¡ or ¿ a line may break after each of $ % + \ ¢ £ ¤ ¥ ° ±, also in a number: `12$` / `¡34`.
+- A line may break after an en dash, a bar or another character of class BA before a no-break space (`10–` / `12`
+  written with `&nbsp;`), and after a soft hyphen that follows a no-break space.
+- An en dash or a figure dash written right before a word after a space (`Rotterdam –Den Haag`) stays with the word, and
+  so does it before a sign such as § ½ × † → ①, a character that UAX #14 counts as a letter by default (class AI):
+  `see –§12`.
+
+To keep two words together, put a no-break space (`&nbsp;`) between them, or wrap them in an element with
+`white-space: nowrap`. To allow a break where these rules forbid one, put a zero width space (`&#x200B;`) there; `wbr`
+is refused.
+
+Measured against Chromium's print: every pair of printable ASCII characters, between letters and between digits; every
+pair of 55 characters met in documents in both contexts; 104 strings of ordinary documents (addresses, paths, dates,
+amounts, phone numbers, codes, abbreviations, quotes); ASCII punctuation beside letters that are not ASCII; the
+currency, percent and degree signs beside the punctuation of a number and before ¡ and ¿; the two middle dots beside
+all of these characters and between pairs of ASCII punctuation; 30 characters of class AI after a dash, after a soft
+hyphen and beside ASCII punctuation; a hyphen after punctuation before Latin, Greek and Cyrillic letters: 34 223 rows,
+every one reproduced (the matrix of `tools/reference/chromium/line-breaks.py`, kept as
+`Reference/Chromium/line-breaks.txt` of the typesetting tests), and the cases `lb-*`. In running text too: a block as
+wide as a string up to one of its characters ends its first line where Chromium does, for 6 362 such blocks of 1 646
+strings (`Reference/Chromium/line-breaks-running.txt`). Other characters beyond ASCII
+follow the same rules by their class, without rows of their own. Chromium finds the places of each line anew from the
+line's start, the engine once for the whole paragraph. That differs only where a line ends between the two characters
+of `--` or `?-` and a letter beyond ASCII, a character of class AI or a middle dot follows: Chromium then keeps that
+letter with the hyphen that starts the next line, the engine may break after the hyphen. In a box narrower than the
+hyphen with the word after it, the engine breaks again (`x-` / `-` / `Ωmega` for Chromium's `x-` / `-Ωmega`; 476
+rows of the matrix). And a width that follows the content, such as a table column in the automatic layout or an
+inline-block, is narrower by the hyphen's width while every line is the same (`a--élanxxxx` in a table 1 pt wide:
+3.89 pt). Not measured, and so laid out by the standard rules:
+text in the scripts no font of the repository draws (Chinese, Japanese, Korean, Thai and the other scripts that UAX #14
+breaks by dictionary or by syllable), which is refused today for its glyphs.
+
+What stays refused: every value of `word-break`, `overflow-wrap` (and `word-wrap`), `line-break` and `hyphens` but the
+initial one. Chromium breaks between any two letters under `word-break: break-all`, `overflow-wrap: anywhere` or
+`break-word` and `line-break: anywhere`, and hyphenates English words by its dictionary under `hyphens: auto` with
+`lang="en"`; the engine has neither.
+
+Documents built in code (the fluent front-end) follow the standard rules (`LineBreakRules.Standard`, the default).
+
 ## HTML
 
 - The user-agent style sheet: `Ave.Extensions.Documents.Html/UserAgent/html.css` (HTML Standard §15, as Chromium 159
@@ -643,6 +704,10 @@ U+200A in a face without them (case `gm-spaces-roboto`).
   line (`display: block`, a table display). An `a` without `href`, and an `a` with `href` that draws nothing, is no link,
   as in Chromium. A link in a table header row that repeats on every page leads from its first copy only (the copies
   are artifacts); Chromium writes it on every page (a listed difference, case `lk-header-row`).
+- The `base` element: its `href` replaces the caller's base URL only when the caller allows it
+  (`HtmlStyleOptions.AllowBaseElement`, `HtmlBoxOptions.AllowBaseElement`); otherwise it is refused
+  (`Documents.Html.Unsupported.Element`, at the element) and the caller's `BaseUrl` stays the base of the document's
+  resources and links.
 - Links inside the document: an `href` that starts with `#` (also under a `base`) leads to the element the HTML
   Standard's "indicated part of the document" names: `#` alone, and `#top` in any case when no element has that id, the
   top of the first page; else the first element with that `id`, else the first `a` with that `name`, then both again

@@ -8,7 +8,7 @@ using Ave.Extensions.Documents.TestSupport;
 namespace UnitTests.Extensions.Documents.Samples;
 
 /// <summary>
-/// Preview images through the composition package: the two-step pipeline (<see cref="DocumentRendering.ToPages"/>, then a
+/// Preview images through the composition package: the two-step pipeline (<see cref="DocumentRendering.ToPages(Ave.Extensions.Documents.Fluent.Document, Ave.Extensions.Documents.Fonts.FontSet)"/>, then a
 /// back-end) gives the same output as the one-call entry points, and the samples' pages are pinned as golden PNG files,
 /// compared by their pixels (update with <c>UPDATE_GOLDEN=1</c> and review the images). The tests run on Linux and
 /// Windows, x64 and arm64, so the goldens also show that the pixels do not depend on the platform. The PNG bytes depend
