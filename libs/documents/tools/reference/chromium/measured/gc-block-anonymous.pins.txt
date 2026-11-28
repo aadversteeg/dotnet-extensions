@@ -1,4 +1,5 @@
 gc-block-anonymous.boxes.txt 3
+gc-block-anonymous.glyphs.txt 19
 gc-block-anonymous.lines.txt 0
 gc-block-anonymous.print.txt 20
 gc-block-anonymous.words.txt 19

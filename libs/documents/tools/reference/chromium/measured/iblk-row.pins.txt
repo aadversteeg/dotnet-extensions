@@ -1,4 +1,5 @@
 iblk-row.boxes.txt 1
+iblk-row.glyphs.txt 19
 iblk-row.lines.txt 9
 iblk-row.print.txt 65
 iblk-row.words.txt 19

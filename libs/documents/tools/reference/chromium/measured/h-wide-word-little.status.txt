@@ -1,5 +1,5 @@
 h-wide-word-little listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.019, Chromium 290.241 (print.txt)
-11 differences:
+13 differences:
 - page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' x1 296.019, Chromium 290.241 (print.txt)
 - page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' baseline 21.75 (laid out at 21.75), Chromium 21.508 (print.txt)
 - page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' font size 12, Chromium 11.758 (print.txt)
@@ -11,3 +11,5 @@ h-wide-word-little listed Content_wider_than_the_page_area_is_not_shrunk_as_Chro
 - page 1 'after' xMax 34.512, Chromium 34.012 (words.txt)
 - page 1 'after' yMin 24.156, Chromium 23.865 (words.txt)
 - page 1 'after' yMax 38.556, Chromium 37.975 (words.txt)
+- page 1 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' glyph 2 lies at +5.964, Chromium's lies at +5.844 (47 of 48 glyphs) (glyphs.txt)
+- page 1 'after' glyph 2 lies at +5.874, Chromium's lies at +5.755 (3 of 4 glyphs) (glyphs.txt)

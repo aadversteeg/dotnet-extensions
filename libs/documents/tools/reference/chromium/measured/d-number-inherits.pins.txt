@@ -1,4 +1,5 @@
 d-number-inherits.boxes.txt 1
+d-number-inherits.glyphs.txt 8
 d-number-inherits.lines.txt 0
 d-number-inherits.print.txt 10
 d-number-inherits.words.txt 8

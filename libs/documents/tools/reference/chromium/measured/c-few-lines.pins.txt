@@ -1,4 +1,5 @@
 c-few-lines.boxes.txt 1
+c-few-lines.glyphs.txt 11
 c-few-lines.lines.txt 0
 c-few-lines.print.txt 13
 c-few-lines.words.txt 11

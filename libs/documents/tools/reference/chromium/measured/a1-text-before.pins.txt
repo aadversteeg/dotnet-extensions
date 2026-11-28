@@ -1,4 +1,5 @@
 a1-text-before.boxes.txt 1
+a1-text-before.glyphs.txt 2
 a1-text-before.lines.txt 0
 a1-text-before.print.txt 4
 a1-text-before.words.txt 2

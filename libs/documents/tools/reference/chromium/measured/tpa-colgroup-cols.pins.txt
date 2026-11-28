@@ -1,4 +1,5 @@
 tpa-colgroup-cols.boxes.txt 4
+tpa-colgroup-cols.glyphs.txt 7
 tpa-colgroup-cols.lines.txt 10
 tpa-colgroup-cols.print.txt 18
 tpa-colgroup-cols.words.txt 7

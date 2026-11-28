@@ -222,7 +222,7 @@ internal static class HtmlCases
 
         var engine = PrintedPages.Engine(pages.Value);
         var clips = Clips(folder, name);
-        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt"));
+        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt")).WithGlyphs(File.ReadAllText(Measured(folder, name) + ".glyphs.txt"));
         var unused = clips.ToList();
         chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
         var lines = Cut(Rows(folder, name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
@@ -233,6 +233,7 @@ internal static class HtmlCases
             .Concat(PopplerDifferences(pages.Value, engine, Rows(folder, name, "words"), lineTops))
             .Concat(BoxDifferences(folder, name, boxes.Value, Rows(folder, name, "boxes")))
             .Concat(LinkDifferences(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points))
+            .Concat(GlyphDifferences(engine, chromium))
             .Take(DifferenceBound + 1).ToList();
         var (status, listed) = CommittedStatus(committed);
         if (differences.Count == 0)
@@ -585,6 +586,58 @@ internal static class HtmlCases
                 yield return area + " (print.txt)";
             }
         }
+    }
+
+    /// <summary>
+    /// Every difference between the glyphs inside the engine's words and those of Chromium's print (<c>glyphs.txt</c>,
+    /// <see cref="PrintedWord.Glyphs"/>), on each page whose text is the same (<see cref="Differences"/> names a page whose
+    /// text differs), word by word as <see cref="Differences"/> pairs them: the same number of glyphs; the same glyph id
+    /// for each (Chromium embeds subsets of the fonts that keep the font program's glyph ids); each glyph's x as its
+    /// distance from the word's first glyph within <see cref="Bound"/>, the bound of a word's x0 and x1 (the word's own x0
+    /// is compared there); and each glyph's distance below the baseline within <see cref="Bound"/>. At most one difference
+    /// per word and kind, the first glyph that differs, with how many differ.
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with the glyphs of its words.</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> GlyphDifferences(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
+        {
+            var words = Joined(ours.Words);
+            if (string.Join(" ", words.Select(word => word.Text)) != theirs.Text)
+            {
+                continue;
+            }
+
+            foreach (var (word, measured) in words.Zip(theirs.Words))
+            {
+                var at = $"page {ours.Number} '{word.Text}'";
+                if (word.Glyphs.Length != measured.Glyphs.Length)
+                {
+                    yield return $"{at} is drawn with {word.Glyphs.Length} glyphs, Chromium's with {measured.Glyphs.Length} (glyphs.txt)";
+                    continue;
+                }
+
+                var pairs = word.Glyphs.Zip(measured.Glyphs, (glyph, other) => (Ours: glyph, Theirs: other)).Select((pair, index) => (pair.Ours, pair.Theirs, Number: index + 1)).ToList();
+                var found = new[]
+                {
+                    Glyphs(at, "is ", pairs.Where(pair => pair.Ours.Glyph != pair.Theirs.Glyph).ToList(), pairs.Count, (glyph, first) => $"{glyph.Glyph}"),
+                    Glyphs(at, "lies at +", pairs.Where(pair => Math.Abs(pair.Ours.X - word.Glyphs[0].X - (pair.Theirs.X - measured.Glyphs[0].X)) > Bound).ToList(), pairs.Count,
+                        (glyph, first) => Of(glyph.X - first!.X), word.Glyphs[0], measured.Glyphs[0]),
+                    Glyphs(at, "lies below the baseline by ", pairs.Where(pair => Math.Abs(pair.Ours.Below - pair.Theirs.Below) > Bound).ToList(), pairs.Count, (glyph, first) => Of(glyph.Below)),
+                };
+                foreach (var difference in found.OfType<string>())
+                {
+                    yield return difference + " (glyphs.txt)";
+                }
+            }
+        }
+
+        static string? Glyphs(string at, string what, List<(PrintedGlyph Ours, PrintedGlyph Theirs, int Number)> differ, int count, Func<PrintedGlyph, PrintedGlyph?, string> value,
+            PrintedGlyph? ourFirst = null, PrintedGlyph? theirFirst = null) =>
+            differ.Count == 0 ? null
+                : $"{at} glyph {differ[0].Number} {what}{value(differ[0].Ours, ourFirst)}, Chromium's {what}{value(differ[0].Theirs, theirFirst)}" + (differ.Count > 1 ? $" ({differ.Count} of {count} glyphs)" : string.Empty);
     }
 
     /// <summary>The first difference between the area the engine's rectangles paint and the area of the rectangles
@@ -1260,7 +1313,7 @@ internal static class HtmlCases
             if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.PyMuPdfWordGap * word.FontSize
                 && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour && word.IsDrawnRightAfter(last))
             {
-                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn };
+                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn, Glyphs = last.Glyphs.AddRange(word.Glyphs) };
                 continue;
             }
 

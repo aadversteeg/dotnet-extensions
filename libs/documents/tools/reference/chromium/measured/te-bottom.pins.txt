@@ -1,4 +1,5 @@
 te-bottom.boxes.txt 7
+te-bottom.glyphs.txt 7
 te-bottom.lines.txt 17
 te-bottom.print.txt 25
 te-bottom.words.txt 7

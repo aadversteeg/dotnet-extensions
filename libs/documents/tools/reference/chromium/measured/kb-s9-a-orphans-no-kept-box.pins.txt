@@ -1,4 +1,5 @@
 kb-s9-a-orphans-no-kept-box.boxes.txt 1
+kb-s9-a-orphans-no-kept-box.glyphs.txt 26
 kb-s9-a-orphans-no-kept-box.lines.txt 0
 kb-s9-a-orphans-no-kept-box.print.txt 29
 kb-s9-a-orphans-no-kept-box.words.txt 26

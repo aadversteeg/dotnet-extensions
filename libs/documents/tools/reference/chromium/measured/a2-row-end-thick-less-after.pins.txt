@@ -1,4 +1,5 @@
 a2-row-end-thick-less-after.boxes.txt 1
+a2-row-end-thick-less-after.glyphs.txt 13
 a2-row-end-thick-less-after.lines.txt 4
 a2-row-end-thick-less-after.print.txt 19
 a2-row-end-thick-less-after.words.txt 13

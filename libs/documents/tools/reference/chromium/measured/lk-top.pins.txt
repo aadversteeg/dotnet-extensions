@@ -1,4 +1,5 @@
 lk-top.boxes.txt 1
+lk-top.glyphs.txt 23
 lk-top.ink.txt 10
 lk-top.lines.txt 2
 lk-top.links.txt 2

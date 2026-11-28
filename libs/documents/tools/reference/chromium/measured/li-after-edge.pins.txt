@@ -1,4 +1,5 @@
 li-after-edge.boxes.txt 3
+li-after-edge.glyphs.txt 26
 li-after-edge.lines.txt 6
 li-after-edge.print.txt 40
 li-after-edge.words.txt 26

@@ -1,4 +1,5 @@
 mx-gen-caption.boxes.txt 4
+mx-gen-caption.glyphs.txt 12
 mx-gen-caption.lines.txt 14
 mx-gen-caption.print.txt 27
 mx-gen-caption.words.txt 12

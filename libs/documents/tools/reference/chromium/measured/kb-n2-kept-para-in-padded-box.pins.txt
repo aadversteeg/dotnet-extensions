@@ -1,4 +1,5 @@
 kb-n2-kept-para-in-padded-box.boxes.txt 1
+kb-n2-kept-para-in-padded-box.glyphs.txt 5
 kb-n2-kept-para-in-padded-box.lines.txt 0
 kb-n2-kept-para-in-padded-box.print.txt 7
 kb-n2-kept-para-in-padded-box.words.txt 5

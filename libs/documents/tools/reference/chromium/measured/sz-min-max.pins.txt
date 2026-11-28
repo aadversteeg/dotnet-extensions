@@ -1,4 +1,5 @@
 sz-min-max.boxes.txt 6
+sz-min-max.glyphs.txt 23
 sz-min-max.lines.txt 5
 sz-min-max.print.txt 29
 sz-min-max.words.txt 23

@@ -1,4 +1,5 @@
 h-char-ff.boxes.txt 1
+h-char-ff.glyphs.txt 5
 h-char-ff.lines.txt 0
 h-char-ff.print.txt 6
 h-char-ff.words.txt 5

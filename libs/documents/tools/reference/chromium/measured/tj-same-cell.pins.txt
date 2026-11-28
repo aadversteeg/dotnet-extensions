@@ -1,4 +1,5 @@
 tj-same-cell.boxes.txt 5
+tj-same-cell.glyphs.txt 5
 tj-same-cell.lines.txt 12
 tj-same-cell.print.txt 18
 tj-same-cell.words.txt 5

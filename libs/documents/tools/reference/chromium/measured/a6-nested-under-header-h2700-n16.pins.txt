@@ -1,4 +1,5 @@
 a6-nested-under-header-h2700-n16.boxes.txt 19
+a6-nested-under-header-h2700-n16.glyphs.txt 19
 a6-nested-under-header-h2700-n16.lines.txt 66
 a6-nested-under-header-h2700-n16.print.txt 87
 a6-nested-under-header-h2700-n16.words.txt 19

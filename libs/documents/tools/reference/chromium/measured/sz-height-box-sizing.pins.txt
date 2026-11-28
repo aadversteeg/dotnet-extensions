@@ -1,4 +1,5 @@
 sz-height-box-sizing.boxes.txt 3
+sz-height-box-sizing.glyphs.txt 7
 sz-height-box-sizing.lines.txt 2
 sz-height-box-sizing.print.txt 18
 sz-height-box-sizing.words.txt 7

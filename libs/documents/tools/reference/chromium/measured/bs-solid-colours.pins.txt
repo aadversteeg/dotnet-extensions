@@ -1,4 +1,5 @@
 bs-solid-colours.boxes.txt 4
+bs-solid-colours.glyphs.txt 6
 bs-solid-colours.lines.txt 8
 bs-solid-colours.print.txt 23
 bs-solid-colours.words.txt 6

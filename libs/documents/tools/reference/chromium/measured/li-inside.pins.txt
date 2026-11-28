@@ -1,4 +1,5 @@
 li-inside.boxes.txt 1
+li-inside.glyphs.txt 31
 li-inside.lines.txt 4
 li-inside.print.txt 38
 li-inside.words.txt 31

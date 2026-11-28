@@ -1,4 +1,5 @@
 li-ol-attrs.boxes.txt 1
+li-ol-attrs.glyphs.txt 58
 li-ol-attrs.lines.txt 0
 li-ol-attrs.print.txt 60
 li-ol-attrs.words.txt 58

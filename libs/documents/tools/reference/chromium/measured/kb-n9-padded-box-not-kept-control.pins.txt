@@ -1,4 +1,5 @@
 kb-n9-padded-box-not-kept-control.boxes.txt 1
+kb-n9-padded-box-not-kept-control.glyphs.txt 5
 kb-n9-padded-box-not-kept-control.lines.txt 0
 kb-n9-padded-box-not-kept-control.print.txt 7
 kb-n9-padded-box-not-kept-control.words.txt 5

@@ -1,4 +1,5 @@
 d-typo-lato.boxes.txt 1
+d-typo-lato.glyphs.txt 8
 d-typo-lato.lines.txt 0
 d-typo-lato.print.txt 9
 d-typo-lato.words.txt 8

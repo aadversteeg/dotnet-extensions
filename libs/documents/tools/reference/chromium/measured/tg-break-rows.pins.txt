@@ -1,4 +1,5 @@
 tg-break-rows.boxes.txt 20
+tg-break-rows.glyphs.txt 22
 tg-break-rows.lines.txt 57
 tg-break-rows.print.txt 82
 tg-break-rows.words.txt 22

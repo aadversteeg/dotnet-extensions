@@ -1,4 +1,5 @@
 kb-n12-kept-box-orphans2-default.boxes.txt 1
+kb-n12-kept-box-orphans2-default.glyphs.txt 5
 kb-n12-kept-box-orphans2-default.lines.txt 0
 kb-n12-kept-box-orphans2-default.print.txt 7
 kb-n12-kept-box-orphans2-default.words.txt 5

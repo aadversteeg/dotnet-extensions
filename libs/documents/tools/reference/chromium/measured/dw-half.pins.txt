@@ -1,4 +1,5 @@
 dw-half.boxes.txt 1
+dw-half.glyphs.txt 24
 dw-half.lines.txt 12
 dw-half.links.txt 3
 dw-half.print.txt 37

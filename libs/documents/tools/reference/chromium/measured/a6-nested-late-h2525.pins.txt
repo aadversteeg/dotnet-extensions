@@ -1,4 +1,5 @@
 a6-nested-late-h2525.boxes.txt 37
+a6-nested-late-h2525.glyphs.txt 39
 a6-nested-late-h2525.lines.txt 132
 a6-nested-late-h2525.print.txt 175
 a6-nested-late-h2525.words.txt 39

@@ -1,4 +1,5 @@
 fr-old-row-without-cells.boxes.txt 4
+fr-old-row-without-cells.glyphs.txt 6
 fr-old-row-without-cells.lines.txt 16
 fr-old-row-without-cells.print.txt 24
 fr-old-row-without-cells.words.txt 6

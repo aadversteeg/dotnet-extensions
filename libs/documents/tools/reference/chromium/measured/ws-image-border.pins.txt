@@ -1,4 +1,5 @@
 ws-image-border.boxes.txt 1
+ws-image-border.glyphs.txt 9
 ws-image-border.lines.txt 0
 ws-image-border.print.txt 14
 ws-image-border.words.txt 9

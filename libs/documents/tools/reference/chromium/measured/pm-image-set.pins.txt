@@ -1,4 +1,5 @@
 pm-image-set.boxes.txt 1
+pm-image-set.glyphs.txt 1
 pm-image-set.lines.txt 3
 pm-image-set.print.txt 8
 pm-image-set.words.txt 1

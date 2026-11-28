@@ -1,4 +1,5 @@
 li-ul-levels.boxes.txt 1
+li-ul-levels.glyphs.txt 18
 li-ul-levels.lines.txt 9
 li-ul-levels.print.txt 33
 li-ul-levels.words.txt 18

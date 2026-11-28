@@ -1,4 +1,5 @@
 ib-fraction.boxes.txt 1
+ib-fraction.glyphs.txt 15
 ib-fraction.lines.txt 5
 ib-fraction.print.txt 21
 ib-fraction.words.txt 15

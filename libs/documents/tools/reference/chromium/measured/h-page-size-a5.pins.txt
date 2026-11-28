@@ -1,4 +1,5 @@
 h-page-size-a5.boxes.txt 1
+h-page-size-a5.glyphs.txt 2
 h-page-size-a5.lines.txt 0
 h-page-size-a5.print.txt 3
 h-page-size-a5.words.txt 2

@@ -1,4 +1,5 @@
 a1-empty-block-then-paragraph.boxes.txt 1
+a1-empty-block-then-paragraph.glyphs.txt 1
 a1-empty-block-then-paragraph.lines.txt 0
 a1-empty-block-then-paragraph.print.txt 3
 a1-empty-block-then-paragraph.words.txt 1

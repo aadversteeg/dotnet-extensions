@@ -1030,6 +1030,12 @@ through the whole HTML path unchanged and its pages are compared with every file
   one CSS pixel (`HtmlCases.DestinationBound`, 0.75 pt) of Chromium's top plus the page's top margin (Chromium writes a
   destination in page-area coordinates, one margin above the target, at a whole pixel). A case without the file has no
   link, and the engine must have none either.
+- `<case>.glyphs.txt`, the glyphs of each word read back by `glyphs.py` (PyMuPDF's text trace: the glyph id and the
+  origin of each glyph the PDF draws): on each page whose text is the same, each word drawn with as many glyphs, the
+  same glyph id for each (Chromium embeds font subsets that keep the font program's glyph ids), each glyph's distance
+  from the word's first glyph within 0.1 pt (the bound of a word's start and end; kerning and letter spacing inside a
+  word show here) and its distance below the baseline within 0.1 pt. The text reading of a PDF spreads a ligature over
+  its characters at positions of its own; the trace gives the glyph that is drawn, and that is what is compared.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole

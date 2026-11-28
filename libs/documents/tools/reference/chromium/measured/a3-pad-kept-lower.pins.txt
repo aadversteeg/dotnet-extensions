@@ -1,4 +1,5 @@
 a3-pad-kept-lower.boxes.txt 1
+a3-pad-kept-lower.glyphs.txt 13
 a3-pad-kept-lower.lines.txt 2
 a3-pad-kept-lower.print.txt 17
 a3-pad-kept-lower.words.txt 13

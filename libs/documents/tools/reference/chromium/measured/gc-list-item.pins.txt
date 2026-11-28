@@ -1,4 +1,5 @@
 gc-list-item.boxes.txt 1
+gc-list-item.glyphs.txt 8
 gc-list-item.lines.txt 0
 gc-list-item.print.txt 9
 gc-list-item.words.txt 8

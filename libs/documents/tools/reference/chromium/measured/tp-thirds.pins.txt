@@ -1,4 +1,5 @@
 tp-thirds.boxes.txt 6
+tp-thirds.glyphs.txt 7
 tp-thirds.lines.txt 17
 tp-thirds.print.txt 25
 tp-thirds.words.txt 7

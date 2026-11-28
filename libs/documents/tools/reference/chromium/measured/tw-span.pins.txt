@@ -1,4 +1,5 @@
 tw-span.boxes.txt 14
+tw-span.glyphs.txt 22
 tw-span.lines.txt 32
 tw-span.print.txt 55
 tw-span.words.txt 22

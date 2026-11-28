@@ -1,4 +1,5 @@
 pm-empty.boxes.txt 1
+pm-empty.glyphs.txt 6
 pm-empty.lines.txt 9
 pm-empty.print.txt 17
 pm-empty.words.txt 6

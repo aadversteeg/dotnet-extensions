@@ -1,4 +1,5 @@
 h-root-display-none.boxes.txt 1
+h-root-display-none.glyphs.txt 0
 h-root-display-none.lines.txt 0
 h-root-display-none.print.txt 1
 h-root-display-none.words.txt 1

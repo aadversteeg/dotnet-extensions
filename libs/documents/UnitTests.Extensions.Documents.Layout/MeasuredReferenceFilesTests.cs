@@ -6,22 +6,30 @@ using Xunit.Abstractions;
 namespace UnitTests.Extensions.Documents.Layout;
 
 /// <summary>
-/// The Chromium reference data is complete: every case in <c>tools/reference/chromium/cases</c> has its four measured
-/// files (and a fifth, its ink gaps, where its print skips ink, and its link annotations where its print has any) and its
+/// The Chromium reference data is complete: every case in <c>tools/reference/chromium/cases</c> has its seven measured
+/// files (and its ink gaps where its print skips ink, its link annotations and their destinations where its print has
+/// any, and its images' pixels where it draws an image) and its
 /// pin file, <c>measured/&lt;case&gt;.pins.txt</c>: one line <c>file lines</c> per measured file of the case, in ordinal
 /// order, with the number of lines the file had when it was measured. So a file that is missing, emptied or cut short
 /// fails this test even where no other test reads it (the <c>words</c>, <c>boxes</c> and <c>lines</c> files are kept for
 /// comparing a new measurement, the <c>print</c> files are read by the reference tests), and so does a file no pin names.
 /// Each case's facts are in files of its own, so two changes that add different cases touch no file in common. After a
 /// deliberate new measurement, update the case's pin file with its files. With <c>DOCUMENTS_WRITE_NEW_PINS=1</c> the tests
-/// first write the pin file of each case that has none, from its measured files as they are; they change no pin file
+/// first write the pin file of each case that has none, from its measured files as they are, and add to a pin file that
+/// is there a pin for each measured file of its case it does not name (a new kind of measured file); they change no pin
 /// that is there.
 /// </summary>
 public class MeasuredReferenceFilesTests(ITestOutputHelper output)
 {
-    /// <summary>The kinds of a case's measured files: the four every case has, then the gaps of a print that skips ink
-    /// (<c>ink.py</c>) and the link annotations of a print that has any (<c>links.py</c>).</summary>
-    private static readonly string[] Kinds = ["boxes", "lines", "print", "words", "ink", "links"];
+    /// <summary>The kinds of a case's measured files: the seven every case has (with the glyphs of its words,
+    /// <c>glyphs.py</c>; the order it paints in, <c>order.py</c>; and the clips around its words, <c>clips.py</c>), then the
+    /// gaps of a print that skips ink (<c>ink.py</c>), the link annotations of a print that has any (<c>links.py</c>) with
+    /// the left of their destinations (<c>destinations.py</c>), and the pixels of the images of a print that draws any
+    /// (<c>images.py</c>).</summary>
+    private static readonly string[] Kinds = ["boxes", "glyphs", "lines", "print", "words", "ink", "links"];
+
+    /// <summary>How many of <see cref="Kinds"/> every case has.</summary>
+    private const int Always = 5;
 
     /// <summary>The measured files that are of no case, and their lines: the versions, and Chromium's words of the
     /// generated a2-row-end family (<c>RowEndTests</c>).</summary>
@@ -67,14 +75,21 @@ public class MeasuredReferenceFilesTests(ITestOutputHelper output)
         }
 
         var files = MeasuredFiles().Where(file => !Shared.ContainsKey(file)).ToList();
-        foreach (var name in Cases().Except(PinnedCases()))
+        foreach (var name in Cases())
         {
-            File.WriteAllText(Path.Combine(Measured, name + PinFile), string.Concat(files.Where(file => CaseOf(file) == name).Select(file => $"{file} {LinesOf(file)}\n")));
+            var path = Path.Combine(Measured, name + PinFile);
+            var pins = File.Exists(path) ? File.ReadAllLines(path).Where(line => line.Length > 0).ToList() : [];
+            var pinned = pins.Select(line => line.Split(' ')[0]).ToHashSet(StringComparer.Ordinal);
+            var added = files.Where(file => CaseOf(file) == name && !pinned.Contains(file)).Select(file => $"{file} {LinesOf(file)}").ToList();
+            if (added.Count > 0 || !File.Exists(path))
+            {
+                File.WriteAllText(path, string.Concat(pins.Concat(added).Order(StringComparer.Ordinal).Select(line => line + "\n")));
+            }
         }
     }
 
     [Fact]
-    public void Every_case_has_its_four_measured_files_and_a_pin_file_and_nothing_else_is_measured()
+    public void Every_case_has_its_seven_measured_files_and_a_pin_file_and_nothing_else_is_measured()
     {
         WriteNewPins();
         var cases = Cases();
@@ -88,8 +103,8 @@ public class MeasuredReferenceFilesTests(ITestOutputHelper output)
         files.Where(Shared.ContainsKey).Should().Equal(Shared.Keys.Order(StringComparer.Ordinal), "the versions and Chromium's words of the generated a2-row-end family are measured");
         foreach (var name in cases)
         {
-            byCase[name].Should().Contain(Kinds.Take(4).Select(kind => $"{name}.{kind}.txt"), "every case has its four measured files")
-                .And.BeSubsetOf(Kinds.Select(kind => $"{name}.{kind}.txt"), "a case's measured files are its four, its ink gaps and its link annotations");
+            byCase[name].Should().Contain(Kinds.Take(Always).Select(kind => $"{name}.{kind}.txt"), "every case has its seven measured files")
+                .And.BeSubsetOf(Kinds.Select(kind => $"{name}.{kind}.txt"), "a case's measured files are its seven, its ink gaps, its link annotations and destinations, and its images");
         }
     }
 

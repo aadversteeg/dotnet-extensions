@@ -1,4 +1,5 @@
 h-break-after-last.boxes.txt 1
+h-break-after-last.glyphs.txt 2
 h-break-after-last.lines.txt 0
 h-break-after-last.print.txt 3
 h-break-after-last.words.txt 2

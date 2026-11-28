@@ -1,4 +1,5 @@
 kb-v9-padded-box-kept-table-row.boxes.txt 3
+kb-v9-padded-box-kept-table-row.glyphs.txt 5
 kb-v9-padded-box-kept-table-row.lines.txt 10
 kb-v9-padded-box-kept-table-row.print.txt 21
 kb-v9-padded-box-kept-table-row.words.txt 5

@@ -1,4 +1,5 @@
 gc-string-children.boxes.txt 1
+gc-string-children.glyphs.txt 5
 gc-string-children.lines.txt 0
 gc-string-children.print.txt 6
 gc-string-children.words.txt 3

@@ -1,4 +1,5 @@
 a3-pad-line.boxes.txt 1
+a3-pad-line.glyphs.txt 3
 a3-pad-line.lines.txt 2
 a3-pad-line.print.txt 7
 a3-pad-line.words.txt 3

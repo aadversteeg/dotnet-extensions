@@ -1,4 +1,5 @@
 a4-slice-near-end-block.boxes.txt 1
+a4-slice-near-end-block.glyphs.txt 2
 a4-slice-near-end-block.lines.txt 0
 a4-slice-near-end-block.print.txt 8
 a4-slice-near-end-block.words.txt 2

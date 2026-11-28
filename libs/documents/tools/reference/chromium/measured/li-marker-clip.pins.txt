@@ -1,4 +1,5 @@
 li-marker-clip.boxes.txt 1
+li-marker-clip.glyphs.txt 32
 li-marker-clip.lines.txt 5
 li-marker-clip.print.txt 39
 li-marker-clip.words.txt 32

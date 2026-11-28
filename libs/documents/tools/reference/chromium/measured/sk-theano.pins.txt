@@ -1,4 +1,5 @@
 sk-theano.boxes.txt 1
+sk-theano.glyphs.txt 18
 sk-theano.ink.txt 49
 sk-theano.lines.txt 6
 sk-theano.print.txt 25

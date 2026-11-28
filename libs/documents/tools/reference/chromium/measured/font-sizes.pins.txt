@@ -1,4 +1,5 @@
 font-sizes.boxes.txt 10
+font-sizes.glyphs.txt 10
 font-sizes.lines.txt 0
 font-sizes.print.txt 11
 font-sizes.words.txt 10

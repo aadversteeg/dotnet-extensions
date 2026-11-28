@@ -1,4 +1,5 @@
 a4-header-image-170.boxes.txt 2
+a4-header-image-170.glyphs.txt 3
 a4-header-image-170.lines.txt 15
 a4-header-image-170.print.txt 23
 a4-header-image-170.words.txt 3

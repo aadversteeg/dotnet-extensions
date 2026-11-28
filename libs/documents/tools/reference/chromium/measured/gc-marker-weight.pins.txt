@@ -1,4 +1,5 @@
 gc-marker-weight.boxes.txt 1
+gc-marker-weight.glyphs.txt 8
 gc-marker-weight.lines.txt 6
 gc-marker-weight.print.txt 16
 gc-marker-weight.words.txt 8

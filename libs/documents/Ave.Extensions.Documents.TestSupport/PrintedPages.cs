@@ -27,6 +27,11 @@ public sealed record PrintedWord(int Page, double X0, double X1, double Baseline
     /// words are written sorted by place.</summary>
     public int? Drawn { get; init; }
 
+    /// <summary>The glyphs the word is drawn with, in drawing order (<see cref="PrintedGlyph"/>): set in the engine's pages
+    /// (<see cref="PrintedPages.Engine"/>) and, for a print read back from its PDF, from its <c>glyphs.txt</c>
+    /// (<see cref="PrintedPages.WithGlyphs"/>); empty where they are not known. Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
+    public ImmutableArray<PrintedGlyph> Glyphs { get; init; } = [];
+
     /// <summary>Whether two words print the same: their places in drawing order are not compared, so an engine word equals
     /// the word read back from Chromium's print.</summary>
     /// <param name="other">The other word.</param>
@@ -53,6 +58,14 @@ public sealed record PrintedWord(int Page, double X0, double X1, double Baseline
         return before.Drawn is not { } first || Drawn is not { } second || second == first + 1;
     }
 }
+
+/// <summary>A glyph of a printed word: the glyph id in its font program and its origin, in points, origin at the top left
+/// of the page, y down.</summary>
+/// <param name="Glyph">The glyph id.</param>
+/// <param name="X">The x of its origin.</param>
+/// <param name="Below">The distance of its origin below the word's baseline; negative above it (a raised mark).</param>
+/// <param name="End">The x where its advance ends.</param>
+public sealed record PrintedGlyph(int Glyph, double X, double Below, double End);
 
 /// <summary>A rectangle on a printed page: a painted rectangle (a background, a border, a grid line; filled, or one band
 /// of a stroked rectangle) or the area an image is drawn into (which may reach past the page when the page shows only a
@@ -108,6 +121,7 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
     /// <summary>The areas painted by paths that are not rectangles, in drawing order (empty, never default).</summary>
     public ImmutableArray<PrintedPath> Paths { get; init; } = Paths.IsDefault ? [] : Paths;
 
+
     /// <summary>The words of the page joined by single spaces, in reading order (baseline, then x).</summary>
     public string Text => string.Join(" ", Words.Select(word => word.Text));
 
@@ -152,7 +166,7 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
                     && piece.X0 - last.X1 < PopplerWordGap * piece.FontSize && piece.IsDrawnRightAfter(last)
                     && (piece.Drawn is not null || previous.Face != piece.Face || previous.Colour != piece.Colour))
                 {
-                    words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text, Drawn = piece.Drawn }, pieces + 1);
+                    words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text, Drawn = piece.Drawn, Glyphs = last.Glyphs.AddRange(piece.Glyphs) }, pieces + 1);
                     previous = piece;
                     continue;
                 }
@@ -227,6 +241,52 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                 [.. images.Where(box => box.Page == number)],
                 [.. paths.Where(path => path.Page == number)]);
         })]);
+    }
+
+    /// <summary>
+    /// The print with the glyphs of each word (<see cref="PrintedWord.Glyphs"/>) from the text <c>glyphs.py</c> writes
+    /// (<c>glyphs.txt</c>): one line per word, <c>page baseline text</c> and <c>glyph x below end</c> per glyph, the words
+    /// in the order of <c>print.txt</c>. A line belongs to the word of its place on its page, and must have its baseline and
+    /// its text.
+    /// </summary>
+    /// <param name="text">The file's text.</param>
+    /// <returns>The pages, each word with its glyphs.</returns>
+    /// <exception cref="FormatException">A line is not of that form, or does not belong to the word of its place.</exception>
+    public PrintedPages WithGlyphs(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Split(' ')).ToList();
+        static double Number(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+        var pages = ImmutableArray.CreateBuilder<PrintedPage>();
+        foreach (var page in Pages)
+        {
+            var rows = lines.Where(fields => fields[0] == page.Number.ToString(CultureInfo.InvariantCulture)).ToList();
+            if (rows.Count != page.Words.Length)
+            {
+                throw new FormatException($"Page {page.Number} has {page.Words.Length} words and {rows.Count} lines of glyphs.");
+            }
+
+            pages.Add(page with
+            {
+                Words = [.. page.Words.Zip(rows).Select(pair =>
+                {
+                    var (word, fields) = pair;
+                    if (fields.Length < 7 || (fields.Length - 3) % 4 != 0 || fields[2] != word.Text || Math.Abs(Number(fields[1]) - word.Baseline) > 0.0005)
+                    {
+                        throw new FormatException($"Not the glyphs of page {page.Number}'s word '{word.Text}' at {word.Baseline}: '{string.Join(' ', fields)}'.");
+                    }
+
+                    return word with
+                    {
+                        Glyphs = [.. Enumerable.Range(0, (fields.Length - 3) / 4).Select(index =>
+                            new PrintedGlyph(int.Parse(fields[3 + (4 * index)], CultureInfo.InvariantCulture), Number(fields[4 + (4 * index)]), Number(fields[5 + (4 * index)]),
+                                Number(fields[6 + (4 * index)])))],
+                    };
+                })],
+            });
+        }
+
+        return new(pages.ToImmutable());
     }
 
     /// <summary>
@@ -343,6 +403,10 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     {
         var advance = run.Font.Metrics.ToPoints(run.Font.AdvanceWidth(glyphs[^1].Glyph), run.FontSize);
         return new PrintedWord(page, run.Origin.X + glyphs[0].X, run.Origin.X + glyphs[^1].X + advance, run.Origin.Y, run.FontSize,
-            string.Concat(glyphs.Select(glyph => glyph.Text)), Hex(run.Color), run.Font.Names.PostScriptName);
+            string.Concat(glyphs.Select(glyph => glyph.Text)), Hex(run.Color), run.Font.Names.PostScriptName)
+        {
+            Glyphs = [.. glyphs.Select(glyph => new PrintedGlyph(glyph.Glyph.Value, run.Origin.X + glyph.X, glyph.Y,
+                run.Origin.X + glyph.X + run.Font.Metrics.ToPoints(run.Font.AdvanceWidth(glyph.Glyph), run.FontSize)))],
+        };
     }
 }

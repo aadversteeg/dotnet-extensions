@@ -1,4 +1,5 @@
 gc-string-block.boxes.txt 2
+gc-string-block.glyphs.txt 8
 gc-string-block.lines.txt 0
 gc-string-block.print.txt 9
 gc-string-block.words.txt 8

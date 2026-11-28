@@ -1,4 +1,5 @@
 fr-f6-kept-table-orphans3-control.boxes.txt 2
+fr-f6-kept-table-orphans3-control.glyphs.txt 10
 fr-f6-kept-table-orphans3-control.lines.txt 8
 fr-f6-kept-table-orphans3-control.print.txt 20
 fr-f6-kept-table-orphans3-control.words.txt 10

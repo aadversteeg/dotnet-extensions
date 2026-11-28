@@ -1,4 +1,5 @@
 tp-sum-below.boxes.txt 4
+tp-sum-below.glyphs.txt 5
 tp-sum-below.lines.txt 12
 tp-sum-below.print.txt 18
 tp-sum-below.words.txt 5

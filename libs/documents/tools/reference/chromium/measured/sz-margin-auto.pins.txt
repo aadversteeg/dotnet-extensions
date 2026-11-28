@@ -1,4 +1,5 @@
 sz-margin-auto.boxes.txt 6
+sz-margin-auto.glyphs.txt 13
 sz-margin-auto.lines.txt 5
 sz-margin-auto.print.txt 19
 sz-margin-auto.words.txt 13

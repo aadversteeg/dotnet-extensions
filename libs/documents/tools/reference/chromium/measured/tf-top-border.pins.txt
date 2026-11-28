@@ -1,4 +1,5 @@
 tf-top-border.boxes.txt 8
+tf-top-border.glyphs.txt 9
 tf-top-border.lines.txt 8
 tf-top-border.print.txt 18
 tf-top-border.words.txt 9

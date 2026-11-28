@@ -1,4 +1,5 @@
 ii-table.boxes.txt 6
+ii-table.glyphs.txt 9
 ii-table.lines.txt 21
 ii-table.print.txt 34
 ii-table.words.txt 9

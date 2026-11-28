@@ -1,4 +1,5 @@
 gc-marker-color.boxes.txt 1
+gc-marker-color.glyphs.txt 16
 gc-marker-color.lines.txt 1
 gc-marker-color.print.txt 22
 gc-marker-color.words.txt 16

@@ -1,4 +1,5 @@
 a4-header-row-image-228-beside-line.boxes.txt 6
+a4-header-row-image-228-beside-line.glyphs.txt 12
 a4-header-row-image-228-beside-line.lines.txt 49
 a4-header-row-image-228-beside-line.print.txt 67
 a4-header-row-image-228-beside-line.words.txt 12

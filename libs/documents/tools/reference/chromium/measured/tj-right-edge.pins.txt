@@ -1,4 +1,5 @@
 tj-right-edge.boxes.txt 7
+tj-right-edge.glyphs.txt 7
 tj-right-edge.lines.txt 17
 tj-right-edge.print.txt 25
 tj-right-edge.words.txt 7

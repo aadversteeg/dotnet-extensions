@@ -1,4 +1,5 @@
 fr-row-later-page-padding-overflows-two-cells-pad-6.boxes.txt 4
+fr-row-later-page-padding-overflows-two-cells-pad-6.glyphs.txt 23
 fr-row-later-page-padding-overflows-two-cells-pad-6.lines.txt 20
 fr-row-later-page-padding-overflows-two-cells-pad-6.print.txt 46
 fr-row-later-page-padding-overflows-two-cells-pad-6.words.txt 23

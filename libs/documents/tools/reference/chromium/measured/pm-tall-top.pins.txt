@@ -1,4 +1,5 @@
 pm-tall-top.boxes.txt 1
+pm-tall-top.glyphs.txt 19
 pm-tall-top.lines.txt 3
 pm-tall-top.print.txt 23
 pm-tall-top.words.txt 19

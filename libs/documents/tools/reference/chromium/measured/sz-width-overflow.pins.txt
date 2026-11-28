@@ -1,4 +1,5 @@
 sz-width-overflow.boxes.txt 5
+sz-width-overflow.glyphs.txt 15
 sz-width-overflow.lines.txt 3
 sz-width-overflow.print.txt 23
 sz-width-overflow.words.txt 15

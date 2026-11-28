@@ -1,4 +1,5 @@
 li-counter-styles.boxes.txt 1
+li-counter-styles.glyphs.txt 61
 li-counter-styles.lines.txt 0
 li-counter-styles.print.txt 62
 li-counter-styles.words.txt 61

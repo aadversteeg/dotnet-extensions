@@ -1,4 +1,5 @@
 kb-s0-base.boxes.txt 1
+kb-s0-base.glyphs.txt 26
 kb-s0-base.lines.txt 0
 kb-s0-base.print.txt 30
 kb-s0-base.words.txt 26

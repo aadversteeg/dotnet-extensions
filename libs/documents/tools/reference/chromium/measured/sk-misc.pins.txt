@@ -1,4 +1,5 @@
 sk-misc.boxes.txt 1
+sk-misc.glyphs.txt 12
 sk-misc.ink.txt 39
 sk-misc.lines.txt 8
 sk-misc.print.txt 22

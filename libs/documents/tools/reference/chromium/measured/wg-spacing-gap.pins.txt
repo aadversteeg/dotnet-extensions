@@ -1,4 +1,5 @@
 wg-spacing-gap.boxes.txt 12
+wg-spacing-gap.glyphs.txt 20
 wg-spacing-gap.lines.txt 0
 wg-spacing-gap.print.txt 21
 wg-spacing-gap.words.txt 22

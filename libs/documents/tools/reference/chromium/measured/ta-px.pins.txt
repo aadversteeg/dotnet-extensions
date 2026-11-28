@@ -1,4 +1,5 @@
 ta-px.boxes.txt 1
+ta-px.glyphs.txt 70
 ta-px.lines.txt 0
 ta-px.print.txt 71
 ta-px.words.txt 70

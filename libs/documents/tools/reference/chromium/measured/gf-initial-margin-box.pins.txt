@@ -1,4 +1,5 @@
 gf-initial-margin-box.boxes.txt 1
+gf-initial-margin-box.glyphs.txt 4
 gf-initial-margin-box.lines.txt 0
 gf-initial-margin-box.print.txt 5
 gf-initial-margin-box.words.txt 4

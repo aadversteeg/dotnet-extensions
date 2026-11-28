@@ -1,4 +1,5 @@
 kb-n4-kept-box-border-bottom-6.boxes.txt 1
+kb-n4-kept-box-border-bottom-6.glyphs.txt 5
 kb-n4-kept-box-border-bottom-6.lines.txt 1
 kb-n4-kept-box-border-bottom-6.print.txt 8
 kb-n4-kept-box-border-bottom-6.words.txt 5

@@ -1,4 +1,5 @@
 dl-fraction.boxes.txt 1
+dl-fraction.glyphs.txt 18
 dl-fraction.lines.txt 18
 dl-fraction.print.txt 37
 dl-fraction.words.txt 18

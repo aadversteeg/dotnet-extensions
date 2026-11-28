@@ -1,4 +1,5 @@
 fr-kwn-pad-then-para.boxes.txt 1
+fr-kwn-pad-then-para.glyphs.txt 6
 fr-kwn-pad-then-para.lines.txt 0
 fr-kwn-pad-then-para.print.txt 11
 fr-kwn-pad-then-para.words.txt 6

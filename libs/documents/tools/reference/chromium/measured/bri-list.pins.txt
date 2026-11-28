@@ -1,4 +1,5 @@
 bri-list.boxes.txt 1
+bri-list.glyphs.txt 11
 bri-list.lines.txt 0
 bri-list.print.txt 19
 bri-list.words.txt 11

@@ -1,4 +1,5 @@
 h-media-page-size-wide.boxes.txt 1
+h-media-page-size-wide.glyphs.txt 2
 h-media-page-size-wide.lines.txt 0
 h-media-page-size-wide.print.txt 3
 h-media-page-size-wide.words.txt 2

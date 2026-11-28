@@ -1,4 +1,5 @@
 h-page-margin-fraction.boxes.txt 1
+h-page-margin-fraction.glyphs.txt 2
 h-page-margin-fraction.lines.txt 0
 h-page-margin-fraction.print.txt 3
 h-page-margin-fraction.words.txt 2

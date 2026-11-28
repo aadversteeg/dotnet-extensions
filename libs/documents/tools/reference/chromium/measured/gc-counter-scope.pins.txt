@@ -1,4 +1,5 @@
 gc-counter-scope.boxes.txt 1
+gc-counter-scope.glyphs.txt 22
 gc-counter-scope.lines.txt 0
 gc-counter-scope.print.txt 23
 gc-counter-scope.words.txt 22

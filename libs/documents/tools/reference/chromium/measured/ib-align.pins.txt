@@ -1,4 +1,5 @@
 ib-align.boxes.txt 1
+ib-align.glyphs.txt 18
 ib-align.lines.txt 3
 ib-align.print.txt 22
 ib-align.words.txt 18

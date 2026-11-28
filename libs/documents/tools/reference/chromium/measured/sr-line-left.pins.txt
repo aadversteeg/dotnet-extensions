@@ -1,4 +1,5 @@
 sr-line-left.boxes.txt 1
+sr-line-left.glyphs.txt 60
 sr-line-left.lines.txt 0
 sr-line-left.print.txt 61
 sr-line-left.words.txt 40

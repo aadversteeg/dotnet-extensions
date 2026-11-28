@@ -1,4 +1,5 @@
 ib-kerning.boxes.txt 1
+ib-kerning.glyphs.txt 13
 ib-kerning.lines.txt 4
 ib-kerning.print.txt 18
 ib-kerning.words.txt 14

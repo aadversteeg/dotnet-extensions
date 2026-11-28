@@ -1,4 +1,5 @@
 h-page-size-hundred-px.boxes.txt 1
+h-page-size-hundred-px.glyphs.txt 2
 h-page-size-hundred-px.lines.txt 0
 h-page-size-hundred-px.print.txt 3
 h-page-size-hundred-px.words.txt 2

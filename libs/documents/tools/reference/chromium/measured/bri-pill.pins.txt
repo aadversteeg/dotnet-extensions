@@ -1,4 +1,5 @@
 bri-pill.boxes.txt 1
+bri-pill.glyphs.txt 20
 bri-pill.lines.txt 0
 bri-pill.print.txt 32
 bri-pill.words.txt 20

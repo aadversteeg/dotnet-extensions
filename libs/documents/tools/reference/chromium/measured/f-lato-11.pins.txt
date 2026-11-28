@@ -1,4 +1,5 @@
 f-lato-11.boxes.txt 1
+f-lato-11.glyphs.txt 40
 f-lato-11.lines.txt 0
 f-lato-11.print.txt 43
 f-lato-11.words.txt 40

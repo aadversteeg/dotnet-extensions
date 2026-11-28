@@ -1,4 +1,5 @@
 a2-cells-end.boxes.txt 12
+a2-cells-end.glyphs.txt 8
 a2-cells-end.lines.txt 34
 a2-cells-end.print.txt 44
 a2-cells-end.words.txt 8

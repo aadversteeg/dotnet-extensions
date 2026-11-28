@@ -1,4 +1,5 @@
 fr-f9-box-orphans3.boxes.txt 1
+fr-f9-box-orphans3.glyphs.txt 9
 fr-f9-box-orphans3.lines.txt 0
 fr-f9-box-orphans3.print.txt 11
 fr-f9-box-orphans3.words.txt 9

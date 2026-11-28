@@ -1,4 +1,5 @@
 gc-string-nobreak.boxes.txt 1
+gc-string-nobreak.glyphs.txt 3
 gc-string-nobreak.lines.txt 0
 gc-string-nobreak.print.txt 4
 gc-string-nobreak.words.txt 3

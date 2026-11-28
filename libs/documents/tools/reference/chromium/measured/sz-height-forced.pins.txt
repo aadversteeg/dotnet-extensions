@@ -1,4 +1,5 @@
 sz-height-forced.boxes.txt 4
+sz-height-forced.glyphs.txt 10
 sz-height-forced.lines.txt 1
 sz-height-forced.print.txt 13
 sz-height-forced.words.txt 10

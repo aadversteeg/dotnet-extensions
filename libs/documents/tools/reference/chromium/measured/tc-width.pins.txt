@@ -1,4 +1,5 @@
 tc-width.boxes.txt 16
+tc-width.glyphs.txt 19
 tc-width.lines.txt 21
 tc-width.print.txt 53
 tc-width.words.txt 19

@@ -1,4 +1,5 @@
 ii-align.boxes.txt 1
+ii-align.glyphs.txt 24
 ii-align.lines.txt 0
 ii-align.print.txt 29
 ii-align.words.txt 24

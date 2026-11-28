@@ -1,4 +1,5 @@
 bs-solid-break.boxes.txt 1
+bs-solid-break.glyphs.txt 14
 bs-solid-break.lines.txt 2
 bs-solid-break.print.txt 22
 bs-solid-break.words.txt 14

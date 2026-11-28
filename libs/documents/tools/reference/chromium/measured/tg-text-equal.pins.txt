@@ -1,4 +1,5 @@
 tg-text-equal.boxes.txt 4
+tg-text-equal.glyphs.txt 7
 tg-text-equal.lines.txt 10
 tg-text-equal.print.txt 19
 tg-text-equal.words.txt 7

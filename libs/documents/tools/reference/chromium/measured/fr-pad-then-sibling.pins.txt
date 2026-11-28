@@ -1,4 +1,5 @@
 fr-pad-then-sibling.boxes.txt 1
+fr-pad-then-sibling.glyphs.txt 3
 fr-pad-then-sibling.lines.txt 8
 fr-pad-then-sibling.print.txt 14
 fr-pad-then-sibling.words.txt 3

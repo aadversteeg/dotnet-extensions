@@ -1,4 +1,5 @@
 a2-row-end-background.boxes.txt 1
+a2-row-end-background.glyphs.txt 23
 a2-row-end-background.lines.txt 11
 a2-row-end-background.print.txt 37
 a2-row-end-background.words.txt 23

@@ -1,4 +1,5 @@
 a2-row-end-below-paragraph.boxes.txt 2
+a2-row-end-below-paragraph.glyphs.txt 12
 a2-row-end-below-paragraph.lines.txt 8
 a2-row-end-below-paragraph.print.txt 23
 a2-row-end-below-paragraph.words.txt 12

@@ -1,4 +1,5 @@
 a6-nested-first-h253125.boxes.txt 23
+a6-nested-first-h253125.glyphs.txt 26
 a6-nested-first-h253125.lines.txt 93
 a6-nested-first-h253125.print.txt 122
 a6-nested-first-h253125.words.txt 26

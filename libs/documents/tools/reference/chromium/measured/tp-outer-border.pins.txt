@@ -1,4 +1,5 @@
 tp-outer-border.boxes.txt 4
+tp-outer-border.glyphs.txt 5
 tp-outer-border.lines.txt 12
 tp-outer-border.print.txt 18
 tp-outer-border.words.txt 5

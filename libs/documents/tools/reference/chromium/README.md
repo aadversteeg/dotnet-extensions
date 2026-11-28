@@ -65,6 +65,9 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
   catalog's `/Dests` (Chromium names its destinations after the HTML ids). Any other annotation, action or destination
   form stops the read-back. Chromium writes each edge of a link's rectangle at a whole CSS pixel, and a destination at
   the target's place in page-area coordinates, one page margin above and left of the target, at a whole pixel;
+- `<case>.glyphs.txt`: per word of `print.txt`, in its order, `page baseline text` and per glyph the PDF draws for it
+  `glyph x dy end`: the glyph id, the x of its origin, its distance below the baseline and the x where its advance ends
+  (`glyphs.py`, PyMuPDF's text trace; see "What the read-backs add to print.txt");
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
@@ -221,6 +224,20 @@ Chromium snaps more than layout units when it prints, which a case must allow fo
   floored to a whole pixel; a used line height is snapped to 1/64 px (docs/architecture.md, "Against Chromium"). The cases that pin page breaks
   keep every decision clear of that difference, and their tests compare which words are on which page exactly and
   positions only where the difference does not enter.
+
+## What the read-backs add to print.txt
+
+`glyphs.txt` holds the glyphs the PDF draws, not the characters a PDF reader makes of them. PyMuPDF's text reading
+(where `print.txt`'s words come from) spreads a ligature over its characters at positions of its own (`ls-letters`:
+"fi" is one glyph at 76.312 pt, read as "f" at 76.312 and "i" at 82.329); its text trace lists the glyphs as the content
+stream draws them. `glyphs.py` matches each word's characters to the trace, glyph by glyph from the one at the word's
+first origin. Three things in the trace are characters and draw no glyph of their own, so they are not written: the
+further characters of one glyph's text, at the glyph's origin with the glyph id -1 (`a2-blank-part`: Lato's "ft"
+ligature is one glyph, its "t" such an entry); and a format character (a soft hyphen, a zero-width space, a joiner),
+which Chromium draws as the font's space glyph without an advance (`ws-soft`). A precomposed letter the reading writes
+as base and mark is one glyph (`ta-marks`: "y" with U+0323 is the glyph of U+1EF5). The case comparison compares, word
+by word, the number of glyphs, each glyph id and each glyph's distance from the word's first glyph within 0.1 pt, the
+bound of a word's start and end (`HtmlCases.GlyphDifferences`).
 
 ## Whole documents
 

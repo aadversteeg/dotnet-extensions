@@ -1,4 +1,5 @@
 kb-s4-a-keep-with-next-only.boxes.txt 1
+kb-s4-a-keep-with-next-only.glyphs.txt 26
 kb-s4-a-keep-with-next-only.lines.txt 0
 kb-s4-a-keep-with-next-only.print.txt 30
 kb-s4-a-keep-with-next-only.words.txt 26

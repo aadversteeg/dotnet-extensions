@@ -1,4 +1,5 @@
 pm-pages.boxes.txt 1
+pm-pages.glyphs.txt 21
 pm-pages.lines.txt 6
 pm-pages.print.txt 30
 pm-pages.words.txt 21

@@ -1,4 +1,5 @@
 gc-block-span.boxes.txt 1
+gc-block-span.glyphs.txt 8
 gc-block-span.lines.txt 0
 gc-block-span.print.txt 9
 gc-block-span.words.txt 8

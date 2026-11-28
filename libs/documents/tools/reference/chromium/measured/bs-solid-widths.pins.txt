@@ -1,4 +1,5 @@
 bs-solid-widths.boxes.txt 2
+bs-solid-widths.glyphs.txt 4
 bs-solid-widths.lines.txt 4
 bs-solid-widths.print.txt 13
 bs-solid-widths.words.txt 4

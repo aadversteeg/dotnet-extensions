@@ -1,4 +1,5 @@
 pm-tall-box.boxes.txt 1
+pm-tall-box.glyphs.txt 2
 pm-tall-box.lines.txt 2
 pm-tall-box.print.txt 6
 pm-tall-box.words.txt 2

@@ -1,4 +1,5 @@
 h-page-size-a3.boxes.txt 1
+h-page-size-a3.glyphs.txt 2
 h-page-size-a3.lines.txt 0
 h-page-size-a3.print.txt 3
 h-page-size-a3.words.txt 2

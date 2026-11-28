@@ -1,4 +1,5 @@
 widths-grid.boxes.txt 9
+widths-grid.glyphs.txt 8
 widths-grid.lines.txt 0
 widths-grid.print.txt 9
 widths-grid.words.txt 4

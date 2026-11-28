@@ -1,4 +1,5 @@
 bs-colour-bands.boxes.txt 19
+bs-colour-bands.glyphs.txt 21
 bs-colour-bands.lines.txt 38
 bs-colour-bands.print.txt 98
 bs-colour-bands.words.txt 21

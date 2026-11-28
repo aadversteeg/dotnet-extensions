@@ -1,4 +1,5 @@
 h-page-size-letter.boxes.txt 1
+h-page-size-letter.glyphs.txt 2
 h-page-size-letter.lines.txt 0
 h-page-size-letter.print.txt 3
 h-page-size-letter.words.txt 2

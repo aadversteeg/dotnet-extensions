@@ -1,4 +1,5 @@
 lk-later-heading.boxes.txt 1
+lk-later-heading.glyphs.txt 22
 lk-later-heading.lines.txt 1
 lk-later-heading.links.txt 1
 lk-later-heading.print.txt 25

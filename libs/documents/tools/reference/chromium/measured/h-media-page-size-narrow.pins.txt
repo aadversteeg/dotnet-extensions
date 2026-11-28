@@ -1,4 +1,5 @@
 h-media-page-size-narrow.boxes.txt 1
+h-media-page-size-narrow.glyphs.txt 2
 h-media-page-size-narrow.lines.txt 0
 h-media-page-size-narrow.print.txt 3
 h-media-page-size-narrow.words.txt 2

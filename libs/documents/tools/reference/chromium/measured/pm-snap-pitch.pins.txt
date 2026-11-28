@@ -1,4 +1,5 @@
 pm-snap-pitch.boxes.txt 1
+pm-snap-pitch.glyphs.txt 13
 pm-snap-pitch.lines.txt 6
 pm-snap-pitch.print.txt 20
 pm-snap-pitch.words.txt 13

@@ -1,4 +1,5 @@
 tt-groups.boxes.txt 1
+tt-groups.glyphs.txt 51
 tt-groups.ink.txt 4
 tt-groups.lines.txt 11
 tt-groups.links.txt 6

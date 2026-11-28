@@ -1,4 +1,5 @@
 a4-continued-cell-pad-bottom-30-under-header.boxes.txt 21
+a4-continued-cell-pad-bottom-30-under-header.glyphs.txt 21
 a4-continued-cell-pad-bottom-30-under-header.lines.txt 74
 a4-continued-cell-pad-bottom-30-under-header.print.txt 98
 a4-continued-cell-pad-bottom-30-under-header.words.txt 21

@@ -1,4 +1,5 @@
 a2-padded-blocks-px.boxes.txt 6
+a2-padded-blocks-px.glyphs.txt 4
 a2-padded-blocks-px.lines.txt 20
 a2-padded-blocks-px.print.txt 26
 a2-padded-blocks-px.words.txt 4

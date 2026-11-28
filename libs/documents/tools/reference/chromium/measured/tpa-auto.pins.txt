@@ -1,4 +1,5 @@
 tpa-auto.boxes.txt 18
+tpa-auto.glyphs.txt 55
 tpa-auto.lines.txt 26
 tpa-auto.print.txt 110
 tpa-auto.words.txt 55

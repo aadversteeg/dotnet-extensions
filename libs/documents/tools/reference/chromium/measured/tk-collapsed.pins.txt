@@ -1,4 +1,5 @@
 tk-collapsed.boxes.txt 32
+tk-collapsed.glyphs.txt 36
 tk-collapsed.lines.txt 109
 tk-collapsed.print.txt 146
 tk-collapsed.words.txt 36

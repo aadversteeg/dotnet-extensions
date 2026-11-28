@@ -1,4 +1,5 @@
 a2-row-end-first-row-half-2col.boxes.txt 2
+a2-row-end-first-row-half-2col.glyphs.txt 13
 a2-row-end-first-row-half-2col.lines.txt 5
 a2-row-end-first-row-half-2col.print.txt 20
 a2-row-end-first-row-half-2col.words.txt 13

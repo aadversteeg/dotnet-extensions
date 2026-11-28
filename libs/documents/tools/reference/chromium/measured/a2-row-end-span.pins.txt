@@ -1,4 +1,5 @@
 a2-row-end-span.boxes.txt 3
+a2-row-end-span.glyphs.txt 23
 a2-row-end-span.lines.txt 17
 a2-row-end-span.print.txt 43
 a2-row-end-span.words.txt 23

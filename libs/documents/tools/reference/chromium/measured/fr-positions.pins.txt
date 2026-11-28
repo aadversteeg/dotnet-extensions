@@ -1,4 +1,5 @@
 fr-positions.boxes.txt 1
+fr-positions.glyphs.txt 13
 fr-positions.lines.txt 0
 fr-positions.print.txt 14
 fr-positions.words.txt 13

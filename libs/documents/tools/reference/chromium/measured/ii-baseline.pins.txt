@@ -1,4 +1,5 @@
 ii-baseline.boxes.txt 1
+ii-baseline.glyphs.txt 15
 ii-baseline.lines.txt 0
 ii-baseline.print.txt 29
 ii-baseline.words.txt 15

@@ -1,4 +1,5 @@
 ts-break-cut-middle.boxes.txt 10
+ts-break-cut-middle.glyphs.txt 36
 ts-break-cut-middle.lines.txt 26
 ts-break-cut-middle.print.txt 88
 ts-break-cut-middle.words.txt 36

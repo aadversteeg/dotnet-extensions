@@ -1,4 +1,5 @@
 ib-empty-alone.boxes.txt 1
+ib-empty-alone.glyphs.txt 22
 ib-empty-alone.lines.txt 3
 ib-empty-alone.print.txt 26
 ib-empty-alone.words.txt 22

@@ -1,4 +1,5 @@
 a1-forced-break-without-content.boxes.txt 1
+a1-forced-break-without-content.glyphs.txt 1
 a1-forced-break-without-content.lines.txt 0
 a1-forced-break-without-content.print.txt 2
 a1-forced-break-without-content.words.txt 1

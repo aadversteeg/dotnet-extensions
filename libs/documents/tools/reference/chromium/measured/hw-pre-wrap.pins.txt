@@ -1,4 +1,5 @@
 hw-pre-wrap.boxes.txt 1
+hw-pre-wrap.glyphs.txt 25
 hw-pre-wrap.lines.txt 0
 hw-pre-wrap.print.txt 26
 hw-pre-wrap.words.txt 25

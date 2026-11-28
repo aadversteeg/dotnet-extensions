@@ -1,4 +1,5 @@
 li-ol-12.boxes.txt 1
+li-ol-12.glyphs.txt 40
 li-ol-12.lines.txt 12
 li-ol-12.print.txt 53
 li-ol-12.words.txt 40

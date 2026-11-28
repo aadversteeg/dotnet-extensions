@@ -1,4 +1,5 @@
 ib-padding.boxes.txt 1
+ib-padding.glyphs.txt 21
 ib-padding.lines.txt 3
 ib-padding.print.txt 25
 ib-padding.words.txt 21

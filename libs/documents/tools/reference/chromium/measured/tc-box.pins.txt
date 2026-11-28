@@ -1,4 +1,5 @@
 tc-box.boxes.txt 12
+tc-box.glyphs.txt 14
 tc-box.lines.txt 17
 tc-box.print.txt 56
 tc-box.words.txt 14

@@ -1,4 +1,5 @@
 ii-wrap.boxes.txt 1
+ii-wrap.glyphs.txt 28
 ii-wrap.lines.txt 0
 ii-wrap.print.txt 36
 ii-wrap.words.txt 28

@@ -1,4 +1,5 @@
 sr-same-font.boxes.txt 1
+sr-same-font.glyphs.txt 33
 sr-same-font.lines.txt 0
 sr-same-font.print.txt 34
 sr-same-font.words.txt 25

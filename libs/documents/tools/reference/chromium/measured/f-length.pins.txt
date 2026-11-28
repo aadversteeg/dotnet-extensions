@@ -1,4 +1,5 @@
 f-length.boxes.txt 1
+f-length.glyphs.txt 40
 f-length.lines.txt 0
 f-length.print.txt 44
 f-length.words.txt 40

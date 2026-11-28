@@ -1,4 +1,5 @@
 h-page-a4-margin-px.boxes.txt 1
+h-page-a4-margin-px.glyphs.txt 3
 h-page-a4-margin-px.lines.txt 1
 h-page-a4-margin-px.print.txt 5
 h-page-a4-margin-px.words.txt 3

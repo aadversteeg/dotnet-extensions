@@ -1,4 +1,5 @@
 dw-gap-fraction.boxes.txt 1
+dw-gap-fraction.glyphs.txt 66
 dw-gap-fraction.ink.txt 224
 dw-gap-fraction.lines.txt 12
 dw-gap-fraction.links.txt 6

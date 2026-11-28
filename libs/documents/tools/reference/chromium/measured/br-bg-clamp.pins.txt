@@ -1,4 +1,5 @@
 br-bg-clamp.boxes.txt 3
+br-bg-clamp.glyphs.txt 5
 br-bg-clamp.lines.txt 0
 br-bg-clamp.print.txt 9
 br-bg-clamp.words.txt 5

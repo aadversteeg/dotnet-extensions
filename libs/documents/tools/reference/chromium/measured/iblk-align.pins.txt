@@ -1,4 +1,5 @@
 iblk-align.boxes.txt 2
+iblk-align.glyphs.txt 80
 iblk-align.lines.txt 17
 iblk-align.print.txt 100
 iblk-align.words.txt 80

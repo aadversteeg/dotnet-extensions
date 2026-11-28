@@ -1,4 +1,5 @@
 f-tiny.boxes.txt 1
+f-tiny.glyphs.txt 1
 f-tiny.lines.txt 0
 f-tiny.print.txt 2
 f-tiny.words.txt 1

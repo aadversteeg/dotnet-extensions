@@ -1,4 +1,5 @@
 ib-image-edges.boxes.txt 1
+ib-image-edges.glyphs.txt 9
 ib-image-edges.lines.txt 3
 ib-image-edges.print.txt 16
 ib-image-edges.words.txt 9
