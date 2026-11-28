@@ -336,4 +336,22 @@ public class HtmlRenderingTests
         broken.Value.Output.Should().Equal(plain.Value.Output);
         asked.Should().OnlyContain(url => url == "lato.ttf");
     }
+
+    [Fact]
+    public void A_data_URL_for_a_style_sheet_or_a_font_is_refused_saying_that_one_is_read_for_images_only()
+    {
+        var asked = new List<string>();
+        var options = Options with { Style = Options.Style with { Unsupported = UnsupportedPolicy.Warn, Resources = url => { asked.Add(url); return url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : null; } } };
+        var html = Html.Replace("<title>T</title>", "<title>T</title><link rel=stylesheet href=\"data:text/css,p%7Bcolor:red%7D\"><style>@import url(\"data:text/css;base64,cHtjb2xvcjpyZWR9#f\");</style>", StringComparison.Ordinal);
+        var font = Html.Replace("<title>T</title>", "<title>T</title><style>@font-face { font-family: Other; src: url(data:font/ttf;base64,AAEAAA) } p { font-family: Other, Body }</style>", StringComparison.Ordinal);
+
+        var messages = HtmlRendering.ToPages(html, options).Value.Diagnostics.Select(error => error.Message).ToList();
+        messages.Add(HtmlRendering.ToPages(font, options).Error.Message);
+
+        messages.Should().Contain("The style sheet 'data:text/css,p%7Bcolor:red%7D' is a data: URL, which the engine reads for images only, so it is not read: put the style sheet in a <style> element, or give it through the resource resolver under a URL of its own.");
+        messages.Should().Contain(message => message.StartsWith("The style sheet 'data:text/css;base64,cHtjb2xvcjpyZWR9#f' is a data: URL, which the engine reads for images only", StringComparison.Ordinal));
+        messages.Should().Contain("The font file 'data:font/ttf;base64,AAEAAA' of 'Other' is a data: URL, which the engine reads for images only, so it is not read: give the font file through the resource resolver under a URL of its own.");
+        messages.Should().NotContain(message => message.Contains("not found by the resource resolver", StringComparison.Ordinal));
+        asked.Should().Equal(["lato.ttf"]);
+    }
 }

@@ -1054,7 +1054,9 @@ public static class HtmlStyleResolver
             else
             {
                 var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given"
-                    : ResourceTable.Refusal(options.Resources, absolute) ?? "was not found by the resource resolver";
+                    : ResourceTable.Refusal(options.Resources, absolute)
+                    ?? (DataUrl.Is(absolute) ? "is a data: URL, which the engine reads for images only, so it is not read: put the style sheet in a <style> element, or give it through the resource resolver under a URL of its own"
+                    : "was not found by the resource resolver");
                 Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{InputQuote.Of(url)}' {why}.")
                     .With(ErrorMetadataKeys.Value, InputQuote.Of(absolute ?? url))
                     .WithSource(referrer, position));
