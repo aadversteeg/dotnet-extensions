@@ -125,7 +125,7 @@ public static partial class HtmlBoxGenerator
         private Box? ImageBox(StyledElement element, BoxStyle style)
         {
             var html = element.Element;
-            var source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
+            var source = html.Attribute("src") is { } src ? Urls.Cleaned(src) : null;
             var (bytes, url) = ImageBytes(source);
             if (bytes is null)
             {

@@ -1,0 +1,8 @@
+hi-data-newline.boxes.txt 1
+hi-data-newline.clips.txt 3
+hi-data-newline.glyphs.txt 3
+hi-data-newline.images.txt 2
+hi-data-newline.lines.txt 0
+hi-data-newline.order.txt 5
+hi-data-newline.print.txt 6
+hi-data-newline.words.txt 3

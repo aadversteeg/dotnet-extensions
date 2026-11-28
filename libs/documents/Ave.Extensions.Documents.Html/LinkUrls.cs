@@ -52,7 +52,7 @@ internal static partial class LinkUrls
             return (null, $"the href is {href.Length.ToString(CultureInfo.InvariantCulture)} characters long; a link's URI is at most {LinkUris.MaxLength.ToString(CultureInfo.InvariantCulture)}");
         }
 
-        var url = WithoutWhiteSpace(href);
+        var url = Urls.Cleaned(href);
         if (url.StartsWith('#'))
         {
             return (null, "it leads to a place inside the document (#…), which is not a URI");
@@ -86,7 +86,7 @@ internal static partial class LinkUrls
             return null;
         }
 
-        var url = WithoutWhiteSpace(href);
+        var url = Urls.Cleaned(href);
         return url.StartsWith('#') ? url[1..] : null;
     }
 
@@ -113,34 +113,6 @@ internal static partial class LinkUrls
         }
 
         return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false).GetString([.. bytes]);
-    }
-
-    /// <summary>URL Standard §4.4, basic URL parser: leading and trailing C0 controls and spaces removed, and every ASCII
-    /// tab or newline (tab, line feed, carriage return) inside.</summary>
-    private static string WithoutWhiteSpace(string href)
-    {
-        var start = 0;
-        var end = href.Length;
-        while (start < end && href[start] <= ' ')
-        {
-            start++;
-        }
-
-        while (end > start && href[end - 1] <= ' ')
-        {
-            end--;
-        }
-
-        var builder = new StringBuilder(end - start);
-        for (var index = start; index < end; index++)
-        {
-            if (href[index] is not ('\t' or '\n' or '\r'))
-            {
-                builder.Append(href[index]);
-            }
-        }
-
-        return builder.ToString();
     }
 
     /// <summary>A backslash before the query or the fragment as a slash (URL Standard §4.4: in a special URL, the

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Ave.Extensions.Documents.Html.Parsing;
 
 namespace Ave.Extensions.Documents.Html;
@@ -9,10 +10,12 @@ namespace Ave.Extensions.Documents.Html;
 /// the font files of @font-face rules (against the base of the sheet that declares them).</summary>
 internal static class Urls
 {
-    /// <summary>A URL resolved against a base; null when it does not parse. Without a base, an absolute URL stays as
-    /// it is and a relative one is passed on as written.</summary>
+    /// <summary>A URL resolved against a base; null when it does not parse. It is <see cref="Cleaned"/> first. Without a
+    /// base, an absolute URL stays as it is and a relative one is passed on as written.</summary>
     internal static string? Absolute(string url, string? baseUrl)
     {
+        url = Cleaned(url);
+
         // Only a URL with a scheme is absolute: on Unix, Uri takes "/other.css" for an absolute file path.
         if (HasScheme(url) && Uri.TryCreate(url, UriKind.Absolute, out var absolute))
         {
@@ -25,6 +28,41 @@ internal static class Urls
         }
 
         return HasScheme(baseUrl) && Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) && Uri.TryCreate(baseUri, url, out var resolved) ? resolved.AbsoluteUri : null;
+    }
+
+    /// <summary>A URL as the URL Standard's basic URL parser reads it before any other step (§4.4): every leading and
+    /// trailing C0 control and space removed, and every ASCII tab or newline (tab, line feed, carriage return) inside. So
+    /// <c>"da\nta:image/png;…"</c> is a <c>data:</c> URL, and <c>"java\tscript:x"</c> has the scheme <c>javascript</c>.
+    /// Every test of a URL (its scheme, <c>data:</c>, its fragment, its length) is made on this text.</summary>
+    internal static string Cleaned(string url)
+    {
+        var start = 0;
+        var end = url.Length;
+        while (start < end && url[start] <= ' ')
+        {
+            start++;
+        }
+
+        while (end > start && url[end - 1] <= ' ')
+        {
+            end--;
+        }
+
+        if (url.AsSpan(start, end - start).IndexOfAny('\t', '\n', '\r') < 0)
+        {
+            return start == 0 && end == url.Length ? url : url[start..end];
+        }
+
+        var builder = new StringBuilder(end - start);
+        for (var index = start; index < end; index++)
+        {
+            if (url[index] is not ('\t' or '\n' or '\r'))
+            {
+                builder.Append(url[index]);
+            }
+        }
+
+        return builder.ToString();
     }
 
     /// <summary>A URL without its fragment (URL Standard §4.1: the part from the first <c>#</c>): a fragment names a

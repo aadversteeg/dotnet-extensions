@@ -612,7 +612,7 @@ public static class HtmlStyleResolver
         /// of an image type that is neither, or a URL with no resolver to ask, is unknown.</summary>
         private ImageState Image(HtmlElement html, out string? source)
         {
-            source = html.Attribute("src")?.Trim(' ', '\t', '\n', '\f', '\r');
+            source = html.Attribute("src") is { } src ? Urls.Cleaned(src) : null;
             if (string.IsNullOrEmpty(source))
             {
                 return ImageState.Missing;

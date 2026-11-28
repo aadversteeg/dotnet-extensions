@@ -62,7 +62,7 @@ internal sealed class ResourceTable
     /// <param name="url">The absolute URL.</param>
     /// <returns>The reason, as the end of a sentence, or null.</returns>
     public static string? Refusal(ResourceResolver? resolver, string url) =>
-        resolver?.Target is ResourceTable table ? table.Why(Urls.WithoutFragment(url)) : null;
+        resolver?.Target is ResourceTable table ? table.Why(Urls.WithoutFragment(Urls.Cleaned(url))) : null;
 
     private string? Why(string url) =>
         url.Length > MaxUrlLength ? $"is longer than the {MaxUrlLength} characters a resource URL may have, so the resolver is not asked"
@@ -71,7 +71,7 @@ internal sealed class ResourceTable
 
     private HtmlResource? Get(string url)
     {
-        url = Urls.WithoutFragment(url);
+        url = Urls.WithoutFragment(Urls.Cleaned(url));
         if (url.Length == 0 || DataUrl.Is(url))
         {
             return null;

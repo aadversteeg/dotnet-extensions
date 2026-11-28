@@ -318,4 +318,22 @@ public class HtmlRenderingTests
             .Value.Diagnostics.Should().ContainSingle(error => error.Message.Contains("longer than the 32767 characters", StringComparison.Ordinal));
         asked.Select(url => url.Length).Should().BeEquivalentTo([8, 32_767]);
     }
+
+    [Fact]
+    public void A_tab_or_newline_inside_a_data_URL_is_removed_as_a_browser_removes_it()
+    {
+        // The URL Standard removes every tab and newline of a URL before it parses it (§4.4), so "da\nta:" is data:.
+        var asked = new List<string>();
+        var data = "data:image/png;base64," + Convert.ToBase64String(TestImages.Bytes("rgb8.png"));
+        var options = Options with { Style = Options.Style with { Resources = url => { asked.Add(url); return url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : null; } } };
+        string Page(string images) => Html.Replace("<p>Hello</p>", $"<p>{images}</p>", StringComparison.Ordinal);
+        var raster = new RasterOptions(72);
+
+        var plain = HtmlRendering.ToPng(Page($"<img alt=x width=10 src=\"{data}\"><img alt=x width=10 src=\"{data}\">"), options, 1, raster);
+        var broken = HtmlRendering.ToPng(Page($"<img alt=x width=10 src=\"da&#10;ta{data[4..]}\"><img alt=x width=10 src=\"d&#9;ata{data[4..]}#f\">"), options, 1, raster);
+
+        broken.IsSuccess.Should().BeTrue(broken.IsFailure ? broken.Error.ToString() : string.Empty);
+        broken.Value.Output.Should().Equal(plain.Value.Output);
+        asked.Should().OnlyContain(url => url == "lato.ttf");
+    }
 }
