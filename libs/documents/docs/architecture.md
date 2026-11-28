@@ -1026,15 +1026,16 @@ through the whole HTML path unchanged and its pages are compared with every file
   page, `/Rect` and target, in the order of the page's `/Annots`): the engine's link areas (`LinkArea`, each with the
   target of its link) the same number in the same order, each on the same page, every edge within one CSS pixel
   (`HtmlCases.LinkBound`, 0.75 pt: Chromium writes each edge at a whole pixel, the engine at its exact place), and the
-  same target: a URI compared whole; a link inside the document on the same page, the top of the engine's anchor within
-  one CSS pixel (`HtmlCases.DestinationBound`, 0.75 pt) of Chromium's top plus the page's top margin (Chromium writes a
-  destination in page-area coordinates, one margin above the target, at a whole pixel). A case without the file has no
+  same target: a URI compared whole; a link inside the document on the same page, Chromium's top where it writes the
+  top of the engine's anchor: in page-area coordinates, one margin above the target, on the whole CSS pixel at or before
+  it (`HtmlCases.DestinationPixel`, measured on all 16 tops and lefts of the cases), within the file's step of 0.0005 pt. A case without the file has no
   link, and the engine must have none either.
 - `<case>.glyphs.txt`, the glyphs of each word read back by `glyphs.py` (PyMuPDF's text trace: the glyph id and the
   origin of each glyph the PDF draws): on each page whose text is the same, each word drawn with as many glyphs, the
   same glyph id for each (Chromium embeds font subsets that keep the font program's glyph ids), each glyph's distance
-  from the word's first glyph within 0.1 pt (the bound of a word's start and end; kerning and letter spacing inside a
-  word show here) and its distance below the baseline within 0.1 pt. The text reading of a PDF spreads a ligature over
+  from the word's first glyph within 0.024 pt (kerning and letter spacing inside a word show here; measured, cause
+  unknown: the largest of the equal cases, 0.0232 pt, rounded up to the file's step, `HtmlCases.GlyphOffsetBound`) and
+  its distance below the baseline within the file's step, 0.0005 pt (both sides place it exactly). The text reading of a PDF spreads a ligature over
   its characters at positions of its own; the trace gives the glyph that is drawn, and that is what is compared. A glyph
   of the engine whose text is white space is in no word: it must draw nothing (its outline has no contour,
   `HtmlCases.BlankDifferences`), as Chromium's glyph for white space draws nothing.
@@ -1050,13 +1051,15 @@ through the whole HTML path unchanged and its pages are compared with every file
   on both sides, so a background painted over its own image or over a list marker differs.
 - `<case>.clips.txt`, the clip around each word's text (`clips.py`: the rectangle the clips leave, and whether each of
   them is one rectangle): a word its clips hide wholly on one side and not on the other differs; otherwise how much the
-  clips cut off the word's box at each edge within one pixel (0.75 pt). A clip is taken as its box on both sides.
+  clips of each side cut off the engine's box of the word at each edge within the file's step, 0.0005 pt (both clips
+  cut the same box, as Chromium's word box can lie half a pixel off where it paints a line at a whole pixel). A clip is
+  taken as its box on both sides.
 - `<case>.images.txt`, only for a print that draws an image, the picture of each image (`images.py`: its size in pixels
   and the SHA-256 of its pixels as 8-bit RGBA): the same, exactly, image by image in drawing order. Chromium writes a
   picture given as a PNG losslessly at its own size; the engine's side is the pixels its own decoder gives.
 - `<case>.destinations.txt`, only for a print that has link annotations, the left of each link's destination
-  (`destinations.py`; one line per link of `links.txt`, on its page and of its kind, else the case fails): for each pair of links into the document, Chromium's left plus the page's left margin within one
-  CSS pixel (`HtmlCases.DestinationBound`) of the engine's anchor, as for the top.
+  (`destinations.py`; one line per link of `links.txt`, on its page and of its kind, else the case fails): for each pair of links into the document, Chromium's left where it writes the left of the engine's
+  anchor (`HtmlCases.DestinationPixel`), as for the top.
 - `<case>.links.txt` again, the edges of each pair of link areas on the same page on Chromium's pixel grid: each edge of
   the engine's area taken to the nearest whole pixel within 0.1 pt of Chromium's, as image edges are compared
   (`HtmlCases.LinkPixelDifferences`). Chromium writes each edge at the whole pixel nearest its place (measured: every

@@ -549,21 +549,33 @@ internal static class HtmlCases
     public const double LinkBound = 0.75;
 
     /// <summary>
-    /// One CSS pixel in points: how far the top of a link's destination may be from Chromium's, once Chromium's offset is
-    /// taken out. Chromium writes a destination at the target's place in the coordinates of the page area, one page margin
-    /// above and left of where the target stands on the page (measured: case <c>lk-later-heading</c>, a heading at the top
-    /// of page 2's page area, 18 pt from the page's top, gets the top 0), and at a whole CSS pixel (case <c>lk-cell</c>: the
-    /// target's content area starts 37.875 pt from the page's top, Chromium's top is 37.5 pt with the margin added back);
-    /// the engine writes the exact place. So the top Chromium gives, plus the page's top margin, may be up to one pixel above
-    /// the engine's.
+    /// How far a number of a read-back file may be from the exact one it stands for: half a unit of the files' last place
+    /// (they write three decimals), 0.0005 pt. The bound of what both sides place exactly and the read-back only rounds:
+    /// a glyph's distance below the baseline (<see cref="GlyphDifferences"/>), the edge of a clip (<see cref="ClipDifferences"/>)
+    /// and a destination on Chromium's pixel (<see cref="DestinationPixel"/>).
     /// </summary>
-    public const double DestinationBound = 0.75;
+    public const double ReaderStep = 0.0005;
+
+    /// <summary>
+    /// Where Chromium writes the top or the left of a link's destination, from the engine's place of the target: in the
+    /// coordinates of the page area, one page margin above and left of where the target stands on the page (measured: case
+    /// <c>lk-later-heading</c>, a heading at the top left of page 2's page area, 18 pt from the page's top and left, gets
+    /// the top 0 and the left 0), at the whole CSS pixel at or before the place (measured: every top and left of the cases'
+    /// destinations is the engine's place in the page area floored to a whole pixel, 16 values; case <c>lk-cell</c>: the
+    /// target's left 38.648 pt in the page area is written 38.25, case <c>va-link</c>: its top 115.734 pt is written 115.5).
+    /// Chromium's value is compared with this one within <see cref="ReaderStep"/>.
+    /// </summary>
+    /// <param name="place">The engine's top or left of the target on the page.</param>
+    /// <param name="margin">The page's top or left margin.</param>
+    /// <returns>The value Chromium writes for it.</returns>
+    public static double DestinationPixel(double place, double margin) => Math.Floor(((place - margin) / 0.75) + 1e-9) * 0.75;
 
     /// <summary>
     /// The first difference between the engine's link areas and the link annotations of Chromium's print
     /// (<c>links.txt</c>), or null: the same number of rectangles, in the same order, each on the same page, every edge within
-    /// <see cref="LinkBound"/>, and the same target: a URI compared whole, a destination on the same page with its top
-    /// within <see cref="DestinationBound"/> of Chromium's plus <paramref name="marginTop"/>.
+    /// <see cref="LinkBound"/>, and the same target: a URI compared whole, a destination on the same page with Chromium's
+    /// top where it writes the engine's top (<see cref="DestinationPixel"/>, the top less <paramref name="marginTop"/> on its
+    /// pixel).
     /// </summary>
     /// <param name="pages">The engine's pages.</param>
     /// <param name="chromium">Chromium's links.</param>
@@ -647,10 +659,9 @@ internal static class HtmlCases
     /// <summary>
     /// Every difference between the left edge of the engine's link destinations and Chromium's (<c>destinations.txt</c>),
     /// link by link in the order <see cref="LinkDifferences"/> pairs them, for each pair of links that both lead to a place
-    /// in the document: Chromium's left plus the page's left margin within <see cref="DestinationBound"/> of the engine's.
-    /// Chromium writes the left as it writes the top (<see cref="DestinationBound"/>): in the coordinates of the page area,
-    /// one page margin left of where the target stands (measured: case <c>lk-later-heading</c>, a heading at the left of the
-    /// page area, 18 pt from the page's left, gets the left 0), at a whole CSS pixel. The page and the top are compared there.
+    /// in the document: Chromium's left where it writes the engine's left (<see cref="DestinationPixel"/>: the left less the
+    /// page's left margin, on the whole pixel at or before it), within <see cref="ReaderStep"/>. The page and the top are
+    /// compared in <see cref="LinkDifferences"/>.
     /// </summary>
     /// <param name="pages">The engine's pages.</param>
     /// <param name="chromium">Chromium's destinations, per link (<see cref="Destinations"/>).</param>
@@ -676,9 +687,9 @@ internal static class HtmlCases
 
         foreach (var (ours, theirs, number) in engine.Zip(chromium).Select((pair, index) => (pair.First, pair.Second, index + 1)))
         {
-            if (ours is { } x && theirs is { } place && Math.Abs(x - (place.Left + marginLeft)) > DestinationBound + 1e-9)
+            if (ours is { } x && theirs is { } place && Math.Abs(place.Left - DestinationPixel(x, marginLeft)) > ReaderStep + 1e-9)
             {
-                yield return $"link {number} leads to the left {Of(x)}, Chromium's to {Of(place.Left + marginLeft)} (its {Of(place.Left)} plus the left margin {Of(marginLeft)}) (destinations.txt)";
+                yield return $"link {number} leads to the left {Of(x)}, on Chromium's pixel {Of(DestinationPixel(x, marginLeft))} of the page area, Chromium's to {Of(place.Left)} (plus the left margin {Of(marginLeft)}: {Of(place.Left + marginLeft)}) (destinations.txt)";
             }
         }
     }
@@ -717,8 +728,8 @@ internal static class HtmlCases
         {
             var chromiumTop = Number(theirTop) + marginTop;
             return page != theirPage ? $"{at} leads to page {page}, Chromium's to page {theirPage}"
-                : !double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var engineTop) || Math.Abs(engineTop - chromiumTop) > DestinationBound + 1e-9
-                    ? $"{at} leads to the top {top} of page {page}, Chromium's to {Of(chromiumTop)} (its {theirTop} plus the top margin {Of(marginTop)})"
+                : !double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var engineTop) || Math.Abs(Number(theirTop) - DestinationPixel(engineTop, marginTop)) > ReaderStep + 1e-9
+                    ? $"{at} leads to the top {top} of page {page}, on Chromium's pixel {(double.TryParse(top, NumberStyles.Float, CultureInfo.InvariantCulture, out var exact) ? Of(DestinationPixel(exact, marginTop)) : top)} of the page area, Chromium's to {theirTop} (plus the top margin {Of(marginTop)}: {Of(chromiumTop)})"
                     : null;
         }
 
@@ -839,8 +850,9 @@ internal static class HtmlCases
     /// <see cref="PrintedWord.Glyphs"/>), on each page whose text is the same (<see cref="Differences"/> names a page whose
     /// text differs), word by word as <see cref="Differences"/> pairs them: the same number of glyphs; the same glyph id
     /// for each (Chromium embeds subsets of the fonts that keep the font program's glyph ids); each glyph's x as its
-    /// distance from the word's first glyph within <see cref="Bound"/>, the bound of a word's x0 and x1 (the word's own x0
-    /// is compared there); and each glyph's distance below the baseline within <see cref="Bound"/>. At most one difference
+    /// distance from the word's first glyph within <see cref="GlyphOffsetBound"/> (the word's own x0 is compared there); and
+    /// each glyph's distance below the baseline within <see cref="ReaderStep"/> (both sides place it exactly; measured: every
+    /// one of the equal cases' glyphs is the engine's to the file's last place). At most one difference
     /// per word and kind, the first glyph that differs, with how many differ. A word drawn with another number of glyphs is
     /// that one difference, with the digest of the engine's word and its glyphs (<see cref="WordLine"/>).
     /// </summary>
@@ -870,9 +882,9 @@ internal static class HtmlCases
                 var found = new[]
                 {
                     Glyphs(at, "is ", pairs.Where(pair => pair.Ours.Glyph != pair.Theirs.Glyph).ToList(), pairs.Count, (glyph, first) => $"{glyph.Glyph}"),
-                    Glyphs(at, "lies at +", pairs.Where(pair => Math.Abs(pair.Ours.X - word.Glyphs[0].X - (pair.Theirs.X - measured.Glyphs[0].X)) > Bound).ToList(), pairs.Count,
+                    Glyphs(at, "lies at +", pairs.Where(pair => Math.Abs(pair.Ours.X - word.Glyphs[0].X - (pair.Theirs.X - measured.Glyphs[0].X)) > GlyphOffsetBound + 1e-9).ToList(), pairs.Count,
                         (glyph, first) => Of(glyph.X - first!.X), word.Glyphs[0], measured.Glyphs[0]),
-                    Glyphs(at, "lies below the baseline by ", pairs.Where(pair => Math.Abs(pair.Ours.Below - pair.Theirs.Below) > Bound).ToList(), pairs.Count, (glyph, first) => Of(glyph.Below)),
+                    Glyphs(at, "lies below the baseline by ", pairs.Where(pair => Math.Abs(pair.Ours.Below - pair.Theirs.Below) > ReaderStep + 1e-9).ToList(), pairs.Count, (glyph, first) => Of(glyph.Below)),
                 };
                 foreach (var difference in found.OfType<string>())
                 {
@@ -900,9 +912,17 @@ internal static class HtmlCases
         engine.Pages.SelectMany(page => page.Blanks.Where(blank => blank.Ink).Select(blank =>
             $"page {page.Number} the white space {Characters(blank.Text)} at ({Of(blank.X)}, {Of(blank.Baseline)}) is drawn with glyph {blank.Glyph}, which draws ink; Chromium draws white space with nothing (the engine's font)"));
 
+    /// <summary>
+    /// How far a glyph's distance from its word's first glyph may be from Chromium's: 0.024 pt, measured, cause unknown. Of
+    /// the 28,182 such distances in the cases that are equal to Chromium, 99.1 % are within 0.001 pt (the file's last place);
+    /// the rest reach 0.0232 pt (case <c>gc-items-kern</c>, the word "items" at 10.5 pt), at font sizes Chromium does not
+    /// round (<see cref="ChromiumLayout.FontSizeFactor"/> is 1 there), in faces with kerning (Lato, Theano Didot). The bound
+    /// is that largest one rounded up to the file's step; a moved glyph past it differs.
+    /// </summary>
+    public const double GlyphOffsetBound = 0.024;
+
     /// <summary>One CSS pixel in points: how far two things must overlap each way to be painted one over the other
-    /// (<see cref="OrderDifferences"/>), and how far the part of a word its clips cut off may differ from Chromium's
-    /// (<see cref="ClipDifferences"/>); the grid the comparison counts painted areas on.</summary>
+    /// (<see cref="OrderDifferences"/>); the grid the comparison counts painted areas on.</summary>
     public const double PixelBound = 0.75;
 
     /// <summary>The box of a word that the comparisons of paint order and clips use, the same on both sides: its advances
@@ -1111,8 +1131,13 @@ internal static class HtmlCases
     /// <summary>
     /// Every difference in how the clips cut the engine's words and Chromium's (<c>clips.txt</c>), on each page whose text is
     /// the same, word by word as <see cref="Differences"/> pairs them: a word its clips hide wholly on one side and not on the
-    /// other; otherwise how much the clips cut off its box (<see cref="WordBox"/>) at each edge, within <see cref="PixelBound"/>.
-    /// A clip is taken as its box on both sides (the engine clips by rectangles only).
+    /// other; otherwise how much each side's clips cut off the engine's box of the word (<see cref="WordBox"/>) at each
+    /// edge, within <see cref="ReaderStep"/>. Both clips cut the same box, so only where the clips stand is compared, not
+    /// where the words stand (that is compared in <c>print.txt</c>): Chromium paints a line at a whole pixel, so its word's
+    /// box can lie up to half a pixel from the engine's (case <c>a4-header-tall-line</c>: "W" at 200 pt, its box 0.379 pt
+    /// lower in Chromium's print, its clip, the page area, the same on both sides). A clip is taken as its box on both
+    /// sides (the engine clips by rectangles only). Measured: every edge of a clip that cuts a word of the cases equal to
+    /// Chromium is the engine's to the file's last place.
     /// </summary>
     /// <param name="engine">The engine's pages.</param>
     /// <param name="chromium">Chromium's print, with the clips of its words (<see cref="PrintedPages.WithClips"/>).</param>
@@ -1128,12 +1153,19 @@ internal static class HtmlCases
                 continue;
             }
 
-            if (ours.Shown is { } shown && theirs.Shown is { } other)
+            if (ours.Shown is { } shown && theirs.Shown is not null)
             {
-                var (box, measured) = (WordBox(ours), WordBox(theirs));
+                var box = WordBox(ours);
+                var clip = theirs.Clip is { } around ? new Rect(new Point(around.X0, around.Y0), new Size(Math.Max(0, around.X1 - around.X0), Math.Max(0, around.Y1 - around.Y0))) : (Rect?)null;
+                if (PrintedPages.Visible(box, clip) is not { } other)
+                {
+                    yield return $"{at} is cut by its clips by {string.Join(" ", new[] { shown.X0 - box.X0, shown.Y0 - box.Y0, box.X1 - shown.X1, box.Y1 - shown.Y1 }.Select(Of))} (left top right bottom), Chromium's clips leave nothing of it (clips.txt)";
+                    continue;
+                }
+
                 double[] cut = [shown.X0 - box.X0, shown.Y0 - box.Y0, box.X1 - shown.X1, box.Y1 - shown.Y1];
-                double[] chromiumCut = [other.X0 - measured.X0, other.Y0 - measured.Y0, measured.X1 - other.X1, measured.Y1 - other.Y1];
-                if (cut.Zip(chromiumCut).Any(pair => Math.Abs(pair.First - pair.Second) > PixelBound))
+                double[] chromiumCut = [other.X0 - box.X0, other.Y0 - box.Y0, box.X1 - other.X1, box.Y1 - other.Y1];
+                if (cut.Zip(chromiumCut).Any(pair => Math.Abs(pair.First - pair.Second) > ReaderStep + 1e-9))
                 {
                     yield return $"{at} is cut by its clips by {string.Join(" ", cut.Select(Of))} (left top right bottom), Chromium's by {string.Join(" ", chromiumCut.Select(Of))} (clips.txt)";
                 }

@@ -246,8 +246,12 @@ further characters of one glyph's text, at the glyph's origin with the glyph id 
 ligature is one glyph, its "t" such an entry); and a format character (a soft hyphen, a zero-width space, a joiner),
 which Chromium draws as the font's space glyph without an advance (`ws-soft`). A precomposed letter the reading writes
 as base and mark is one glyph (`ta-marks`: "y" with U+0323 is the glyph of U+1EF5). The case comparison compares, word
-by word, the number of glyphs, each glyph id and each glyph's distance from the word's first glyph within 0.1 pt, the
-bound of a word's start and end (`HtmlCases.GlyphDifferences`). A glyph whose text is white space belongs to no word on
+by word, the number of glyphs, each glyph id, each glyph's distance from the word's first glyph within 0.024 pt and its
+distance below the baseline within 0.0005 pt (`HtmlCases.GlyphDifferences`). The first bound is measured, its cause
+unknown: of the 28,182 distances of the cases equal to Chromium 99.1 % agree to the file's last place, the rest reach
+0.0232 pt (`gc-items-kern`, kerned Lato at 10.5 pt, a size Chromium does not round), rounded up to the file's step it is
+0.024 (`HtmlCases.GlyphOffsetBound`). The second is the file's step: both sides place a raised or lowered glyph
+exactly (`HtmlCases.ReaderStep`). A glyph whose text is white space belongs to no word on
 either side; Chromium draws it with the font's glyph for it, which draws nothing, so the engine's must draw nothing
 either: its outline in the font has no contour (`HtmlCases.BlankDifferences`). Such glyphs are in the digest of an
 engine page too.
@@ -279,7 +283,11 @@ of each colour in `print.txt`, so their order shows only where the colours diffe
 
 `clips.txt` gives the clip around each word's text, as its box; no word of a case is drawn under a clip that is not one
 rectangle. The case comparison takes a word as hidden where its clips leave nothing of its box, and otherwise compares
-how much they cut off at each edge within one pixel (`HtmlCases.ClipDifferences`).
+how much each side's clips cut off the engine's box of the word at each edge, within the file's step, 0.0005 pt
+(`HtmlCases.ClipDifferences`). Both clips cut the same box, so the comparison sees where the clips stand, not where the
+words stand (`print.txt` compares that): Chromium paints a line at a whole pixel, so its word's box can lie up to half a
+pixel from the engine's (`a4-header-tall-line`: "W" at 200 pt, 0.379 pt lower in Chromium's print, under the same clip).
+Every edge of a clip that cuts a word in the cases equal to Chromium is the engine's to the file's last place.
 
 `images.txt` gives the picture of each image: Chromium writes an image it was given as a PNG with a lossless filter
 (`FlateDecode`) at the PNG's own size, gray or RGB, its alpha as a soft mask; `images.py` decodes it (PyMuPDF's Pixmap)
@@ -290,9 +298,12 @@ no case draws a JPEG, and a JPEG would differ until a case measures how Chromium
 `destinations.txt` gives the left of each link's destination, which `links.txt` does not hold, one line per link of
 `links.txt` in its order; a case with links whose file is missing, or has another number of lines, or a line on another
 page or of another kind than its link (`dest` or `uri`), fails, so no link into the document passes unseen. The case comparison
-compares it as the top: Chromium's left plus the page's left margin within one pixel of the engine's anchor
-(`HtmlCases.DestinationDifferences`; `lk-later-heading`: a heading at the left of the page area, 18 pt from the page's
-left, gets the left 0). And it compares the edges of the link areas on Chromium's pixel grid: Chromium writes each edge
+compares it as the top: Chromium writes the target's place in the coordinates of the page area (`lk-later-heading`: a
+heading at the top left of the page area, 18 pt from the page's top and left, gets the top 0 and the left 0) on the
+whole CSS pixel at or before it, as all 16 tops and lefts of the cases' destinations show (`lk-cell`: the left 38.648 pt
+in the page area is written 38.25; `va-link`: the top 115.734 pt is written 115.5). So the engine's anchor less the
+margin, floored to a whole pixel, must be Chromium's value within the file's step (`HtmlCases.DestinationPixel`,
+`HtmlCases.DestinationDifferences`, and the top in `HtmlCases.LinkDifferences`). And it compares the edges of the link areas on Chromium's pixel grid: Chromium writes each edge
 of a link's rectangle at the whole CSS pixel nearest the place it lays the link out at, as every one of the 256 edges of
 the cases whose links agree otherwise shows, so each engine edge taken to its nearest whole pixel must be Chromium's
 within 0.1 pt (`HtmlCases.LinkPixelDifferences`). The bound of one pixel either way of `links.txt` is the width of that
