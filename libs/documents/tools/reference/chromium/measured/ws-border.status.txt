@@ -1,5 +1,5 @@
 ws-border listed Where_an_element_that_wraps_differently_from_its_parent_ends_the_engine_follows_the_character_before_not_Chromium_in_the_HTML_case: page 1 'bb' x0 28.395, Chromium 12 (print.txt)
-71 differences, SHA-256 b57f24ff74a25f775b8ad2e4c2ea4900a391b26afa3598bfbcaa34c994b0d460 of all of them; the first 60:
+71 differences, SHA-256 8ebaae74d35b817312c5fa0da11c9d049b597e8deae2e421de4de30d73b4a380 of all of them; the first 60:
 - page 1 'bb' x0 28.395, Chromium 12 (print.txt)
 - page 1 'bb' x1 41.834, Chromium 25.44 (print.txt)
 - page 1 'bb' baseline 187.5 (laid out at 187.5), Chromium 205.5 (print.txt)
@@ -30,7 +30,7 @@ ws-border listed Where_an_element_that_wraps_differently_from_its_parent_ends_th
 - page 1 'dd' x1 39.867, Chromium 25.44 (print.txt)
 - page 1 'dd' baseline 457.5 (laid out at 457.5), Chromium 511.5 (print.txt)
 - page 1 'x' baseline 475.5 (laid out at 475.5), Chromium 529.5 (print.txt)
-- page 1 has 36 words inside the page, Chromium 37; the engine's words inside page 1: digest 5da6f6289ba341a5 (words.txt)
+- page 1 has 36 words inside the page, Chromium 37; the engine's words inside page 1: digest 15271d451282663c (words.txt)
 - page 1 'aa-' yMin 193.656, Chromium 175.656 (words.txt)
 - page 1 'aa-' yMax 208.056, Chromium 190.056 (words.txt)
 - page 1 'bb' yMin 211.656, Chromium 193.656 (words.txt)
@@ -55,7 +55,7 @@ ws-border listed Where_an_element_that_wraps_differently_from_its_parent_ends_th
 - page 1 'bb' xMax 40.44, Chromium 25.44 (words.txt)
 - page 1 'aa' yMin 427.656, Chromium 373.656 (words.txt)
 - page 1 'aa' yMax 442.056, Chromium 388.056 (words.txt)
-- page 1 has no word 'aa-'; the engine's words inside page 1: digest 5da6f6289ba341a5 (words.txt)
+- page 1 has no word 'aa-'; the engine's words inside page 1: digest 15271d451282663c (words.txt)
 - page 1 'bb' xMin 27, Chromium 12 (words.txt)
 - page 1 'bb' xMax 40.44, Chromium 25.44 (words.txt)
 - page 1 'aa-bb' yMin 409.656, Chromium 445.656 (words.txt)

@@ -119,11 +119,12 @@ public class CaseStatusTests(ITestOutputHelper output)
 
     /// <summary>
     /// A listed case names, in its status line, the test that pins its difference, and the link is data, not text: one
-    /// test method of this project by that name, a theory with a row (<see cref="InlineDataAttribute"/>) whose first value is
-    /// the case's name, read by reflection, and whose first parameter is <c>string name</c>; and that test lays out the case
-    /// it is given: its body (<see cref="TestSource"/> from the declaration on, comments left out) uses <c>name</c> and holds
+    /// test method of this project by that name, a theory that runs (<see cref="TheoryAttribute"/> without a skip reason)
+    /// with a row that runs (<see cref="InlineDataAttribute"/>, no skip reason) whose first value is the case's name, read by
+    /// reflection, and whose first parameter is <c>string name</c>; and that test lays out the case it is given: its body
+    /// (<see cref="TestSource"/> from the declaration on, comments left out) uses <c>name</c>, never assigns to it, and holds
     /// no case's name as a string, so it cannot be given one case and look at another. A name changed in the line alone, a
-    /// test of another case, or a case named only in a comment fails here.
+    /// test of another case, a case named only in a comment, a method that is no test, and a skipped test or row fail here.
     /// </summary>
     [Fact]
     public void Every_listed_case_names_a_test_that_lays_out_that_case()
@@ -151,15 +152,31 @@ public class CaseStatusTests(ITestOutputHelper output)
             return "is not one test method of this project";
         }
 
+        if (method.GetCustomAttributes(typeof(FactAttribute), inherit: true).OfType<FactAttribute>().ToList() is not [TheoryAttribute theory])
+        {
+            return "is not a theory";
+        }
+
+        if (theory.Skip is not null)
+        {
+            return "is skipped";
+        }
+
         if (method.GetParameters() is not [{ Name: "name" } first, ..] || first.ParameterType != typeof(string))
         {
             return "has no first parameter string name";
         }
 
-        var rows = method.GetCustomAttributes(typeof(InlineDataAttribute), inherit: false).OfType<InlineDataAttribute>().SelectMany(row => row.GetData(method)).ToList();
-        if (!rows.Exists(row => row is [string given, ..] && given == name))
+        var rows = method.GetCustomAttributes(typeof(InlineDataAttribute), inherit: false).OfType<InlineDataAttribute>()
+            .SelectMany(row => row.GetData(method).Select(data => (Data: data, row.Skip))).ToList();
+        if (!rows.Exists(row => row.Data is [string given, ..] && given == name))
         {
             return "has no row whose first value is the case";
+        }
+
+        if (!rows.Exists(row => row.Data is [string given, ..] && given == name && row.Skip is null))
+        {
+            return "skips the row of the case";
         }
 
         if (sources.Select(source => TestSource(source, test)).OfType<string>().ToList() is not [var text])
@@ -174,6 +191,12 @@ public class CaseStatusTests(ITestOutputHelper output)
             return "does not use the name it is given";
         }
 
+        // An assignment (also compound, or in a deconstruction) or an out or ref argument would give the body another case.
+        if (System.Text.RegularExpressions.Regex.IsMatch(body, @"(?<![\w.])name\s*(?:\?\?|<<|>>|[-+*/%&|^])?=(?![=>])|\b(?:out|ref)\s+name\b|\([^()]*(?<![\w.])name\b[^()]*\)\s*=(?![=>])"))
+        {
+            return "assigns to the name it is given";
+        }
+
         return HtmlCases.Names.FirstOrDefault(other => body.Contains($"\"{other}\"", StringComparison.Ordinal)) is { } named ? $"names the case \"{named}\" in its body" : null;
     }
 
@@ -184,6 +207,11 @@ public class CaseStatusTests(ITestOutputHelper output)
     [InlineData("OtherRow", "has no row whose first value is the case")]
     [InlineData("Unused", "does not use the name it is given")]
     [InlineData("Other", "names the case \"ta-items\" in its body")]
+    [InlineData("NoTest", "is not a theory")]
+    [InlineData("Skipped", "is skipped")]
+    [InlineData("SkippedRow", "skips the row of the case")]
+    [InlineData("Assigned", "assigns to the name it is given")]
+    [InlineData("Deconstructed", "assigns to the name it is given")]
     public void A_listed_case_is_linked_to_its_test_by_a_row_that_names_it_and_a_body_that_uses_it(string test, string? why)
     {
         var methods = typeof(LinkedTests).GetMethods().Where(method => method.DeclaringType == typeof(LinkedTests)).ToList();
@@ -210,29 +238,71 @@ public class CaseStatusTests(ITestOutputHelper output)
             {
                 Run(name, "ta-items");
             }
+            [InlineData("ta-kerning-scale")]
+            public void NoTest(string name) => Run(name);
+            [InlineData("ta-kerning-scale")]
+            public void Skipped(string name) => Run(name);
+            [InlineData("ta-kerning-scale", Skip = "later")]
+            public void SkippedRow(string name) => Run(name);
+            [InlineData("ta-kerning-scale")]
+            public void Assigned(string name)
+            {
+                name = string.Concat("ta-", "items");
+                Run(name);
+            }
+            [InlineData("ta-kerning-scale")]
+            public void Deconstructed(string name)
+            {
+                (name, var other) = (string.Concat("ta-", "items"), 1);
+                Run(name, other);
+            }
         """;
 
     /// <summary>The methods <see cref="A_listed_case_is_linked_to_its_test_by_a_row_that_names_it_and_a_body_that_uses_it"/>
     /// checks, by the rows <see cref="LinkedSource"/> shows for them.</summary>
-#pragma warning disable xUnit1008 // Rows on methods that are no tests: the check reads them by reflection, nothing runs them.
+#pragma warning disable xUnit1000, xUnit1008 // Tests in a class that is not public, and a row on a method that is no test: the check reads them by reflection, nothing runs them.
     private static class LinkedTests
     {
+        [Theory]
         [InlineData("ta-kerning-scale")]
         public static void Linked(string name) => _ = name;
 
+        [Theory]
         [InlineData("ta-kerning-scale")]
         public static void NoName(string other) => _ = other;
 
+        [Theory]
         [InlineData("ta-items")]
         public static void OtherRow(string name) => _ = name;
 
+        [Theory]
         [InlineData("ta-kerning-scale")]
         public static void Unused(string name) => _ = name;
 
+        [Theory]
         [InlineData("ta-kerning-scale")]
         public static void Other(string name) => _ = name;
+
+        [InlineData("ta-kerning-scale")]
+        public static void NoTest(string name) => _ = name;
+
+        [Theory(Skip = "later")]
+        [InlineData("ta-kerning-scale")]
+        public static void Skipped(string name) => _ = name;
+
+        [Theory]
+        [InlineData("ta-kerning-scale", Skip = "later")]
+        public static void SkippedRow(string name) => _ = name;
+
+        [Theory]
+        [InlineData("ta-kerning-scale")]
+        public static void Assigned(string name) => _ = name;
+
+        [Theory]
+        [InlineData("ta-kerning-scale")]
+        public static void Deconstructed(string name) => _ = name;
     }
-#pragma warning restore xUnit1008
+#pragma warning restore xUnit1000, xUnit1008
 
     /// <summary>The text of a test method in a source file: from the attributes and comments right above its declaration
     /// (<c> void name(</c>) to the end of its body, the first line after it that closes a member (four spaces and a brace), or

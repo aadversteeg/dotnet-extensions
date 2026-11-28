@@ -1,1 +1,3 @@
-a4-header-rows-fill-image-row equal
+a4-header-rows-fill-image-row open page 5 image 1 at (12.75, 12) is painted over by #000000, Chromium's by nothing (order.txt)
+1 difference:
+- page 5 image 1 at (12.75, 12) is painted over by #000000, Chromium's by nothing (order.txt)

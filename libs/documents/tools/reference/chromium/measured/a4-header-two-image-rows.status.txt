@@ -1,5 +1,5 @@
 a4-header-two-image-rows listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
-14 differences:
+15 differences:
 - page 3 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 - page 4 painted area: the pixel at (12.75, 75.75): Chromium paints it and the engine does not; the engine paints 1356 px #000000, Chromium 1578 px; 588 px differ so, from (12, 75.75) to (288, 192) (print.txt)
 - page 4 painted area: the pixel at (12.75, 108): the engine paints it and Chromium does not; the engine paints 1356 px #000000, Chromium 1578 px; 366 px differ so, from (12.75, 108) to (287.25, 108.75) (print.txt)
@@ -14,3 +14,4 @@ a4-header-two-image-rows listed A_repeated_header_is_drawn_above_a_slice_where_C
 - page 7 painted area: the pixel at (12, 76.5): the engine paints it and Chromium does not; the engine paints 540 px, Chromium 538 px; 368 px differ so, from (12, 76.5) to (288, 77.25) (lines.txt)
 - page 7 'after' yMin 77.406, Chromium 76.656 (words.txt)
 - page 7 'after' yMax 91.806, Chromium 91.056 (words.txt)
+- page 4 image 1 at (12.75, 28.125) is painted over by #000000, Chromium's by nothing (order.txt)

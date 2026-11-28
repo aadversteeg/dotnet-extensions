@@ -1,1 +1,3 @@
-a4-header-empty-rowspan-line-image equal
+a4-header-empty-rowspan-line-image open page 4 image 1 at (150.375, 12) is painted over by #000000, Chromium's by nothing (order.txt)
+1 difference:
+- page 4 image 1 at (150.375, 12) is painted over by #000000, Chromium's by nothing (order.txt)
