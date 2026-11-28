@@ -327,7 +327,9 @@ how much each side's clips cut off the engine's box of the word at each edge, wi
 (`HtmlCases.ClipDifferences`). Both clips cut the same box, so the comparison sees where the clips stand, not where the
 words stand (`print.txt` compares that): Chromium paints a line at a whole pixel, so its word's box can lie up to half a
 pixel from the engine's (`a4-header-tall-line`: "W" at 200 pt, 0.379 pt lower in Chromium's print, under the same clip).
-Every edge of a clip that cuts a word in the cases equal to Chromium is the engine's to the file's last place.
+Every edge of a clip that cuts a word in the cases equal to Chromium is the engine's to the file's last place. A limit:
+a word the engine draws as two runs joined into one (`gc-items-break`: `content: "Unbroken" "word"`) is shown where
+either part is shown, so a clip that cuts the word inside it, where neither part ends, is not seen.
 
 `images.txt` gives the picture of each image: Chromium writes an image it was given as a PNG with a lossless filter
 (`FlateDecode`) at the PNG's own size, gray or RGB, its alpha as a soft mask; `images.py` decodes it (PyMuPDF's Pixmap)

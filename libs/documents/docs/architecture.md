@@ -1065,7 +1065,8 @@ through the whole HTML path unchanged and its pages are compared with every file
   them is one rectangle): a word its clips hide wholly on one side and not on the other differs; otherwise how much the
   clips of each side cut off the engine's box of the word at each edge within the file's step, 0.0005 pt (both clips
   cut the same box, as Chromium's word box can lie half a pixel off where it paints a line at a whole pixel). A clip is
-  taken as its box on both sides.
+  taken as its box on both sides. A word the engine draws as two runs joined into one (`gc-items-break`) is shown where
+  either part is shown, so a clip that cuts it inside, where neither part ends, is not seen.
 - `<case>.images.txt`, only for a print that draws an image, the picture of each image (`images.py`: its size in pixels
   and the SHA-256 of its pixels as 8-bit RGBA): the same, exactly, image by image in drawing order. Chromium writes a
   picture given as a PNG losslessly at its own size; the engine's side is the pixels its own decoder gives.
