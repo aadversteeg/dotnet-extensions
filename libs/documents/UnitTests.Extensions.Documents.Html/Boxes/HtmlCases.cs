@@ -336,7 +336,8 @@ internal static class HtmlCases
         var tie = sixteenths == Math.Floor(sixteenths) && Math.Abs(sixteenths % 2) == 1;
         if (!tie && (Written(down) != written || Written(up) != written))
         {
-            throw new InvalidOperationException($"The number {value.ToString("R", CultureInfo.InvariantCulture)} writes {written}, and {Written(down)} or {Written(up)} {DigestSteps} units in the last place away; its digest could differ by platform.");
+            throw new InvalidOperationException($"The number {value.ToString("R", CultureInfo.InvariantCulture)} writes {written}, and {Written(down)} or {Written(up)} {DigestSteps} units in the last place away; its digest could differ by platform. " +
+                "Change the case so that the number leaves the edge between two roundings (make a length of the case a little longer or shorter), or make the comparison pair the content it digests.");
         }
 
         return written;
@@ -357,7 +358,8 @@ internal static class HtmlCases
     /// <see cref="PrintedPage.Blanks"/>); each painted rectangle in drawing order
     /// (box, colour); each image area in drawing order (box) and then each picture (<c>width height sha256</c>); each painted
     /// path in drawing order (box, colour, rows); each paint in drawing order (its rank in the page's drawing sequence, box,
-    /// colour or <c>image</c>); each link area on the page in drawing order (box, target). Every box is <c>x0 y0 x1 y1</c>,
+    /// colour or <c>image</c>); each link area on the page in drawing order (box, target, and the left of a target inside
+    /// the document). Every box is <c>x0 y0 x1 y1</c>,
     /// every number as <see cref="DigestNumber"/> writes it.
     /// </summary>
     /// <param name="page">The engine's page (<see cref="PrintedPages.Engine"/>).</param>
@@ -397,7 +399,7 @@ internal static class HtmlCases
 
         foreach (var link in links.Where(link => link.Page == page.Number))
         {
-            yield return $"link {DigestBox(link.X0, link.Y0, link.X1, link.Y1)} {link.Target}";
+            yield return $"link {DigestBox(link.X0, link.Y0, link.X1, link.Y1)} {link.Target}{(link.Left is { } left ? $" left {DigestNumber(left)}" : string.Empty)}";
         }
     }
 
@@ -415,13 +417,14 @@ internal static class HtmlCases
 
     /// <summary>The line of a word for a digest (<see cref="PageLines"/>): its text, x0, x1, baseline, font size, colour and
     /// face; its rank in the page's drawing sequence (<c>-</c> where there is none); the box its clips leave, or <c>none</c>;
-    /// and each glyph as <c>id x below end</c>.</summary>
+    /// <c>hidden</c> where they leave nothing of its box (<see cref="WordBox"/>), else <c>shown</c>; and each glyph as <c>id x below end</c>.</summary>
     /// <param name="word">The engine's word.</param>
     /// <param name="ranks">The ranks of the page's places (<see cref="Ranks"/>), or null to leave the rank out.</param>
     /// <returns>The line.</returns>
     internal static string WordLine(PrintedWord word, IReadOnlyDictionary<int, int>? ranks = null) =>
         $"word {word.Text} {DigestNumber(word.X0)} {DigestNumber(word.X1)} {DigestNumber(word.Baseline)} {DigestNumber(word.FontSize)} {word.Colour} {word.Face}" +
         $" at {(ranks is not null && word.Place is { } place ? $"{ranks[place]}" : "-")} clip {(word.Clip is { } clip ? DigestBox(clip.X0, clip.Y0, clip.X1, clip.Y1) : "none")}" +
+        $" {(word.Clip is { } around && PrintedPages.Visible(WordBox(word), new Rect(new Point(around.X0, around.Y0), new Size(Math.Max(0, around.X1 - around.X0), Math.Max(0, around.Y1 - around.Y0)))) is null ? "hidden" : "shown")}" +
         $" glyphs {string.Join(", ", word.Glyphs.Select(glyph => $"{glyph.Glyph} {DigestNumber(glyph.X)} {DigestNumber(glyph.Below)} {DigestNumber(glyph.End)}"))}";
 
     /// <summary>The digest of an engine's page (<see cref="PageLines"/>), as a difference writes it.</summary>
@@ -496,7 +499,11 @@ internal static class HtmlCases
     /// the origin at the top left of the page, and its target as <c>links.txt</c> writes it (<c>uri &lt;URI&gt;</c>, or
     /// <c>dest &lt;page&gt; &lt;top&gt;</c> for a link inside the document: the destination's page and its top from the top of
     /// that page; for the engine the place of the target's anchor, <see cref="Anchor"/>).</summary>
-    internal sealed record PrintedLink(int Page, double X0, double Y0, double X1, double Y1, string Target);
+    internal sealed record PrintedLink(int Page, double X0, double Y0, double X1, double Y1, string Target)
+    {
+        /// <summary>For the engine's link to a place in the document, the left of the target's anchor; null otherwise.</summary>
+        public double? Left { get; init; }
+    }
 
     /// <summary>The link annotations of Chromium's print, from <c>&lt;case&gt;.links.txt</c> (README of
     /// <c>tools/reference/chromium</c>, read back by <c>links.py</c>: <c>page x0 y0 x1 y1 kind target</c>, page by page in
@@ -516,8 +523,9 @@ internal static class HtmlCases
     {
         var targets = new Dictionary<NodeId, string>();
         var links = new List<PrintedLink>();
-        var anchors = pages.Pages.SelectMany((page, index) => page.Items.OfType<Anchor>().Select(anchor => (anchor.Node, Place: $"dest {index + 1} {Of(anchor.At.Y)}")))
-            .ToDictionary(anchor => anchor.Node, anchor => anchor.Place);
+        var anchors = pages.Pages.SelectMany((page, index) => page.Items.OfType<Anchor>().Select(anchor => (anchor.Node, Place: $"dest {index + 1} {Of(anchor.At.Y)}", anchor.At.X)))
+            .ToDictionary(anchor => anchor.Node, anchor => (anchor.Place, anchor.X));
+        var lefts = new Dictionary<NodeId, double?>();
         foreach (var (page, number) in pages.Pages.Select((page, index) => (page, index + 1)))
         {
             foreach (var item in page.Items)
@@ -526,13 +534,15 @@ internal static class HtmlCases
                 {
                     case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.UriTarget uri } } start:
                         targets[start.Node] = $"uri {uri.Value}";
+                        lefts[start.Node] = null;
                         break;
                     case StructureStart { Role: SemanticRole.LinkRole { Target: LinkTarget.NodeTarget node } } start:
-                        targets[start.Node] = anchors.TryGetValue(node.Value, out var place) ? place : $"dest none {node.Value}";
+                        targets[start.Node] = anchors.TryGetValue(node.Value, out var place) ? place.Place : $"dest none {node.Value}";
+                        lefts[start.Node] = anchors.TryGetValue(node.Value, out var anchor) ? anchor.X : null;
                         break;
                     case LinkArea area:
                         var rect = area.Area;
-                        links.Add(new PrintedLink(number, rect.Origin.X, rect.Origin.Y, rect.Origin.X + rect.Size.Width, rect.Origin.Y + rect.Size.Height, targets[area.Link]));
+                        links.Add(new PrintedLink(number, rect.Origin.X, rect.Origin.Y, rect.Origin.X + rect.Size.Width, rect.Origin.Y + rect.Size.Height, targets[area.Link]) { Left = lefts[area.Link] });
                         break;
                 }
             }

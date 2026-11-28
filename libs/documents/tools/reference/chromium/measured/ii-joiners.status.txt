@@ -1,7 +1,7 @@
-ii-joiners listed A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners: page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x'; the engine's page 1: digest 320294d353ad65c6 (print.txt)
+ii-joiners listed A_line_breaks_beside_an_image_also_next_to_a_joiner_like_Chromium_whose_text_keeps_the_joiners: page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x'; the engine's page 1: digest 456a88af9f4e87c0 (print.txt)
 5 differences:
-- page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x'; the engine's page 1: digest 320294d353ad65c6 (print.txt)
-- page 1 has no word 'abc⁠'; the engine's words inside page 1: digest 29c5db3a67fed4f9 (words.txt)
-- page 1 has no word '⁠def'; the engine's words inside page 1: digest 29c5db3a67fed4f9 (words.txt)
-- page 1 has no word 'abc‍'; the engine's words inside page 1: digest 29c5db3a67fed4f9 (words.txt)
-- page 1 has no word '‍def'; the engine's words inside page 1: digest 29c5db3a67fed4f9 (words.txt)
+- page 1 reads 'abc def abc def abc def abc def x', Chromium 'abc⁠ ⁠def abc‍ ‍def abc def abc def x'; the engine's page 1: digest 456a88af9f4e87c0 (print.txt)
+- page 1 has no word 'abc⁠'; the engine's words inside page 1: digest e0fa288383e6cf5c (words.txt)
+- page 1 has no word '⁠def'; the engine's words inside page 1: digest e0fa288383e6cf5c (words.txt)
+- page 1 has no word 'abc‍'; the engine's words inside page 1: digest e0fa288383e6cf5c (words.txt)
+- page 1 has no word '‍def'; the engine's words inside page 1: digest e0fa288383e6cf5c (words.txt)

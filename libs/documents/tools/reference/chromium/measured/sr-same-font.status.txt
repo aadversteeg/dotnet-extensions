@@ -1,5 +1,5 @@
-sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o'; the engine's page 1: digest 644d39e0b21e8a90 (print.txt)
+sr-same-font listed A_ligature_across_the_border_of_an_inline_element_keeps_every_character_where_Chromium_keeps_only_those_of_the_first_run: page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o'; the engine's page 1: digest 8367f0e8d0d646a2 (print.txt)
 3 differences:
-- page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o'; the engine's page 1: digest 644d39e0b21e8a90 (print.txt)
-- page 1 has no word 'fx'; the engine's words inside page 1: digest 207ca0f4ff638896 (words.txt)
-- page 1 has no word 'ofce'; the engine's words inside page 1: digest 207ca0f4ff638896 (words.txt)
+- page 1 reads 'To T o AVA A V A fix fix office office x y x y x y x y x y x y x y T o T o T Yo Y o', Chromium 'To T o AVA A V A fix fx office ofce x y x y x y x y x y x y x y T o T o T Yo Y o'; the engine's page 1: digest 8367f0e8d0d646a2 (print.txt)
+- page 1 has no word 'fx'; the engine's words inside page 1: digest 02d49c69d2479047 (words.txt)
+- page 1 has no word 'ofce'; the engine's words inside page 1: digest 02d49c69d2479047 (words.txt)
