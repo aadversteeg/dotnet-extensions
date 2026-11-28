@@ -80,6 +80,7 @@ public static class HtmlRendering
                 GenericFamilies = options.GenericFamilies,
                 Resources = style.Resources,
                 BaseUrl = style.BaseUrl,
+                AllowBaseElement = style.AllowBaseElement,
                 Unsupported = style.Unsupported,
                 MissingCharacters = Shaper.MissingCharacters,
             }))

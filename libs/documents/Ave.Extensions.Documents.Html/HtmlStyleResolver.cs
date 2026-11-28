@@ -127,7 +127,15 @@ public static class HtmlStyleResolver
             var tree = StyleElement.Tree(document);
             var elements = Descendants(tree).ToList();
             _body = elements.Select(item => item.Element).FirstOrDefault(element => element.IsHtml("body"));
-            _documentBase = Urls.DocumentBase(document, options.BaseUrl);
+            _documentBase = Urls.DocumentBase(document, options.BaseUrl, options.AllowBaseElement);
+            if (!options.AllowBaseElement && Urls.BaseElement(document) is { } baseElement)
+            {
+                // The caller's base URL is the trust anchor: a document may not move its URLs elsewhere unless allowed.
+                Keep(new Error(HtmlStyleErrorCodes.Unsupported.Element,
+                        $"The <base href=\"{InputQuote.Of(baseElement.Attribute("href")!)}\"> is not honoured: the document's URLs are resolved against the caller's base URL. Remove the base element, or let the caller allow it (HtmlStyleOptions.AllowBaseElement).")
+                    .With(ErrorMetadataKeys.Value, "base")
+                    .WithSource(_sourceName, baseElement.Position));
+            }
 
             var sheets = new List<CascadeSheet> { new(UserAgentStyleSheet.Sheet, CascadeOrigin.UserAgent) };
             sheets.AddRange(AuthorSheets(elements).Select(sheet => new CascadeSheet(sheet, CascadeOrigin.Author)));

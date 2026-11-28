@@ -181,6 +181,16 @@ templating library. In a real caller's hands the data is untrusted: every value 
 fonts of the `@font-face` rules, the logo and the style sheets come from the resolver, which gives only the files the
 template names. What the HTML front-end draws, refuses and ignores is the HTML profile, `docs/html-css-profile.md`.
 
+The resolver is the one place where a document reaches the caller's files or network, so every URL in the document
+is untrusted input. The engine hands the resolver absolute URLs, resolved against the caller's `BaseUrl` (a `<base>`
+element in the document counts only when the caller sets `AllowBaseElement`; otherwise it is refused), each URL at
+most once per render, at most 4 096 of them, each at most 32 767 characters. `data:` URLs never reach the resolver: the
+engine decodes them itself. Every other URL does, whatever its scheme: `file:`, a Windows share written as
+`file://host/share/x.css`, `ftp:`, `javascript:`, or a path with `../` that leaves the base folder. So the resolver
+decides what it serves: it maps a URL to a file only inside a folder it chose (the HtmlStyles sample checks
+`folder.IsBaseOf(uri)`), fetches only from hosts it trusts, and gives null for anything else. The engine itself opens
+no file, socket or process.
+
 The HTML the sample writes is, byte for byte, the document the family measures against Chromium 159's print
 (`tools/reference/chromium/documents/timesheet-*.html`; `HtmlSampleTests`), so the sample's pages are the ones that
 comparison holds equal. They are the pages of the code-built timesheet, but not the same page model

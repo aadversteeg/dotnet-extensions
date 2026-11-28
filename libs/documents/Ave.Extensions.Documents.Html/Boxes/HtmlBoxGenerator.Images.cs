@@ -209,7 +209,7 @@ public static partial class HtmlBoxGenerator
             if (!_documentBaseRead)
             {
                 _documentBaseRead = true;
-                _documentBase = Urls.DocumentBase(styled.Document, options.BaseUrl);
+                _documentBase = Urls.DocumentBase(styled.Document, options.BaseUrl, options.AllowBaseElement);
             }
 
             return _documentBase;
