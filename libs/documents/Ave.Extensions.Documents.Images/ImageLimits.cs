@@ -26,4 +26,14 @@ public static class ImageLimits
     /// embedded is never decoded, so it is not charged.
     /// </summary>
     public const long MaxDocumentPixels = 1L << 27;
+
+    /// <summary>
+    /// The largest number of pixels the decodes of one document's images that fail may produce together: 2^27. A
+    /// decode that fails gives its charge of <see cref="MaxDocumentPixels"/> back, so that a few files whose headers lie
+    /// do not keep honest images out; what it produced is counted here instead and never given back (a PNG: the
+    /// pixels of the rows its data filled or began; a JPEG: its whole frame). Once the count reaches the limit, no later
+    /// image of the document is decoded (<see cref="ImagePixelBudget"/>), so failed decodes produce less than this
+    /// limit plus one image (<see cref="MaxPixels"/>).
+    /// </summary>
+    public const long MaxFailedDocumentPixels = 1L << 27;
 }

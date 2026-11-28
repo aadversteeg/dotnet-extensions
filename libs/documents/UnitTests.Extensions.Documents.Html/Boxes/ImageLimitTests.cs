@@ -153,4 +153,34 @@ public class ImageLimitTests
         List<Error> reported = policy == UnsupportedPolicy.Warn ? [.. boxes.Value.Diagnostics] : [.. boxes.Error.Parts()];
         reported.Should().HaveCount(3).And.OnlyContain(error => error.Message.Contains("does not decode", StringComparison.Ordinal) && !error.Message.Contains("of one document", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void Images_that_do_not_decode_end_decoding_for_the_document_once_they_have_produced_its_limit()
+    {
+        // Files of 65 KB whose data inflates to one byte less than the 8192 x 8192 pixels their headers announce: two of
+        // them produce ImageLimits.MaxFailedDocumentPixels, so the third and the honest image after it are not decoded.
+        var grey = Grey(8192);
+        var idat = Encoding.ASCII.GetBytes("IDAT");
+        var at = grey.AsSpan().IndexOf(idat) - 4;
+        byte[] Short(byte mark)
+        {
+            using var shortData = new MemoryStream();
+            using (var zlib = new ZLibStream(shortData, CompressionLevel.Fastest, leaveOpen: true))
+            {
+                zlib.Write(new byte[(8192 * 8193) - 1]);
+            }
+
+            return [.. grey.AsSpan(0, at), .. Chunk("tEXt", [(byte)'k', 0, mark]), .. Chunk("IDAT", shortData.ToArray()), .. Chunk("IEND", [])];
+        }
+
+        var files = new Dictionary<string, byte[]> { ["l1.png"] = Short(1), ["l2.png"] = Short(2), ["l3.png"] = Short(3), ["small.png"] = Grey(16) };
+        var body = "<img alt=a width=20 src=l1.png><img alt=a width=20 src=l2.png>\n<img alt=a width=20 src=l3.png><img alt=s width=20 src=small.png><p>after</p>";
+
+        var diagnostics = Boxes(body, UnsupportedPolicy.Warn, url => files.TryGetValue(url, out var file) ? new HtmlResource(file) : null).Value.Diagnostics;
+
+        diagnostics.Should().HaveCount(4);
+        diagnostics.Take(2).Should().OnlyContain(error => error.Message.Contains("does not decode", StringComparison.Ordinal) && error.Message.Contains("67117056 bytes", StringComparison.Ordinal));
+        diagnostics.Skip(2).Should().OnlyContain(error => error.Message.Contains("is not decoded: images of this document that did not decode have produced 134217728 pixels, and those of one document may produce at most 134217728 together", StringComparison.Ordinal)
+            && Equals(error.Metadata![ErrorMetadataKeys.SourceLine], 2));
+    }
 }

@@ -173,6 +173,65 @@ public class ImageSizeLimitTests
         (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(16L * 1024 * 1024, "no large image is decoded");
     }
 
+    /// <summary>A greyscale PNG whose header announces 8192 x 8192 pixels (64 MiB of samples) and whose data inflates to
+    /// <paramref name="inflated"/> zero bytes: one byte short of the announced size makes the largest file that does
+    /// not decode.</summary>
+    private static byte[] Liar(long inflated) => Png(Header(8192, 8192, 8, 0), Chunk("IDAT", Deflate(inflated)), Chunk("IEND", []));
+
+    [Fact]
+    public void A_header_that_announces_more_than_its_data_holds_costs_what_the_data_holds()
+    {
+        // 10 bytes of data under a header of 64 MiB: the decode used to allocate the announced 64 MiB first.
+        var file = Liar(10);
+        var budget = new ImagePixelBudget();
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+
+        var result = ImageDecoder.Decode(file, budget);
+
+        (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(256 * 1024, "the buffer grows with the data");
+        ShouldBe(result, ImageErrorCodes.Invalid);
+        result.Error.Message.Should().Contain("does not decompress to the 67117056 bytes the header announces");
+        budget.Used.Should().Be(0);
+        budget.FailedPixels.Should().Be(8192, "the data began one row of 8192 pixels");
+    }
+
+    [Fact]
+    public void The_failed_decodes_of_a_document_count_what_they_produced_and_end_decoding_at_their_limit()
+    {
+        // Two rows of failed work allowed: two liars use them up, and then even an honest image is not decoded.
+        var budget = new ImagePixelBudget(ImageLimits.MaxDocumentPixels, 2 * 8192);
+
+        ShouldBe(ImageDecoder.Decode(Liar(10), budget), ImageErrorCodes.Invalid);
+        ImageDecoder.Decode(OneBitIndexed(16, 16), budget).IsSuccess.Should().BeTrue("one failed row is below the limit");
+        ShouldBe(ImageDecoder.Decode(Liar(8192 + 10), budget), ImageErrorCodes.Invalid);
+        budget.FailedPixels.Should().Be(3 * 8192, "the second liar began two rows");
+        var honest = OneBitIndexed(16, 16);
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+        var refused = ImageDecoder.Decode(honest, budget);
+
+        (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(64 * 1024, "nothing is inflated");
+        ShouldBe(refused, ImageErrorCodes.TooLarge);
+        refused.Error.Message.Should().Be("The image is not decoded: images of this document that did not decode have produced 24576 pixels, and those of one document may produce at most 16384 together; after that no image of the document is decoded.");
+        budget.Used.Should().Be(256, "the honest image decoded before the limit keeps its charge");
+    }
+
+    [Fact]
+    public void At_the_stated_limit_two_full_failed_decodes_end_decoding_for_the_document()
+    {
+        // The largest liar: 65 KB that really inflate to 64 MiB less one byte. Two of them produce 2^27 pixels.
+        var file = Liar(8192L * 8193 - 1);
+        var budget = new ImagePixelBudget();
+
+        ShouldBe(ImageDecoder.Decode(file, budget), ImageErrorCodes.Invalid);
+        ShouldBe(ImageDecoder.Decode(file, budget), ImageErrorCodes.Invalid);
+        budget.FailedPixels.Should().Be(ImageLimits.MaxFailedDocumentPixels);
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+
+        ShouldBe(ImageDecoder.Decode(file, budget), ImageErrorCodes.TooLarge);
+        (GC.GetAllocatedBytesForCurrentThread() - allocated).Should().BeLessThan(1024 * 1024, "the third is refused before it is inflated");
+        budget.Used.Should().Be(0);
+    }
+
     private static void ShouldBe(Ave.Extensions.Functional.Result<ImageData, Ave.Extensions.ErrorPaths.Error> result, Ave.Extensions.ErrorPaths.ErrorCode code) =>
         result.Error.Code.Should().Be(code);
 }
