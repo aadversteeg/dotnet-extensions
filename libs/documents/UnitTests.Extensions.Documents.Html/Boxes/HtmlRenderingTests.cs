@@ -154,6 +154,28 @@ public class HtmlRenderingTests
     }
 
     [Fact]
+    public void The_raster_refusal_of_an_image_names_the_image_its_place_and_why_the_PDF_renders()
+    {
+        // A JPEG whose header claims 16000 x 16000 pixels: a PDF embeds the file as it is; the raster output would decode
+        // it to more pixels than one document may have.
+        var jpeg = TestImages.Bytes("jpeg-rgb.jpg");
+        var frame = Enumerable.Range(0, jpeg.Length - 1).First(index => jpeg[index] == 0xFF && jpeg[index + 1] == 0xC0);
+        jpeg[frame + 5] = jpeg[frame + 7] = 16000 >> 8;
+        jpeg[frame + 6] = jpeg[frame + 8] = 16000 & 0xFF;
+        var options = Options with { Style = Options.Style with { Resources = url => url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : url == "big.jpg" ? new HtmlResource(jpeg) : null } };
+        var html = Html.Replace("<p>Hello</p>", "<p>Hello</p>\n<p><img alt=x width=100 src=big.jpg></p>", StringComparison.Ordinal);
+
+        HtmlRendering.ToPdf(html, options, new PdfRenderOptions(new DateTimeOffset(2026, 11, 28, 12, 0, 0, TimeSpan.Zero))).IsSuccess.Should().BeTrue();
+        foreach (var refused in new[] { HtmlRendering.ToPng(html, options, 1, new RasterOptions(72)).Error, HtmlRendering.ToImages(html, options, new RasterOptions(72)).Error })
+        {
+            refused.Code.Should().Be(Ave.Extensions.Documents.Images.ImageErrorCodes.TooLarge);
+            refused.Message.Should().Be("The image 'big.jpg' at hello.html:2:4 (jpeg 16000x16000 rgb) is not drawn: the raster output decodes each image to pixels, where a PDF embeds a JPEG file as it is. "
+                + "The image is 16000x16000 = 256000000 pixels; the images of one document decode to at most 134217728 pixels together.");
+            (refused.Metadata![ErrorMetadataKeys.SourceLine], refused.Metadata[ErrorMetadataKeys.SourceColumn]).Should().Be((2, 4));
+        }
+    }
+
+    [Fact]
     public void A_fragment_is_not_part_of_what_the_resolver_is_asked()
     {
         var asked = new List<string>();

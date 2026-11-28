@@ -52,4 +52,8 @@ public static class ErrorMetadataKeys
     /// first that refuses the document (string), which the summary quotes; a later summary that takes in its counts
     /// quotes it too.</summary>
     public const string FirstRefusal = "FirstRefusal";
+
+    /// <summary>The image an error is about: its <c>ImageId</c> digest (string). The raster back-end sets it on the
+    /// refusal of an image it cannot decode to pixels, so that a caller that has the document can name the image.</summary>
+    public const string Image = "Image";
 }

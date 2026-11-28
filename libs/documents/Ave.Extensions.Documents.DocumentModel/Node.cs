@@ -163,7 +163,12 @@ public enum PageCounter
 /// <param name="Width">The specified width, or null for <c>auto</c>.</param>
 /// <param name="Height">The specified height, or null for <c>auto</c>.</param>
 /// <param name="Source">Where the image was written.</param>
-public sealed record ImageNode(NodeId Id, ImageData Image, Length? Width, Length? Height, SourceLocation Source) : Node(Id, Source);
+public sealed record ImageNode(NodeId Id, ImageData Image, Length? Width, Length? Height, SourceLocation Source) : Node(Id, Source)
+{
+    /// <summary>The name of the image's file where the front-end has one (the HTML front-end: its URL), for messages;
+    /// null otherwise.</summary>
+    public string? Name { get; init; }
+}
 
 /// <summary>
 /// A list item's bullet drawn as a shape, not as a glyph (Chromium 159 draws the <c>disc</c>, <c>circle</c> and

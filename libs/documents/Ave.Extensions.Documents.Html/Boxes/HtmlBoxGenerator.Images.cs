@@ -157,7 +157,7 @@ public static partial class HtmlBoxGenerator
             }
 
             var id = NewId();
-            var image = new ImageNode(NewId(), decoded.Value, width, height, Source(html.Position));
+            var image = new ImageNode(NewId(), decoded.Value, width, height, Source(html.Position) with { Column = html.Position.Column }) { Name = url };
             var alt = html.Attribute("alt");
             var role = alt is { Length: 0 } ? SemanticRole.Decorative : SemanticRole.Figure(alt);
             return new Box(id, role, LayoutAlgorithmId.Image, style, [image], Source(html.Position));

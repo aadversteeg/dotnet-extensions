@@ -220,6 +220,25 @@ public class RenderingTests
         }
     }
 
+    [Fact]
+    public void The_raster_refusal_of_an_image_names_the_place_of_the_image_in_the_code()
+    {
+        // A JPEG whose header claims 16000 x 16000 pixels: embedded in a PDF as it is, too many pixels for the raster output.
+        var jpeg = TestImages.Bytes("jpeg-rgb.jpg");
+        var frame = Enumerable.Range(0, jpeg.Length - 1).First(index => jpeg[index] == 0xFF && jpeg[index + 1] == 0xC0);
+        jpeg[frame + 5] = jpeg[frame + 7] = 16000 >> 8;
+        jpeg[frame + 6] = jpeg[frame + 8] = 16000 & 0xFF;
+        var line = CurrentLine() + 1;
+        var document = Document([Image(jpeg).Width(100.Pt()).Alt("x")]).FontFamily("Lato");
+
+        document.ToPdf(TestFonts.Set, Options).IsSuccess.Should().BeTrue();
+        var refused = document.ToPng(TestFonts.Set, 1, new RasterOptions(72)).Error;
+
+        refused.Code.Should().Be(Ave.Extensions.Documents.Images.ImageErrorCodes.TooLarge);
+        refused.Message.Should().StartWith($"The image at RenderingTests.cs:{line} (jpeg 16000x16000 rgb) is not drawn: the raster output decodes each image to pixels");
+        refused.Metadata![ErrorMetadataKeys.SourceLine].Should().Be(line);
+    }
+
     private static int CurrentLine([CallerLineNumber] int line = 0) => line;
 
     private static string ThisFile([CallerFilePath] string file = "") => file;

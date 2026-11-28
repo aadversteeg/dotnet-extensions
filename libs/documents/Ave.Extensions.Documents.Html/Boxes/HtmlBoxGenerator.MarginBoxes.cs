@@ -221,7 +221,7 @@ public static partial class HtmlBoxGenerator
             const double point = 0.75;
             var width = Length.FromPoints(decoded.Value.PixelWidth * point / image.Resolution);
             var height = Length.FromPoints(decoded.Value.PixelHeight * point / image.Resolution);
-            var node = new ImageNode(NewId(), decoded.Value, width, height, source);
+            var node = new ImageNode(NewId(), decoded.Value, width, height, source) { Name = url };
 
             // CSS Text Decoration 3 §2: decorations are not propagated into an atomic inline.
             return new Box(NewId(), SemanticRole.Decorative, LayoutAlgorithmId.Image, BoxStyle.Initial with { Text = text with { Decorations = [] } }, [node], source);

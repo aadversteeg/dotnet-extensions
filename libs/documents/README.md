@@ -401,6 +401,10 @@ the `maxPages` parameter of the calls on a document (`document.ToPdf(fonts, opti
 on `ToPages`, `ToPng`, `ToPngPages` and `ToImages`), or `LayoutEnvironment.MaxPages` for `DocumentLayout.Run`. A value
 below 1 is refused with `Documents.Layout.InvalidOptions`.
 
+The images of one document decode to at most 2^27 pixels together. A PDF embeds a JPEG file as it is, so only a PNG
+counts there; the raster output (`ToPng`, `ToPngPages`, `ToImages`) decodes every image to pixels, so the same document
+can render to PDF and be refused as PNG. The refusal names the image and where it is.
+
 ## Scope and known limits
 
 In: PDF/A-3b, PDF/A-3a and PDF/UA-1 profiles (tagged PDF, XMP, sRGB output intent, embedded files with their

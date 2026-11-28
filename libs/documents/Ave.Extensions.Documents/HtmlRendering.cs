@@ -13,6 +13,7 @@ using Ave.Extensions.Documents.Render.Pdf;
 using Ave.Extensions.Documents.Render.Raster;
 using Ave.Extensions.Documents.Typesetting;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents;
@@ -109,7 +110,7 @@ public static class HtmlRendering
     /// <param name="raster">The resolution and background.</param>
     /// <returns>The PNG file and the diagnostics, or the error.</returns>
     public static Result<HtmlRendered<ImmutableArray<byte>>, Error> ToPng(string html, HtmlRenderOptions options, int pageNumber, RasterOptions raster) =>
-        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToPng(pageNumber, raster)));
+        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToPng(pageNumber, raster).MapError(error => RenderErrors.ImagePlace(error, laid.Model))));
 
     /// <summary>Draws every page of an HTML document as a PNG file.</summary>
     /// <param name="html">The HTML text.</param>
@@ -117,7 +118,7 @@ public static class HtmlRendering
     /// <param name="raster">The resolution and background.</param>
     /// <returns>One PNG file per page, in order, and the diagnostics, or the error.</returns>
     public static Result<HtmlRendered<ImmutableArray<ImmutableArray<byte>>>, Error> ToPngPages(string html, HtmlRenderOptions options, RasterOptions raster) =>
-        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToPngPages(raster)));
+        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToPngPages(raster).MapError(error => RenderErrors.ImagePlace(error, laid.Model))));
 
     /// <summary>Draws every page of an HTML document as pixels.</summary>
     /// <param name="html">The HTML text.</param>
@@ -125,7 +126,7 @@ public static class HtmlRendering
     /// <param name="raster">The resolution and background.</param>
     /// <returns>One image per page (8-bit RGBA, sRGB), in order, and the diagnostics, or the error.</returns>
     public static Result<HtmlRendered<ImmutableArray<RgbaImage>>, Error> ToImages(string html, HtmlRenderOptions options, RasterOptions raster) =>
-        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToImages(raster)));
+        Laid(html, options).OnSuccessBind(laid => Beside(laid.Pages, laid.Pages.Output.ToImages(raster).MapError(error => RenderErrors.ImagePlace(error, laid.Model))));
 
     /// <summary>A back-end's output with the diagnostics of the pages it was made from.</summary>
     private static Result<HtmlRendered<T>, Error> Beside<T>(HtmlRendered<PageDocument> pages, Result<T, Error> output) =>

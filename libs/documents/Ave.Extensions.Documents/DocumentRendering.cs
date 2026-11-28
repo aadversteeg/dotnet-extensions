@@ -10,6 +10,7 @@ using Ave.Extensions.Documents.PageModel;
 using Ave.Extensions.Documents.Render.Pdf;
 using Ave.Extensions.Documents.Render.Raster;
 using Ave.Extensions.ErrorPaths;
+using Ave.Extensions.ErrorPaths.Functional;
 using Ave.Extensions.Functional;
 
 namespace Ave.Extensions.Documents;
@@ -113,7 +114,7 @@ public static class DocumentRendering
     /// <param name="maxPages">The most pages the document may have, at least 1.</param>
     /// <returns>The PNG file, or the error.</returns>
     public static Result<ImmutableArray<byte>, Error> ToPng(this Document document, FontSet fonts, int pageNumber, RasterOptions options, int maxPages) =>
-        Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToPng(pageNumber, options));
+        Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToPng(pageNumber, options).MapError(error => RenderErrors.ImagePlace(error, laid.Model)));
 
     /// <summary>Draws one page of laid-out pages as a PNG file (<see cref="PageRasterizer"/>, then
     /// <see cref="ImageEncoder.EncodePng"/>).</summary>
@@ -142,7 +143,7 @@ public static class DocumentRendering
     /// <param name="maxPages">The most pages the document may have, at least 1.</param>
     /// <returns>One PNG file per page, in order, or the error.</returns>
     public static Result<ImmutableArray<ImmutableArray<byte>>, Error> ToPngPages(this Document document, FontSet fonts, RasterOptions options, int maxPages) =>
-        Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToPngPages(options));
+        Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToPngPages(options).MapError(error => RenderErrors.ImagePlace(error, laid.Model)));
 
     /// <summary>Draws every page of laid-out pages as a PNG file.</summary>
     /// <param name="pages">The pages.</param>
@@ -182,7 +183,7 @@ public static class DocumentRendering
     /// <param name="maxPages">The most pages the document may have, at least 1.</param>
     /// <returns>One image per page (8-bit RGBA, sRGB), in order, or the error.</returns>
     public static Result<ImmutableArray<RgbaImage>, Error> ToImages(this Document document, FontSet fonts, RasterOptions options, int maxPages) =>
-        Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToImages(options));
+        Laid(document, fonts, maxPages).OnSuccessBind(laid => laid.Pages.ToImages(options).MapError(error => RenderErrors.ImagePlace(error, laid.Model)));
 
     /// <summary>Draws every page of laid-out pages as pixels (<see cref="PageRasterizer"/>).</summary>
     /// <param name="pages">The pages.</param>
