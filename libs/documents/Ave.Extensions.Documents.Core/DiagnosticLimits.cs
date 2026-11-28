@@ -39,8 +39,10 @@ public static class DiagnosticLimits
     {
         ArgumentNullException.ThrowIfNull(diagnostics);
         var kept = new List<Error>();
-        var (length, suppressed, refusals) = (0L, 0, 0);
+        var (length, suppressed, refusals, own) = (0L, 0, 0, 0);
         Error? firstRefusal = null;
+        Error? summary = null;
+        var summaries = 0;
         // The parts of an aggregate are diagnostics of their own.
         foreach (var diagnostic in diagnostics.SelectMany(diagnostic => diagnostic.Parts()))
         {
@@ -48,6 +50,8 @@ public static class DiagnosticLimits
             {
                 suppressed += Count(diagnostic, ErrorMetadataKeys.Value, 1);
                 refusals += Count(diagnostic, ErrorMetadataKeys.Refusals, 0);
+                summary = diagnostic;
+                summaries++;
                 continue;
             }
 
@@ -61,6 +65,7 @@ public static class DiagnosticLimits
             }
 
             suppressed++;
+            own++;
             if (refuses?.Invoke(diagnostic) ?? true)
             {
                 refusals++;
@@ -68,7 +73,12 @@ public static class DiagnosticLimits
             }
         }
 
-        if (suppressed > 0)
+        if (own == 0 && summaries == 1 && summary is { } only)
+        {
+            // Nothing more left out here: the one summary given says it as it was written.
+            kept.Add(only);
+        }
+        else if (suppressed > 0)
         {
             kept.Add(new Error(DocumentErrorCodes.TooManyDiagnostics,
                     $"{suppressed} more diagnostics are left out, {refusals} of them refusals{(firstRefusal is { } first ? $" (the first: {Cut(first.Message, 200)})" : string.Empty)}; {kept.Count} are kept.")
