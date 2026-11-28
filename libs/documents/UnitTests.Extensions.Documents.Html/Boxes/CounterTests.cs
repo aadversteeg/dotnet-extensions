@@ -254,7 +254,7 @@ public class CounterTests
         var html = "<!doctype html><html lang=\"en\"><head><title>Report</title><style>@font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Regular.ttf) } @font-face { font-family: Lato; src: url(../../../../assets/fonts/lato/Lato-Bold.ttf); font-weight: 700 } body { font-family: Lato; counter-reset: section }"
             + " h2 { counter-increment: section; counter-reset: sub } h3 { counter-increment: sub } h2::before { content: counter(section) \". \" } h3::before { content: counter(section) \".\" counter(sub) \" \" }</style></head>"
             + "<body><h1>Report</h1><h2>Summary</h2><p>Text.</p><h3>Scope</h3><p>More text.</p><h2>Results</h2><p>The end.</p></body></html>";
-        var options = new HtmlRenderOptions { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
+        var options = new HtmlRenderOptions { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
         var profile = flavour == "3a" ? PdfProfile.PdfA3a : PdfProfile.PdfUa1;
         var pdf = HtmlRendering.ToPdf(html, options, new PdfRenderOptions(new DateTimeOffset(2026, 11, 24, 12, 0, 0, TimeSpan.Zero)) { Profile = profile });
         pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);

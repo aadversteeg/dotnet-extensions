@@ -31,6 +31,9 @@ var result = HtmlParser.Parse(File.ReadAllBytes(path), new HtmlParseOptions(Path
     {
         BaseUrl = new Uri(path).AbsoluteUri,
         Resources = ReadFile,
+
+        // The base is a file: URL, so the resolver must be asked for file: URLs (the default allows http and https).
+        AllowedResourceSchemes = HtmlStyleOptions.Default.AllowedResourceSchemes.Add("file"),
         Unsupported = policy,
     }));
 

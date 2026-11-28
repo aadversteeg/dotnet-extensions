@@ -11,6 +11,8 @@ namespace Ave.Extensions.Documents.Html.Boxes;
 /// <summary>How to turn a styled HTML document into the document model (<see cref="HtmlBoxGenerator"/>).</summary>
 public sealed record HtmlBoxOptions
 {
+    private readonly ImmutableHashSet<string> _schemes = ResourceTable.DefaultSchemes;
+
     /// <summary>No fonts, no resources, refuse what is not drawn.</summary>
     public static HtmlBoxOptions Default { get; } = new();
 
@@ -32,6 +34,15 @@ public sealed record HtmlBoxOptions
     /// <summary>Whether a <c>base</c> element may replace <see cref="BaseUrl"/> (<see cref="HtmlStyleOptions.AllowBaseElement"/>;
     /// give both the same value). Default false.</summary>
     public bool AllowBaseElement { get; init; }
+
+    /// <summary>The URL schemes the resolver may be asked for (<see cref="HtmlStyleOptions.AllowedResourceSchemes"/>; give
+    /// both the same set). Default <c>http</c> and <c>https</c>.</summary>
+    /// <exception cref="ArgumentNullException">The set is null.</exception>
+    public ImmutableHashSet<string> AllowedResourceSchemes
+    {
+        get => _schemes;
+        init => _schemes = ResourceTable.Schemes(value);
+    }
 
     /// <summary>Refuse (the default) or only warn; what <see cref="UnsupportedPolicy.Warn"/> does with a value that is not
     /// drawn is said at <see cref="HtmlBoxGenerator"/>.</summary>

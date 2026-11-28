@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Immutable;
 using Ave.Extensions.Documents.Css.Cascade;
 using Ave.Extensions.Documents.Core;
 using Ave.Extensions.Documents.Css.Media;
@@ -21,7 +22,9 @@ public sealed record HtmlResource(ReadOnlyMemory<byte> Bytes)
 /// resolution and the box generation of the document it makes), synchronously, for at most 4 096 distinct URLs of at
 /// most 32 767 characters each, and never opens a file or a socket itself. The URL comes from the document and is
 /// untrusted: it can have any scheme (<c>file:</c>, a Windows share written as <c>file://host/share/x</c>, <c>ftp:</c>,
-/// <c>javascript:</c>) and climb out of the base with <c>../</c>; a <c>base</c> element moves it only when the caller
+/// <c>javascript:</c>) and climb out of the base with <c>../</c>, but it reaches the resolver only when its scheme is one
+/// the caller allows (<see cref="HtmlStyleOptions.AllowedResourceSchemes"/>, default <c>http</c> and <c>https</c>), or when
+/// it is a relative reference without a base URL; a <c>base</c> element moves it only when the caller
 /// allows it (<see cref="HtmlStyleOptions.AllowBaseElement"/>). The URL never has a fragment and is never empty: a
 /// reference that is only a fragment, with no base URL, is not there. A <c>data:</c> URL never reaches the resolver,
 /// with or without a fragment: the engine decodes it itself. So the resolver must not map a URL to a file path without confining it to a folder, nor fetch
@@ -49,6 +52,7 @@ public sealed record HtmlStyleOptions
 {
     private readonly MediaContext? _media;
     private readonly ValueContext? _values;
+    private readonly ImmutableHashSet<string> _schemes = ResourceTable.DefaultSchemes;
 
     /// <summary>A4 with no margins, the default <see cref="Page"/> (as <see cref="MediaContext.PrintA4"/>).</summary>
     public static PageStyle A4Page { get; } = new(Length.FromMillimetres(210), Length.FromMillimetres(297), default);
@@ -93,6 +97,26 @@ public sealed record HtmlStyleOptions
     /// links are resolved against, and a <c>base</c> element with an <c>href</c> is refused
     /// (<c>Documents.Html.Unsupported.Element</c>), or under <see cref="UnsupportedPolicy.Warn"/> reported and left out.</summary>
     public bool AllowBaseElement { get; init; }
+
+    /// <summary>The URL schemes the resolver may be asked for (<see cref="Resources"/>), as names in lower case. Default
+    /// <c>http</c> and <c>https</c>. The scheme of a URL (URL Standard §4.4, scheme state: an ASCII letter, then letters,
+    /// digits, <c>+</c>, <c>-</c> and <c>.</c>, before the first colon) is compared ASCII case-insensitively, so
+    /// <c>FILE:</c> is <c>file:</c>; names given in another case are lowered. It is read after the URL is resolved
+    /// against the base URL (<see cref="BaseUrl"/>, or the style sheet that names it). A URL of a scheme not in the set
+    /// is not there: it is refused (<c>Documents.Html.Resource.NotFound</c>, or for an image
+    /// <c>Documents.Html.Unsupported.Rendering</c>), or under <see cref="UnsupportedPolicy.Warn"/> reported and left out,
+    /// and the resolver is not asked. Without a base URL a relative reference has no scheme: it is handed on as the
+    /// document writes it, the caller's own naming; an absolute URL in the document is checked all the same. With a base
+    /// URL whose own scheme is not in the set, every relative reference resolves to that scheme and is not there: a
+    /// caller that sets a <c>file:</c> base URL must allow <c>file</c> (and then confine every URL to a folder, as
+    /// <see cref="ResourceResolver"/> says). A <c>data:</c> URL is read by the engine and never asked, whatever the set
+    /// holds. Give <see cref="Boxes.HtmlBoxOptions.AllowedResourceSchemes"/> the same set.</summary>
+    /// <exception cref="ArgumentNullException">The set is null.</exception>
+    public ImmutableHashSet<string> AllowedResourceSchemes
+    {
+        get => _schemes;
+        init => _schemes = ResourceTable.Schemes(value);
+    }
 
     /// <summary>Refuse (the default) or only warn.</summary>
     public UnsupportedPolicy Unsupported { get; init; } = UnsupportedPolicy.Refuse;

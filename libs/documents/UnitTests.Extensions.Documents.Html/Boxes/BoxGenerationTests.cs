@@ -523,8 +523,8 @@ public class BoxGenerationTests
         var html = "<!doctype html><html><head><link rel=\"stylesheet\" href=\"sheets/fonts.css\"><style>@font-face { font-family: Own; src: url(own/lato.ttf) }" +
                    " body { margin: 0; font-family: Own } .sheet { font-family: Sheet }</style></head><body><p>a</p><p class=\"sheet\">b</p></body></html>";
         var result = HtmlParser.Parse(html, new HtmlParseOptions("doc.html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, BaseUrl = "file:///doc/doc.html" }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resolver, BaseUrl = "file:///doc/doc.html" }));
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Resources = Resolver, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = "file:///doc/doc.html" }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resolver, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = "file:///doc/doc.html" }));
 
         result.IsSuccess.Should().BeTrue(result.IsFailure ? result.Error.ToString() : string.Empty);
         asked.Should().Equal("file:///doc/sheets/fonts.css", "file:///doc/own/lato.ttf", "file:///doc/fonts/theano.ttf");

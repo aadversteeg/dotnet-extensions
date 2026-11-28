@@ -235,7 +235,7 @@ public class ListMappingTests
         // The case as measured, with the title and the language PDF/UA asks for.
         var path = Path.GetFullPath(Path.Combine(HtmlCases.Folder(), name + ".html"));
         var html = File.ReadAllText(path).Replace("<html>", "<html lang=\"en\">", StringComparison.Ordinal).Replace("<head>", "<head><title>Lists</title>", StringComparison.Ordinal);
-        var options = new HtmlRenderOptions { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(path).AbsoluteUri } };
+        var options = new HtmlRenderOptions { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = new Uri(path).AbsoluteUri } };
         var profile = flavour == "3a" ? PdfProfile.PdfA3a : PdfProfile.PdfUa1;
         var pdf = HtmlRendering.ToPdf(html, options, new PdfRenderOptions(new DateTimeOffset(2026, 11, 23, 12, 0, 0, TimeSpan.Zero)) { Profile = profile });
         pdf.IsSuccess.Should().BeTrue(pdf.IsFailure ? pdf.Error.ToString() : string.Empty);

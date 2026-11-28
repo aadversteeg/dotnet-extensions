@@ -155,6 +155,10 @@ internal static class HtmlCases
         HtmlParser.Parse(File.ReadAllText(Path.Combine(folder.Html, name + ".html")), new HtmlParseOptions(name + ".html"));
 
     /// <summary>The paper the reference tool prints on (Playwright's default for a PDF): US Letter, no margins.</summary>
+    /// <summary>The resource schemes of the cases: the default ones and <c>file</c>, as the cases' base URL is the file
+    /// they are read from.</summary>
+    public static ImmutableHashSet<string> FileSchemes { get; } = HtmlStyleOptions.Default.AllowedResourceSchemes.Add("file");
+
     public static PageStyle Letter { get; } = new(Length.FromPoints(612), Length.FromPoints(792), default);
 
     /// <summary>The boxes of a case, on the reference tool's paper (<see cref="Letter"/>).</summary>
@@ -165,8 +169,8 @@ internal static class HtmlCases
     {
         var baseUrl = new Uri(Path.GetFullPath(Path.Combine(folder.Html, name + ".html"))).AbsoluteUri;
         return Parsed(folder, name)
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl, Unsupported = policy }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, Unsupported = policy, MissingCharacters = Shaper.MissingCharacters }));
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = Letter, Resources = Resource, AllowedResourceSchemes = FileSchemes, BaseUrl = baseUrl, Unsupported = policy }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, AllowedResourceSchemes = FileSchemes, BaseUrl = baseUrl, Unsupported = policy, MissingCharacters = Shaper.MissingCharacters }));
     }
 
     /// <summary>
@@ -1323,8 +1327,8 @@ internal static class HtmlCases
         var baseUrl = new Uri(Path.Combine(Folder(), "text.html")).AbsoluteUri;
         var parsed = HtmlParser.Parse(html, new HtmlParseOptions("text.html"));
         var boxes = parsed
-            .OnSuccessBind(document => HtmlStyleResolver.Resolve(document, new HtmlStyleOptions { Page = Letter, Resources = Resource, BaseUrl = baseUrl }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, BaseUrl = baseUrl, MissingCharacters = Shaper.MissingCharacters }));
+            .OnSuccessBind(document => HtmlStyleResolver.Resolve(document, new HtmlStyleOptions { Page = Letter, Resources = Resource, AllowedResourceSchemes = FileSchemes, BaseUrl = baseUrl }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { Resources = Resource, AllowedResourceSchemes = FileSchemes, BaseUrl = baseUrl, MissingCharacters = Shaper.MissingCharacters }));
         return boxes.IsFailure
             ? Refusal(boxes.Error)
             : BoxDifference(parsed.Value.Document, boxes.Value, [.. rows.Where(row => row.Length > 0).Select(row => row.Split(' '))]);

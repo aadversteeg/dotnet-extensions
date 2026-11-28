@@ -185,11 +185,17 @@ The resolver is the one place where a document reaches the caller's files or net
 is untrusted input. With a `BaseUrl` the engine resolves every reference against it and hands the resolver absolute
 URLs; without one it hands the reference as the document writes it (`logo.png`, `//host/share/x.png`), so set a
 `BaseUrl`. A `<base>` element in the document counts only when the caller sets `AllowBaseElement`; otherwise it is
-refused. A URL's fragment (`#…`) is removed first, as it never names another resource; a reference that is then empty
-(`#top` without a `BaseUrl`) is not there, and the resolver is not asked. The resolver is asked each URL at most once
-per render, for at most 4 096 of them, each at most 32 767 characters. `data:` URLs never reach the resolver, with or
-without a fragment: the engine decodes them itself. Every other URL does, whatever its scheme: `file:`, a Windows
-share written as `file://host/share/x.css`, `ftp:`, `javascript:`, or a path with `../` that leaves the base folder. So the resolver
+refused. Tabs and newlines inside a URL are removed first, as a browser removes them, and so is its fragment (`#…`),
+as it never names another resource; a reference that is then empty (`#top` without a `BaseUrl`) is not there, and the
+resolver is not asked. The resolver is asked each URL at most once per render, for at most 4 096 of them, each at most
+32 767 characters. `data:` URLs never reach the resolver, with or without a fragment: the engine decodes them itself,
+for images only (a `data:` style sheet or font is refused: put the sheet in a `<style>` element, give the font through
+the resolver). Of the other URLs, the resolver is handed only those whose scheme the caller allows:
+`HtmlStyleOptions.AllowedResourceSchemes`, by default `http` and `https`. A URL of another scheme (`file:`, a Windows
+share written as `file://host/share/x.css`, `ftp:`, `javascript:`) is not there, and the message names the scheme and
+the option. The scheme is read after the URL is resolved against the `BaseUrl`, so a caller that sets a `file:`
+`BaseUrl` must allow `file` (the HtmlStyles sample does); without a `BaseUrl` a relative reference has no scheme and is
+handed on as written. A URL of an allowed scheme can still climb out of the base folder with `../`. So the resolver
 decides what it serves: it maps a URL to a file only inside a folder it chose (the HtmlStyles sample checks
 `folder.IsBaseOf(uri)`), fetches only from hosts it trusts, and gives null for anything else. The engine itself opens
 no file, socket or process.

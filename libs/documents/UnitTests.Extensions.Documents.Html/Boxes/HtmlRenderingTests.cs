@@ -319,6 +319,72 @@ public class HtmlRenderingTests
         asked.Select(url => url.Length).Should().BeEquivalentTo([8, 32_767]);
     }
 
+    /// <summary>What the resolver is asked for one image (the font file aside) under a base URL and a set of schemes.</summary>
+    private static List<string> AskedFor(string source, string? baseUrl, System.Collections.Immutable.ImmutableHashSet<string>? schemes = null)
+    {
+        var asked = new List<string>();
+        var style = Options.Style with
+        {
+            Unsupported = UnsupportedPolicy.Warn,
+            BaseUrl = baseUrl,
+            Resources = url =>
+            {
+                if (url.EndsWith("lato.ttf", StringComparison.Ordinal))
+                {
+                    return new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf"));
+                }
+
+                asked.Add(url);
+                return null;
+            },
+        };
+        HtmlRendering.ToPages(Html.Replace("<p>Hello</p>", $"<p>x<img alt=x width=10 src=\"{source}\"></p>", StringComparison.Ordinal), Options with { Style = schemes is null ? style : style with { AllowedResourceSchemes = schemes } });
+        return [.. asked.Distinct()];
+    }
+
+    private static readonly System.Collections.Immutable.ImmutableHashSet<string> WithFile = HtmlStyleOptions.Default.AllowedResourceSchemes.Add("file");
+
+    [Theory]
+    // Another scheme than http and https is not asked, also in capitals and with a tab inside the scheme.
+    [InlineData("file:///etc/passwd", null, null, "")]
+    [InlineData("FILE:///etc/passwd", null, null, "")]
+    [InlineData("javascript:alert(1)", null, null, "")]
+    [InlineData("java&#9;script:alert(1)", null, null, "")]
+    [InlineData("x-app:logo.png", null, null, "")]
+    [InlineData("https://e.test/a.png", null, null, "https://e.test/a.png")]
+    // Without a base URL a relative reference has no scheme: it is handed on as the document writes it.
+    [InlineData("a.png", null, null, "a.png")]
+    [InlineData("//host/x.png", null, null, "//host/x.png")]
+    // With a base URL the scheme is the resolved URL's: an https base gives https, a file: base needs file allowed.
+    [InlineData("a.png", "https://e.test/d/doc.html", null, "https://e.test/d/a.png")]
+    [InlineData("//host/x.png", "https://e.test/d/doc.html", null, "https://host/x.png")]
+    [InlineData("a.png", "file:///d/doc.html", null, "")]
+    [InlineData("a.png", "file:///d/doc.html", "file", "file:///d/a.png")]
+    [InlineData("FILE:///etc/passwd", null, "FILE", "file:///etc/passwd")]
+    [InlineData("x-app:logo.png", null, "x-app", "x-app:logo.png")]
+    public void Only_a_URL_of_a_scheme_the_caller_allows_reaches_the_resolver(string source, string? baseUrl, string? added, string expected)
+    {
+        var schemes = added is null ? null : HtmlStyleOptions.Default.AllowedResourceSchemes.Add(added);
+
+        AskedFor(source, baseUrl, schemes).Should().Equal(expected.Length == 0 ? [] : [expected]);
+    }
+
+    [Fact]
+    public void A_URL_of_a_scheme_the_caller_does_not_allow_is_refused_naming_the_scheme_and_the_option()
+    {
+        HtmlStyleOptions.Default.AllowedResourceSchemes.Should().BeEquivalentTo(["http", "https"]);
+        var html = Html.Replace("<title>T</title>", "<title>T</title><link rel=stylesheet href=\"file:///etc/passwd\">", StringComparison.Ordinal)
+            .Replace("<p>Hello</p>", "<p>Hello</p>\n<p><img alt=x width=10 src=\"FILE://host/share/x.png\"></p>", StringComparison.Ordinal);
+
+        var refused = HtmlRendering.ToPages(html, Options).Error.Parts().Select(part => part.Message).ToList();
+
+        refused.Should().Contain("The style sheet 'file:///etc/passwd' has the scheme 'file', which the caller does not allow for resources, so the resolver is not asked: allow it with HtmlStyleOptions.AllowedResourceSchemes (default http and https), or name the resource with an allowed scheme.");
+        refused.Should().Contain(message => message.StartsWith("The image 'FILE://host/share/x.png' has the scheme 'file', which the caller does not allow", StringComparison.Ordinal));
+
+        var allowed = Options with { Style = Options.Style with { AllowedResourceSchemes = WithFile, Resources = url => url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : url.StartsWith("file:", StringComparison.Ordinal) ? new HtmlResource("p { margin: 0 }"u8.ToArray()) : null } };
+        HtmlRendering.ToPages(html.Replace("<p><img alt=x width=10 src=\"FILE://host/share/x.png\"></p>", string.Empty, StringComparison.Ordinal), allowed).IsSuccess.Should().BeTrue("file allowed, the sheet is asked and given");
+    }
+
     [Fact]
     public void A_tab_or_newline_inside_a_data_URL_is_removed_as_a_browser_removes_it()
     {

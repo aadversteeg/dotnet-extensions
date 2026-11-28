@@ -48,7 +48,7 @@ public static class HtmlStyleResolver
         }
 
         // The caller's resolver is asked at most once per URL in this resolution, and in the box generation of its result.
-        var resources = ResourceTable.Once(options.Resources);
+        var resources = ResourceTable.Once(options.Resources, options.AllowedResourceSchemes, $"{nameof(HtmlStyleOptions)}.{nameof(HtmlStyleOptions.AllowedResourceSchemes)}");
         var run = new Run(parsed, options with { Resources = resources });
         if (run.Resolve() is not { } styled)
         {
@@ -721,7 +721,10 @@ public static class HtmlStyleResolver
                 return;
             }
 
-            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, $"The image '{InputQuote.Of(source ?? string.Empty)}' is not there (no src, or neither a data: URL nor the resource resolver gives a PNG or JPEG image), so Chromium 159 shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported.")
+            var why = source is { Length: > 0 } && !DataUrl.Is(source) && Urls.Absolute(source, _documentBase) is { } absolute ? ResourceTable.Refusal(options.Resources, absolute) : null;
+            Keep(new Error(HtmlStyleErrorCodes.Unsupported.Attribute, why is not null
+                    ? $"The image '{InputQuote.Of(source!)}' {why}. Chromium 159 then shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported."
+                    : $"The image '{InputQuote.Of(source ?? string.Empty)}' is not there (no src, or neither a data: URL nor the resource resolver gives a PNG or JPEG image), so Chromium 159 shows its alt text inline, where its width, height and aspect-ratio do not apply; that is not supported.")
                 .With(ErrorMetadataKeys.Value, "alt")
                 .WithSource(_sourceName, html.Attributes.First(item => item.LocalName == "alt").Position));
         }

@@ -254,7 +254,7 @@ public class GeneratedContentTests
         + " h1::before { content: \"Part \" } p::before { content: \"Note: \" } p::after { content: \" (\" attr(data-x) \")\" }</style></head>"
         + "<body><h1>One</h1><p data-x=\"seven\">A paragraph with generated text.</p></body></html>";
 
-    private static HtmlRenderOptions TaggedOptions { get; } = new() { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
+    private static HtmlRenderOptions TaggedOptions { get; } = new() { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
 
     [Fact]
     public void In_the_structure_tree_generated_text_is_text_of_its_element_in_reading_order()

@@ -66,8 +66,8 @@ public class GenericFamilyTests
     {
         var baseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), name + ".html"))).AbsoluteUri;
         return HtmlParser.Parse(html, new HtmlParseOptions(name + ".html"))
-            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = baseUrl }))
-            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { GenericFamilies = generics, Resources = HtmlCases.Resource, BaseUrl = baseUrl }))
+            .OnSuccessBind(parsed => HtmlStyleResolver.Resolve(parsed, new HtmlStyleOptions { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = baseUrl }))
+            .OnSuccessBind(styled => HtmlBoxGenerator.Generate(styled, new HtmlBoxOptions { GenericFamilies = generics, Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = baseUrl }))
             .OnSuccessBind(boxes => DocumentLayout.Run(boxes.Document, boxes.Fonts));
     }
 

@@ -134,7 +134,7 @@ public class MarkerTests
         + " ul li::marker { color: #c00000 } ol li::marker { color: #0000c0; font-weight: bold } .s li::marker { content: \"-> \" }</style></head>"
         + "<body><h1>Lists</h1><p>A paragraph.</p><ul><li>Red disc</li></ul><ol><li>Blue number</li></ol><ul class=\"s\"><li>Arrow</li></ul></body></html>";
 
-    private static HtmlRenderOptions TaggedOptions { get; } = new() { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
+    private static HtmlRenderOptions TaggedOptions { get; } = new() { Style = HtmlStyleOptions.Default with { Page = HtmlCases.Letter, Resources = HtmlCases.Resource, AllowedResourceSchemes = HtmlCases.FileSchemes, BaseUrl = new Uri(Path.GetFullPath(Path.Combine(HtmlCases.Folder(), "gc.html"))).AbsoluteUri } };
 
     [DockerTheory]
     [Trait("Category", "Reference")]
