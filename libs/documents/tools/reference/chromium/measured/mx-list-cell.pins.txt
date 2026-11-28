@@ -1,5 +1,9 @@
 mx-list-cell.boxes.txt 4
+mx-list-cell.clips.txt 15
+mx-list-cell.destinations.txt 3
+mx-list-cell.glyphs.txt 15
 mx-list-cell.lines.txt 17
 mx-list-cell.links.txt 3
+mx-list-cell.order.txt 33
 mx-list-cell.print.txt 34
 mx-list-cell.words.txt 15

@@ -1,0 +1,9 @@
+word 1 i 0
+word 1 a0 1 1
+word 1 a1 2 2
+word 2 a2 0 0
+word 2 q0 1 1
+word 2 q1 2 2
+word 2 q2 3 3
+word 2 q3 4 4
+word 2 z 5

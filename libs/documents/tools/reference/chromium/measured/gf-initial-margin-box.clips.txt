@@ -1,0 +1,4 @@
+1 Golf none
+1 Alpha 50.250 60.000 350.262 240.000 rect
+1 Bravo 50.250 60.000 350.262 240.000 rect
+1 Hotel none

@@ -1,4 +1,7 @@
 tf-two.boxes.txt 10
+tf-two.clips.txt 11
+tf-two.glyphs.txt 11
 tf-two.lines.txt 27
+tf-two.order.txt 38
 tf-two.print.txt 39
 tf-two.words.txt 11

@@ -1,0 +1,5 @@
+word 1 Middle 0 0 0 0 0 0
+word 1 end. 4 4 4 4
+word 1 five 2 3 3
+word 1 six 3 3 3
+paint 1 1 46.500 13.500 87.000 26.250 #ffe0a0

@@ -1,4 +1,7 @@
 lb-dash-before-sign.boxes.txt 1
+lb-dash-before-sign.clips.txt 62
+lb-dash-before-sign.glyphs.txt 62
 lb-dash-before-sign.lines.txt 0
+lb-dash-before-sign.order.txt 62
 lb-dash-before-sign.print.txt 64
 lb-dash-before-sign.words.txt 62

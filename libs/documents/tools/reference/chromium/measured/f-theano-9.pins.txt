@@ -1,4 +1,7 @@
 f-theano-9.boxes.txt 1
+f-theano-9.clips.txt 40
+f-theano-9.glyphs.txt 40
 f-theano-9.lines.txt 0
+f-theano-9.order.txt 40
 f-theano-9.print.txt 43
 f-theano-9.words.txt 40

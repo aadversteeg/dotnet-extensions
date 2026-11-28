@@ -1,4 +1,8 @@
 li-after-block.boxes.txt 5
+li-after-block.clips.txt 32
+li-after-block.glyphs.txt 32
+li-after-block.images.txt 1
 li-after-block.lines.txt 1
+li-after-block.order.txt 39
 li-after-block.print.txt 43
 li-after-block.words.txt 32

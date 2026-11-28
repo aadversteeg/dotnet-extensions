@@ -1,4 +1,7 @@
 lb-amount.boxes.txt 1
+lb-amount.clips.txt 49
+lb-amount.glyphs.txt 49
 lb-amount.lines.txt 0
+lb-amount.order.txt 49
 lb-amount.print.txt 51
 lb-amount.words.txt 49

@@ -1,4 +1,7 @@
 sz-width-percent.boxes.txt 3
+sz-width-percent.clips.txt 16
+sz-width-percent.glyphs.txt 16
 sz-width-percent.lines.txt 2
+sz-width-percent.order.txt 18
 sz-width-percent.print.txt 19
 sz-width-percent.words.txt 16

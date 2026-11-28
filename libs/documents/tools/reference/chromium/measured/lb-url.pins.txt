@@ -1,4 +1,7 @@
 lb-url.boxes.txt 1
+lb-url.clips.txt 30
+lb-url.glyphs.txt 30
 lb-url.lines.txt 0
+lb-url.order.txt 30
 lb-url.print.txt 31
 lb-url.words.txt 30

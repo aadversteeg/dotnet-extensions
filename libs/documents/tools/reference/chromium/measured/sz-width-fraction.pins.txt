@@ -1,4 +1,7 @@
 sz-width-fraction.boxes.txt 6
+sz-width-fraction.clips.txt 13
+sz-width-fraction.glyphs.txt 13
 sz-width-fraction.lines.txt 5
+sz-width-fraction.order.txt 18
 sz-width-fraction.print.txt 19
 sz-width-fraction.words.txt 13

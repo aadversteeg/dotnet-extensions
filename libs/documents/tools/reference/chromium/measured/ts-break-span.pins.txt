@@ -1,4 +1,7 @@
 ts-break-span.boxes.txt 13
+ts-break-span.clips.txt 20
+ts-break-span.glyphs.txt 20
 ts-break-span.lines.txt 14
+ts-break-span.order.txt 45
 ts-break-span.print.txt 80
 ts-break-span.words.txt 20

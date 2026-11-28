@@ -1,0 +1,4 @@
+word 1 Short 0 0 0 0 0
+word 1 link 2 2 2 2
+word 1 here. 3 3 3 3 3
+paint 1 1 45.703 29.250 61.898 30.000 #0000ee

@@ -1,4 +1,7 @@
 b1-repeat.boxes.txt 42
+b1-repeat.clips.txt 66
+b1-repeat.glyphs.txt 66
 b1-repeat.lines.txt 125
+b1-repeat.order.txt 191
 b1-repeat.print.txt 194
 b1-repeat.words.txt 66

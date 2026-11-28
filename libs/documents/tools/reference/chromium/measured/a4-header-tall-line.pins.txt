@@ -1,4 +1,7 @@
 a4-header-tall-line.boxes.txt 2
+a4-header-tall-line.clips.txt 5
+a4-header-tall-line.glyphs.txt 5
 a4-header-tall-line.lines.txt 15
+a4-header-tall-line.order.txt 20
 a4-header-tall-line.print.txt 23
 a4-header-tall-line.words.txt 3

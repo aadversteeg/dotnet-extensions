@@ -1,0 +1,11 @@
+1 TL none
+1 TC none
+1 one 50.250 60.000 350.262 240.000 rect
+1 BR none
+2 TL none
+2 TC none
+2 TR none
+2 two 50.250 60.000 350.262 240.000 rect
+2 BL none
+2 BC none
+2 BR none

@@ -1,4 +1,7 @@
 hw-pre-line.boxes.txt 1
+hw-pre-line.clips.txt 6
+hw-pre-line.glyphs.txt 6
 hw-pre-line.lines.txt 0
+hw-pre-line.order.txt 6
 hw-pre-line.print.txt 7
 hw-pre-line.words.txt 6

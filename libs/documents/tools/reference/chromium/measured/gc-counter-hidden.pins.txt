@@ -1,4 +1,7 @@
 gc-counter-hidden.boxes.txt 1
+gc-counter-hidden.clips.txt 13
+gc-counter-hidden.glyphs.txt 13
 gc-counter-hidden.lines.txt 0
+gc-counter-hidden.order.txt 13
 gc-counter-hidden.print.txt 14
 gc-counter-hidden.words.txt 13

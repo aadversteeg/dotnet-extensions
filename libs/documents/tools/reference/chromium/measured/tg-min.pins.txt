@@ -1,4 +1,7 @@
 tg-min.boxes.txt 12
+tg-min.clips.txt 15
+tg-min.glyphs.txt 15
 tg-min.lines.txt 28
+tg-min.order.txt 43
 tg-min.print.txt 44
 tg-min.words.txt 15

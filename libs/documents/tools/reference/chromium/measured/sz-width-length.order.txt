@@ -1,0 +1,15 @@
+word 1 alpha 1 1 1 1 1
+word 1 beta 1 1 1 1
+word 1 gamma 1 1 1 1 1
+word 1 delta 1 1 1 1 1
+word 1 epsilon 1 1 1 1 1 1 1
+word 1 zeta 2 2 2 2
+word 1 eta 2 2 2
+word 1 theta 2 2 2 2 2
+word 1 iota 2 2 2 2
+word 1 kappa 2 2 2 2 2
+word 1 lambda 2 2 2 2 2 2
+word 1 after 3 3 3 3
+word 1 the 3 3 3
+word 1 box 3 3 3
+paint 1 0 12.000 12.000 162.000 37.500 #dddddd

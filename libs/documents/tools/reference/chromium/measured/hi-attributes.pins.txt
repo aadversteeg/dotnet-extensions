@@ -1,4 +1,8 @@
 hi-attributes.boxes.txt 1
+hi-attributes.clips.txt 3
+hi-attributes.glyphs.txt 3
+hi-attributes.images.txt 2
 hi-attributes.lines.txt 0
+hi-attributes.order.txt 5
 hi-attributes.print.txt 6
 hi-attributes.words.txt 3

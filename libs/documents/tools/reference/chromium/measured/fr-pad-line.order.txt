@@ -1,0 +1,4 @@
+word 1 c 1
+paint 1 0 12.000 12.000 288.000 26.250 #cccccc
+paint 2 0 12.000 12.000 288.000 63.000 #cccccc
+word 3 AFTER 0 0 0 0 0

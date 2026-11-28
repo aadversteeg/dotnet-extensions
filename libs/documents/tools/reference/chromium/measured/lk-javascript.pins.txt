@@ -1,5 +1,9 @@
 lk-javascript.boxes.txt 1
+lk-javascript.clips.txt 3
+lk-javascript.destinations.txt 1
+lk-javascript.glyphs.txt 3
 lk-javascript.lines.txt 1
 lk-javascript.links.txt 1
+lk-javascript.order.txt 4
 lk-javascript.print.txt 5
 lk-javascript.words.txt 3

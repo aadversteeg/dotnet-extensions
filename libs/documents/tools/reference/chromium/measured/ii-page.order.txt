@@ -1,0 +1,12 @@
+word 1 one 0 0 0
+word 1 two 1 1 1
+word 1 three 2 2 2 2 2
+word 1 four 3 3 3 3
+word 1 five 4 5 5
+word 1 six 6 6 6
+word 1 seven 7 7 7 7 7
+word 1 eight 8 8 8 8 8
+word 2 nine 0 0 0 0
+word 2 ten 2 2 2
+word 2 eleven 3 3 3 3 3 3
+image 2 1 37.500 12.000 66.000 51.750

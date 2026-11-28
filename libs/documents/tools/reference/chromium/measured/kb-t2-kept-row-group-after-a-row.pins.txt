@@ -1,4 +1,7 @@
 kb-t2-kept-row-group-after-a-row.boxes.txt 3
+kb-t2-kept-row-group-after-a-row.clips.txt 5
+kb-t2-kept-row-group-after-a-row.glyphs.txt 5
 kb-t2-kept-row-group-after-a-row.lines.txt 11
+kb-t2-kept-row-group-after-a-row.order.txt 16
 kb-t2-kept-row-group-after-a-row.print.txt 18
 kb-t2-kept-row-group-after-a-row.words.txt 5

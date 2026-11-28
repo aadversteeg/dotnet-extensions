@@ -1,4 +1,7 @@
 lb-list.boxes.txt 1
+lb-list.clips.txt 17
+lb-list.glyphs.txt 17
 lb-list.lines.txt 0
+lb-list.order.txt 20
 lb-list.print.txt 21
 lb-list.words.txt 17

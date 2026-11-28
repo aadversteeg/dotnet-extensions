@@ -1,0 +1,7 @@
+tg-min-max-row.boxes.txt 3
+tg-min-max-row.clips.txt 3
+tg-min-max-row.glyphs.txt 3
+tg-min-max-row.lines.txt 7
+tg-min-max-row.order.txt 10
+tg-min-max-row.print.txt 11
+tg-min-max-row.words.txt 3

@@ -1,4 +1,7 @@
 h-page-size-b5.boxes.txt 1
+h-page-size-b5.clips.txt 2
+h-page-size-b5.glyphs.txt 2
 h-page-size-b5.lines.txt 0
+h-page-size-b5.order.txt 2
 h-page-size-b5.print.txt 3
 h-page-size-b5.words.txt 2

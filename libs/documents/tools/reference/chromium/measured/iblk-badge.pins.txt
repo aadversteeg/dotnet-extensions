@@ -1,4 +1,7 @@
 iblk-badge.boxes.txt 1
+iblk-badge.clips.txt 25
+iblk-badge.glyphs.txt 25
 iblk-badge.lines.txt 6
+iblk-badge.order.txt 33
 iblk-badge.print.txt 40
 iblk-badge.words.txt 25

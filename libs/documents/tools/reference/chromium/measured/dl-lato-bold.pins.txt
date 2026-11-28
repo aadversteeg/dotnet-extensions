@@ -1,4 +1,7 @@
 dl-lato-bold.boxes.txt 1
+dl-lato-bold.clips.txt 12
+dl-lato-bold.glyphs.txt 12
 dl-lato-bold.lines.txt 6
+dl-lato-bold.order.txt 18
 dl-lato-bold.print.txt 19
 dl-lato-bold.words.txt 12

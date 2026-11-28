@@ -78,8 +78,9 @@ def last_glyph_end(trace, char, baseline):
     return None
 
 
-def words(page):
-    trace = [glyph for span in page.get_texttrace() for glyph in span["chars"]]
+def pieces(page):
+    """The words of a page as PyMuPDF's text reading gives them, before they are sorted: each a span with its run of
+    characters without white space, in the order of the reading."""
     found = []
     for block in page.get_text("rawdict")["blocks"]:
         for line in block.get("lines", []):
@@ -94,8 +95,13 @@ def words(page):
                         current.append(char)
                 if current:
                     found.append((span, current))
+    return found
+
+
+def words(page):
+    trace = [glyph for span in page.get_texttrace() for glyph in span["chars"]]
     result = []
-    for span, chars in found:
+    for span, chars in pieces(page):
         x0 = chars[0]["origin"][0]
         baseline = chars[0]["origin"][1]
         x1 = last_glyph_end(trace, chars[-1], baseline) or chars[-1]["bbox"][2]
@@ -105,30 +111,35 @@ def words(page):
     return sorted(result, key=lambda word: (round(word[0], 3), round(word[1], 3)))
 
 
-for number, page in enumerate(pymupdf.open(sys.argv[1]), start=1):
-    print(f"page {number} {page.rect.width:.3f} {page.rect.height:.3f}")
-    for baseline, x0, x1, size, text, drawn, name in words(page):
-        print(f"word {number} {x0:.3f} {x1:.3f} {baseline:.3f} {size:.3f} {text} {drawn} {name}")
-    for drawing, clip in visible.drawings(page):
-        rectangle = paths.is_rectangle(drawing)
-        if drawing.get("fill") is not None:
-            fill = colour(*(round(part * 255) for part in drawing["fill"]), round((drawing.get("fill_opacity") or 1) * 255))
-            if rectangle and (shown := visible.cut(tuple(drawing["rect"]), clip)) is not None:
-                print(f"rect {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {fill}")
-            elif not rectangle and (shown := paths.line(number, drawing, clip, fill=True)) is not None:
-                print(f"path {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {fill} {shown[4]}")
-        if drawing.get("color") is not None:
-            ink = colour(*(round(part * 255) for part in drawing["color"]), round((drawing.get("stroke_opacity") or 1) * 255))
-            if not rectangle:
-                if (shown := paths.line(number, drawing, clip, fill=False)) is not None:
-                    print(f"path {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {ink} {shown[4]}")
-                continue
-            for band in stroked(drawing):
-                if (shown := visible.cut(band, clip)) is not None:
-                    print(f"stroke {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {ink}")
-    images, clips = page.get_image_info(), visible.image_clips(page)
-    if len(images) != len(clips):
-        raise ValueError(f"page {number}: {len(images)} images listed, {len(clips)} drawn")
-    for image, clip in zip(images, clips):
-        if (shown := visible.cut(tuple(image["bbox"]), clip)) is not None:
-            print(f"image {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f}")
+def main(path):
+    for number, page in enumerate(pymupdf.open(path), start=1):
+        print(f"page {number} {page.rect.width:.3f} {page.rect.height:.3f}")
+        for baseline, x0, x1, size, text, drawn, name in words(page):
+            print(f"word {number} {x0:.3f} {x1:.3f} {baseline:.3f} {size:.3f} {text} {drawn} {name}")
+        for drawing, clip in visible.drawings(page):
+            rectangle = paths.is_rectangle(drawing)
+            if drawing.get("fill") is not None:
+                fill = colour(*(round(part * 255) for part in drawing["fill"]), round((drawing.get("fill_opacity") or 1) * 255))
+                if rectangle and (shown := visible.cut(tuple(drawing["rect"]), clip)) is not None:
+                    print(f"rect {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {fill}")
+                elif not rectangle and (shown := paths.line(number, drawing, clip, fill=True)) is not None:
+                    print(f"path {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {fill} {shown[4]}")
+            if drawing.get("color") is not None:
+                ink = colour(*(round(part * 255) for part in drawing["color"]), round((drawing.get("stroke_opacity") or 1) * 255))
+                if not rectangle:
+                    if (shown := paths.line(number, drawing, clip, fill=False)) is not None:
+                        print(f"path {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {ink} {shown[4]}")
+                    continue
+                for band in stroked(drawing):
+                    if (shown := visible.cut(band, clip)) is not None:
+                        print(f"stroke {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f} {ink}")
+        images, clips = page.get_image_info(), visible.image_clips(page)
+        if len(images) != len(clips):
+            raise ValueError(f"page {number}: {len(images)} images listed, {len(clips)} drawn")
+        for image, clip in zip(images, clips):
+            if (shown := visible.cut(tuple(image["bbox"]), clip)) is not None:
+                print(f"image {number} {shown[0]:.3f} {shown[1]:.3f} {shown[2]:.3f} {shown[3]:.3f}")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])

@@ -1,4 +1,7 @@
 fr-pad-margin-inside.boxes.txt 1
+fr-pad-margin-inside.clips.txt 2
+fr-pad-margin-inside.glyphs.txt 2
 fr-pad-margin-inside.lines.txt 0
+fr-pad-margin-inside.order.txt 2
 fr-pad-margin-inside.print.txt 4
 fr-pad-margin-inside.words.txt 2

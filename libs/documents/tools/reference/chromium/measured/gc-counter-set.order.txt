@@ -1,0 +1,12 @@
+word 1 1) 0 1
+word 1 first 2 3 3 3
+word 1 20) 4 4 5
+word 1 jump 6 6 6 6
+word 1 21) 7 7 8
+word 1 next 9 9 9 9
+word 1 4) 10 11
+word 1 fresh 12 12 12 12 12
+word 1 4) 13 14
+word 1 sees 15 15 15 15
+word 1 -2) 16 16 17
+word 1 minus 18 18 18 18 18

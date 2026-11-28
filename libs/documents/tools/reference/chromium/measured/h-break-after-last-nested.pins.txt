@@ -1,4 +1,7 @@
 h-break-after-last-nested.boxes.txt 1
+h-break-after-last-nested.clips.txt 2
+h-break-after-last-nested.glyphs.txt 2
 h-break-after-last-nested.lines.txt 0
+h-break-after-last-nested.order.txt 2
 h-break-after-last-nested.print.txt 3
 h-break-after-last-nested.words.txt 2

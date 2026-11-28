@@ -1,0 +1,78 @@
+word 1 Gaps 1 1 1 1
+word 1 jog 1 1 1
+word 1 quietly 1 1 1 1 1 1 1
+word 1 by 1 1
+word 1 pygmy 1 1 1 1 1
+word 1 yaks 1 1 1 1
+word 1 Gaps 3 3 3 3
+word 1 jog 3 3 3
+word 1 quietly 3 3 3 3 3 3 3
+word 1 by 3 3
+word 1 pygmy 3 3 3 3 3
+word 1 yaks 3 3 3 3
+word 1 Gaps 5 5 5 5
+word 1 jog 5 5 5
+word 1 quietly 5 5 5 5 5 5 5
+word 1 by 5 5
+word 1 pygmy 5 5 5 5 5
+word 1 yaks 5 5 5 5
+word 1 Gaps 7 7 7 7
+word 1 jog 7 7 7
+word 1 quietly 7 7 7 7 7 7 7
+word 1 by 7 7
+word 1 pygmy 7 7 7 7 7
+word 1 yaks 7 7 7 7
+word 1 Grassy 9 9 9 9 9 9
+word 1 jumps 9 9 9 9 9
+word 1 by 9 9
+word 1 quiet 9 9 9 9 9
+word 1 yaks 9 9 9 9
+word 1 Grassy 11 11 11 11 11 11
+word 1 jumps 11 11 11 11 11
+word 1 by 11 11
+word 1 quiet 11 11 11 11 11
+word 1 yaks 11 11 11 11
+word 1 Grassy 13 13 13 13 13 13
+word 1 jumps 13 13 13 13 13
+word 1 by 13 13
+word 1 quiet 13 13 13 13 13
+word 1 yaks 13 13 13 13
+word 1 Grassy 15 15 15 15 15 15
+word 1 jumps 15 15 15 15 15
+word 1 by 15 15
+word 1 quiet 15 15 15 15 15
+word 1 yaks 15 15 15 15
+word 1 Big 17 17 17
+word 1 gaps 17 17 17 17
+word 1 jog 17 17 17
+word 1 quietly 17 17 17 17 17 17 17
+word 1 by 17 17
+word 1 yaks 17 17 17 17
+word 1 Big 19 19 19
+word 1 gaps 19 19 19 19
+word 1 jog 19 19 19
+word 1 quietly 19 19 19 19 19 19 19
+word 1 by 19 19
+word 1 yaks 19 19 19 19
+word 1 Big 21 21 21
+word 1 grassy 21 21 21 21 21 21
+word 1 jumps 21 21 21 21 21
+word 1 by 21 21
+word 1 yaks 21 21 21 21
+word 1 Big 23 23 23
+word 1 grassy 23 23 23 23 23 23
+word 1 jumps 23 23 23 23 23
+word 1 by 23 23
+word 1 yaks 23 23 23 23
+paint 1 0 12.000 23.250 155.016 24.000 #000000
+paint 1 2 12.000 36.000 155.016 36.750 #000000
+paint 1 4 12.000 49.500 155.016 50.250 #000000
+paint 1 6 12.000 62.250 155.016 63.000 #000000
+paint 1 8 12.000 75.000 135.469 75.750 #0000ee
+paint 1 10 12.000 87.750 135.469 88.500 #0000ee
+paint 1 12 12.000 101.250 135.469 102.000 #0000ee
+paint 1 14 12.000 114.000 135.469 114.750 #0000ee
+paint 1 16 12.000 128.250 155.227 129.000 #000000
+paint 1 18 12.000 142.500 155.227 143.250 #000000
+paint 1 20 12.000 157.500 140.531 158.250 #0000ee
+paint 1 22 12.000 171.750 140.531 172.500 #0000ee

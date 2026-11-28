@@ -1,0 +1,9 @@
+word 1 parent 3 3 3 3 3 3
+word 1 end 4 4 4
+word 1 end 5 5 5
+word 1 after 6 6 6 6
+word 1 the 6 6 6
+word 1 parent 6 6 6 6 6 6
+paint 1 0 12.000 12.000 212.250 56.250 #bbbbbb
+paint 1 1 12.000 24.750 72.000 37.500 #dddddd
+paint 1 2 12.000 43.500 78.750 56.250 #dddddd

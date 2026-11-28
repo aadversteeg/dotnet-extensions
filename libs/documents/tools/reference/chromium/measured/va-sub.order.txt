@@ -1,0 +1,19 @@
+word 1 Water 0 0 0 0 0
+word 1 H 0
+word 1 O 3
+word 1 and 3 3 3
+word 1 C 3
+word 1 end 6 6 6
+word 1 60 5 5
+word 1 2 2
+word 1 Lower 7 7 7 7 7
+word 1 x 7
+word 1 y 10
+word 1 and 10 10 10
+word 1 z 13
+word 1 down 9 9 9 9
+word 1 sublink 12 12 12 12 12 12 12
+paint 1 1 51.000 16.500 56.250 27.000 #80ff80
+paint 1 4 93.855 26.250 104.004 27.000 #0000ee
+paint 1 8 51.000 35.250 78.750 49.500 #80ff80
+paint 1 11 108.586 47.250 141.059 48.000 #0000ee

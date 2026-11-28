@@ -1,0 +1,13 @@
+word 1 Icon 0 0 0 0
+word 1 Tall 3 3 3 3
+word 1 icon 3 3 3 3
+word 1 after. 4 4 4 4 4
+word 1 small 9 9 9 9 9
+word 1 icon 9 9 9 9
+word 1 Small 5 5 5 5 5
+word 1 after. 10 10 10 10 10
+paint 1 1 40.500 22.500 96.000 35.250 #ffd000
+paint 1 6 45.000 38.250 105.750 57.000 #a0d0ff
+paint 1 7 45.000 38.250 105.750 57.000 #000000
+image 1 2 43.500 18.000 54.000 33.000
+image 1 8 48.750 44.250 54.000 51.750

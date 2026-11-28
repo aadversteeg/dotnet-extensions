@@ -1,0 +1,45 @@
+word 1 First 3 3 3 3 3
+word 1 item 3 3 3 3
+word 1 List 0 0 0 0
+word 1 Second 5 5 5 5 5 5
+word 1 item 5 5 5 5
+word 1 end. 6 6 6 6
+word 1 Image 7 7 7 7 7
+word 1 Pic 9 9 9
+word 1 end. 11 11 11 11
+word 1 Nested 12 12 12 12 12 12
+word 1 Outer 14 14 14 14 14
+word 1 Inner 16 16 16 16 16
+word 1 box 17 17 17
+word 1 end. 18 18 18 18
+word 1 Styled 19 19 19 19 19 19
+word 1 Some 21 21 21 21
+word 1 marked 23 23 23 23 23 23
+word 1 text 24 24 24 24
+word 1 end. 25 25 25 25
+word 1 Link 26 26 26 26
+word 1 Go 29 29
+word 1 there 29 29 29 29 29
+word 1 now 30 30 30
+word 1 end. 31 31 31 31
+word 1 Made 32 32 32 32
+word 1 Made 34 34 34 34
+word 1 by 35 35
+word 1 hand 35 35 35 35
+word 1 end. 36 36 36 36
+word 1 Last 37 37 37 37
+word 1 line 37 37 37 37
+word 1 of 37 37
+word 1 text. 37 37 37 37 37
+paint 1 1 30.750 12.000 105.750 40.500 #e0e0e0
+paint 1 2 35.250 18.750 39.000 22.500 #000000
+paint 1 4 35.250 31.500 39.000 35.250 #000000
+paint 1 8 42.000 40.500 70.500 57.750 #e0e0e0
+paint 1 13 48.000 57.750 126.750 76.500 #e0e0e0
+paint 1 15 78.750 59.250 105.750 75.000 #ffc0c0
+paint 1 20 43.500 76.500 135.750 92.250 #e0e0e0
+paint 1 22 73.500 78.000 113.250 90.750 #ffff00
+paint 1 27 33.750 92.250 99.750 108.000 #e0e0e0
+paint 1 28 35.297 105.000 75.867 105.750 #0000ee
+paint 1 33 41.250 108.000 109.500 123.750 #e0e0e0
+image 1 10 60.000 42.000 69.000 54.000

@@ -1,4 +1,7 @@
 fr-pad-top-and-bottom.boxes.txt 1
+fr-pad-top-and-bottom.clips.txt 2
+fr-pad-top-and-bottom.glyphs.txt 2
 fr-pad-top-and-bottom.lines.txt 0
+fr-pad-top-and-bottom.order.txt 2
 fr-pad-top-and-bottom.print.txt 4
 fr-pad-top-and-bottom.words.txt 2

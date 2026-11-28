@@ -1,4 +1,7 @@
 tg-break.boxes.txt 7
+tg-break.clips.txt 8
+tg-break.glyphs.txt 8
 tg-break.lines.txt 20
+tg-break.order.txt 28
 tg-break.print.txt 31
 tg-break.words.txt 8

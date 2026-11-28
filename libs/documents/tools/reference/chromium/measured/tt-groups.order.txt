@@ -1,0 +1,62 @@
+word 1 Plain 0 0 0 0 0
+word 1 Word 0 0 1 1
+word 1 Link 2 2 2 2
+word 1 Wo 2 2
+word 1 rd 4 4
+word 1 Lang 5 5 5 5
+word 1 Word 5 5 6 6
+word 1 Back 7 7 7 7
+word 1 Word 7 7 9 9
+word 1 Pad 10 10 10
+word 1 Wo 10 10
+word 1 rd 11 11
+word 1 Edge 12 12 12 12
+word 1 Word 12 12 14 14
+word 1 Margin 15 15 15 15 15 15
+word 1 Wo 15 15
+word 1 rd 16 16
+word 1 Out 17 17 17
+word 1 Word 19 19 20 20
+word 1 rd 22 22
+word 1 Sup 21 21 21
+word 1 Wo 21 21
+word 1 End 23 23 23
+word 1 Out 24 24 24
+word 1 Wo 26 26
+word 1 rd 27 27
+word 1 And 27 27 27
+word 1 Wo 28 28
+word 1 rd 29 29
+word 1 And 29 29 29
+word 1 Word 30 30 31 31
+word 1 Gen 32 32 32
+word 1 Xyab 33 33 34 34
+word 1 Xycd 36 36 37 37
+word 1 Xyef 40 40 42 42
+word 1 Pre 43 43 43
+word 1 PREgh 44 44 44 45 45
+word 1 UPPER 46 46 46 46 46
+word 1 WO 46 46
+word 1 RD 48 48
+word 1 WORD 49 49 51 51
+word 1 WORD 52 52 53 53
+word 1 PREIJ 55 55 55 56 56
+word 1 lower 57 57 57 57 57
+word 1 οδοσ 57 57 57 59
+word 1 οδο 60 60 60
+word 1 σ 62
+word 1 . 63
+word 1 word 63 63 64 64
+word 1 w 65
+word 1 ord 66 66 66
+paint 1 3 103.219 23.250 112.723 24.000 #0000ee
+paint 1 8 53.250 30.750 62.250 43.500 #ffd700
+paint 1 13 159.000 30.750 159.750 43.500 #0000ff
+paint 1 18 97.500 49.500 114.000 62.250 #ffd700
+paint 1 25 32.496 101.250 48.738 102.000 #0000ee
+paint 1 39 84.270 120.000 95.871 120.750 #0000ee
+paint 1 41 95.871 120.000 104.859 120.750 #0000ee
+paint 1 47 66.703 138.750 81.270 139.500 #0000ee
+paint 1 50 102.750 127.500 117.750 140.250 #ffd700
+paint 1 58 57.750 146.250 64.500 159.000 #ffd700
+paint 1 61 84.727 157.500 90.891 158.250 #0000ee

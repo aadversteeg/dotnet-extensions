@@ -1,0 +1,47 @@
+word 1 Before 3 3 3 3 3 3
+word 1 the 3 3 3
+word 1 box. 3 3 3 3
+word 1 Long 4 4 4 4
+word 1 box 4 4 4
+word 1 over 4 4 4 4
+word 1 the 4 4 4
+word 1 break, 4 4 4 4 4 4
+word 1 first 5 6 6 6
+word 1 paragraph. 6 6 6 6 6 6 6 6 6 6
+word 1 Second 7 7 7 7 7 7
+word 1 paragraph. 7 7 7 7 7 7 7 7 7 7
+word 1 Third 8 8 8 8 8
+word 1 paragraph. 8 8 8 8 8 8 8 8 8 8
+word 1 Fourth 9 9 9 9 9 9
+word 1 paragraph. 9 9 9 9 9 9 9 9 9 9
+word 1 Fifth 10 10 10 10
+word 1 paragraph. 10 10 10 10 10 10 10 10 10 10
+word 1 Sixth 11 11 11 11 11
+word 1 paragraph. 11 11 11 11 11 11 11 11 11 11
+word 1 Seventh 12 12 12 12 12 12 12
+word 1 paragraph. 12 12 12 12 12 12 12 12 12 12
+word 1 Eighth 13 13 13 13 13 13
+word 1 paragraph. 13 13 13 13 13 13 13 13 13 13
+word 1 Ninth 14 14 14 14 14
+word 1 paragraph. 14 14 14 14 14 14 14 14 14 14
+word 1 Tenth 15 15 15 15 15
+word 1 paragraph. 15 15 15 15 15 15 15 15 15 15
+word 1 Eleventh 16 16 16 16 16 16 16 16
+word 1 paragraph. 16 16 16 16 16 16 16 16 16 16
+word 1 Twelfth 17 17 17 17 17 17
+word 1 paragraph. 17 17 17 17 17 17 17 17 17 17
+paint 1 0 12.000 33.000 288.000 33.750 #c03020
+paint 1 1 287.250 33.000 288.000 288.000 #c03020
+paint 1 2 12.000 33.000 12.750 288.000 #c03020
+word 2 Thirteenth 3 3 3 3 3 3 3 3 3 3
+word 2 paragraph. 3 3 3 3 3 3 3 3 3 3
+word 2 Fourteenth 4 4 4 4 4 4 4 4 4 4
+word 2 paragraph. 4 4 4 4 4 4 4 4 4 4
+word 2 Fifteenth 5 5 5 5 5 5 5 5
+word 2 paragraph. 5 5 5 5 5 5 5 5 5 5
+word 2 After 6 6 6 6
+word 2 the 6 6 6
+word 2 box. 6 6 6 6
+paint 2 0 12.000 78.000 288.000 78.750 #c03020
+paint 2 1 287.250 12.000 288.000 78.750 #c03020
+paint 2 2 12.000 12.000 12.750 78.750 #c03020

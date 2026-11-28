@@ -1,4 +1,7 @@
 sz-width-length.boxes.txt 2
+sz-width-length.clips.txt 14
+sz-width-length.glyphs.txt 14
 sz-width-length.lines.txt 1
+sz-width-length.order.txt 15
 sz-width-length.print.txt 16
 sz-width-length.words.txt 14

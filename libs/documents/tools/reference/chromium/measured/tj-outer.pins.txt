@@ -1,4 +1,7 @@
 tj-outer.boxes.txt 5
+tj-outer.clips.txt 5
+tj-outer.glyphs.txt 5
 tj-outer.lines.txt 12
+tj-outer.order.txt 17
 tj-outer.print.txt 18
 tj-outer.words.txt 5

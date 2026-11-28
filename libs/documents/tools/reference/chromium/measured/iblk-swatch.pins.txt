@@ -1,4 +1,7 @@
 iblk-swatch.boxes.txt 1
+iblk-swatch.clips.txt 13
+iblk-swatch.glyphs.txt 13
 iblk-swatch.lines.txt 3
+iblk-swatch.order.txt 17
 iblk-swatch.print.txt 21
 iblk-swatch.words.txt 13

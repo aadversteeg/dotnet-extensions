@@ -1,4 +1,7 @@
 va-elements.boxes.txt 1
+va-elements.clips.txt 20
+va-elements.glyphs.txt 20
 va-elements.lines.txt 0
+va-elements.order.txt 20
 va-elements.print.txt 21
 va-elements.words.txt 20

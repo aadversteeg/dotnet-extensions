@@ -1,4 +1,8 @@
 a4-image-first.boxes.txt 1
+a4-image-first.clips.txt 1
+a4-image-first.glyphs.txt 1
+a4-image-first.images.txt 3
 a4-image-first.lines.txt 0
+a4-image-first.order.txt 4
 a4-image-first.print.txt 7
 a4-image-first.words.txt 1

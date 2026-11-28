@@ -1,0 +1,20 @@
+word 1 Upper 0 0 0 0 0
+word 1 text. 3 3 3 3 3
+word 1 padded 2 2 2 2 2 2
+word 1 padded 6 6 6 6 6 6
+word 1 Lower 4 4 4 4 4
+word 1 text. 7 7 7 7 7
+word 1 Upper 8 8 8 8 8
+word 1 text. 11 11 11 11 11
+word 1 padded 10 10 10 10 10 10
+word 1 padded 14 14 14 14 14 14
+word 1 Lower 12 12 12 12 12
+word 1 text. 15 15 15 15 15
+word 1 Bottom 16 16 16 16 16
+word 1 only 18 18 18 18
+word 1 text. 19 19 19 19 19
+paint 1 1 49.500 18.000 83.250 33.000 #ff0000
+paint 1 5 48.750 36.000 83.250 50.250 #00a000
+paint 1 9 54.000 53.250 93.000 72.000 #0000ff
+paint 1 13 53.250 75.000 92.250 90.750 #ff00ff
+paint 1 17 54.750 96.000 74.250 111.000 #00a0a0

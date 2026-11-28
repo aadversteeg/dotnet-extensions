@@ -1,0 +1,31 @@
+word 1 First 0 0 0 0 0
+word 1 page 0 0 0 0
+word 2 Second 4 4 4 4 4 4
+word 2 page 4 4 4 4
+word 2 starts 4 4 4 4 4 4
+word 2 Disc 6 6 6 6
+word 2 one 6 6 6
+word 2 Cell 7 7 7 7
+word 2 text 7 7 7 7
+word 2 Circle 9 9 9 9 9 9
+word 2 one 9 9 9
+word 2 Twelve 10 10 10 10 10 10
+word 2 and 10 10 10
+word 2 a 10
+word 2 bit 10 10 10
+word 2 1. 11 11
+word 2 Number 12 12 12 12 12 12
+word 2 one 12 12 12
+word 2 Eleven 13 13 13 13 13 13
+word 2 and 13 13 13
+word 2 a 13
+word 2 bit 13 13 13
+word 2 Square 15 15 15 15 15 15
+word 2 one 15 15 15
+paint 2 0 12.000 37.500 12.750 56.250 #000000
+paint 2 1 12.000 37.500 288.000 38.250 #000000
+paint 2 2 287.250 37.500 288.000 56.250 #000000
+paint 2 3 12.000 55.500 288.000 56.250 #000000
+paint 2 5 24.000 30.000 27.750 33.750 #000000
+paint 2 8 23.625 61.125 28.125 65.625 #000000
+paint 2 14 24.000 111.000 27.750 114.750 #000000

@@ -1,4 +1,7 @@
 mx-spacing-box.boxes.txt 1
+mx-spacing-box.clips.txt 14
+mx-spacing-box.glyphs.txt 14
 mx-spacing-box.lines.txt 4
+mx-spacing-box.order.txt 18
 mx-spacing-box.print.txt 19
 mx-spacing-box.words.txt 14

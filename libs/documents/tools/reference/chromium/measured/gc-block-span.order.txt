@@ -1,0 +1,8 @@
+word 1 Text 0 0 0 0
+word 1 with 0 0 0 0
+word 1 Span 1 1 1 1
+word 1 block 1 1 1 1 1
+word 1 inner 2 2 2 2 2
+word 1 span 2 2 2 2
+word 1 after 3 3 3 3
+word 1 it 3 3

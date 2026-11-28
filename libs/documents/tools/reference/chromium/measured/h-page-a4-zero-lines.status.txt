@@ -1,7 +1,7 @@
-h-page-a4-zero-lines listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: 2 pages, Chromium 1 (print.txt)
+h-page-a4-zero-lines listed The_page_area_of_A4_without_margins_reaches_past_the_sheet_where_the_engine_ends_it_at_the_sheet: 2 pages, Chromium 1; the engine's page 2: digest f0a820f417b983ad (print.txt)
 5 differences:
-- 2 pages, Chromium 1 (print.txt)
-- page 1 reads 'x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 x32 x33 x34 x35 x36 x37 x38 x39 x40 x41 x42 x43 x44 x45 x46 x47 x48 x49 x50 x51 x52 x53 x54 x55 x56 x57 x58 x59 x60 x61 x62 x63', Chromium 'x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 x32 x33 x34 x35 x36 x37 x38 x39 x40 x41 x42 x43 x44 x45 x46 x47 x48 x49 x50 x51 x52 x53 x54 x55 x56 x57 x58 x59 x60 x61 x62 x63 x64' (print.txt)
-- page 1 has 63 words inside the page, Chromium 64 (words.txt)
-- page 1 has no word 'x64' (words.txt)
-- page 2 has 1 words inside the page, Chromium 0 (words.txt)
+- 2 pages, Chromium 1; the engine's page 2: digest f0a820f417b983ad (print.txt)
+- page 1 reads 'x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 x32 x33 x34 x35 x36 x37 x38 x39 x40 x41 x42 x43 x44 x45 x46 x47 x48 x49 x50 x51 x52 x53 x54 x55 x56 x57 x58 x59 x60 x61 x62 x63', Chromium 'x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 x31 x32 x33 x34 x35 x36 x37 x38 x39 x40 x41 x42 x43 x44 x45 x46 x47 x48 x49 x50 x51 x52 x53 x54 x55 x56 x57 x58 x59 x60 x61 x62 x63 x64'; the engine's page 1: digest c792cdc2dd9e66ef (print.txt)
+- page 1 has 63 words inside the page, Chromium 64; the engine's words inside page 1: digest ce49c51a7dc49ec0 (words.txt)
+- page 1 has no word 'x64'; the engine's words inside page 1: digest ce49c51a7dc49ec0 (words.txt)
+- page 2 has 1 words inside the page, Chromium 0; the engine's words inside page 2: digest 9b30fe02b033b486 (words.txt)

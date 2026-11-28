@@ -1,0 +1,23 @@
+word 1 Kern 0 0 0 0
+word 1 AVA 0 0 1
+word 1 tail 1 1 1 1
+word 1 Attr 2 2 2
+word 1 AVA 2 2 3
+word 1 tail 3 3 3 3
+word 1 Count 4 4 4 4 4
+word 1 AVA 5 6 7
+word 1 tail 7 7 7 7
+word 1 Liga 8 8 8 8
+word 1 fifi 9 10
+word 1 end 11 11 11
+word 1 Space 12 12 12 12 12
+word 1 between 12 12 12 12 12 12 12
+word 1 end 13 13 13
+word 1 Many 14 14 14 14
+word 1 small 14 14 14 14 14
+word 1 items 14 14 14 14 14
+word 1 in 15 15
+word 1 one 15 15 15
+word 1 line 15 15 15 15
+word 1 of 15 15
+word 1 text 15 15 15 15

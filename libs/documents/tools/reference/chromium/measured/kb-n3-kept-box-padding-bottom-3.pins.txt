@@ -1,4 +1,7 @@
 kb-n3-kept-box-padding-bottom-3.boxes.txt 1
+kb-n3-kept-box-padding-bottom-3.clips.txt 5
+kb-n3-kept-box-padding-bottom-3.glyphs.txt 5
 kb-n3-kept-box-padding-bottom-3.lines.txt 0
+kb-n3-kept-box-padding-bottom-3.order.txt 5
 kb-n3-kept-box-padding-bottom-3.print.txt 7
 kb-n3-kept-box-padding-bottom-3.words.txt 5

@@ -1,4 +1,7 @@
 fr-row-later-page-padding-overflows.boxes.txt 2
+fr-row-later-page-padding-overflows.clips.txt 16
+fr-row-later-page-padding-overflows.glyphs.txt 16
 fr-row-later-page-padding-overflows.lines.txt 10
+fr-row-later-page-padding-overflows.order.txt 26
 fr-row-later-page-padding-overflows.print.txt 29
 fr-row-later-page-padding-overflows.words.txt 16

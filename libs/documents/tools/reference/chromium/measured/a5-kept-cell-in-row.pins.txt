@@ -1,4 +1,7 @@
 a5-kept-cell-in-row.boxes.txt 4
+a5-kept-cell-in-row.clips.txt 19
+a5-kept-cell-in-row.glyphs.txt 19
 a5-kept-cell-in-row.lines.txt 12
+a5-kept-cell-in-row.order.txt 31
 a5-kept-cell-in-row.print.txt 33
 a5-kept-cell-in-row.words.txt 19

@@ -1,0 +1,8 @@
+word 1 p0 0 0
+word 1 p1 1 1
+word 1 p2 2 2
+word 2 p3 1 1
+word 2 p4 2 2
+word 2 p5 3 3
+paint 2 0 12.000 54.750 288.000 56.004 #000000
+word 3 z0 0 0

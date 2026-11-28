@@ -1,4 +1,7 @@
 sz-max-height.boxes.txt 4
+sz-max-height.clips.txt 15
+sz-max-height.glyphs.txt 15
 sz-max-height.lines.txt 2
+sz-max-height.order.txt 17
 sz-max-height.print.txt 18
 sz-max-height.words.txt 15

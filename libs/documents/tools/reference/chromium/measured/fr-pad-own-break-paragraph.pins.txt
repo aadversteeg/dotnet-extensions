@@ -1,4 +1,7 @@
 fr-pad-own-break-paragraph.boxes.txt 1
+fr-pad-own-break-paragraph.clips.txt 4
+fr-pad-own-break-paragraph.glyphs.txt 4
 fr-pad-own-break-paragraph.lines.txt 0
+fr-pad-own-break-paragraph.order.txt 4
 fr-pad-own-break-paragraph.print.txt 6
 fr-pad-own-break-paragraph.words.txt 4

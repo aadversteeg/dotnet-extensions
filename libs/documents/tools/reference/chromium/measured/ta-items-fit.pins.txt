@@ -1,4 +1,7 @@
 ta-items-fit.boxes.txt 1
+ta-items-fit.clips.txt 120
+ta-items-fit.glyphs.txt 120
 ta-items-fit.lines.txt 0
+ta-items-fit.order.txt 120
 ta-items-fit.print.txt 121
 ta-items-fit.words.txt 120

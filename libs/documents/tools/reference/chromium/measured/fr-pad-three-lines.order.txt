@@ -1,0 +1,4 @@
+word 1 a 0
+word 1 b 1
+word 2 c 0
+word 4 AFTER 0 0 0 0 0

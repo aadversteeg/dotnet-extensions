@@ -1,4 +1,7 @@
 ib-background.boxes.txt 1
+ib-background.clips.txt 12
+ib-background.glyphs.txt 12
 ib-background.lines.txt 4
+ib-background.order.txt 16
 ib-background.print.txt 17
 ib-background.words.txt 12

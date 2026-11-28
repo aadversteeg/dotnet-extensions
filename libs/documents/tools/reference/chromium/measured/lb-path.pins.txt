@@ -1,4 +1,7 @@
 lb-path.boxes.txt 1
+lb-path.clips.txt 28
+lb-path.glyphs.txt 28
 lb-path.lines.txt 0
+lb-path.order.txt 28
 lb-path.print.txt 29
 lb-path.words.txt 28

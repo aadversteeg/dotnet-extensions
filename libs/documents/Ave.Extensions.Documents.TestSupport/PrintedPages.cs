@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Ave.Extensions.Documents.Images;
 using Ave.Extensions.Documents.PageModel;
 
 namespace Ave.Extensions.Documents.TestSupport;
@@ -26,6 +27,40 @@ public sealed record PrintedWord(int Page, double X0, double X1, double Baseline
     /// too: set in the engine's pages (<see cref="PrintedPages.Engine"/>), null in a print read back from its PDF, whose
     /// words are written sorted by place.</summary>
     public int? Drawn { get; init; }
+
+    /// <summary>The glyphs the word is drawn with, in drawing order (<see cref="PrintedGlyph"/>): set in the engine's pages
+    /// (<see cref="PrintedPages.Engine"/>) and, for a print read back from its PDF, from its <c>glyphs.txt</c>
+    /// (<see cref="PrintedPages.WithGlyphs"/>); empty where they are not known. Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
+    public ImmutableArray<PrintedGlyph> Glyphs { get; init; } = [];
+
+    /// <summary>The place in its page's drawing sequence of the text that draws the word, among every item the page draws
+    /// (words, fills, images): in the engine's pages the index of its glyph run among the page's items, in a print read
+    /// back from its PDF the place <c>order.txt</c> gives (<see cref="PrintedPages.WithOrder"/>); null where it is not known.
+    /// Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
+    public int? Place { get; init; }
+
+    /// <summary>For a print read back from its PDF, the place of each of <see cref="Glyphs"/> in the drawing sequence
+    /// (<c>order.txt</c>): one word can be drawn by several texts (case <c>ib-kerning</c>: "VAV", a letter in an inline box
+    /// of its own). Empty for the engine's words, whose glyph run has one place (<see cref="Place"/>).</summary>
+    public ImmutableArray<int> Places { get; init; } = [];
+
+    /// <summary>The rectangle the clips open around the word's text leave (<see cref="PrintedPages.Visible"/>), or null where
+    /// none is open: in the engine's pages from its clip items, in a print read back from its PDF from <c>clips.txt</c>
+    /// (<see cref="PrintedPages.WithClips"/>), a clip taken as its box. Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
+    public PrintedBox? Clip { get; init; }
+
+    /// <summary>What is painted over the word: the paints of <see cref="PrintedPage.Paints"/> after it in the drawing
+    /// sequence whose box overlaps its box by more than a pixel each way, by colour (or <c>image</c>), in ordinal order, once
+    /// each; set by the comparison of paint order, empty before. Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
+    public ImmutableArray<string> Over { get; init; } = [];
+
+    /// <summary>The part of the word's box its clips leave (<see cref="Clip"/>), or null where they leave nothing of it;
+    /// set by the comparison of clips, the whole box before. Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
+    public PrintedBox? Shown { get; init; }
+
+    /// <summary>Whether every clip around the word is one rectangle (<see cref="Clip"/> is then exact); false where one of
+    /// them is another path, which <see cref="Clip"/> holds as its box.</summary>
+    public bool ClipIsRectangle { get; init; } = true;
 
     /// <summary>Whether two words print the same: their places in drawing order are not compared, so an engine word equals
     /// the word read back from Chromium's print.</summary>
@@ -53,6 +88,25 @@ public sealed record PrintedWord(int Page, double X0, double X1, double Baseline
         return before.Drawn is not { } first || Drawn is not { } second || second == first + 1;
     }
 }
+
+/// <summary>A glyph of a printed word: the glyph id in its font program and its origin, in points, origin at the top left
+/// of the page, y down.</summary>
+/// <param name="Glyph">The glyph id.</param>
+/// <param name="X">The x of its origin.</param>
+/// <param name="Below">The distance of its origin below the word's baseline; negative above it (a raised mark).</param>
+/// <param name="End">The x where its advance ends.</param>
+public sealed record PrintedGlyph(int Glyph, double X, double Below, double End);
+
+/// <summary>An item a page paints other than text, with its place in the page's drawing sequence: a fill (a rectangle, a
+/// path's box; for a print read back from its PDF also a stroke's box) or an image, as the part its clips leave, in points,
+/// origin top left, y down.</summary>
+/// <param name="Place">Its place in the page's drawing sequence (<see cref="PrintedWord.Place"/>).</param>
+/// <param name="X0">The left edge.</param>
+/// <param name="Y0">The top edge.</param>
+/// <param name="X1">The right edge.</param>
+/// <param name="Y1">The bottom edge.</param>
+/// <param name="Paint">The colour as <c>#rrggbb</c> (<c>#rrggbbaa</c> where it is not opaque), or <c>image</c>.</param>
+public sealed record PrintedPaint(int Place, double X0, double Y0, double X1, double Y1, string Paint);
 
 /// <summary>A rectangle on a printed page: a painted rectangle (a background, a border, a grid line; filled, or one band
 /// of a stroked rectangle) or the area an image is drawn into (which may reach past the page when the page shows only a
@@ -108,6 +162,15 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
     /// <summary>The areas painted by paths that are not rectangles, in drawing order (empty, never default).</summary>
     public ImmutableArray<PrintedPath> Paths { get; init; } = Paths.IsDefault ? [] : Paths;
 
+    /// <summary>What the page paints other than text, each with its place in the drawing sequence, in drawing order: set in
+    /// the engine's pages and, for a print read back from its PDF, from its <c>order.txt</c>; empty where not known.</summary>
+    public ImmutableArray<PrintedPaint> Paints { get; init; } = [];
+
+    /// <summary>Which picture each of <see cref="Images"/> shows, in the same order: <c>width height sha256</c>, its size in
+    /// pixels and the SHA-256 (lowercase hexadecimal) of its pixels as 8-bit RGBA, row by row from the top (<see cref="PrintedPages.Picture"/>);
+    /// set in the engine's pages and, for a print read back from its PDF, from its <c>images.txt</c>; empty where not known.</summary>
+    public ImmutableArray<string> Pictures { get; init; } = [];
+
     /// <summary>The words of the page joined by single spaces, in reading order (baseline, then x).</summary>
     public string Text => string.Join(" ", Words.Select(word => word.Text));
 
@@ -152,7 +215,7 @@ public sealed record PrintedPage(int Number, double Width, double Height, Immuta
                     && piece.X0 - last.X1 < PopplerWordGap * piece.FontSize && piece.IsDrawnRightAfter(last)
                     && (piece.Drawn is not null || previous.Face != piece.Face || previous.Colour != piece.Colour))
                 {
-                    words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text, Drawn = piece.Drawn }, pieces + 1);
+                    words[^1] = (last with { X1 = piece.X1, Text = last.Text + piece.Text, Drawn = piece.Drawn, Glyphs = last.Glyphs.AddRange(piece.Glyphs) }, pieces + 1);
                     previous = piece;
                     continue;
                 }
@@ -230,6 +293,185 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     }
 
     /// <summary>
+    /// The print with the glyphs of each word (<see cref="PrintedWord.Glyphs"/>) from the text <c>glyphs.py</c> writes
+    /// (<c>glyphs.txt</c>): one line per word, <c>page baseline text</c> and <c>glyph x below end</c> per glyph, the words
+    /// in the order of <c>print.txt</c>. A line belongs to the word of its place on its page, and must have its baseline and
+    /// its text.
+    /// </summary>
+    /// <param name="text">The file's text.</param>
+    /// <returns>The pages, each word with its glyphs.</returns>
+    /// <exception cref="FormatException">A line is not of that form, or does not belong to the word of its place.</exception>
+    public PrintedPages WithGlyphs(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Split(' ')).ToList();
+        static double Number(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+        var pages = ImmutableArray.CreateBuilder<PrintedPage>();
+        foreach (var page in Pages)
+        {
+            var rows = lines.Where(fields => fields[0] == page.Number.ToString(CultureInfo.InvariantCulture)).ToList();
+            if (rows.Count != page.Words.Length)
+            {
+                throw new FormatException($"Page {page.Number} has {page.Words.Length} words and {rows.Count} lines of glyphs.");
+            }
+
+            pages.Add(page with
+            {
+                Words = [.. page.Words.Zip(rows).Select(pair =>
+                {
+                    var (word, fields) = pair;
+                    if (fields.Length < 7 || (fields.Length - 3) % 4 != 0 || fields[2] != word.Text || Math.Abs(Number(fields[1]) - word.Baseline) > 0.0005)
+                    {
+                        throw new FormatException($"Not the glyphs of page {page.Number}'s word '{word.Text}' at {word.Baseline}: '{string.Join(' ', fields)}'.");
+                    }
+
+                    return word with
+                    {
+                        Glyphs = [.. Enumerable.Range(0, (fields.Length - 3) / 4).Select(index =>
+                            new PrintedGlyph(int.Parse(fields[3 + (4 * index)], CultureInfo.InvariantCulture), Number(fields[4 + (4 * index)]), Number(fields[5 + (4 * index)]),
+                                Number(fields[6 + (4 * index)])))],
+                    };
+                })],
+            });
+        }
+
+        return new(pages.ToImmutable());
+    }
+
+    /// <summary>
+    /// The print with the place in the drawing sequence of each word (<see cref="PrintedWord.Place"/>) and what each page
+    /// paints besides text (<see cref="PrintedPage.Paints"/>), from the text <c>order.py</c> writes (<c>order.txt</c>):
+    /// <c>word page text place…</c> per word of <c>print.txt</c> in its order (a place per glyph, <see cref="PrintedWord.Places"/>), <c>paint page place x0 y0 x1 y1 colour</c> per fill
+    /// or stroke and <c>image page place x0 y0 x1 y1</c> per image.
+    /// </summary>
+    /// <param name="text">The file's text.</param>
+    /// <returns>The pages with their places.</returns>
+    /// <exception cref="FormatException">A line is not of those forms, or a word line does not belong to the word of its place.</exception>
+    public PrintedPages WithOrder(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Split(' ')).ToList();
+        foreach (var fields in lines.Where(fields => fields[0] == "word" ? fields.Length < 3 : fields.Length != fields[0] switch { "paint" => 8, "image" => 7, _ => -1 }))
+        {
+            throw new FormatException($"Not a line of order.py: '{string.Join(' ', fields)}'.");
+        }
+
+        static double Number(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+        static int Whole(string value) => int.Parse(value, CultureInfo.InvariantCulture);
+        return new([.. Pages.Select(page =>
+        {
+            var on = lines.Where(fields => Whole(fields[1]) == page.Number).ToList();
+            var words = on.Where(fields => fields[0] == "word").ToList();
+            if (words.Count != page.Words.Length)
+            {
+                throw new FormatException($"Page {page.Number} has {page.Words.Length} words and {words.Count} word lines of order.txt.");
+            }
+
+            return page with
+            {
+                Words = [.. page.Words.Zip(words).Select(pair => pair.Second[2] == pair.First.Text && (pair.First.Glyphs.IsEmpty || pair.First.Glyphs.Length == pair.Second.Length - 3)
+                    ? pair.First with { Places = [.. pair.Second.Skip(3).Select(Whole)], Place = pair.Second.Length > 3 ? Whole(pair.Second[3]) : null }
+                    : throw new FormatException($"Not the places of page {page.Number}'s word '{pair.First.Text}': '{string.Join(' ', pair.Second)}'."))],
+                Paints = [.. on.Where(fields => fields[0] != "word").Select(fields =>
+                    new PrintedPaint(Whole(fields[2]), Number(fields[3]), Number(fields[4]), Number(fields[5]), Number(fields[6]), fields[0] == "image" ? "image" : fields[7]))],
+            };
+        })]);
+    }
+
+    /// <summary>
+    /// The print with the clips around each word (<see cref="PrintedWord.Clip"/>, <see cref="PrintedWord.ClipIsRectangle"/>),
+    /// from the text <c>clips.py</c> writes (<c>clips.txt</c>): per word of <c>print.txt</c> in its order <c>page text x0 y0 x1
+    /// y1 rect|path</c>, or <c>page text none</c> where no clip is open around it.
+    /// </summary>
+    /// <param name="text">The file's text.</param>
+    /// <returns>The pages with the clips of their words.</returns>
+    /// <exception cref="FormatException">A line is not of that form, or does not belong to the word of its place.</exception>
+    public PrintedPages WithClips(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Split(' ')).ToList();
+        static double Number(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+        return new([.. Pages.Select(page =>
+        {
+            var rows = lines.Where(fields => fields[0] == page.Number.ToString(CultureInfo.InvariantCulture)).ToList();
+            if (rows.Count != page.Words.Length)
+            {
+                throw new FormatException($"Page {page.Number} has {page.Words.Length} words and {rows.Count} lines of clips.txt.");
+            }
+
+            return page with
+            {
+                Words = [.. page.Words.Zip(rows).Select(pair => pair.Second switch
+                {
+                    [_, var word, "none"] when word == pair.First.Text => pair.First with { Clip = null },
+                    [_, var word, var x0, var y0, var x1, var y1, "rect" or "path"] when word == pair.First.Text =>
+                        pair.First with { Clip = new PrintedBox(page.Number, Number(x0), Number(y0), Number(x1), Number(y1)), ClipIsRectangle = pair.Second[6] == "rect" },
+                    _ => throw new FormatException($"Not the clips of page {page.Number}'s word '{pair.First.Text}': '{string.Join(' ', pair.Second)}'."),
+                })],
+            };
+        })]);
+    }
+
+    /// <summary>
+    /// The print with the picture each image shows (<see cref="PrintedPage.Pictures"/>), from the text <c>images.py</c>
+    /// writes (<c>images.txt</c>): per image of <c>print.txt</c>, page by page in drawing order, <c>page width height sha256</c>.
+    /// </summary>
+    /// <param name="text">The file's text (empty for a print without images).</param>
+    /// <returns>The pages with their pictures.</returns>
+    /// <exception cref="FormatException">A line is not of that form, or a page has another number of lines than images.</exception>
+    public PrintedPages WithImages(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Split(' ')).ToList();
+        foreach (var fields in lines.Where(fields => fields.Length != 4))
+        {
+            throw new FormatException($"Not a line of images.py: '{string.Join(' ', fields)}'.");
+        }
+
+        return new([.. Pages.Select(page =>
+        {
+            var rows = lines.Where(fields => fields[0] == page.Number.ToString(CultureInfo.InvariantCulture)).ToList();
+            return rows.Count == page.Images.Length ? page with { Pictures = [.. rows.Select(fields => $"{fields[1]} {fields[2]} {fields[3]}")] }
+                : throw new FormatException($"Page {page.Number} has {page.Images.Length} images and {rows.Count} lines of images.txt.");
+        })]);
+    }
+
+    /// <summary>
+    /// Which picture an image of the page model shows, in the form of <c>images.txt</c>: <c>width height sha256</c>, the
+    /// SHA-256 of its pixels as 8-bit RGBA, row by row from the top, as the engine embeds them: the samples the family's own
+    /// decoder gives (<see cref="RasterImage.Samples"/>; a grey sample as three equal ones) and their alpha
+    /// (<see cref="RasterImage.Alpha"/>), 255 where the image has none. The bytes are the same on every platform. An image the
+    /// engine embeds as its file (a JPEG, <see cref="JpegImage"/>) has no decoded pixels here: its line names the file's hash,
+    /// so it never equals a picture read back from a print.
+    /// </summary>
+    /// <param name="image">The image.</param>
+    /// <returns>Its line.</returns>
+    public static string Picture(ImageData image)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        if (image is not RasterImage raster)
+        {
+            var file = image is JpegImage jpeg ? jpeg.File.ToArray() : [];
+            return FormattableString.Invariant($"{image.PixelWidth} {image.PixelHeight} file-{Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(file))}");
+        }
+
+        var pixels = raster.PixelWidth * raster.PixelHeight;
+        var rgba = new byte[pixels * 4];
+        var channels = raster.ColorSpace == ImageColorSpace.Gray ? 1 : 3;
+        for (var index = 0; index < pixels; index++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+            {
+                rgba[(4 * index) + channel] = raster.Samples[(channels * index) + (channels == 1 ? 0 : channel)];
+            }
+
+            rgba[(4 * index) + 3] = raster.Alpha is { } alpha ? alpha[index] : (byte)255;
+        }
+
+        return FormattableString.Invariant($"{raster.PixelWidth} {raster.PixelHeight} {Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(rgba))}");
+    }
+
+    /// <summary>
     /// The engine's page model in the same form. A word is a run of glyphs whose text has no white space; a glyph with no
     /// text of its own continues the word before it (the later glyphs of a one-to-many substitution). Its baseline is its
     /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance; its colour
@@ -247,9 +489,30 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             var number = index + 1;
             var (rectangles, images) = (ImmutableArray.CreateBuilder<PrintedBox>(), ImmutableArray.CreateBuilder<PrintedBox>());
             var paths = ImmutableArray.CreateBuilder<PrintedPath>();
+            var paints = ImmutableArray.CreateBuilder<PrintedPaint>();
+            var pictures = ImmutableArray.CreateBuilder<string>();
+            var runs = new System.Collections.Generic.List<(GlyphRun Run, int Place, PrintedBox? Clip)>();
             var clips = new System.Collections.Generic.Stack<Core.Rect>();
-            foreach (var item in page.Items)
+            foreach (var (item, place) in page.Items.Select((item, place) => (item, place)))
             {
+                var clip = clips.Count == 0 ? (Core.Rect?)null : clips.Peek();
+                switch (item)
+                {
+                    case GlyphRun run:
+                        runs.Add((run, place, clip is { } open ? Box(number, open) : null));
+                        break;
+                    case FillRectangle fill when Visible(Box(number, fill.Area), clip) is { } shown:
+                        paints.Add(new PrintedPaint(place, shown.X0, shown.Y0, shown.X1, shown.Y1, Hex(fill.Color)));
+                        break;
+                    case DrawImage image when Visible(Box(number, image.Area), clip) is { } shown:
+                        paints.Add(new PrintedPaint(place, shown.X0, shown.Y0, shown.X1, shown.Y1, "image"));
+                        pictures.Add(Picture(image.Image));
+                        break;
+                    case FillPath path when Visible(Bounds(number, path), clip) is { } shown:
+                        paints.Add(new PrintedPaint(place, shown.X0, shown.Y0, shown.X1, shown.Y1, Hex(path.Color)));
+                        break;
+                }
+
                 switch (item)
                 {
                     case ClipStart start:
@@ -271,7 +534,12 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             }
 
             return new PrintedPage(number, page.Size.Width, page.Size.Height,
-                Sorted(page.Items.OfType<GlyphRun>().SelectMany(run => Words(number, run)).Select((word, place) => word is null ? null : word with { Drawn = place }).OfType<PrintedWord>()), rectangles.ToImmutable(), images.ToImmutable(), paths.ToImmutable());
+                Sorted(runs.SelectMany(run => Words(number, run.Run).Select(word => word is null ? null : word with { Place = run.Place, Clip = run.Clip }))
+                    .Select((word, place) => word is null ? null : word with { Drawn = place }).OfType<PrintedWord>()), rectangles.ToImmutable(), images.ToImmutable(), paths.ToImmutable())
+            {
+                Paints = paints.ToImmutable(),
+                Pictures = pictures.ToImmutable(),
+            };
         })]);
 
     /// <summary>
@@ -302,6 +570,18 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
         var (x0, y0) = (Math.Max(outer.Origin.X, inner.Origin.X), Math.Max(outer.Origin.Y, inner.Origin.Y));
         var (x1, y1) = (Math.Min(outer.Origin.X + outer.Size.Width, inner.Origin.X + inner.Size.Width), Math.Min(outer.Origin.Y + outer.Size.Height, inner.Origin.Y + inner.Size.Height));
         return new Core.Rect(new Core.Point(x0, y0), new Core.Size(Math.Max(0, x1 - x0), Math.Max(0, y1 - y0)));
+    }
+
+    // The box of a path's contours: of their points, the control points of their curves included, as a PDF reader bounds a
+    // path (PyMuPDF's drawing rectangle).
+    private static PrintedBox Bounds(int page, FillPath path)
+    {
+        var points = path.Contours.SelectMany(contour => new[] { contour.Start }.Concat(contour.Segments.SelectMany(segment => segment switch
+        {
+            PathCubic cubic => new[] { cubic.Control1, cubic.Control2, cubic.End },
+            _ => new[] { segment.End },
+        }))).ToList();
+        return new PrintedBox(page, points.Min(point => point.X), points.Min(point => point.Y), points.Max(point => point.X), points.Max(point => point.Y));
     }
 
     private static string Hex(Core.Color color) => FormattableString.Invariant($"#{color.Red:x2}{color.Green:x2}{color.Blue:x2}");
@@ -343,6 +623,10 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     {
         var advance = run.Font.Metrics.ToPoints(run.Font.AdvanceWidth(glyphs[^1].Glyph), run.FontSize);
         return new PrintedWord(page, run.Origin.X + glyphs[0].X, run.Origin.X + glyphs[^1].X + advance, run.Origin.Y, run.FontSize,
-            string.Concat(glyphs.Select(glyph => glyph.Text)), Hex(run.Color), run.Font.Names.PostScriptName);
+            string.Concat(glyphs.Select(glyph => glyph.Text)), Hex(run.Color), run.Font.Names.PostScriptName)
+        {
+            Glyphs = [.. glyphs.Select(glyph => new PrintedGlyph(glyph.Glyph.Value, run.Origin.X + glyph.X, glyph.Y,
+                run.Origin.X + glyph.X + run.Font.Metrics.ToPoints(run.Font.AdvanceWidth(glyph.Glyph), run.FontSize)))],
+        };
     }
 }

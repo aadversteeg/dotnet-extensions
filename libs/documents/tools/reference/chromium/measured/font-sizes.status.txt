@@ -1,5 +1,5 @@
 font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
-69 differences, SHA-256 8a3d08d632ba031bdb1b7a274c197f9a8f73c17a0eff7852a86b18b3d4ed8342 of all of them; the first 60:
+81 differences, SHA-256 ad812b423a39e804e540e478d1a7727346542ca193c114414e1e5248c0770e8f of all of them; the first 60:
 - page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 - page 1 'nnnnnnnnnn' baseline 9.75 (laid out at 9.75), Chromium 8.911 (print.txt)
 - page 1 'nnnnnnnnnn' font size 9, Chromium 8.226 (print.txt)
@@ -59,4 +59,4 @@ font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 - page 1 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn' xMax 669.592, Chromium 611.994 (words.txt)
 - page 1 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn' yMin 113.406, Chromium 103.651 (words.txt)
 - page 1 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn' yMax 127.806, Chromium 116.812 (words.txt)
-- box span 'n10-9pt' is not found: line 6 has 1 boxes of role GenericRole for 2 elements of that role (boxes.txt)
+- box span 'n10-9pt' is not found: line 6 has 1 boxes of role GenericRole for 2 elements of that role; the engine's boxes of the line: digest 6eef63f9726ee5dd (boxes.txt)

@@ -1,0 +1,17 @@
+word 1 See 0 0 0
+word 1 the 0 0 0
+word 1 cell 2 2 2 2
+word 1 in 3 3
+word 1 the 3 3 3
+word 1 table 3 3 3 3 3
+word 1 below. 3 3 3 3 3 3
+word 1 Second 5 5 5 5 5 5
+word 1 cell 5 5 5 5
+word 1 First 4 4 4 4 4
+word 1 cell 4 4 4 4
+word 1 Target 6 6 6 6 6 6
+word 1 words 6 6 6 6 6
+word 1 in 6 6
+word 1 the 6 6 6
+word 1 cell 6 6 6 6
+paint 1 1 55.301 29.250 70.723 30.000 #0000ee

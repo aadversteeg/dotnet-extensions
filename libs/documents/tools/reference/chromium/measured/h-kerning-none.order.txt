@@ -1,0 +1,3 @@
+word 1 AVATAR 0 0 0 0 0 0
+word 1 WAVE 0 0 0 0
+word 1 To 0 0

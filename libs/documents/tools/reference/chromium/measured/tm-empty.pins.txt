@@ -1,4 +1,7 @@
 tm-empty.boxes.txt 13
+tm-empty.clips.txt 5
+tm-empty.glyphs.txt 5
 tm-empty.lines.txt 9
+tm-empty.order.txt 21
 tm-empty.print.txt 43
 tm-empty.words.txt 5

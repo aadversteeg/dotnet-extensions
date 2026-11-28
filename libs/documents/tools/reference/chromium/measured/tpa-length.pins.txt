@@ -1,4 +1,7 @@
 tpa-length.boxes.txt 15
+tpa-length.clips.txt 34
+tpa-length.glyphs.txt 34
 tpa-length.lines.txt 14
+tpa-length.order.txt 57
 tpa-length.print.txt 85
 tpa-length.words.txt 34

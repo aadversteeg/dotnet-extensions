@@ -1,4 +1,7 @@
 tg-text-late.boxes.txt 4
+tg-text-late.clips.txt 6
+tg-text-late.glyphs.txt 6
 tg-text-late.lines.txt 10
+tg-text-late.order.txt 16
 tg-text-late.print.txt 18
 tg-text-late.words.txt 6

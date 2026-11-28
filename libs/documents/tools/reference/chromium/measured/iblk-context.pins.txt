@@ -1,4 +1,7 @@
 iblk-context.boxes.txt 2
+iblk-context.clips.txt 20
+iblk-context.glyphs.txt 20
 iblk-context.lines.txt 12
+iblk-context.order.txt 33
 iblk-context.print.txt 34
 iblk-context.words.txt 20

@@ -1,0 +1,62 @@
+word 1 • 0
+word 1 ◦ 2
+word 1 -1 4 4
+word 1 -1 6 6
+word 1 -1 8 8
+word 1 minus 10 10 10 10 10
+word 1 -1 12 12
+word 1 -1 14 14
+word 1 -1 16 16
+word 1 -1 18 18
+word 1 -1 20 20
+word 1 • 21
+word 1 ◦ 23
+word 1 0 25
+word 1 00 27 27
+word 1 0 29
+word 1 zero 31 31 31 31
+word 1 0 33
+word 1 0 35
+word 1 0 37
+word 1 0 39
+word 1 0 41
+word 1 • 42
+word 1 ◦ 44
+word 1 1 46
+word 1 01 48 48
+word 1 i 50
+word 1 one 52 52 52
+word 1 I 54
+word 1 a 56
+word 1 A 58
+word 1 a 60
+word 1 A 62
+word 1 • 63
+word 1 ◦ 65
+word 1 2 67
+word 1 02 69 69
+word 1 ii 71 71
+word 1 two 73 73 73
+word 1 II 75 75
+word 1 b 77
+word 1 B 79
+word 1 b 81
+word 1 B 83
+word 1 MMMCMXCIX 84 84 84 84 84 84 84 84 84
+word 1 ewu 86 86 86
+word 1 last 88 88 88 88
+word 1 4000 89 89 89 89
+word 1 ewv 91 91 91
+word 1 past 93 93 93 93
+word 1 z 94
+word 1 XXVI 96 96 96 96
+word 1 zed 98 98 98
+word 1 aa 99 99
+word 1 XXVII 101 101 101 101 101
+word 1 double 103 103 103 103 103 103
+word 1 -1 104 104
+word 1 lead 106 106 106 106
+word 1 09 107 107
+word 1 nine 109 109 109 109
+word 1 19 110 110
+word 1 nineteen 112 112 112 112 112 112 112 112

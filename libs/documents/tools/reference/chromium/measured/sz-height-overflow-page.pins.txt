@@ -1,4 +1,7 @@
 sz-height-overflow-page.boxes.txt 2
+sz-height-overflow-page.clips.txt 20
+sz-height-overflow-page.glyphs.txt 20
 sz-height-overflow-page.lines.txt 1
+sz-height-overflow-page.order.txt 21
 sz-height-overflow-page.print.txt 23
 sz-height-overflow-page.words.txt 20

@@ -1,0 +1,19 @@
+word 1 ab 0 0
+word 1 cd 2 2
+word 1 ab 3 3
+word 1 cd 5 5
+word 1 ab 6 6
+word 1 cd 8 8
+word 1 ab 9 9
+word 1 cd 11 11
+word 1 ab 12 12
+word 1 cd 14 14
+word 1 ab 15 15
+word 1 cd 17 17
+word 1 x 18
+image 1 1 27.750 12.000 55.500 51.750
+image 1 4 27.750 56.250 48.750 87.000
+image 1 7 27.750 91.500 48.750 121.500
+image 1 10 27.750 126.000 49.500 156.750
+image 1 13 27.750 161.250 48.750 191.250
+image 1 16 27.750 195.750 51.000 229.500

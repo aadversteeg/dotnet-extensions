@@ -1,0 +1,5 @@
+word 1 Box 0 0 0
+word 1 from 2 2 2 2
+word 1 end 4 4 4
+word 1 inside 3 3 3 3 3 3
+paint 1 1 32.250 12.000 87.750 25.500 #ffd700

@@ -1,0 +1,19 @@
+word 1 Bare 3 3 3 3
+word 1 item 3 3 3 3
+word 1 Alone 5 5 5 5 5
+word 1 in 5 5
+word 1 the 5 5 5
+word 1 body 5 5 5 5
+word 1 Second 7 7 7 7 7 7
+word 1 alone 7 7 7 7 7
+word 1 In 9 9
+word 1 a 9
+word 1 div 9 9 9
+word 1 After 10 10 10 10
+word 1 items 10 10 10 10 10
+paint 1 0 42.000 24.750 288.000 37.500 #eeeeee
+paint 1 1 42.000 37.500 288.000 50.250 #eeeeee
+paint 1 2 42.000 56.250 288.000 69.000 #eeeeee
+paint 1 4 30.000 30.000 33.750 33.750 #000000
+paint 1 6 30.000 42.750 33.750 46.500 #000000
+paint 1 8 30.000 61.500 33.750 65.250 #000000

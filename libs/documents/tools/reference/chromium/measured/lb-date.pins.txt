@@ -1,4 +1,7 @@
 lb-date.boxes.txt 1
+lb-date.clips.txt 49
+lb-date.glyphs.txt 49
 lb-date.lines.txt 0
+lb-date.order.txt 49
 lb-date.print.txt 51
 lb-date.words.txt 49

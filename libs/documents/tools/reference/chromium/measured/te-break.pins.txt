@@ -1,4 +1,7 @@
 te-break.boxes.txt 25
+te-break.clips.txt 25
+te-break.glyphs.txt 25
 te-break.lines.txt 64
+te-break.order.txt 89
 te-break.print.txt 91
 te-break.words.txt 25

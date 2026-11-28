@@ -1,4 +1,7 @@
 b-into-paragraph.boxes.txt 1
+b-into-paragraph.clips.txt 13
+b-into-paragraph.glyphs.txt 13
 b-into-paragraph.lines.txt 0
+b-into-paragraph.order.txt 13
 b-into-paragraph.print.txt 15
 b-into-paragraph.words.txt 13

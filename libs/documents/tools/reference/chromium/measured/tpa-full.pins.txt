@@ -1,4 +1,7 @@
 tpa-full.boxes.txt 17
+tpa-full.clips.txt 36
+tpa-full.glyphs.txt 36
 tpa-full.lines.txt 24
+tpa-full.order.txt 67
 tpa-full.print.txt 89
 tpa-full.words.txt 36

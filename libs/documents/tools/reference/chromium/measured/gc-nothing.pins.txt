@@ -1,4 +1,8 @@
 gc-nothing.boxes.txt 2
+gc-nothing.clips.txt 7
+gc-nothing.glyphs.txt 7
+gc-nothing.images.txt 1
 gc-nothing.lines.txt 0
+gc-nothing.order.txt 8
 gc-nothing.print.txt 9
 gc-nothing.words.txt 7

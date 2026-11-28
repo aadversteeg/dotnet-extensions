@@ -1,4 +1,7 @@
 tg-text-three.boxes.txt 4
+tg-text-three.clips.txt 6
+tg-text-three.glyphs.txt 6
 tg-text-three.lines.txt 18
+tg-text-three.order.txt 24
 tg-text-three.print.txt 26
 tg-text-three.words.txt 6

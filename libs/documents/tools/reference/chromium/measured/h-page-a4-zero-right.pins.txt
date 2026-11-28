@@ -1,4 +1,7 @@
 h-page-a4-zero-right.boxes.txt 1
+h-page-a4-zero-right.clips.txt 3
+h-page-a4-zero-right.glyphs.txt 3
 h-page-a4-zero-right.lines.txt 1
+h-page-a4-zero-right.order.txt 4
 h-page-a4-zero-right.print.txt 5
 h-page-a4-zero-right.words.txt 3

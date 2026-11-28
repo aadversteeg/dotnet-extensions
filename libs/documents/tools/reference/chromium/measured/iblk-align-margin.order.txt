@@ -1,0 +1,4 @@
+word 1 Minus 0 0 0 0 0
+word 1 Pulled 2 2 2 2 2 2
+word 1 in. 3 3 3
+paint 1 1 40.500 12.000 80.250 24.750 #a0e0a0

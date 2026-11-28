@@ -1,4 +1,7 @@
 a6-nested-header-pad12-h2925.boxes.txt 32
+a6-nested-header-pad12-h2925.clips.txt 34
+a6-nested-header-pad12-h2925.glyphs.txt 34
 a6-nested-header-pad12-h2925.lines.txt 119
+a6-nested-header-pad12-h2925.order.txt 153
 a6-nested-header-pad12-h2925.print.txt 157
 a6-nested-header-pad12-h2925.words.txt 34

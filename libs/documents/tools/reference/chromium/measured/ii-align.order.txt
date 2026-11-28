@@ -1,0 +1,28 @@
+word 1 one 0 0 0
+word 1 two 0 0 0
+word 1 three 2 2 2 2 2
+word 1 four 3 3 3 3
+word 1 five 4 5 5
+word 1 six 5 5 5
+word 1 one 6 6 6
+word 1 two 8 8 8
+word 1 three 8 8 8 8 8
+word 1 four 9 9 9 9
+word 1 five 10 11 11
+word 1 six 11 11 11
+word 1 one 12 12 12
+word 1 two 12 12 12
+word 1 three 14 14 14 14 14
+word 1 four 15 15 15 15
+word 1 five 16 17 17
+word 1 six 17 17 17
+word 1 one 18 18 18
+word 1 three 20 20 20 20 20
+word 1 four 20 20 20 20
+word 1 five 21 22 22
+word 1 six 22 22 22
+word 1 x 23
+image 1 1 68.250 13.500 76.500 25.500
+image 1 7 31.500 49.500 40.500 61.500
+image 1 13 72.750 85.500 81.000 97.500
+image 1 19 41.250 121.500 49.500 133.500

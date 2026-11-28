@@ -1,0 +1,28 @@
+word 1 Files 0 0 0 0 0
+word 1 are 0 0 0
+word 1 kept 0 0 0 0
+word 1 in 1 1
+word 1 /srv/shared/reports/2026/archive 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+word 1 on 3 3
+word 1 the 3 3 3
+word 1 server. 3 3 3 3 3 3 3
+word 1 Files 4 4 4 4 4
+word 1 are 4 4 4
+word 1 kept 4 4 4 4
+word 1 in 4 4
+word 1 /srv/shared/reports/2026/archive 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5
+word 1 on 6 6
+word 1 the 6 6 6
+word 1 server. 6 6 6 6 6 6 6
+word 1 Open 7 7 7 7
+word 1 C:\Users\Public\Documents\Reports\summary.txt 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+word 1 and 9 9 9
+word 1 ..\backup\old.txt 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+word 1 to 11 11
+word 1 compare. 11 11 11 11 11 11 11 11
+word 1 Open 12 12 12 12
+word 1 C:\Users\Public\Documents\Reports\summary.txt 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
+word 1 and 14 14 14
+word 1 ..\backup\old.txt 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14 14
+word 1 to 14 14
+word 1 compare. 15 15 15 15 15 15 15 15

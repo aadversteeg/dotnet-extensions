@@ -1,0 +1,1 @@
+tc-two-separated refused Documents.Html.Unsupported.Table second caption at 7:1

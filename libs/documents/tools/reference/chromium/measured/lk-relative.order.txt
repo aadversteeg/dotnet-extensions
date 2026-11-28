@@ -1,0 +1,4 @@
+word 1 Relative 0 0 0 0 0 0 0
+word 1 link 2 2 2 2
+word 1 here. 3 3 3 3 3
+paint 1 1 57.387 29.250 73.582 30.000 #0000ee

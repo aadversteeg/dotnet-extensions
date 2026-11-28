@@ -1,4 +1,7 @@
 tc-break-rows.boxes.txt 56
+tc-break-rows.clips.txt 63
+tc-break-rows.glyphs.txt 63
 tc-break-rows.lines.txt 84
+tc-break-rows.order.txt 177
 tc-break-rows.print.txt 271
 tc-break-rows.words.txt 63

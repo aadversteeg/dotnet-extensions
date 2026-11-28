@@ -1,4 +1,7 @@
 fr-empty-span-trailing-space.boxes.txt 2
+fr-empty-span-trailing-space.clips.txt 2
+fr-empty-span-trailing-space.glyphs.txt 2
 fr-empty-span-trailing-space.lines.txt 0
+fr-empty-span-trailing-space.order.txt 2
 fr-empty-span-trailing-space.print.txt 3
 fr-empty-span-trailing-space.words.txt 2

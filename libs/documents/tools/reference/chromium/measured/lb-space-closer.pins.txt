@@ -1,4 +1,7 @@
 lb-space-closer.boxes.txt 1
+lb-space-closer.clips.txt 75
+lb-space-closer.glyphs.txt 75
 lb-space-closer.lines.txt 0
+lb-space-closer.order.txt 75
 lb-space-closer.print.txt 76
 lb-space-closer.words.txt 75

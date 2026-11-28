@@ -1,0 +1,6 @@
+1 Text none
+1 one 50.250 60.000 350.262 240.000 rect
+1 R none
+2 Text none
+2 two 50.250 60.000 350.262 240.000 rect
+2 R none

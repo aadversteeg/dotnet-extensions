@@ -1,4 +1,7 @@
 iblk-page.boxes.txt 1
+iblk-page.clips.txt 17
+iblk-page.glyphs.txt 17
 iblk-page.lines.txt 1
+iblk-page.order.txt 18
 iblk-page.print.txt 20
 iblk-page.words.txt 17

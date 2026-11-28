@@ -1,4 +1,7 @@
 gc-counter-list-item.boxes.txt 1
+gc-counter-list-item.clips.txt 28
+gc-counter-list-item.glyphs.txt 28
 gc-counter-list-item.lines.txt 0
+gc-counter-list-item.order.txt 28
 gc-counter-list-item.print.txt 29
 gc-counter-list-item.words.txt 28

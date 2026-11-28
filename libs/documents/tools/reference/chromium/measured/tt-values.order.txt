@@ -1,0 +1,60 @@
+word 1 Wave 0 0 0 0
+word 1 today, 0 0 0 0 0 0
+word 1 quick 0 0 0 0 0
+word 1 brown 0 0 0 0 0
+word 1 fox 0 0 0
+word 1 WAVE 1 1 1 1
+word 1 TODAY, 1 1 1 1 1 1
+word 1 QUICK 1 1 1 1 1
+word 1 BROWN 1 1 1 1 1
+word 1 FOX 1 1 1
+word 1 wave 2 2 2 2
+word 1 today, 2 2 2 2 2 2
+word 1 quick 2 2 2 2 2
+word 1 brown 2 2 2 2 2
+word 1 fox 2 2 2
+word 1 Wave 3 3 3 3
+word 1 Today, 3 3 3 3 3 3
+word 1 Quick 3 3 3 3 3
+word 1 Brown 3 3 3 3 3
+word 1 Fox 3 3 3
+word 1 MIxed 4 4 4 4 4
+word 1 CAse 4 4 4 4
+word 1 WORDS 4 4 4 4 4
+word 1 Stay 4 4 4 4
+word 1 WAVE 5 5 5 5
+word 1 today 6 6 6 6 6
+word 1 FOX 7 7 7
+word 1 LAVA 8 8 8 8
+word 1 AVATAR 8 8 8 8 8 8
+word 1 JAVA 8 8 8 8
+word 1 Wave 9 9 9 9
+word 1 today, 9 9 9 9 9 9
+word 1 quick 9 9 9 9 9
+word 1 brown 9 9 9 9 9
+word 1 fox 9 9 9
+word 1 WAVE 10 10 10 10
+word 1 TODAY, 10 10 10 10 10 10
+word 1 QUICK 10 10 10 10 10
+word 1 BROWN 10 10 10 10 10
+word 1 FOX 10 10 10
+word 1 wave 11 11 11 11
+word 1 today, 11 11 11 11 11 11
+word 1 quick 11 11 11 11 11
+word 1 brown 11 11 11 11 11
+word 1 fox 11 11 11
+word 1 Wave 12 12 12 12
+word 1 Today, 12 12 12 12 12 12
+word 1 Quick 12 12 12 12 12
+word 1 Brown 12 12 12 12 12
+word 1 Fox 12 12 12
+word 1 MIxed 13 13 13 13 13
+word 1 CAse 13 13 13 13
+word 1 WORDS 13 13 13 13 13
+word 1 Stay 13 13 13 13
+word 1 WAVE 14 14 14 14
+word 1 today 15 15 15 15 15
+word 1 FOX 16 16 16
+word 1 LAVA 17 17 17 17
+word 1 AVATAR 17 17 17 17 17 17
+word 1 JAVA 17 17 17 17

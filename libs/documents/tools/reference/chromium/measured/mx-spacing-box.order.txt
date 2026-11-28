@@ -1,0 +1,18 @@
+word 1 Spaced 0 0 0 0 0 0
+word 1 wo 0 0
+word 1 rd 2 2
+word 1 and 3 3 3
+word 1 box 5 5 5
+word 1 end 6 6 6
+word 1 Plain 7 7 7 7 7
+word 1 box 9 9 9
+word 1 after 10 10 10 10
+word 1 Plain 11 11 11 11 11
+word 1 wo 11 11
+word 1 rd 13 13
+word 1 s 14
+word 1 end 14 14 14
+paint 1 1 70.500 12.000 86.250 24.750 #ffd700
+paint 1 4 113.250 12.000 137.250 24.750 #ffd700
+paint 1 8 36.750 30.750 60.750 43.500 #ffd700
+paint 1 12 51.000 49.500 66.750 62.250 #ffd700

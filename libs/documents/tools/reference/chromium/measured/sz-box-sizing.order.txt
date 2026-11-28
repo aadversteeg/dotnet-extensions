@@ -1,0 +1,15 @@
+word 1 content 6 6 6 6 6 6 6
+word 1 box 6 6 6
+word 1 border 7 7 7 7 7 7
+word 1 box 7 7 7
+word 1 border 8 8 8 8 8 8
+word 1 half 8 8 8 8
+word 1 after 9 9 9 9
+word 1 the 9 9 9
+word 1 boxes 9 9 9 9 9
+paint 1 0 12.000 12.000 150.000 42.750 #dddddd
+paint 1 1 12.000 12.000 150.000 42.750 #000000
+paint 1 2 12.000 48.750 132.000 79.500 #dddddd
+paint 1 3 12.000 48.750 132.000 79.500 #000000
+paint 1 4 12.000 85.500 150.000 116.250 #dddddd
+paint 1 5 12.000 85.500 150.000 116.250 #000000

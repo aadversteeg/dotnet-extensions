@@ -1,4 +1,7 @@
 twd-fraction.boxes.txt 9
+twd-fraction.clips.txt 20
+twd-fraction.glyphs.txt 20
 twd-fraction.lines.txt 14
+twd-fraction.order.txt 37
 twd-fraction.print.txt 47
 twd-fraction.words.txt 20

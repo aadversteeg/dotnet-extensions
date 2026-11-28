@@ -1,4 +1,7 @@
 fr-f9-padded-box-in-cell-orphans3.boxes.txt 1
+fr-f9-padded-box-in-cell-orphans3.clips.txt 5
+fr-f9-padded-box-in-cell-orphans3.glyphs.txt 5
 fr-f9-padded-box-in-cell-orphans3.lines.txt 12
+fr-f9-padded-box-in-cell-orphans3.order.txt 17
 fr-f9-padded-box-in-cell-orphans3.print.txt 19
 fr-f9-padded-box-in-cell-orphans3.words.txt 5

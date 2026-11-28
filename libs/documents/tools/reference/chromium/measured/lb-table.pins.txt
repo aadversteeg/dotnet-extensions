@@ -1,4 +1,7 @@
 lb-table.boxes.txt 9
+lb-table.clips.txt 18
+lb-table.glyphs.txt 18
 lb-table.lines.txt 24
+lb-table.order.txt 42
 lb-table.print.txt 43
 lb-table.words.txt 18

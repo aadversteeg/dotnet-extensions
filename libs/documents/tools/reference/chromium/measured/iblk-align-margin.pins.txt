@@ -1,4 +1,7 @@
 iblk-align-margin.boxes.txt 1
+iblk-align-margin.clips.txt 3
+iblk-align-margin.glyphs.txt 3
 iblk-align-margin.lines.txt 1
+iblk-align-margin.order.txt 4
 iblk-align-margin.print.txt 5
 iblk-align-margin.words.txt 3

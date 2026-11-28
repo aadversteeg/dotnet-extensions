@@ -1,4 +1,7 @@
 dw-runs.boxes.txt 1
+dw-runs.clips.txt 12
+dw-runs.glyphs.txt 12
 dw-runs.lines.txt 7
+dw-runs.order.txt 19
 dw-runs.print.txt 20
 dw-runs.words.txt 10

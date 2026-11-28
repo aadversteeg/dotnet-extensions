@@ -1,4 +1,7 @@
 tf-before.boxes.txt 6
+tf-before.clips.txt 7
+tf-before.glyphs.txt 7
 tf-before.lines.txt 17
+tf-before.order.txt 24
 tf-before.print.txt 25
 tf-before.words.txt 7
