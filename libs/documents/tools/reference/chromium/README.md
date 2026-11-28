@@ -65,6 +65,9 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
   catalog's `/Dests` (Chromium names its destinations after the HTML ids). Any other annotation, action or destination
   form stops the read-back. Chromium writes each edge of a link's rectangle at a whole CSS pixel, and a destination at
   the target's place in page-area coordinates, one page margin above and left of the target, at a whole pixel;
+- `<case>.destinations.txt`, only for a print that has link annotations: per annotation of `links.txt`, in its order,
+  `page dest <p> <left>` (the left of its `/XYZ` destination, in points from the left of page `<p>`, as the file holds
+  it) or `page uri` (`destinations.py`, PyMuPDF);
 - `<case>.glyphs.txt`: per word of `print.txt`, in its order, `page baseline text` and per glyph the PDF draws for it
   `glyph x dy end`: the glyph id, the x of its origin, its distance below the baseline and the x where its advance ends
   (`glyphs.py`, PyMuPDF's text trace; see "What the read-backs add to print.txt");
@@ -265,6 +268,16 @@ how much they cut off at each edge within one pixel (`HtmlCases.ClipDifferences`
 to 8-bit RGBA, a gray sample as three equal ones, alpha 255 without a mask, and hashes those bytes. The engine's side
 decodes with the family's own PNG decoder to the same form (`PrintedPages.Picture`). So the pixels are compared exactly;
 no case draws a JPEG, and a JPEG would differ until a case measures how Chromium writes one.
+
+`destinations.txt` gives the left of each link's destination, which `links.txt` does not hold; the case comparison
+compares it as the top: Chromium's left plus the page's left margin within one pixel of the engine's anchor
+(`HtmlCases.DestinationDifferences`; `lk-later-heading`: a heading at the left of the page area, 18 pt from the page's
+left, gets the left 0). And it compares the edges of the link areas on Chromium's pixel grid: Chromium writes each edge
+of a link's rectangle at the whole CSS pixel nearest the place it lays the link out at, as every one of the 256 edges of
+the cases whose links agree otherwise shows, so each engine edge taken to its nearest whole pixel must be Chromium's
+within 0.1 pt (`HtmlCases.LinkPixelDifferences`). The bound of one pixel either way of `links.txt` is the width of that
+rounding; this compares the rounding itself (`lk-image`: its left edge at 48.328 pt rounds to Chromium's 48; moved 1 pt,
+1.33 px, it rounds to 47.25 and differs).
 
 ## Whole documents
 

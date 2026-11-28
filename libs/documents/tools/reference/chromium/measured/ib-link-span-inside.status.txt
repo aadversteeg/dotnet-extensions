@@ -1,5 +1,5 @@
 ib-link-span-inside listed A_link_around_a_box_has_one_area_per_line_part_where_Chromium_writes_one_before_the_box_one_for_it_and_one_after_it: link 1 on page 1: x1 140.18, Chromium 81.75 (links.txt)
-16 differences:
+25 differences:
 - link 1 on page 1: x1 140.18, Chromium 81.75 (links.txt)
 - link 2 on page 1: x0 54.516, Chromium 81.75 (links.txt)
 - link 2 on page 1: y0 36, Chromium 18 (links.txt)
@@ -16,3 +16,12 @@ ib-link-span-inside listed A_link_around_a_box_has_one_area_per_line_part_where_
 - link 6: Chromium's rectangle on page 1 at (128.25, 36.75) to uri https://example.com/two has none in the engine, which has 3 (links.txt)
 - link 7: Chromium's rectangle on page 1 at (45, 55.5) to uri https://example.com/three has none in the engine, which has 3 (links.txt)
 - link 8: Chromium's rectangle on page 1 at (93, 55.5) to uri https://example.com/three has none in the engine, which has 3 (links.txt)
+- link 1 on page 1: x1 140.18 lies on the pixel 140.25, Chromium's on 81.75 (links.txt)
+- link 2 on page 1: x0 54.516 lies on the pixel 54.75, Chromium's on 81.75 (links.txt)
+- link 2 on page 1: y0 36 lies on the pixel 36, Chromium's on 18 (links.txt)
+- link 2 on page 1: x1 158.953 lies on the pixel 159, Chromium's on 109.5 (links.txt)
+- link 2 on page 1: y1 50.25 lies on the pixel 50.25, Chromium's on 30.75 (links.txt)
+- link 3 on page 1: x0 44.684 lies on the pixel 45, Chromium's on 109.5 (links.txt)
+- link 3 on page 1: y0 55.5 lies on the pixel 55.5, Chromium's on 18 (links.txt)
+- link 3 on page 1: x1 123.516 lies on the pixel 123.75, Chromium's on 140.25 (links.txt)
+- link 3 on page 1: y1 68.25 lies on the pixel 68.25, Chromium's on 30.75 (links.txt)

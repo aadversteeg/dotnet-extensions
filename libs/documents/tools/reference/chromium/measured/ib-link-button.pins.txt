@@ -1,5 +1,6 @@
 ib-link-button.boxes.txt 1
 ib-link-button.clips.txt 13
+ib-link-button.destinations.txt 3
 ib-link-button.glyphs.txt 13
 ib-link-button.lines.txt 4
 ib-link-button.links.txt 3

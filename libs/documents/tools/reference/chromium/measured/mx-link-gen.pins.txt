@@ -1,5 +1,6 @@
 mx-link-gen.boxes.txt 1
 mx-link-gen.clips.txt 16
+mx-link-gen.destinations.txt 4
 mx-link-gen.glyphs.txt 16
 mx-link-gen.ink.txt 10
 mx-link-gen.lines.txt 5

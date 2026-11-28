@@ -240,6 +240,8 @@ internal static class HtmlCases
             .Concat(OrderDifferences(engine, chromium))
             .Concat(ClipDifferences(engine, chromium))
             .Concat(ImageDifferences(engine, chromium))
+            .Concat(DestinationDifferences(pages.Value, Destinations(folder, name), boxes.Value.Document.Page.Margins.Left.Points))
+            .Concat(LinkPixelDifferences(pages.Value, Links(folder, name)))
             .Take(DifferenceBound + 1).ToList();
         var (status, listed) = CommittedStatus(committed);
         if (differences.Count == 0)
@@ -408,7 +410,8 @@ internal static class HtmlCases
     /// <summary>One CSS pixel in points: how far an edge of a link area may be from Chromium's. Chromium writes each edge of
     /// a link's rectangle at a whole CSS pixel (measured, case <c>lk-one-line</c>: the word "link" from 45.703 to 61.894 pt
     /// gets the rectangle 45.75 to 62.25 pt), the engine at its exact place (ISO 32000-1 §12.5.2: <c>/Rect</c> is any rectangle), so
-    /// an edge may differ by up to half a pixel each way of the rounding; the bound is one pixel.</summary>
+    /// an edge may differ by up to half a pixel each way of the rounding; the bound is one pixel. The rounding itself is
+    /// compared after it (<see cref="LinkPixelDifferences"/>).</summary>
     public const double LinkBound = 0.75;
 
     /// <summary>
@@ -472,6 +475,89 @@ internal static class HtmlCases
 
         static string? Edge(string at, string what, double ours, double theirs) =>
             Math.Abs(ours - theirs) > LinkBound + 1e-9 ? $"{at}: {what} {Of(ours)}, Chromium {Of(theirs)}" : null;
+    }
+
+    /// <summary>The left edge of each link's destination in Chromium's print, from <c>&lt;case&gt;.destinations.txt</c>
+    /// (<c>destinations.py</c>): per link of <c>links.txt</c>, in its order, the page and the left of a destination inside the
+    /// document, or null for a link to a URI; none for a case without the file, whose print has no annotation.</summary>
+    internal static List<(int Page, double Left)?> Destinations(CaseFolder folder, string name)
+    {
+        var path = Measured(folder, name) + ".destinations.txt";
+        return File.Exists(path)
+            ? [.. File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ')).Select(parts => parts switch
+            {
+                [_, "uri"] => ((int Page, double Left)?)null,
+                [_, "dest", var page, var left] => (int.Parse(page, CultureInfo.InvariantCulture), Number(left)),
+                _ => throw new FormatException($"Not a line of destinations.py: '{string.Join(' ', parts)}'."),
+            })]
+            : [];
+    }
+
+    /// <summary>
+    /// Every difference between the left edge of the engine's link destinations and Chromium's (<c>destinations.txt</c>),
+    /// link by link in the order <see cref="LinkDifferences"/> pairs them, for each pair of links that both lead to a place
+    /// in the document: Chromium's left plus the page's left margin within <see cref="DestinationBound"/> of the engine's.
+    /// Chromium writes the left as it writes the top (<see cref="DestinationBound"/>): in the coordinates of the page area,
+    /// one page margin left of where the target stands (measured: case <c>lk-later-heading</c>, a heading at the left of the
+    /// page area, 18 pt from the page's left, gets the left 0), at a whole CSS pixel. The page and the top are compared there.
+    /// </summary>
+    /// <param name="pages">The engine's pages.</param>
+    /// <param name="chromium">Chromium's destinations, per link (<see cref="Destinations"/>).</param>
+    /// <param name="marginLeft">The page's left margin, in points: Chromium's offset of every destination's left.</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> DestinationDifferences(PageDocument pages, IReadOnlyList<(int Page, double Left)?> chromium, double marginLeft)
+    {
+        var lefts = pages.Pages.SelectMany(page => page.Items.OfType<Anchor>()).ToDictionary(anchor => anchor.Node, anchor => anchor.At.X);
+        var engine = new List<double?>();
+        var links = new Dictionary<NodeId, double?>();
+        foreach (var item in pages.Pages.SelectMany(page => page.Items))
+        {
+            switch (item)
+            {
+                case StructureStart { Role: SemanticRole.LinkRole { Target: var target } } start:
+                    links[start.Node] = target is LinkTarget.NodeTarget node && lefts.TryGetValue(node.Value, out var left) ? left : null;
+                    break;
+                case LinkArea area:
+                    engine.Add(links[area.Link]);
+                    break;
+            }
+        }
+
+        foreach (var (ours, theirs, number) in engine.Zip(chromium).Select((pair, index) => (pair.First, pair.Second, index + 1)))
+        {
+            if (ours is { } x && theirs is { } place && Math.Abs(x - (place.Left + marginLeft)) > DestinationBound + 1e-9)
+            {
+                yield return $"link {number} leads to the left {Of(x)}, Chromium's to {Of(place.Left + marginLeft)} (its {Of(place.Left)} plus the left margin {Of(marginLeft)}) (destinations.txt)";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every difference between the edges of the engine's link areas and those of Chromium's link annotations
+    /// (<c>links.txt</c>) on Chromium's grid of whole CSS pixels, link by link in the order <see cref="LinkDifferences"/>
+    /// pairs them, for each pair on the same page: each edge of the engine's area taken to the nearest whole pixel
+    /// (<see cref="WholePixel"/>) within <see cref="Bound"/> of Chromium's, as an image's edges are compared. Chromium writes
+    /// each edge of a link's rectangle at the whole pixel nearest to the place it lays the link out at (measured: 256 edges
+    /// of the cases whose links agree otherwise, every one exactly the engine's edge so rounded); the engine writes the
+    /// exact place. So <see cref="LinkBound"/>, one pixel either way, is the width of the rounding, and this is the rounding
+    /// itself: an area a pixel off differs (case <c>lk-image</c>: moved 1 pt, 1.33 px, it was within the pixel either way).
+    /// </summary>
+    /// <param name="pages">The engine's pages.</param>
+    /// <param name="chromium">Chromium's links.</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> LinkPixelDifferences(PageDocument pages, IReadOnlyList<PrintedLink> chromium)
+    {
+        foreach (var (ours, theirs, number) in Links(pages).Zip(chromium).Select((pair, index) => (pair.First, pair.Second, index + 1)).Where(link => link.First.Page == link.Second.Page))
+        {
+            var at = $"link {number} on page {ours.Page}";
+            foreach (var difference in new[] { Edge("x0", ours.X0, theirs.X0), Edge("y0", ours.Y0, theirs.Y0), Edge("x1", ours.X1, theirs.X1), Edge("y1", ours.Y1, theirs.Y1) }.OfType<string>())
+            {
+                yield return $"{at}: {difference} (links.txt)";
+            }
+        }
+
+        static string? Edge(string what, double ours, double theirs) =>
+            Math.Abs(WholePixel(ours) - theirs) > Bound ? $"{what} {Of(ours)} lies on the pixel {Of(WholePixel(ours))}, Chromium's on {Of(theirs)}" : null;
     }
 
     private static string? TargetDifference(string at, string ours, string theirs, double marginTop)

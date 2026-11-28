@@ -1,5 +1,6 @@
 iblk-inside.boxes.txt 1
 iblk-inside.clips.txt 33
+iblk-inside.destinations.txt 1
 iblk-inside.glyphs.txt 33
 iblk-inside.images.txt 1
 iblk-inside.lines.txt 9

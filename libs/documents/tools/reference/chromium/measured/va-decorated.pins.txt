@@ -1,5 +1,6 @@
 va-decorated.boxes.txt 1
 va-decorated.clips.txt 28
+va-decorated.destinations.txt 1
 va-decorated.glyphs.txt 28
 va-decorated.lines.txt 3
 va-decorated.links.txt 1

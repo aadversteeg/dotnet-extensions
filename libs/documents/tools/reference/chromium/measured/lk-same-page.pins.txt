@@ -1,5 +1,6 @@
 lk-same-page.boxes.txt 1
 lk-same-page.clips.txt 36
+lk-same-page.destinations.txt 2
 lk-same-page.glyphs.txt 36
 lk-same-page.ink.txt 8
 lk-same-page.lines.txt 2

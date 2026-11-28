@@ -1,5 +1,6 @@
 lk-mail-tel.boxes.txt 1
 lk-mail-tel.clips.txt 5
+lk-mail-tel.destinations.txt 2
 lk-mail-tel.glyphs.txt 5
 lk-mail-tel.lines.txt 2
 lk-mail-tel.links.txt 2
