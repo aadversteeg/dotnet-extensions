@@ -1,0 +1,44 @@
+word 1 2 1
+word 1 Word 0 0 0 0
+word 1 x 0
+word 1 y 2
+word 1 Word 3 3 3 3
+word 1 x 3
+word 1 y 5
+word 1 2 4
+word 1 2 7
+word 1 Word 6 6 6 6
+word 1 x 6
+word 1 y 8
+word 1 Word 9 9 9 9
+word 1 x 9
+word 1 y 11
+word 1 2 10
+word 1 2 13
+word 1 Word 12 12 12 12
+word 1 x 12
+word 1 y 14
+word 1 Word 15 15 15 15
+word 1 x 15
+word 1 2 16
+word 1 y 17
+word 1 Word 18 18 18 18
+word 1 x 18
+word 1 2 20
+word 1 Word 19 19 19 19
+word 1 x 19
+word 1 y 21
+word 1 2 23
+word 1 Word 22 22 22 22
+word 1 x 22
+word 1 y 24
+word 1 Word 25 25 25 25
+word 1 x 25
+word 1 y 27
+word 1 2 26
+word 1 2 29
+word 1 Word 28 28 28 28
+word 1 x 28
+word 1 y 30
+word 1 Word 31 31 31 31
+word 1 x 31

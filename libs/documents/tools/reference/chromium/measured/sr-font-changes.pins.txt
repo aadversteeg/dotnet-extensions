@@ -1,5 +1,6 @@
 sr-font-changes.boxes.txt 1
 sr-font-changes.glyphs.txt 13
 sr-font-changes.lines.txt 0
+sr-font-changes.order.txt 13
 sr-font-changes.print.txt 14
 sr-font-changes.words.txt 9

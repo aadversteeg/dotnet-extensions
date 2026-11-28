@@ -1,5 +1,6 @@
 fr-cut-row-between-aligned-rows.boxes.txt 6
 fr-cut-row-between-aligned-rows.glyphs.txt 31
 fr-cut-row-between-aligned-rows.lines.txt 20
+fr-cut-row-between-aligned-rows.order.txt 51
 fr-cut-row-between-aligned-rows.print.txt 53
 fr-cut-row-between-aligned-rows.words.txt 31

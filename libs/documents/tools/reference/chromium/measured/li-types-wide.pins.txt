@@ -1,5 +1,6 @@
 li-types-wide.boxes.txt 1
 li-types-wide.glyphs.txt 6
 li-types-wide.lines.txt 0
+li-types-wide.order.txt 6
 li-types-wide.print.txt 7
 li-types-wide.words.txt 6

@@ -3,5 +3,6 @@ dw-gap-places.glyphs.txt 25
 dw-gap-places.ink.txt 72
 dw-gap-places.lines.txt 11
 dw-gap-places.links.txt 3
+dw-gap-places.order.txt 36
 dw-gap-places.print.txt 38
 dw-gap-places.words.txt 25

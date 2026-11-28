@@ -1,5 +1,6 @@
 hw-pre.boxes.txt 1
 hw-pre.glyphs.txt 5
 hw-pre.lines.txt 0
+hw-pre.order.txt 5
 hw-pre.print.txt 6
 hw-pre.words.txt 5

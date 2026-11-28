@@ -1,5 +1,6 @@
 f-lato-13.boxes.txt 1
 f-lato-13.glyphs.txt 40
 f-lato-13.lines.txt 0
+f-lato-13.order.txt 40
 f-lato-13.print.txt 44
 f-lato-13.words.txt 40

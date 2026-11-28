@@ -1,5 +1,6 @@
 fr-keep-continued-box.boxes.txt 1
 fr-keep-continued-box.glyphs.txt 7
 fr-keep-continued-box.lines.txt 0
+fr-keep-continued-box.order.txt 7
 fr-keep-continued-box.print.txt 10
 fr-keep-continued-box.words.txt 7

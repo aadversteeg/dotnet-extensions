@@ -1,5 +1,6 @@
 gc-counter-styles.boxes.txt 1
 gc-counter-styles.glyphs.txt 62
 gc-counter-styles.lines.txt 0
+gc-counter-styles.order.txt 62
 gc-counter-styles.print.txt 63
 gc-counter-styles.words.txt 62

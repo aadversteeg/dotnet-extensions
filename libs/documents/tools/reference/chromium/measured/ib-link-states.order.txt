@@ -1,0 +1,11 @@
+word 1 Before 0 0 0 0 0 0
+word 1 a 2
+word 1 plain 2 2 2 2 2
+word 1 link 2 2 2 2
+word 1 after. 3 3 3 3 3
+word 1 Second 4 4 4 4 4 4
+word 1 another 6 6 6 6 6 6 6
+word 1 link 6 6 6 6
+word 1 after. 7 7 7 7 7
+paint 1 1 51.504 29.250 100.254 30.000 #0000ee
+paint 1 5 54.516 48.000 109.102 48.750 #0000ee

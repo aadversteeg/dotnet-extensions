@@ -1,5 +1,6 @@
 br-bg-percent.boxes.txt 3
 br-bg-percent.glyphs.txt 5
 br-bg-percent.lines.txt 0
+br-bg-percent.order.txt 8
 br-bg-percent.print.txt 9
 br-bg-percent.words.txt 5

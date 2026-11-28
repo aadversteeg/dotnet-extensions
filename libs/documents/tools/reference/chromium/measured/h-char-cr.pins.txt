@@ -1,5 +1,6 @@
 h-char-cr.boxes.txt 1
 h-char-cr.glyphs.txt 5
 h-char-cr.lines.txt 0
+h-char-cr.order.txt 5
 h-char-cr.print.txt 6
 h-char-cr.words.txt 5

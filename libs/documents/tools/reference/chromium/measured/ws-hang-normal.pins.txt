@@ -1,5 +1,6 @@
 ws-hang-normal.boxes.txt 1
 ws-hang-normal.glyphs.txt 52
 ws-hang-normal.lines.txt 0
+ws-hang-normal.order.txt 52
 ws-hang-normal.print.txt 53
 ws-hang-normal.words.txt 52

@@ -1036,6 +1036,12 @@ through the whole HTML path unchanged and its pages are compared with every file
   from the word's first glyph within 0.1 pt (the bound of a word's start and end; kerning and letter spacing inside a
   word show here) and its distance below the baseline within 0.1 pt. The text reading of a PDF spreads a ligature over
   its characters at positions of its own; the trace gives the glyph that is drawn, and that is what is compared.
+- `<case>.order.txt`, the place of every word, fill, stroke and image in the page's drawing sequence (`order.py`,
+  `sequence.py`): on each page whose text is the same, for each word, the colours (or images) painted after a text that
+  draws part of it over that part's box (its advances across, from 0.8 of the font size above the baseline to 0.2 below)
+  by more than one pixel (0.75 pt, `HtmlCases.PixelBound`) across and down are the same on both sides. A background
+  painted over its own text differs; the places themselves are not compared, as Chromium batches its drawings in a
+  sequence of its own.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole

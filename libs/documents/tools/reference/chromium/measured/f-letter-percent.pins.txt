@@ -1,5 +1,6 @@
 f-letter-percent.boxes.txt 1
 f-letter-percent.glyphs.txt 60
 f-letter-percent.lines.txt 0
+f-letter-percent.order.txt 60
 f-letter-percent.print.txt 62
 f-letter-percent.words.txt 60

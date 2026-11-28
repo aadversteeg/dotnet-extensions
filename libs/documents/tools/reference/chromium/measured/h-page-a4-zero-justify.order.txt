@@ -1,0 +1,38 @@
+word 1 lorem 0 0 0 0 0
+word 1 ipsum 0 0 0 0 0
+word 1 dolor 0 0 0 0 0
+word 1 sit 0 0 0
+word 1 amet 0 0 0 0
+word 1 consectetur 0 0 0 0 0 0 0 0 0 0 0
+word 1 adipiscing 0 0 0 0 0 0 0 0 0 0
+word 1 elit 0 0 0 0
+word 1 sed 0 0 0
+word 1 do 0 0
+word 1 eiusmod 0 0 0 0 0 0 0
+word 1 tempor 0 0 0 0 0 0
+word 1 incididunt 0 0 0 0 0 0 0 0 0 0
+word 1 ut 0 0
+word 1 labore 0 0 0 0 0 0
+word 1 et 0 0
+word 1 dolore 0 0 0 0 0 0
+word 1 magna 1 1 1 1 1
+word 1 aliqua 1 1 1 1 1 1
+word 1 lorem 1 1 1 1 1
+word 1 ipsum 1 1 1 1 1
+word 1 dolor 1 1 1 1 1
+word 1 sit 1 1 1
+word 1 amet 1 1 1 1
+word 1 consectetur 1 1 1 1 1 1 1 1 1 1 1
+word 1 adipiscing 1 1 1 1 1 1 1 1 1 1
+word 1 elit 1 1 1 1
+word 1 sed 1 1 1
+word 1 do 1 1
+word 1 eiusmod 1 1 1 1 1 1 1
+word 1 tempor 1 1 1 1 1 1
+word 1 incididunt 1 1 1 1 1 1 1 1 1 1
+word 1 ut 1 1
+word 1 labore 1 1 1 1 1 1
+word 1 et 2 2
+word 1 dolore 2 2 2 2 2 2
+word 1 magna 2 2 2 2 2
+word 1 aliqua 2 2 2 2 2 2

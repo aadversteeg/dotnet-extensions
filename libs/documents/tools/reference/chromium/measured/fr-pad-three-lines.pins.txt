@@ -1,5 +1,6 @@
 fr-pad-three-lines.boxes.txt 1
 fr-pad-three-lines.glyphs.txt 4
 fr-pad-three-lines.lines.txt 0
+fr-pad-three-lines.order.txt 4
 fr-pad-three-lines.print.txt 8
 fr-pad-three-lines.words.txt 4

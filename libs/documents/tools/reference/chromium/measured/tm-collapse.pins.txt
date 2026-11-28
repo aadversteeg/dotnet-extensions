@@ -1,5 +1,6 @@
 tm-collapse.boxes.txt 7
 tm-collapse.glyphs.txt 4
 tm-collapse.lines.txt 23
+tm-collapse.order.txt 27
 tm-collapse.print.txt 28
 tm-collapse.words.txt 4

@@ -1,5 +1,6 @@
 fr-lh-first-baseline.boxes.txt 2
 fr-lh-first-baseline.glyphs.txt 5
 fr-lh-first-baseline.lines.txt 0
+fr-lh-first-baseline.order.txt 5
 fr-lh-first-baseline.print.txt 6
 fr-lh-first-baseline.words.txt 5

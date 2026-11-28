@@ -2,5 +2,6 @@ lk-one-line.boxes.txt 1
 lk-one-line.glyphs.txt 3
 lk-one-line.lines.txt 1
 lk-one-line.links.txt 1
+lk-one-line.order.txt 4
 lk-one-line.print.txt 5
 lk-one-line.words.txt 3

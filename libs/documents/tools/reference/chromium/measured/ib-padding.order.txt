@@ -1,0 +1,24 @@
+word 1 Side 0 0 0 0
+word 1 padded 2 2 2 2 2 2
+word 1 text. 3 3 3 3 3
+word 1 Both 4 4 4 4
+word 1 padded 6 6 6 6 6 6
+word 1 text. 7 7 7 7 7
+word 1 Line 8 8 8 8
+word 1 one 8 8 8
+word 1 above 8 8 8 8 8
+word 1 the 8 8 8
+word 1 tall 8 8 8 8
+word 1 box. 8 8 8 8
+word 1 Tall 9 9 9 9
+word 1 padded 11 11 11 11 11 11
+word 1 box. 12 12 12 12
+word 1 Line 13 13 13 13
+word 1 three 13 13 13 13 13
+word 1 below 13 13 13 13 13
+word 1 the 13 13 13
+word 1 tall 13 13 13 13
+word 1 box. 13 13 13 13
+paint 1 1 40.500 18.000 86.250 30.750 #ff0000
+paint 1 5 42.750 33.750 89.250 52.500 #00a000
+paint 1 10 36.000 65.250 70.500 96.000 #0000ff

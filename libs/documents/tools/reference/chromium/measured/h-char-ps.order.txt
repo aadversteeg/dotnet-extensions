@@ -1,0 +1,5 @@
+word 1 aa 0 0
+word 1 bb 2 2
+word 1 cc 2 2
+word 1 dd 3 3
+word 1 ee 5 5

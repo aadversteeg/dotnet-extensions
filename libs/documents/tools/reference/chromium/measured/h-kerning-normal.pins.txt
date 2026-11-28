@@ -1,5 +1,6 @@
 h-kerning-normal.boxes.txt 1
 h-kerning-normal.glyphs.txt 3
 h-kerning-normal.lines.txt 0
+h-kerning-normal.order.txt 3
 h-kerning-normal.print.txt 4
 h-kerning-normal.words.txt 3

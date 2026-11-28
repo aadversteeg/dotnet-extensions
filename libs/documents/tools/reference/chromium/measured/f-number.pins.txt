@@ -1,5 +1,6 @@
 f-number.boxes.txt 1
 f-number.glyphs.txt 40
 f-number.lines.txt 0
+f-number.order.txt 40
 f-number.print.txt 44
 f-number.words.txt 40

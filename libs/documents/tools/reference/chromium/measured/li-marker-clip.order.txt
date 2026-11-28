@@ -1,0 +1,38 @@
+word 1 No 5 5
+word 1 padding 5 5 5 5 5 5 5
+word 1 Disc 6 6 6 6
+word 1 left 6 6 6
+word 1 of 6 6
+word 1 the 6 6 6
+word 1 page 6 6 6 6
+word 1 area 6 6 6 6
+word 1 Square 7 7 7 7 7 7
+word 1 left 7 7 7
+word 1 of 7 7
+word 1 the 7 7 7
+word 1 page 7 7 7 7
+word 1 area 7 7 7 7
+word 1 Circle 8 8 8 8 8 8
+word 1 left 8 8 8
+word 1 of 8 8
+word 1 the 8 8 8
+word 1 page 8 8 8 8
+word 1 area 8 8 8 8
+word 1 Number 9 9 9 9 9 9
+word 1 left 9 9 9
+word 1 of 9 9
+word 1 the 9 9 9
+word 1 page 9 9 9 9
+word 1 area 9 9 9 9
+word 1 Half 10 10 10 10
+word 1 padding 10 10 10 10 10 10 10
+word 1 Disc 12 12 12 12
+word 1 across 12 12 12 12 12 12
+word 1 the 12 12 12
+word 1 edge 12 12 12 12
+paint 1 0 12.000 35.250 288.000 48.000 #eeeeee
+paint 1 1 12.000 58.500 288.000 71.250 #eeeeee
+paint 1 2 12.000 81.750 288.000 94.500 #eeeeee
+paint 1 3 12.000 105.000 288.000 117.750 #eeeeee
+paint 1 4 22.500 151.500 288.000 164.250 #eeeeee
+paint 1 11 12.000 156.750 14.250 160.500 #000000

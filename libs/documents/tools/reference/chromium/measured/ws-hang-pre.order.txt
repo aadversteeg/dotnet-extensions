@@ -1,0 +1,52 @@
+word 1 aa 0 0
+word 1 bb 0 0
+word 1 cc 0 0
+word 1 dd 0 0
+word 1 aa 1 1
+word 1 aa 2 2
+word 1 bb 2 2
+word 1 cc 2 2
+word 1 dd 2 2
+word 1 ee 2 2
+word 1 ff 3
+word 1 gg 4 4
+word 1 x 5
+word 1 aa 6 6
+word 1 bb 6 6
+word 1 cc 6 6
+word 1 dd 6 6
+word 1 aa 7 7
+word 1 aa 8 8
+word 1 bb 8 8
+word 1 cc 8 8
+word 1 dd 8 8
+word 1 ee 8 8
+word 1 ff 9
+word 1 gg 10 10
+word 1 x 11
+word 1 aa 12 12
+word 1 bb 12 12
+word 1 cc 12 12
+word 1 dd 12 12
+word 1 aa 13 13
+word 1 aa 14 14
+word 1 bb 14 14
+word 1 cc 14 14
+word 1 dd 14 14
+word 1 ee 14 14
+word 1 ff 15
+word 1 gg 16 16
+word 1 x 17
+word 1 aa 18 18
+word 1 bb 18 18
+word 1 cc 18 18
+word 1 dd 18 18
+word 1 aa 19 19
+word 1 aa 20 20
+word 1 bb 20 20
+word 1 cc 20 20
+word 1 dd 20 20
+word 1 ee 20 20
+word 1 ff 21
+word 1 gg 22 22
+word 1 x 23

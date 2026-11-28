@@ -1,5 +1,6 @@
 li-types.boxes.txt 1
 li-types.glyphs.txt 55
 li-types.lines.txt 1
+li-types.order.txt 56
 li-types.print.txt 57
 li-types.words.txt 55

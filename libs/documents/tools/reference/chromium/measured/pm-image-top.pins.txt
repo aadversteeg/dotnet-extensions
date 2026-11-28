@@ -1,5 +1,6 @@
 pm-image-top.boxes.txt 1
 pm-image-top.glyphs.txt 3
 pm-image-top.lines.txt 1
+pm-image-top.order.txt 5
 pm-image-top.print.txt 6
 pm-image-top.words.txt 3

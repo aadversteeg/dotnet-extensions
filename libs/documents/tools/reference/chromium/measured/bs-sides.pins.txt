@@ -1,5 +1,6 @@
 bs-sides.boxes.txt 4
 bs-sides.glyphs.txt 6
 bs-sides.lines.txt 7
+bs-sides.order.txt 13
 bs-sides.print.txt 14
 bs-sides.words.txt 6

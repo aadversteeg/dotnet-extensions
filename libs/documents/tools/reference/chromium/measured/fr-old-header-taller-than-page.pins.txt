@@ -1,5 +1,6 @@
 fr-old-header-taller-than-page.boxes.txt 3
 fr-old-header-taller-than-page.glyphs.txt 5
 fr-old-header-taller-than-page.lines.txt 13
+fr-old-header-taller-than-page.order.txt 18
 fr-old-header-taller-than-page.print.txt 21
 fr-old-header-taller-than-page.words.txt 5

@@ -1,5 +1,6 @@
 hw-nowrap.boxes.txt 1
 hw-nowrap.glyphs.txt 25
 hw-nowrap.lines.txt 0
+hw-nowrap.order.txt 25
 hw-nowrap.print.txt 26
 hw-nowrap.words.txt 25

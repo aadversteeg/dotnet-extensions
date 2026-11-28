@@ -1,5 +1,6 @@
 d-number.boxes.txt 1
 d-number.glyphs.txt 12
 d-number.lines.txt 0
+d-number.order.txt 12
 d-number.print.txt 14
 d-number.words.txt 12

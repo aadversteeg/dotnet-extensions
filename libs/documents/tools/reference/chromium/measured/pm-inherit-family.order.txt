@@ -1,0 +1,4 @@
+word 1 Aa 0 0
+word 1 one 2 2 2
+word 1 two 3 3 3
+word 1 Cc 1 1

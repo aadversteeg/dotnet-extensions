@@ -1,5 +1,6 @@
 hr-attrs.boxes.txt 6
 hr-attrs.glyphs.txt 7
 hr-attrs.lines.txt 8
+hr-attrs.order.txt 21
 hr-attrs.print.txt 27
 hr-attrs.words.txt 7

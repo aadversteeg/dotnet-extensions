@@ -2,5 +2,6 @@ sk-lato-bold.boxes.txt 1
 sk-lato-bold.glyphs.txt 18
 sk-lato-bold.ink.txt 24
 sk-lato-bold.lines.txt 6
+sk-lato-bold.order.txt 24
 sk-lato-bold.print.txt 25
 sk-lato-bold.words.txt 18

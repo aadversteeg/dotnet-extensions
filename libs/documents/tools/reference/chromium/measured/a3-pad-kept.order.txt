@@ -1,0 +1,14 @@
+word 1 k0 1 1
+word 1 k1 2 2
+word 1 k2 3 3
+word 1 k3 4 4
+word 1 k4 5 5
+word 1 k5 6 6
+word 1 k6 7 7
+word 1 k7 8 8
+word 1 k8 9 9
+word 1 k9 10 10
+paint 1 0 12.000 12.000 288.000 192.000 #cccccc
+word 2 tail 1 1 1 1
+word 2 after 2 2 2 2
+paint 2 0 12.000 12.000 288.000 46.500 #cccccc

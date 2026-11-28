@@ -1,5 +1,6 @@
 fr-f6-kept-group-orphans3.boxes.txt 2
 fr-f6-kept-group-orphans3.glyphs.txt 10
 fr-f6-kept-group-orphans3.lines.txt 8
+fr-f6-kept-group-orphans3.order.txt 18
 fr-f6-kept-group-orphans3.print.txt 20
 fr-f6-kept-group-orphans3.words.txt 10

@@ -1,0 +1,16 @@
+word 1 Text 0 0 0 0
+word 1 PRE 1 1 1
+word 1 after 2 2 2 2
+word 1 end 3 3 3
+word 1 Text 4 4 4 4
+word 1 wide 5 5 5 5
+word 1 after 6 6 6 6
+word 1 end 7 7 7
+word 1 One 8 8 8
+word 1 Two 8 8 8
+word 1 Text 9 9 9 9
+word 1 After 9 9 9 9
+word 1 Text 10 10 10 10
+word 1 spaced 11 11 11 11 11 11
+word 1 tail 12 12 12 12
+word 1 end 13 13 13

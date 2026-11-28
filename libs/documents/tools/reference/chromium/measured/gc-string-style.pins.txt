@@ -1,5 +1,6 @@
 gc-string-style.boxes.txt 1
 gc-string-style.glyphs.txt 5
 gc-string-style.lines.txt 0
+gc-string-style.order.txt 5
 gc-string-style.print.txt 6
 gc-string-style.words.txt 5

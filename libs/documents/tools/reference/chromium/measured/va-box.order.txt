@@ -1,0 +1,39 @@
+word 1 2 2
+word 1 high 5 5 5 5
+word 1 Word 0 0 0 0
+word 1 x 0
+word 1 y 3
+word 1 and 3 3 3
+word 1 m 3
+word 1 n 6
+word 1 2 9
+word 1 up 12 12
+word 1 Pad 7 7 7
+word 1 x 7
+word 1 y 10
+word 1 and 10 10 10
+word 1 z 10
+word 1 w 13
+word 1 2 16
+word 1 3 20
+word 1 Edge 14 14 14 14
+word 1 e 14
+word 1 f 17
+word 1 and 17 17 17
+word 1 g 17
+word 1 h 21
+word 1 Top 23 23 23
+word 1 lift 26 26 26
+word 1 line 24 24 24 24
+word 1 and 24 24 24
+word 1 a 24
+word 1 end 27 27 27
+paint 1 1 45.750 12.000 51.000 22.500 #ffd700
+paint 1 4 89.250 12.000 105.750 22.500 #ffd700
+paint 1 8 37.500 33.750 46.500 46.500 #ff8080
+paint 1 11 81.000 32.250 96.750 47.250 #ff8080
+paint 1 15 42.750 55.500 49.500 67.500 #0000ff
+paint 1 18 83.250 54.750 93.750 69.000 #ff8080
+paint 1 19 83.250 54.750 93.750 69.000 #0000ff
+paint 1 22 12.000 78.000 26.250 88.500 #ffd700
+paint 1 25 75.000 78.000 87.750 90.750 #ffd700

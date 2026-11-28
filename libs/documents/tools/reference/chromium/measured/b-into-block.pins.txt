@@ -1,5 +1,6 @@
 b-into-block.boxes.txt 1
 b-into-block.glyphs.txt 11
 b-into-block.lines.txt 0
+b-into-block.order.txt 11
 b-into-block.print.txt 13
 b-into-block.words.txt 11

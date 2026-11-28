@@ -1,5 +1,6 @@
 ib-code-kbd.boxes.txt 1
 ib-code-kbd.glyphs.txt 6
 ib-code-kbd.lines.txt 2
+ib-code-kbd.order.txt 9
 ib-code-kbd.print.txt 13
 ib-code-kbd.words.txt 6

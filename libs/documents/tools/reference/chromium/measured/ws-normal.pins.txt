@@ -1,5 +1,6 @@
 ws-normal.boxes.txt 1
 ws-normal.glyphs.txt 21
 ws-normal.lines.txt 0
+ws-normal.order.txt 21
 ws-normal.print.txt 22
 ws-normal.words.txt 21

@@ -1,0 +1,3 @@
+word 1 top 1 1 1
+word 1 right 1 1 1 1 1
+paint 1 0 12.000 12.000 288.750 26.250 #cccccc

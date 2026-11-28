@@ -1,5 +1,6 @@
 b-into-table.boxes.txt 9
 b-into-table.glyphs.txt 11
 b-into-table.lines.txt 29
+b-into-table.order.txt 40
 b-into-table.print.txt 42
 b-into-table.words.txt 11

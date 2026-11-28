@@ -1,5 +1,6 @@
 gc-attr.boxes.txt 3
 gc-attr.glyphs.txt 6
 gc-attr.lines.txt 0
+gc-attr.order.txt 6
 gc-attr.print.txt 7
 gc-attr.words.txt 6

@@ -1,5 +1,6 @@
 gc-counter-headings.boxes.txt 1
 gc-counter-headings.glyphs.txt 12
 gc-counter-headings.lines.txt 0
+gc-counter-headings.order.txt 12
 gc-counter-headings.print.txt 13
 gc-counter-headings.words.txt 12

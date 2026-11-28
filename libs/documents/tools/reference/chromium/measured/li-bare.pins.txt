@@ -1,5 +1,6 @@
 li-bare.boxes.txt 1
 li-bare.glyphs.txt 13
 li-bare.lines.txt 3
+li-bare.order.txt 19
 li-bare.print.txt 20
 li-bare.words.txt 13

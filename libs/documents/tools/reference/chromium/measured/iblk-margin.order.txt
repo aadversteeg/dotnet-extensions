@@ -1,0 +1,22 @@
+word 1 Above 0 0 0 0 0
+word 1 the 0 0 0
+word 1 margins. 0 0 0 0 0 0 0 0
+word 1 All 1 1 1
+word 1 Four 3 3 3 3
+word 1 sides. 4 4 4 4 4 4
+word 1 Top 5 5 5
+word 1 High 7 7 7 7
+word 1 only. 8 8 8 8 8
+word 1 Bottom 9 9 9 9 9
+word 1 Low 11 11 11
+word 1 only. 12 12 12 12 12
+word 1 Left 13 13 13
+word 1 Pushed 15 15 15 15 15 15
+word 1 only. 16 16 16 16 16
+word 1 Below 17 17 17 17 17
+word 1 the 17 17 17
+word 1 margins. 17 17 17 17 17 17 17 17
+paint 1 2 36.000 30.750 57.000 43.500 #a0e0a0
+paint 1 6 31.500 57.000 53.250 69.750 #a0e0a0
+paint 1 10 48.750 69.750 68.250 82.500 #a0e0a0
+paint 1 14 45.000 90.000 78.750 102.750 #a0e0a0

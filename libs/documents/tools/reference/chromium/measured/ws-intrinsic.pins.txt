@@ -1,5 +1,6 @@
 ws-intrinsic.boxes.txt 14
 ws-intrinsic.glyphs.txt 25
 ws-intrinsic.lines.txt 49
+ws-intrinsic.order.txt 74
 ws-intrinsic.print.txt 75
 ws-intrinsic.words.txt 25

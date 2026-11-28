@@ -1,5 +1,6 @@
 gc-counters-nested.boxes.txt 1
 gc-counters-nested.glyphs.txt 15
 gc-counters-nested.lines.txt 0
+gc-counters-nested.order.txt 15
 gc-counters-nested.print.txt 16
 gc-counters-nested.words.txt 15

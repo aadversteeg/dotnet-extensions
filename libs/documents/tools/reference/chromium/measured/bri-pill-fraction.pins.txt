@@ -1,5 +1,6 @@
 bri-pill-fraction.boxes.txt 1
 bri-pill-fraction.glyphs.txt 18
 bri-pill-fraction.lines.txt 0
+bri-pill-fraction.order.txt 26
 bri-pill-fraction.print.txt 27
 bri-pill-fraction.words.txt 18

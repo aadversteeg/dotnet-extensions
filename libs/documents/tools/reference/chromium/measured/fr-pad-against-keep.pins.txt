@@ -1,5 +1,6 @@
 fr-pad-against-keep.boxes.txt 1
 fr-pad-against-keep.glyphs.txt 4
 fr-pad-against-keep.lines.txt 0
+fr-pad-against-keep.order.txt 4
 fr-pad-against-keep.print.txt 6
 fr-pad-against-keep.words.txt 4

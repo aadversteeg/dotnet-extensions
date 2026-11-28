@@ -3,5 +3,6 @@ ib-link-states.glyphs.txt 9
 ib-link-states.ink.txt 4
 ib-link-states.lines.txt 2
 ib-link-states.links.txt 2
+ib-link-states.order.txt 11
 ib-link-states.print.txt 12
 ib-link-states.words.txt 9

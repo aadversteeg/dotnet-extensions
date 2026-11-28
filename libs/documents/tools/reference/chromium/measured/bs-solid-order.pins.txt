@@ -1,5 +1,6 @@
 bs-solid-order.boxes.txt 4
 bs-solid-order.glyphs.txt 6
 bs-solid-order.lines.txt 8
+bs-solid-order.order.txt 22
 bs-solid-order.print.txt 23
 bs-solid-order.words.txt 6

@@ -1,0 +1,9 @@
+word 1 Unbrokenword 0 0 0 0 0 0 0 0 0 0 0 0
+word 1 next 1 1 1 1
+word 1 Wrapping 2 2 2 2 2 2 2 2
+word 1 longerword 3 3 3 3 3 3 3 3 3 3
+word 1 next 4 4 4 4
+word 1 Spaced 5 5 5 5 5 5
+word 1 text 5 5 5 5
+word 1 ending 6 6 6 6 6 6
+word 1 words 7 7 7 7 7

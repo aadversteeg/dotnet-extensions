@@ -1,5 +1,6 @@
 hb-justify.boxes.txt 1
 hb-justify.glyphs.txt 25
 hb-justify.lines.txt 0
+hb-justify.order.txt 25
 hb-justify.print.txt 26
 hb-justify.words.txt 25

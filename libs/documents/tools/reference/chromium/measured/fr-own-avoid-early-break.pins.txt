@@ -1,5 +1,6 @@
 fr-own-avoid-early-break.boxes.txt 1
 fr-own-avoid-early-break.glyphs.txt 8
 fr-own-avoid-early-break.lines.txt 0
+fr-own-avoid-early-break.order.txt 8
 fr-own-avoid-early-break.print.txt 10
 fr-own-avoid-early-break.words.txt 8

@@ -1,5 +1,6 @@
 fr-kwn-pad-no-kwn-control.boxes.txt 1
 fr-kwn-pad-no-kwn-control.glyphs.txt 6
 fr-kwn-pad-no-kwn-control.lines.txt 0
+fr-kwn-pad-no-kwn-control.order.txt 6
 fr-kwn-pad-no-kwn-control.print.txt 11
 fr-kwn-pad-no-kwn-control.words.txt 6

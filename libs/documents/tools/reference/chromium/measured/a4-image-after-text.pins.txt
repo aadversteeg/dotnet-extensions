@@ -1,5 +1,6 @@
 a4-image-after-text.boxes.txt 1
 a4-image-after-text.glyphs.txt 2
 a4-image-after-text.lines.txt 0
+a4-image-after-text.order.txt 5
 a4-image-after-text.print.txt 9
 a4-image-after-text.words.txt 2

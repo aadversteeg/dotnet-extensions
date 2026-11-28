@@ -1,5 +1,6 @@
 fr-border-continued.boxes.txt 1
 fr-border-continued.glyphs.txt 7
 fr-border-continued.lines.txt 1
+fr-border-continued.order.txt 8
 fr-border-continued.print.txt 11
 fr-border-continued.words.txt 7

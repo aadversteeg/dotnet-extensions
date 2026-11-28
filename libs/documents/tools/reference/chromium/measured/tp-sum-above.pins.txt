@@ -1,5 +1,6 @@
 tp-sum-above.boxes.txt 4
 tp-sum-above.glyphs.txt 5
 tp-sum-above.lines.txt 12
+tp-sum-above.order.txt 17
 tp-sum-above.print.txt 18
 tp-sum-above.words.txt 5

@@ -1,5 +1,6 @@
 gc-counter-bound.boxes.txt 1
 gc-counter-bound.glyphs.txt 4
 gc-counter-bound.lines.txt 0
+gc-counter-bound.order.txt 4
 gc-counter-bound.print.txt 5
 gc-counter-bound.words.txt 4

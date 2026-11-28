@@ -1,0 +1,4 @@
+word 1 a0 0 0
+word 1 b0 1 1
+word 2 head0 0 0 0 0 0
+word 2 z0 1 1

@@ -2,5 +2,6 @@ sk-touch.boxes.txt 1
 sk-touch.glyphs.txt 16
 sk-touch.ink.txt 38
 sk-touch.lines.txt 16
+sk-touch.order.txt 32
 sk-touch.print.txt 33
 sk-touch.words.txt 8

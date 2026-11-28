@@ -1,5 +1,6 @@
 dl-lato.boxes.txt 1
 dl-lato.glyphs.txt 12
 dl-lato.lines.txt 6
+dl-lato.order.txt 18
 dl-lato.print.txt 19
 dl-lato.words.txt 12

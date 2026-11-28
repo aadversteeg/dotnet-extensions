@@ -1,0 +1,5 @@
+word 1 W 1
+paint 1 0 12.000 12.000 288.000 192.000 #cccccc
+word 2 tail 1 1 1 1
+word 2 after 2 2 2 2
+paint 2 0 12.000 12.000 288.000 46.500 #cccccc

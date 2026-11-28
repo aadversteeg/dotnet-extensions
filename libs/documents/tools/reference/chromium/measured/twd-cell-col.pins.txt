@@ -1,5 +1,6 @@
 twd-cell-col.boxes.txt 9
 twd-cell-col.glyphs.txt 20
 twd-cell-col.lines.txt 7
+twd-cell-col.order.txt 33
 twd-cell-col.print.txt 52
 twd-cell-col.words.txt 20

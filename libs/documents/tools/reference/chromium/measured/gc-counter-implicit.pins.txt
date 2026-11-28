@@ -1,5 +1,6 @@
 gc-counter-implicit.boxes.txt 1
 gc-counter-implicit.glyphs.txt 26
 gc-counter-implicit.lines.txt 0
+gc-counter-implicit.order.txt 26
 gc-counter-implicit.print.txt 27
 gc-counter-implicit.words.txt 26

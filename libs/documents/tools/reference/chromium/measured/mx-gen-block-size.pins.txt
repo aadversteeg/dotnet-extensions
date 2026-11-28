@@ -1,5 +1,6 @@
 mx-gen-block-size.boxes.txt 2
 mx-gen-block-size.glyphs.txt 11
 mx-gen-block-size.lines.txt 2
+mx-gen-block-size.order.txt 14
 mx-gen-block-size.print.txt 18
 mx-gen-block-size.words.txt 11

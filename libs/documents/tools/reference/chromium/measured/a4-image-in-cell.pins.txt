@@ -1,5 +1,6 @@
 a4-image-in-cell.boxes.txt 4
 a4-image-in-cell.glyphs.txt 3
 a4-image-in-cell.lines.txt 24
+a4-image-in-cell.order.txt 30
 a4-image-in-cell.print.txt 34
 a4-image-in-cell.words.txt 3

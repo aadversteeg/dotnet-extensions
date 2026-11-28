@@ -1,5 +1,6 @@
 d-percent.boxes.txt 1
 d-percent.glyphs.txt 12
 d-percent.lines.txt 0
+d-percent.order.txt 12
 d-percent.print.txt 14
 d-percent.words.txt 12

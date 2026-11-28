@@ -1,0 +1,38 @@
+word 1 Read 0 0 0 0
+word 1 the 2 2 2
+word 1 second 2 2 2 2 2 2
+word 1 paragraph 2 2 2 2 2 2 2 2 2
+word 1 or 3 3
+word 1 the 3 3 3
+word 1 marked 5 5 5 5 5 5
+word 1 words 5 5 5 5 5
+word 1 below. 6 6 6 6 6 6
+word 1 Filler 7 7 7 7 7 7
+word 1 text 7 7 7 7
+word 1 that 7 7 7 7
+word 1 stands 7 7 7 7 7 7
+word 1 between 7 7 7 7 7 7 7
+word 1 the 7 7 7
+word 1 link 7 7 7 7
+word 1 and 7 7 7
+word 1 its 7 7 7
+word 1 target. 7 7 7 7 7 7 7
+word 1 Second 8 8 8 8 8 8
+word 1 paragraph, 8 8 8 8 8 8 8 8 8 8
+word 1 the 8 8 8
+word 1 target 8 8 8 8 8 8
+word 1 of 8 8
+word 1 the 8 8 8
+word 1 first 9 10 10 10
+word 1 link. 10 10 10 10 10
+word 1 More 11 11 11 11
+word 1 text 11 11 11 11
+word 1 with 11 11 11 11
+word 1 marked 12 12 12 12 12 12
+word 1 words 12 12 12 12 12
+word 1 as 13 13
+word 1 the 13 13 13
+word 1 second 13 13 13 13 13 13
+word 1 target. 13 13 13 13 13 13 13
+paint 1 1 43.570 29.250 143.039 30.000 #0000ee
+paint 1 4 175.828 29.250 240.609 30.000 #0000ee

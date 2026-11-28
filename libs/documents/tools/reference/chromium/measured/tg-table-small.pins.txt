@@ -1,5 +1,6 @@
 tg-table-small.boxes.txt 21
 tg-table-small.glyphs.txt 41
 tg-table-small.lines.txt 34
+tg-table-small.order.txt 82
 tg-table-small.print.txt 104
 tg-table-small.words.txt 41

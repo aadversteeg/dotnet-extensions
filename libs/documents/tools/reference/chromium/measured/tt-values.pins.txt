@@ -1,5 +1,6 @@
 tt-values.boxes.txt 1
 tt-values.glyphs.txt 60
 tt-values.lines.txt 0
+tt-values.order.txt 60
 tt-values.print.txt 61
 tt-values.words.txt 60

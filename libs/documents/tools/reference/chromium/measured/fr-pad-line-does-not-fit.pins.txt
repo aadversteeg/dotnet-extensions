@@ -1,5 +1,6 @@
 fr-pad-line-does-not-fit.boxes.txt 1
 fr-pad-line-does-not-fit.glyphs.txt 5
 fr-pad-line-does-not-fit.lines.txt 0
+fr-pad-line-does-not-fit.order.txt 5
 fr-pad-line-does-not-fit.print.txt 8
 fr-pad-line-does-not-fit.words.txt 5

@@ -1,5 +1,6 @@
 gf-initial-keywords.boxes.txt 1
 gf-initial-keywords.glyphs.txt 21
 gf-initial-keywords.lines.txt 0
+gf-initial-keywords.order.txt 21
 gf-initial-keywords.print.txt 22
 gf-initial-keywords.words.txt 21

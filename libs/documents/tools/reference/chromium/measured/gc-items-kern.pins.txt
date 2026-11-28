@@ -1,5 +1,6 @@
 gc-items-kern.boxes.txt 6
 gc-items-kern.glyphs.txt 23
 gc-items-kern.lines.txt 0
+gc-items-kern.order.txt 23
 gc-items-kern.print.txt 24
 gc-items-kern.words.txt 23

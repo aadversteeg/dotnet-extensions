@@ -1,5 +1,6 @@
 fr-f7-span-fits-control.boxes.txt 3
 fr-f7-span-fits-control.glyphs.txt 7
 fr-f7-span-fits-control.lines.txt 11
+fr-f7-span-fits-control.order.txt 18
 fr-f7-span-fits-control.print.txt 20
 fr-f7-span-fits-control.words.txt 7

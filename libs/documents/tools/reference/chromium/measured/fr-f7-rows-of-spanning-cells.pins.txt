@@ -1,5 +1,6 @@
 fr-f7-rows-of-spanning-cells.boxes.txt 4
 fr-f7-rows-of-spanning-cells.glyphs.txt 5
 fr-f7-rows-of-spanning-cells.lines.txt 15
+fr-f7-rows-of-spanning-cells.order.txt 20
 fr-f7-rows-of-spanning-cells.print.txt 22
 fr-f7-rows-of-spanning-cells.words.txt 5

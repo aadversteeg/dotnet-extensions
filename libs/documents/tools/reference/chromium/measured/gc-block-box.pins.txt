@@ -1,5 +1,6 @@
 gc-block-box.boxes.txt 3
 gc-block-box.glyphs.txt 20
 gc-block-box.lines.txt 4
+gc-block-box.order.txt 25
 gc-block-box.print.txt 29
 gc-block-box.words.txt 20

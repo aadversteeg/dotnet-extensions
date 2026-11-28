@@ -1,5 +1,6 @@
 li-symbol-sizes.boxes.txt 1
 li-symbol-sizes.glyphs.txt 17
 li-symbol-sizes.lines.txt 18
+li-symbol-sizes.order.txt 43
 li-symbol-sizes.print.txt 44
 li-symbol-sizes.words.txt 17

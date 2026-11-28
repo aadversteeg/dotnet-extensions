@@ -29,5 +29,6 @@ for name in "$@"; do
   python3 /src/links.py "/out/$name.pdf" > "/out/$name.links.txt"
   if [ ! -s "/out/$name.links.txt" ]; then rm "/out/$name.links.txt"; fi
   python3 /src/glyphs.py "/out/$name.pdf" > "/out/$name.glyphs.txt"
+  python3 /src/order.py "/out/$name.pdf" > "/out/$name.order.txt"
 done
 cat /out/tools-versions.txt

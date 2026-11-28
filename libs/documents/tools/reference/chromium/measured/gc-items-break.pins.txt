@@ -1,5 +1,6 @@
 gc-items-break.boxes.txt 3
 gc-items-break.glyphs.txt 9
 gc-items-break.lines.txt 0
+gc-items-break.order.txt 9
 gc-items-break.print.txt 10
 gc-items-break.words.txt 9

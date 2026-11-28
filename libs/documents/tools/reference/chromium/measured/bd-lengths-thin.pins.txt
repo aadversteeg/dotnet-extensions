@@ -1,5 +1,6 @@
 bd-lengths-thin.boxes.txt 1
 bd-lengths-thin.glyphs.txt 6
 bd-lengths-thin.lines.txt 0
+bd-lengths-thin.order.txt 16
 bd-lengths-thin.print.txt 17
 bd-lengths-thin.words.txt 6

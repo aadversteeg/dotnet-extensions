@@ -1,5 +1,6 @@
 gc-string-heading.boxes.txt 2
 gc-string-heading.glyphs.txt 4
 gc-string-heading.lines.txt 0
+gc-string-heading.order.txt 4
 gc-string-heading.print.txt 5
 gc-string-heading.words.txt 4

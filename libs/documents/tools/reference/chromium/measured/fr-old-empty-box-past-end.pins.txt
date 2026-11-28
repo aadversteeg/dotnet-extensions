@@ -1,5 +1,6 @@
 fr-old-empty-box-past-end.boxes.txt 1
 fr-old-empty-box-past-end.glyphs.txt 4
 fr-old-empty-box-past-end.lines.txt 0
+fr-old-empty-box-past-end.order.txt 4
 fr-old-empty-box-past-end.print.txt 6
 fr-old-empty-box-past-end.words.txt 4

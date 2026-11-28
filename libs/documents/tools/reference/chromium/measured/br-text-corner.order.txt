@@ -1,0 +1,24 @@
+word 1 top 2 2 2
+word 1 corner 3 3 3 3 3 3
+word 1 text 3 3 3 3
+word 1 runs 3 3 3 3
+word 1 into 3 3 3 3
+word 1 the 3 3 3
+word 1 rounded 4 4 4 4 4 4 4
+word 1 corner 4 4 4 4 4 4
+word 1 of 4 4
+word 1 the 4 4 4
+word 1 box 5 5 5
+word 1 ring 6 6 6 6
+word 1 text 6 6 6 6
+word 1 runs 6 6 6 6
+word 1 into 6 6 6 6
+word 1 the 6 6 6
+word 1 rounded 7 7 7 7 7 7 7
+word 1 corner 7 7 7 7 7 7
+word 1 of 7 7
+word 1 the 7 7 7
+word 1 box 8 8 8
+word 1 end 9 9 9
+paint 1 0 12.000 27.000 124.500 72.000 #d0e8d0
+paint 1 1 12.000 78.000 127.500 126.000 #306030

@@ -2,5 +2,6 @@ sk-whose.boxes.txt 1
 sk-whose.glyphs.txt 15
 sk-whose.ink.txt 27
 sk-whose.lines.txt 12
+sk-whose.order.txt 27
 sk-whose.print.txt 28
 sk-whose.words.txt 15

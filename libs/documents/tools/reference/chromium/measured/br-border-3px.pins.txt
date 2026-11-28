@@ -1,5 +1,6 @@
 br-border-3px.boxes.txt 6
 br-border-3px.glyphs.txt 8
 br-border-3px.lines.txt 0
+br-border-3px.order.txt 17
 br-border-3px.print.txt 18
 br-border-3px.words.txt 8

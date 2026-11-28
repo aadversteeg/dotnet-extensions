@@ -2,5 +2,6 @@ ib-link-cell.boxes.txt 4
 ib-link-cell.glyphs.txt 10
 ib-link-cell.lines.txt 3
 ib-link-cell.links.txt 2
+ib-link-cell.order.txt 13
 ib-link-cell.print.txt 14
 ib-link-cell.words.txt 10

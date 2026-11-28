@@ -1,5 +1,6 @@
 fr-f4-padding-page-start.boxes.txt 1
 fr-f4-padding-page-start.glyphs.txt 9
 fr-f4-padding-page-start.lines.txt 6
+fr-f4-padding-page-start.order.txt 15
 fr-f4-padding-page-start.print.txt 18
 fr-f4-padding-page-start.words.txt 9

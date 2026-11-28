@@ -1,0 +1,36 @@
+word 1 one 0 0 0
+word 1 two 0 0 0
+word 1 three 0 0 0 0 0
+word 1 four 0 0 0 0
+word 1 five 1 2 2
+word 1 six 2 2 2
+word 1 seven 2 2 2 2 2
+word 1 one 3 3 3
+word 1 two 3 3 3
+word 1 three 3 3 3 3 3
+word 1 four 3 3 3 3
+word 1 five 4 5 5
+word 1 six 5 5 5
+word 1 seven 5 5 5 5 5
+word 1 one 6 6 6
+word 1 two 6 6 6
+word 1 three 6 6 6 6 6
+word 1 four 6 6 6 6
+word 1 five 7 8 8
+word 1 six 8 8 8
+word 1 seven 8 8 8 8 8
+word 1 one 9 9 9
+word 1 two 9 9 9
+word 1 three 10 10 10 10 10
+word 1 four 10 10 10 10
+word 1 five 11 12 12
+word 1 six 12 12 12
+word 1 seven 12 12 12 12 12
+word 1 one 13 13 13
+word 1 two 13 13 13
+word 1 three 13 13 13 13 13
+word 1 four 13 13 13 13
+word 1 five 14 15 15
+word 1 six 15 15 15
+word 1 seven 15 15 15 15 15
+word 1 x 16

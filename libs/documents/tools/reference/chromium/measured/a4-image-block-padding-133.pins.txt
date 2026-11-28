@@ -1,5 +1,6 @@
 a4-image-block-padding-133.boxes.txt 1
 a4-image-block-padding-133.glyphs.txt 1
 a4-image-block-padding-133.lines.txt 0
+a4-image-block-padding-133.order.txt 4
 a4-image-block-padding-133.print.txt 8
 a4-image-block-padding-133.words.txt 1

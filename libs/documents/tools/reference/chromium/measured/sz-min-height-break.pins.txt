@@ -1,5 +1,6 @@
 sz-min-height-break.boxes.txt 2
 sz-min-height-break.glyphs.txt 20
 sz-min-height-break.lines.txt 2
+sz-min-height-break.order.txt 22
 sz-min-height-break.print.txt 24
 sz-min-height-break.words.txt 20

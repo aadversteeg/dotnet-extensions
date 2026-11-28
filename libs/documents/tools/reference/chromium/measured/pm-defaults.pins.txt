@@ -1,5 +1,6 @@
 pm-defaults.boxes.txt 1
 pm-defaults.glyphs.txt 11
 pm-defaults.lines.txt 9
+pm-defaults.order.txt 20
 pm-defaults.print.txt 22
 pm-defaults.words.txt 11

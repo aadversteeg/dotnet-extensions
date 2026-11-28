@@ -1,5 +1,6 @@
 b5-row-span-kept-cell.boxes.txt 28
 b5-row-span-kept-cell.glyphs.txt 28
 b5-row-span-kept-cell.lines.txt 108
+b5-row-span-kept-cell.order.txt 136
 b5-row-span-kept-cell.print.txt 140
 b5-row-span-kept-cell.words.txt 28

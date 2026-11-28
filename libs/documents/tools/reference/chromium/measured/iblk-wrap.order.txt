@@ -1,0 +1,64 @@
+word 1 one 2 2 2
+word 1 two 2 2 2
+word 1 Wrapped 0 0 0 0 0 0 0
+word 1 three 3 3 3 3 3
+word 1 four 3 3 3 3
+word 1 after. 4 4 4 4 4
+word 1 Middle 7 7 7 7 7 7
+word 1 of 7 7
+word 1 the 7 7 7
+word 1 Centred 5 5 5 5 5 5 5
+word 1 box 8 8 8
+word 1 with 8 8 8 8
+word 1 text 8 8 8 8
+word 1 end. 9 9 9 9
+word 1 Ends 12 12 12 12
+word 1 on 12 12
+word 1 the 12 12 12
+word 1 Right 10 10 10 10 10
+word 1 right 13 13 13 13 13
+word 1 side 13 13 13 13
+word 1 end. 14 14 14 14
+word 1 Shrunk 15 15 15 15 15 15
+word 1 Long 17 17 17 17
+word 1 text 17 17 17 17
+word 1 that 17 17 17 17
+word 1 is 17 17
+word 1 longer 17 17 17 17 17 17
+word 1 than 17 17 17 17
+word 1 the 17 17 17
+word 1 whole 17 17 17 17 17
+word 1 line 17 17 17 17
+word 1 so 17 17
+word 1 that 17 17 17 17
+word 1 it 17 17
+word 1 has 17 17 17
+word 1 to 18 18
+word 1 wrap 18 18 18 18
+word 1 inside 18 18 18 18 18 18
+word 1 its 18 18 18
+word 1 box 18 18 18
+word 1 end. 19 19 19 19
+word 1 Wide 20 20 20 20
+word 1 wide 22 22 22 22
+word 1 box 22 22 22
+word 1 end. 23 23 23 23
+word 1 Filling 24 24 24 24 24 24 24
+word 1 the 24 24 24
+word 1 line 24 24 24 24
+word 1 with 24 24 24 24
+word 1 words 24 24 24 24 24
+word 1 until 24 24 24 24
+word 1 Moved 26 26 26 26 26
+word 1 box 26 26 26
+word 1 after. 27 27 27 27 27
+word 1 Last 28 28 28 28
+word 1 line 28 28 28 28
+word 1 of 28 28
+word 1 text. 28 28 28 28 28
+paint 1 1 57.000 12.000 123.000 43.500 #ff80ff
+paint 1 6 51.750 43.500 132.000 69.000 #80ffff
+paint 1 11 39.000 69.000 108.750 94.500 #ffff80
+paint 1 16 12.000 107.250 288.000 132.750 #80ff80
+paint 1 21 12.000 158.250 162.000 171.000 #ff8080
+paint 1 25 156.000 183.750 216.000 196.500 #8080ff

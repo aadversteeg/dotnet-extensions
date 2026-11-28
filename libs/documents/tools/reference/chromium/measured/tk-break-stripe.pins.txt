@@ -1,5 +1,6 @@
 tk-break-stripe.boxes.txt 54
 tk-break-stripe.glyphs.txt 61
 tk-break-stripe.lines.txt 118
+tk-break-stripe.order.txt 209
 tk-break-stripe.print.txt 303
 tk-break-stripe.words.txt 61

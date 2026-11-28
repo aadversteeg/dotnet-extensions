@@ -1,5 +1,6 @@
 twd-table-wide.boxes.txt 12
 twd-table-wide.glyphs.txt 27
 twd-table-wide.lines.txt 14
+twd-table-wide.order.txt 47
 twd-table-wide.print.txt 66
 twd-table-wide.words.txt 27

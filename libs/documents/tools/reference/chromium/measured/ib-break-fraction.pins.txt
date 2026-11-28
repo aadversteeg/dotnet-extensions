@@ -1,5 +1,6 @@
 ib-break-fraction.boxes.txt 1
 ib-break-fraction.glyphs.txt 17
 ib-break-fraction.lines.txt 4
+ib-break-fraction.order.txt 21
 ib-break-fraction.print.txt 22
 ib-break-fraction.words.txt 17

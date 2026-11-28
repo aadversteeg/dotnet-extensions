@@ -1,5 +1,6 @@
 c-cell-orphan-moves.boxes.txt 2
 c-cell-orphan-moves.glyphs.txt 14
 c-cell-orphan-moves.lines.txt 7
+c-cell-orphan-moves.order.txt 21
 c-cell-orphan-moves.print.txt 23
 c-cell-orphan-moves.words.txt 14

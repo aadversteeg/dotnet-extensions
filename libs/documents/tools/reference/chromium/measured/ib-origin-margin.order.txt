@@ -1,0 +1,32 @@
+word 1 Margin 0 0 0 0 0 0
+word 1 text 3 3 3 3
+word 1 plain 5 5 5 5 5
+word 1 end. 6 6 6 6
+word 1 padded 2 2 2 2 2 2
+word 1 padded 9 9 9 9 9 9
+word 1 Second 7 7 7 7 7 7
+word 1 row 7 7 7
+word 1 and 10 10 10
+word 1 plain 12 12 12 12 12
+word 1 end. 13 13 13 13
+word 1 Third 14 14 14 14 14
+word 1 words 18 18 18 18 18
+word 1 plain 20 20 20 20 20
+word 1 here. 21 21 21 21 21
+word 1 boxed 17 17 17 17 17
+word 1 wide 24 24 24 24
+word 1 Fourth 22 22 22 22 22 22
+word 1 line 22 22 22 22
+word 1 has 22 22 22
+word 1 and 25 25 25
+word 1 thin 27 27 27 27
+word 1 boxes. 28 28 28 28 28 28
+paint 1 1 54.750 12.750 92.250 30.000 #ff0000
+paint 1 4 116.250 15.000 138.000 27.750 #00a000
+paint 1 8 76.500 34.500 116.250 48.000 #0000ff
+paint 1 11 138.750 35.250 160.500 48.000 #ff00ff
+paint 1 15 46.500 53.250 77.250 69.750 #00a0a0
+paint 1 16 46.500 53.250 77.250 69.750 #000000
+paint 1 19 110.250 54.750 132.750 67.500 #ffa000
+paint 1 23 90.750 71.250 115.500 91.500 #ff0000
+paint 1 26 137.250 75.000 157.500 87.750 #00a000

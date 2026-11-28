@@ -1,0 +1,20 @@
+word 1 2 1
+word 1 Word 0 0 0 0
+word 1 x 0
+word 1 y 2
+word 1 Word 3 3 3 3
+word 1 H 3
+word 1 O 5
+word 1 2 4
+word 1 Word 6 6 6 6
+word 1 x 6
+word 1 2 8
+word 1 Word 7 7 7 7
+word 1 x 7
+word 1 y 9
+word 1 Word 10 10 10 10
+word 1 H 10
+word 1 O 12
+word 1 2 11
+word 1 Word 13 13 13 13
+word 1 x 13

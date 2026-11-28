@@ -1,5 +1,6 @@
 hb-anonymous.boxes.txt 1
 hb-anonymous.glyphs.txt 5
 hb-anonymous.lines.txt 0
+hb-anonymous.order.txt 5
 hb-anonymous.print.txt 6
 hb-anonymous.words.txt 5

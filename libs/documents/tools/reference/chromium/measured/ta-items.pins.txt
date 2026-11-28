@@ -1,5 +1,6 @@
 ta-items.boxes.txt 1
 ta-items.glyphs.txt 120
 ta-items.lines.txt 0
+ta-items.order.txt 120
 ta-items.print.txt 121
 ta-items.words.txt 120

@@ -1,5 +1,6 @@
 gc-string-kern.boxes.txt 1
 gc-string-kern.glyphs.txt 1
 gc-string-kern.lines.txt 0
+gc-string-kern.order.txt 1
 gc-string-kern.print.txt 2
 gc-string-kern.words.txt 1

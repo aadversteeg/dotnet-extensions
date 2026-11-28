@@ -2,5 +2,6 @@ sk-lato-italic.boxes.txt 1
 sk-lato-italic.glyphs.txt 18
 sk-lato-italic.ink.txt 28
 sk-lato-italic.lines.txt 6
+sk-lato-italic.order.txt 24
 sk-lato-italic.print.txt 25
 sk-lato-italic.words.txt 18

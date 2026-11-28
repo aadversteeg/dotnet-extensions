@@ -1,5 +1,6 @@
 a4-nested-padded-image-160.boxes.txt 2
 a4-nested-padded-image-160.glyphs.txt 1
 a4-nested-padded-image-160.lines.txt 12
+a4-nested-padded-image-160.order.txt 14
 a4-nested-padded-image-160.print.txt 16
 a4-nested-padded-image-160.words.txt 1

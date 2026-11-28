@@ -1,0 +1,60 @@
+word 1 Water 0 0 0 0 0
+word 1 Today 0 0 0 0 0
+word 1 AVAWAY 0 0 0 0 0 0
+word 1 iiiiiiiiii 0 0 0 0 0 0 0 0 0 0
+word 1 WWWWW 0 0 0 0 0
+word 1 mmmm 0 0 0 0
+word 1 0123456789 0 0 0 0 0 0 0 0 0 0
+word 1 quick 0 0 0 0 0
+word 1 brown 0 0 0 0 0
+word 1 fox 0 0 0
+word 1 Water 1 1 1 1 1
+word 1 Today 1 1 1 1 1
+word 1 AVAWAY 1 1 1 1 1 1
+word 1 iiiiiiiiii 1 1 1 1 1 1 1 1 1 1
+word 1 WWWWW 1 1 1 1 1
+word 1 mmmm 1 1 1 1
+word 1 0123456789 1 1 1 1 1 1 1 1 1 1
+word 1 quick 1 1 1 1 1
+word 1 brown 1 1 1 1 1
+word 1 fox 1 1 1
+word 1 Water 2 2 2 2 2
+word 1 Today 2 2 2 2 2
+word 1 AVAWAY 2 2 2 2 2 2
+word 1 iiiiiiiiii 2 2 2 2 2 2 2 2 2 2
+word 1 WWWWW 2 2 2 2 2
+word 1 mmmm 2 2 2 2
+word 1 0123456789 2 2 2 2 2 2 2 2 2 2
+word 1 quick 2 2 2 2 2
+word 1 brown 2 2 2 2 2
+word 1 fox 2 2 2
+word 1 Water 3 3 3 3 3
+word 1 Today 3 3 3 3 3
+word 1 AVAWAY 3 3 3 3 3 3
+word 1 iiiiiiiiii 3 3 3 3 3 3 3 3 3 3
+word 1 WWWWW 3 3 3 3 3
+word 1 mmmm 3 3 3 3
+word 1 0123456789 3 3 3 3 3 3 3 3 3 3
+word 1 quick 3 3 3 3 3
+word 1 brown 3 3 3 3 3
+word 1 fox 3 3 3
+word 1 Water 4 4 4 4 4
+word 1 Today 4 4 4 4 4
+word 1 AVAWAY 4 4 4 4 4 4
+word 1 iiiiiiiiii 4 4 4 4 4 4 4 4 4 4
+word 1 WWWWW 4 4 4 4 4
+word 1 mmmm 4 4 4 4
+word 1 0123456789 4 4 4 4 4 4 4 4 4 4
+word 1 quick 4 4 4 4 4
+word 1 brown 4 4 4 4 4
+word 1 fox 4 4 4
+word 1 Water 5 5 5 5 5
+word 1 Today 5 5 5 5 5
+word 1 AVAWAY 5 5 5 5 5 5
+word 1 iiiiiiiiii 5 5 5 5 5 5 5 5 5 5
+word 1 WWWWW 5 5 5 5 5
+word 1 mmmm 5 5 5 5
+word 1 0123456789 5 5 5 5 5 5 5 5 5 5
+word 1 quick 5 5 5 5 5
+word 1 brown 5 5 5 5 5
+word 1 fox 5 5 5

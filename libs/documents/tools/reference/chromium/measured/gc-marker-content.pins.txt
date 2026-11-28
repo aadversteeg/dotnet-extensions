@@ -1,5 +1,6 @@
 gc-marker-content.boxes.txt 1
 gc-marker-content.glyphs.txt 6
 gc-marker-content.lines.txt 0
+gc-marker-content.order.txt 6
 gc-marker-content.print.txt 7
 gc-marker-content.words.txt 6

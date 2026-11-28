@@ -1,5 +1,6 @@
 sz-min-max-height.boxes.txt 5
 sz-min-max-height.glyphs.txt 16
 sz-min-max-height.lines.txt 4
+sz-min-max-height.order.txt 20
 sz-min-max-height.print.txt 21
 sz-min-max-height.words.txt 16

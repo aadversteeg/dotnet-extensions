@@ -2,5 +2,6 @@ mx-box-link-cut.boxes.txt 2
 mx-box-link-cut.glyphs.txt 28
 mx-box-link-cut.lines.txt 16
 mx-box-link-cut.links.txt 4
+mx-box-link-cut.order.txt 44
 mx-box-link-cut.print.txt 46
 mx-box-link-cut.words.txt 28

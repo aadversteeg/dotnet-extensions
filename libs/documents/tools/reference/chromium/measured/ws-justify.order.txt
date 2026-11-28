@@ -1,0 +1,25 @@
+word 1 a 0
+word 1 b 0
+word 1 c 0
+word 1 dd 0 0
+word 1 ee 0 0
+word 1 ff 2
+word 1 gg 3 3
+word 1 hh 3 3
+word 1 a 4
+word 1 b 4
+word 1 c 4
+word 1 dd 4 4
+word 1 ee 4 4
+word 1 ff 6
+word 1 gg 7 7
+word 1 hh 7 7
+word 1 a 8
+word 1 b 8
+word 1 c 8
+word 1 dd 8 8
+word 1 ee 9 9
+word 1 ff 10
+word 1 gg 11 11
+word 1 hh 11 11
+word 1 x 12

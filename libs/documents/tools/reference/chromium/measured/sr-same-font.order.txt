@@ -1,0 +1,33 @@
+word 1 To 0 0
+word 1 T 1
+word 1 o 2
+word 1 AVA 3 3 3
+word 1 A 4
+word 1 V 5
+word 1 A 6
+word 1 fix 7 8
+word 1 fx 9 10
+word 1 office 11 12 13 13
+word 1 ofce 14 15 16 16
+word 1 x 17
+word 1 y 17
+word 1 x 18
+word 1 y 19
+word 1 x 20
+word 1 y 21
+word 1 x 22
+word 1 y 22
+word 1 x 23
+word 1 y 24
+word 1 x 25
+word 1 y 26
+word 1 x 27
+word 1 y 28
+word 1 T 29
+word 1 o 30
+word 1 T 31
+word 1 o 32
+word 1 T 33
+word 1 Yo 34 34
+word 1 Y 35
+word 1 o 36

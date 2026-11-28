@@ -1,5 +1,6 @@
 h-page-area-justify.boxes.txt 1
 h-page-area-justify.glyphs.txt 28
 h-page-area-justify.lines.txt 0
+h-page-area-justify.order.txt 28
 h-page-area-justify.print.txt 29
 h-page-area-justify.words.txt 28

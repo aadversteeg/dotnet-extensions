@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -222,7 +223,8 @@ internal static class HtmlCases
 
         var engine = PrintedPages.Engine(pages.Value);
         var clips = Clips(folder, name);
-        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt")).WithGlyphs(File.ReadAllText(Measured(folder, name) + ".glyphs.txt"));
+        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt")).WithGlyphs(File.ReadAllText(Measured(folder, name) + ".glyphs.txt"))
+            .WithOrder(File.ReadAllText(Measured(folder, name) + ".order.txt"));
         var unused = clips.ToList();
         chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
         var lines = Cut(Rows(folder, name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
@@ -234,6 +236,7 @@ internal static class HtmlCases
             .Concat(BoxDifferences(folder, name, boxes.Value, Rows(folder, name, "boxes")))
             .Concat(LinkDifferences(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points))
             .Concat(GlyphDifferences(engine, chromium))
+            .Concat(OrderDifferences(engine, chromium))
             .Take(DifferenceBound + 1).ToList();
         var (status, listed) = CommittedStatus(committed);
         if (differences.Count == 0)
@@ -638,6 +641,128 @@ internal static class HtmlCases
             PrintedGlyph? ourFirst = null, PrintedGlyph? theirFirst = null) =>
             differ.Count == 0 ? null
                 : $"{at} glyph {differ[0].Number} {what}{value(differ[0].Ours, ourFirst)}, Chromium's {what}{value(differ[0].Theirs, theirFirst)}" + (differ.Count > 1 ? $" ({differ.Count} of {count} glyphs)" : string.Empty);
+    }
+
+    /// <summary>One CSS pixel in points: how far two things must overlap each way to be painted one over the other
+    /// (<see cref="OrderDifferences"/>); the grid the comparison counts painted areas on.</summary>
+    public const double PixelBound = 0.75;
+
+    /// <summary>The box of a word that the comparison of paint order uses, the same on both sides: its advances
+    /// across (x0 to x1) and its font size high, from 0.8 of the size above the baseline to 0.2 below it (where the glyphs
+    /// of Latin text have their ink; an ascent or descent of the font would differ between the font program and a PDF
+    /// reader's reading of it).</summary>
+    /// <param name="word">The word.</param>
+    /// <returns>Its box.</returns>
+    public static PrintedBox WordBox(PrintedWord word)
+    {
+        ArgumentNullException.ThrowIfNull(word);
+        return new(word.Page, word.X0, word.Baseline - (0.8 * word.FontSize), word.X1, word.Baseline + (0.2 * word.FontSize));
+    }
+
+    /// <summary>
+    /// A page with what is painted over each of its words (<see cref="PrintedWord.Over"/>). A paint is over a word where it comes later in the drawing sequence
+    /// and its box overlaps the word's box (<see cref="WordBox"/>) by more than <see cref="PixelBound"/> across and down. The
+    /// paints are put in bands of 12 pt by their rows, so each word is set against the paints of its own bands, not every
+    /// paint of the page.
+    /// </summary>
+    internal static PrintedPage PaintedOver(PrintedPage page)
+    {
+        const double Band = 12;
+        var bands = new Dictionary<int, List<PrintedPaint>>();
+        foreach (var paint in page.Paints)
+        {
+            for (var band = (int)Math.Floor(paint.Y0 / Band); band <= (int)Math.Floor(paint.Y1 / Band); band++)
+            {
+                if (!bands.TryGetValue(band, out var list))
+                {
+                    bands[band] = list = [];
+                }
+
+                list.Add(paint);
+            }
+        }
+
+        return page with
+        {
+            Words = [.. page.Words.Select(word =>
+            {
+                var box = WordBox(word);
+                var over = new SortedSet<string>(StringComparer.Ordinal);
+                foreach (var (part, place) in Parts(word, box))
+                {
+                    for (var band = (int)Math.Floor(part.Y0 / Band); band <= (int)Math.Floor(part.Y1 / Band); band++)
+                    {
+                        foreach (var paint in bands.TryGetValue(band, out var list) ? list : [])
+                        {
+                            if (paint.Place > place && Math.Min(part.X1, paint.X1) - Math.Max(part.X0, paint.X0) > PixelBound && Math.Min(part.Y1, paint.Y1) - Math.Max(part.Y0, paint.Y0) > PixelBound)
+                            {
+                                over.Add(paint.Paint);
+                            }
+                        }
+                    }
+                }
+
+                return word with { Over = [.. over] };
+            })],
+        };
+    }
+
+    /// <summary>The parts of a word's box that one text draws, each with its place: the whole box at the word's place for
+    /// an engine word (one glyph run); for a word of Chromium's print each run of glyphs of one place (<see cref="PrintedWord.Places"/>),
+    /// from its first glyph's origin to the end of its last glyph's advance (<see cref="PrintedGlyph.End"/>), the last run
+    /// to the word's end (case <c>ib-kerning</c>: a border drawn between two texts of one word is over neither).</summary>
+    private static IEnumerable<(PrintedBox Part, int Place)> Parts(PrintedWord word, PrintedBox box)
+    {
+        if (word.Places.IsEmpty || word.Places.Length != word.Glyphs.Length)
+        {
+            yield return (box, word.Place ?? int.MaxValue);
+            yield break;
+        }
+
+        var start = 0;
+        for (var index = 1; index <= word.Places.Length; index++)
+        {
+            if (index == word.Places.Length || word.Places[index] != word.Places[start])
+            {
+                var x0 = start == 0 ? box.X0 : word.Glyphs[start].X;
+                var x1 = index == word.Places.Length ? box.X1 : word.Glyphs[index - 1].End;
+                yield return (box with { X0 = x0, X1 = x1 }, word.Places[start]);
+                start = index;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every difference in what is painted over the engine's words and over Chromium's (<c>order.txt</c>), on each page whose
+    /// text is the same, word by word as <see cref="Differences"/> pairs them: of every fill or image whose box overlaps a
+    /// word's box by more than a pixel each way (<see cref="PaintedOver"/>), the one painted after the word on one side must be
+    /// painted after it on the other, compared by its colour (a background drawn over its text) or as an image. The places
+    /// themselves are not compared: Chromium batches its drawings in a sequence of its own. Text over text is not compared.
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with its places (<see cref="PrintedPages.WithOrder"/>).</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> OrderDifferences(PrintedPages engine, PrintedPages chromium) =>
+        PairedWords(engine, chromium).Select(pair => pair.Ours.Over.SequenceEqual(pair.Theirs.Over) ? null
+            : $"page {pair.Ours.Page} '{pair.Ours.Text}' is painted over by {Paints(pair.Ours.Over)}, Chromium's by {Paints(pair.Theirs.Over)} (order.txt)").OfType<string>();
+
+    private static string Paints(ImmutableArray<string> paints) => paints.IsEmpty ? "nothing" : string.Join(", ", paints);
+
+    /// <summary>The engine's words, joined as Chromium's print reads them (<see cref="Joined"/>), paired with Chromium's, on
+    /// each page whose text is the same, each with what is painted over it (<see cref="PaintedOver"/>).</summary>
+    private static IEnumerable<(PrintedWord Ours, PrintedWord Theirs)> PairedWords(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
+        {
+            var words = Joined(PaintedOver(ours).Words);
+            if (string.Join(" ", words.Select(word => word.Text)) == theirs.Text)
+            {
+                foreach (var pair in words.Zip(PaintedOver(theirs).Words))
+                {
+                    yield return pair;
+                }
+            }
+        }
     }
 
     /// <summary>The first difference between the area the engine's rectangles paint and the area of the rectangles
@@ -1313,7 +1438,11 @@ internal static class HtmlCases
             if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.PyMuPdfWordGap * word.FontSize
                 && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour && word.IsDrawnRightAfter(last))
             {
-                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn, Glyphs = last.Glyphs.AddRange(word.Glyphs) };
+                joined[^1] = last with
+                {
+                    X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn, Glyphs = last.Glyphs.AddRange(word.Glyphs),
+                    Over = [.. last.Over.Union(word.Over, StringComparer.Ordinal).Order(StringComparer.Ordinal)],
+                };
                 continue;
             }
 

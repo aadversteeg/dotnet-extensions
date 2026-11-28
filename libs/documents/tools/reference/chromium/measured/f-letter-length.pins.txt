@@ -1,5 +1,6 @@
 f-letter-length.boxes.txt 1
 f-letter-length.glyphs.txt 60
 f-letter-length.lines.txt 0
+f-letter-length.order.txt 60
 f-letter-length.print.txt 62
 f-letter-length.words.txt 60

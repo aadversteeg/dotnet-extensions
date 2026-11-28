@@ -1,5 +1,6 @@
 fr-empty-span.boxes.txt 2
 fr-empty-span.glyphs.txt 2
 fr-empty-span.lines.txt 0
+fr-empty-span.order.txt 2
 fr-empty-span.print.txt 3
 fr-empty-span.words.txt 2

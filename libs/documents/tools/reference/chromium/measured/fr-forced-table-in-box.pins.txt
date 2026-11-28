@@ -1,5 +1,6 @@
 fr-forced-table-in-box.boxes.txt 1
 fr-forced-table-in-box.glyphs.txt 3
 fr-forced-table-in-box.lines.txt 6
+fr-forced-table-in-box.order.txt 9
 fr-forced-table-in-box.print.txt 12
 fr-forced-table-in-box.words.txt 3

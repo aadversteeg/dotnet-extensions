@@ -2,5 +2,6 @@ sk-size.boxes.txt 1
 sk-size.glyphs.txt 11
 sk-size.ink.txt 47
 sk-size.lines.txt 11
+sk-size.order.txt 22
 sk-size.print.txt 23
 sk-size.words.txt 11

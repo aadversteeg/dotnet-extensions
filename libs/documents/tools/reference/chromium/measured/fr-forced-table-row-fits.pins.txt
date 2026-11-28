@@ -1,5 +1,6 @@
 fr-forced-table-row-fits.boxes.txt 2
 fr-forced-table-row-fits.glyphs.txt 4
 fr-forced-table-row-fits.lines.txt 8
+fr-forced-table-row-fits.order.txt 12
 fr-forced-table-row-fits.print.txt 15
 fr-forced-table-row-fits.words.txt 4

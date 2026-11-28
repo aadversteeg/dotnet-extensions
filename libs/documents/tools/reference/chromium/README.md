@@ -68,6 +68,9 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 - `<case>.glyphs.txt`: per word of `print.txt`, in its order, `page baseline text` and per glyph the PDF draws for it
   `glyph x dy end`: the glyph id, the x of its origin, its distance below the baseline and the x where its advance ends
   (`glyphs.py`, PyMuPDF's text trace; see "What the read-backs add to print.txt");
+- `<case>.order.txt`: per word of `print.txt`, in its order, `word page text place…` (the place in the page's drawing
+  sequence of the text that draws each of its glyphs), then `paint page place x0 y0 x1 y1 colour` per fill or stroke
+  and `image page place x0 y0 x1 y1` per image, cut to their clips (`order.py`, `sequence.py`, PyMuPDF);
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
@@ -238,6 +241,16 @@ which Chromium draws as the font's space glyph without an advance (`ws-soft`). A
 as base and mark is one glyph (`ta-marks`: "y" with U+0323 is the glyph of U+1EF5). The case comparison compares, word
 by word, the number of glyphs, each glyph id and each glyph's distance from the word's first glyph within 0.1 pt, the
 bound of a word's start and end (`HtmlCases.GlyphDifferences`).
+
+`order.txt` gives every word, fill, stroke and image its place in the page's drawing sequence. PyMuPDF numbers the text
+of its trace and the drawings of its drawing list by that place, and its bounding-box log holds one entry per place,
+images included; `sequence.py` runs a MuPDF device over the page to count the places the same way and to keep the clips
+open at each, and checks every place against the log. One word can be drawn by several texts (`ib-kerning`: "VAV",
+each letter in an inline box of its own), so a word has a place per glyph. The case comparison compares, word by word,
+what is painted over it: every fill or image after a text that draws part of the word, whose box overlaps that part's
+box (its advances across, from its first glyph's origin to its last glyph's end, 0.8 of the font size above the baseline
+to 0.2 below) by more than one pixel across and down
+(`HtmlCases.OrderDifferences`, `PixelBound`). A thin line (one pixel or less) is never over a word by this rule.
 
 ## Whole documents
 

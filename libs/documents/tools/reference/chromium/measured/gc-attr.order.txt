@@ -1,0 +1,6 @@
+word 1 seven 0 0 0 0 0
+word 1 days 1 1 1 1
+word 1 hover 2 2 2 2 2
+word 1 (Hint 3 3 3 3 3
+word 1 text) 3 3 3 3 3
+word 1 []missing 4 4 5 5 5 5 5 5 5

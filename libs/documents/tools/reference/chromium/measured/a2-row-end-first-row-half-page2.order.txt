@@ -1,0 +1,27 @@
+word 1 i0 0 0
+word 1 i1 1 1
+word 1 i2 2 2
+word 1 i3 3 3
+word 1 i4 4 4
+word 1 i5 5 5
+word 1 i6 6 6
+word 1 i7 7 7
+word 1 i8 8 8
+word 1 i9 9 9
+word 1 i10 10 10 10
+word 1 i11 11 11 11
+word 2 x0 4 4
+word 2 x1 5 5
+word 2 x2 6 6
+word 2 x3 7 7
+word 2 x4 8 8
+word 2 x5 9 9
+word 2 x6 10 10
+word 2 x7 11 11
+word 2 x8 12 12
+word 2 x9 13 13
+word 2 x10 14 14 14
+paint 2 0 12.000 12.000 12.750 192.000 #000000
+paint 2 1 12.000 12.000 288.000 12.750 #000000
+paint 2 2 287.250 12.000 288.000 192.000 #000000
+word 3 below 0 0 0 0 0

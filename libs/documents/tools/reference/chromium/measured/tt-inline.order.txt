@@ -1,0 +1,54 @@
+word 1 Word 0 0 0 0
+word 1 Wo 0 0
+word 1 rd 1 1
+word 1 Next 3 3 3 3
+word 1 word 4 4 4 4
+word 1 Word 5 5 5 5
+word 1 abc 5 6 6
+word 1 Def 8 8 9
+word 1 g 9
+word 1 Hi 10 10
+word 1 Word 11 11 11 11
+word 1 One 11 11 11
+word 1 Two 12 12 12
+word 1 Three 13 13 13 13 13
+word 1 Word 14 14 14 14
+word 1 Alpha 14 14 14 14 14
+word 1 Beta 14 14 14 14
+word 1 Gamma 15 15 15 15 15
+word 1 Delta 15 15 15 15 15
+word 1 Word 16 16 16 16
+word 1 waVEs 16 16 17 17 18
+word 1 toDAY 18 18 19 19 19
+word 1 WORD 20 20 20 20
+word 1 WAVE 20 20 20 20
+word 1 WAVE 21 21 21 21
+word 1 WAVE 21 21 21 21
+word 1 WAVE 22 22 22 22
+word 1 Word 23 23 23 23
+word 1 Wo 23 23
+word 1 rd 24 24
+word 1 Next 26 26 26 26
+word 1 word 27 27 27 27
+word 1 Word 28 28 28 28
+word 1 abc 28 29 29
+word 1 Def 31 31 32
+word 1 g 32
+word 1 Hi 33 33
+word 1 Word 34 34 34 34
+word 1 One 34 34 34
+word 1 Two 35 35 35
+word 1 Three 36 36 36 36 36
+word 1 Word 37 37 37 37
+word 1 Alpha 37 37 37 37 37
+word 1 Beta 37 37 37 37
+word 1 Gamma 38 38 38 38 38
+word 1 Delta 38 38 38 38 38
+word 1 Word 39 39 39 39
+word 1 waVEs 39 39 40 40 41
+word 1 toDAY 41 41 42 42 42
+word 1 WORD 43 43 43 43
+word 1 WAVE 43 43 43 43
+word 1 WAVE 44 44 44 44
+word 1 WAVE 44 44 44 44
+word 1 WAVE 45 45 45 45

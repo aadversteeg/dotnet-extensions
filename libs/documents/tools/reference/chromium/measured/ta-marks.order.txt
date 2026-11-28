@@ -1,0 +1,24 @@
+word 1 Marks 0 0 0 0 0
+word 1 x́ 1 1
+word 1 b́ 3 3
+word 1 q̇ 5 5
+word 1 x̣ỵ 7 7 8
+word 1 WWWWW 9 9 9 9 9
+word 1 x́x́x́ 10 10 11 11 12 12
+word 1 quick 13 13 13 13 13
+word 1 Marks 14 14 14 14 14
+word 1 x́ 15 15
+word 1 b́ 17 17
+word 1 q̇ 19 19
+word 1 x̣ỵ 21 21 22
+word 1 WWWWW 23 23 23 23 23
+word 1 x́x́x́ 24 24 25 25 26 26
+word 1 quick 27 27 27 27 27
+word 1 Marks 28 28 28 28 28
+word 1 x́ 29 29
+word 1 b́ 31 31
+word 1 q̇ 33 33
+word 1 x̣ỵ 35 35 36
+word 1 WWWWW 37 37 37 37 37
+word 1 x́x́x́ 38 38 39 39 40 40
+word 1 quick 41 41 41 41 41

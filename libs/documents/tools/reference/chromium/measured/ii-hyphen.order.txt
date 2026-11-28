@@ -1,0 +1,10 @@
+word 1 a 0
+word 1 - 2
+word 1 b 3
+word 1 a 4
+word 1 - 5
+word 1 b 6
+word 1 a- 7 7
+word 1 b 8
+word 1 x 9
+image 1 1 12.000 31.500 20.250 43.500
