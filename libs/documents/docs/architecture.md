@@ -1107,7 +1107,9 @@ differences (`HtmlCases.ShownDifferences`) writes the first 60 and, on the count
 A case with more than 500 differences (`HtmlCases.DifferenceBound`) cannot be listed or open: so many say the case is
 compared out of step, not a limit. One more difference, one fewer or one changed changes the file, and the test fails.
 The test that a listed case names is a test of `UnitTests.Extensions.Documents.Html` that lays out that case by its
-name (its attributes or its body hold the name as a string) and pins the cause in numbers; the code front-end's tests of
+name and pins the cause in numbers: a theory that is not skipped, with a row that is not skipped whose first value is
+the case's name, given to its first parameter `string name`, which the body uses and never assigns to, and with no case
+named in the body (`CaseStatusTests.Every_listed_case_names_a_test_that_lays_out_that_case`); the code front-end's tests of
 the same limits pin it with documents of their own (`HtmlListedBreakTests` names the ones of page breaks and line
 heights after them). The status files are read with every line ending a line feed, whatever the checkout wrote.
 
