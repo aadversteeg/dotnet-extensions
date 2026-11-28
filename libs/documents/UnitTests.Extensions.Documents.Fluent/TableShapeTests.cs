@@ -38,6 +38,20 @@ public class TableShapeTests
     }
 
     [Fact]
+    public void A_table_of_more_columns_than_a_table_may_have_is_an_input_error_at_the_table()
+    {
+        var line = CurrentLine() + 1;
+        static Element Wide(int columns) => Table(Columns([.. Enumerable.Range(0, columns).Select(_ => Fill(1))]), [TableRow([Cell("a")])]);
+
+        var error = Problems([Wide(TableSlots.MaxColumns + 1)]);
+
+        ShouldPointAt(error, DocumentErrorCodes.Input.Invalid.Table, line);
+        error.Message.Should().Contain($"at most {TableSlots.MaxColumns} columns");
+        DocumentTranslator.ToModel(Document([Wide(TableSlots.MaxColumns)]).FontFamily("Lato")).Should().Match<Ave.Extensions.Functional.Result<Ave.Extensions.Documents.DocumentModel.StyledDocument, Error>>(
+            result => result.IsSuccess || !result.Error.Parts().Any(part => part.Message.Contains("at most", StringComparison.Ordinal) && part.Message.Contains("slots", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void A_column_span_of_int_max_is_an_input_error_not_an_exception()
     {
         var line = CurrentLine() + 1;

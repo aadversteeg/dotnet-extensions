@@ -46,11 +46,11 @@ internal static class TableRegularity
         var rows = groups.SelectMany(group => group).ToImmutableArray();
         var spans = groups.Select(group => (IReadOnlyList<IReadOnlyList<CellSpan>>)[.. group.Select(row => (IReadOnlyList<CellSpan>)[.. Children(tree, row).Select(cell => cell.Start.Span)])]).ToList();
         var columnCount = spans.SelectMany(group => group).Select(row => row.Sum(span => (long)span.Columns)).FirstOrDefault();
-        if (columnCount * rows.Length > MaxGridSlots)
+        if (columnCount * rows.Length > MaxGridSlots || columnCount > TableSlots.MaxColumns)
         {
             return [new Error(
                     PdfRenderErrorCodes.Conformance.PdfUa1.TableTooLarge,
-                    $"The PDF/UA-1 check of a regular table grid fills at most {MaxGridSlots} slots; this table of {columnCount} columns and {rows.Length} rows has more ({table.Start.Source}).")
+                    $"The PDF/UA-1 check of a regular table grid fills at most {MaxGridSlots} slots and {TableSlots.MaxColumns} columns; this table of {columnCount} columns and {rows.Length} rows has more ({table.Start.Source}).")
                 .With(ErrorMetadataKeys.Node, table.Start.Node.ToString())
                 .With(ErrorMetadataKeys.Value, $"{columnCount}x{rows.Length}")
                 .WithSource(table.Start.Source)];

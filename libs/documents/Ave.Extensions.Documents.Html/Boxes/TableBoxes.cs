@@ -134,6 +134,9 @@ public static partial class HtmlBoxGenerator
         /// <summary>The boxes of the footer groups, which their table draws after its other row groups.</summary>
         private readonly HashSet<NodeId> _footers = [];
 
+        /// <summary>The slots of the document's tables so far, against <see cref="TableSlots.MaxDocumentSlots"/>.</summary>
+        private readonly TableSlots.DocumentSlots _tableSlots = new();
+
         private static TablePart PartOf(StyledElement element) => HtmlBoxGenerator.PartOf(element.Style[PropertyRegistry.Display]);
 
         private void RefuseTable(string message, string value, TextPosition position) =>
@@ -620,6 +623,23 @@ public static partial class HtmlBoxGenerator
                     Children = [.. Parts(group).Select(row => (Node)(row with { Children = [.. Parts(row).Select(cell => (Node)(cell with { Style = cell.Style with { Span = CellSpan.Single } }))] }))],
                 })];
                 grid = Grid(groups);
+            }
+
+            // The grid's size is bounded before it is filled (TableSlots.Fill stops at the limit), and the document's
+            // tables together are bounded too; a table past either is refused at its start tag, and under Warn left out.
+            var rowCount = grid.Slots.Length > 0 ? grid.Slots.Length : groups.Sum(group => Parts(group).Count());
+            if (grid.Problems.Any(problem => problem.Kind == TableSlots.ProblemKind.TooLarge))
+            {
+                RefuseTable($"The table <{html.LocalName}> is larger than a table may be: at most {TableSlots.MaxColumns} columns and {TableSlots.MaxSlots} slots (rows times columns). Split it into smaller tables.",
+                    $"more than {TableSlots.MaxColumns} columns or {TableSlots.MaxSlots} slots in {rowCount} rows", html.Position);
+                return box with { Role = SemanticRole.Generic, Layout = LayoutAlgorithmId.Flow, Children = [] };
+            }
+
+            if (!_tableSlots.TryAdd(TableSlots.SlotsOf(rowCount, grid.ColumnCount)))
+            {
+                RefuseTable($"The tables of the document have more than {TableSlots.MaxDocumentSlots} slots (rows times columns) together; the table <{html.LocalName}> passes that limit. Split the document.",
+                    $"{grid.ColumnCount}x{rowCount}", html.Position);
+                return box with { Role = SemanticRole.Generic, Layout = LayoutAlgorithmId.Flow, Children = [] };
             }
 
             if (grid.ColumnCount == 0)

@@ -653,4 +653,62 @@ public class TableBoxTests
     [InlineData("block-end")]
     public void A_caption_side_other_than_top_or_bottom_is_refused(string side) =>
         FirstRefusal("<table><caption>c</caption><tr><td>a</td></tr></table>", $"{Collapsed}caption {{ caption-side: {side} }}").Metadata![ErrorMetadataKeys.Property].Should().Be("caption-side");
+    /// <summary>A row of cells that span 1 000 columns and one that spans the rest, and then single cells in the other rows.</summary>
+    private static string WideTable(int columns, int rows) =>
+        "<table><tr>" + string.Concat(Enumerable.Repeat("<td colspan=1000>a", columns / 1_000)) + $"<td colspan={columns % 1_000}>b"
+        + string.Concat(Enumerable.Repeat("<tr><td>c", rows - 1)) + "</table>";
+
+    private static Error TableLimitRefusal(string html, int column)
+    {
+        var result = Boxes(html);
+        result.IsFailure.Should().BeTrue();
+        var refusal = result.Error.Parts().Single(error => error.Message.Contains("slots", StringComparison.Ordinal));
+        refusal.Code.Should().Be(HtmlStyleErrorCodes.Unsupported.Table);
+        (refusal.Metadata![ErrorMetadataKeys.SourceLine], refusal.Metadata[ErrorMetadataKeys.SourceColumn]).Should().Be((1, column), "the refusal is at the table's start tag");
+        return refusal;
+    }
+
+    [Fact]
+    public void A_table_wider_than_the_most_columns_or_with_more_slots_is_refused_at_its_start_tag()
+    {
+        var rows = TableSlots.MaxSlots / TableSlots.MaxColumns;
+        foreach (var (columns, count, refused) in new[] { (TableSlots.MaxColumns, rows, false), (TableSlots.MaxColumns + 1, 1, true), (TableSlots.MaxColumns, rows + 1, true) })
+        {
+            var html = Doc(WideTable(columns, count));
+            if (refused)
+            {
+                TableLimitRefusal(html, html.IndexOf("<table", StringComparison.Ordinal) + 1);
+            }
+            else
+            {
+                (Boxes(html).IsFailure ? Boxes(html).Error.Parts() : []).Should().NotContain(error => error.Message.Contains("slots", StringComparison.Ordinal), $"{columns} columns of {count} rows fit");
+            }
+        }
+    }
+
+    [Fact]
+    public void A_staircase_of_row_and_column_spans_is_refused_before_its_grid_is_made_and_left_out_under_Warn()
+    {
+        // Each row's cell starts after the columns the rows above still cover: 1 000 such rows would be a grid of
+        // 1 000 000 columns. The fifth row passes the most columns.
+        var html = Doc("<p>x</p><table>" + string.Concat(Enumerable.Repeat("<tr><td rowspan=1000 colspan=1000>x</td></tr>", 1_000)) + "</table>");
+
+        TableLimitRefusal(html, html.IndexOf("<table", StringComparison.Ordinal) + 1);
+        var warned = Boxes(html, UnsupportedPolicy.Warn);
+        warned.IsSuccess.Should().BeTrue();
+        ((Box)warned.Value.Document.Root.Children.Single()).Children.OfType<Box>().Should().NotContain(box => box.Role == SemanticRole.Table);
+        warned.Value.Diagnostics.Should().Contain(error => error.Code == HtmlStyleErrorCodes.Unsupported.Table && error.Message.Contains("slots", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_tables_of_a_document_together_have_at_most_the_slots_of_a_document()
+    {
+        var full = string.Concat(Enumerable.Repeat(WideTable(TableSlots.MaxColumns, TableSlots.MaxSlots / TableSlots.MaxColumns), TableSlots.MaxDocumentSlots / TableSlots.MaxSlots));
+        var html = Doc(full + "<table><tr><td>d</table>");
+
+        var refusal = TableLimitRefusal(html, html.LastIndexOf("<table", StringComparison.Ordinal) + 1);
+        refusal.Message.Should().Contain(TableSlots.MaxDocumentSlots.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var inside = Boxes(Doc(full));
+        (inside.IsFailure ? inside.Error.Parts() : []).Should().NotContain(error => error.Message.Contains("slots", StringComparison.Ordinal));
+    }
 }
