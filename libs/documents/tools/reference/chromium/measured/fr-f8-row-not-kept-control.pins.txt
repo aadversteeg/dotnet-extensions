@@ -1,4 +1,7 @@
 fr-f8-row-not-kept-control.boxes.txt 3
+fr-f8-row-not-kept-control.clips.txt 7
+fr-f8-row-not-kept-control.glyphs.txt 7
 fr-f8-row-not-kept-control.lines.txt 14
+fr-f8-row-not-kept-control.order.txt 21
 fr-f8-row-not-kept-control.print.txt 23
 fr-f8-row-not-kept-control.words.txt 7

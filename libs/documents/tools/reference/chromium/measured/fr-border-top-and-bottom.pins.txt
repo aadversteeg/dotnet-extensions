@@ -1,4 +1,7 @@
 fr-border-top-and-bottom.boxes.txt 1
+fr-border-top-and-bottom.clips.txt 2
+fr-border-top-and-bottom.glyphs.txt 2
 fr-border-top-and-bottom.lines.txt 2
+fr-border-top-and-bottom.order.txt 4
 fr-border-top-and-bottom.print.txt 6
 fr-border-top-and-bottom.words.txt 2

@@ -1,4 +1,7 @@
 ls-letters.boxes.txt 1
+ls-letters.clips.txt 48
+ls-letters.glyphs.txt 48
 ls-letters.lines.txt 0
+ls-letters.order.txt 48
 ls-letters.print.txt 49
 ls-letters.words.txt 46

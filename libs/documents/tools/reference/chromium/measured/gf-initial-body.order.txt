@@ -1,0 +1,28 @@
+word 1 Alpha 0 0 0 0 0
+word 1 bravo 0 0 0 0 0
+word 1 charlie 0 0 0 0 0 0 0
+word 1 The 1 1 1
+word 1 initial 1 1 1 1 1 1 1
+word 1 family 1 1 1 1 1 1
+word 1 reaches 1 1 1 1 1 1 1
+word 1 every 1 1 1 1 1
+word 1 paragraph 1 1 1 1 1 1 1 1 1
+word 1 that 1 1 1 1
+word 1 names 2 2 2 2 2
+word 1 none, 2 2 2 2 2
+word 1 and 2 2 2
+word 1 this 2 2 2 2
+word 1 one 2 2 2
+word 1 is 2 2
+word 1 long 2 2 2 2
+word 1 enough 2 2 2 2 2 2
+word 1 to 2 2
+word 1 wrap 2 2 2 2
+word 1 twice 3 3 3 3 3
+word 1 in 3 3
+word 1 the 3 3 3
+word 1 page 3 3 3 3
+word 1 area. 3 3 3 3 3
+word 1 Delta 4 4 4 4 4
+word 1 echo 5 5 5 5
+word 1 foxtrot 6 6 6 6 6 6 6

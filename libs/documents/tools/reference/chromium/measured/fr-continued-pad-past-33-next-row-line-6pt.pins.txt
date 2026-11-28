@@ -1,4 +1,7 @@
 fr-continued-pad-past-33-next-row-line-6pt.boxes.txt 2
+fr-continued-pad-past-33-next-row-line-6pt.clips.txt 24
+fr-continued-pad-past-33-next-row-line-6pt.glyphs.txt 24
 fr-continued-pad-past-33-next-row-line-6pt.lines.txt 11
+fr-continued-pad-past-33-next-row-line-6pt.order.txt 35
 fr-continued-pad-past-33-next-row-line-6pt.print.txt 38
 fr-continued-pad-past-33-next-row-line-6pt.words.txt 24

@@ -1,4 +1,7 @@
 a2-row-end-after.boxes.txt 1
+a2-row-end-after.clips.txt 24
+a2-row-end-after.glyphs.txt 24
 a2-row-end-after.lines.txt 8
+a2-row-end-after.order.txt 32
 a2-row-end-after.print.txt 35
 a2-row-end-after.words.txt 24

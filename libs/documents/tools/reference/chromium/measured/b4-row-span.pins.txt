@@ -1,4 +1,7 @@
 b4-row-span.boxes.txt 28
+b4-row-span.clips.txt 28
+b4-row-span.glyphs.txt 28
 b4-row-span.lines.txt 104
+b4-row-span.order.txt 132
 b4-row-span.print.txt 135
 b4-row-span.words.txt 28

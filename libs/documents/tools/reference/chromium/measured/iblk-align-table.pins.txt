@@ -1,0 +1,7 @@
+iblk-align-table.boxes.txt 2
+iblk-align-table.clips.txt 8
+iblk-align-table.glyphs.txt 8
+iblk-align-table.lines.txt 8
+iblk-align-table.order.txt 16
+iblk-align-table.print.txt 17
+iblk-align-table.words.txt 8

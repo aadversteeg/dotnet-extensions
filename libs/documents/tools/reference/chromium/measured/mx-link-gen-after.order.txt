@@ -1,0 +1,6 @@
+word 1 Link 0 0 0 0
+word 1 page 2 2 2 2
+word 1 more 4 4 4 4
+word 1 end 5 5 5
+paint 1 1 33.797 23.250 55.828 24.000 #0000ee
+paint 1 3 55.828 23.250 82.266 24.000 #0000ee

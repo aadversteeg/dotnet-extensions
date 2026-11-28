@@ -23,14 +23,6 @@ word 1 104.742 128.693 44.250 10.500 short #000000 Lato-Regular
 word 1 137.438 185.092 44.250 10.500 somewhat #000000 Lato-Regular
 word 1 187.774 216.807 44.250 10.500 longer #000000 Lato-Regular
 word 1 219.274 237.486 44.250 10.500 text #000000 Lato-Regular
-word 1 0.000 17.356 60.000 10.500 one #000000 Lato-Regular
-word 1 50.555 68.447 60.000 10.500 two #000000 Lato-Regular
-word 1 70.919 99.091 60.000 10.500 words #000000 Lato-Regular
-word 1 151.688 299.994 60.000 10.500 Supercalifragilisticexpialidocious #000000 Lato-Regular
-word 1 0.000 5.219 72.750 10.500 a #000000 Lato-Regular
-word 1 41.777 47.657 72.750 10.500 b #000000 Lato-Regular
-word 1 91.922 96.941 72.750 10.500 c #000000 Lato-Regular
-word 1 259.066 299.990 72.750 10.500 Duration #000000 Lato-Regular
 rect 1 0.000 0.000 0.750 30.750 #000000
 rect 1 0.000 0.000 96.000 0.750 #000000
 rect 1 95.250 0.000 96.000 30.750 #000000

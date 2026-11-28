@@ -1,0 +1,7 @@
+iblk-align-tall.boxes.txt 1
+iblk-align-tall.clips.txt 53
+iblk-align-tall.glyphs.txt 53
+iblk-align-tall.lines.txt 2
+iblk-align-tall.order.txt 55
+iblk-align-tall.print.txt 57
+iblk-align-tall.words.txt 53

@@ -1,4 +1,7 @@
 fr-f7-span-orphans-moves-table.boxes.txt 3
+fr-f7-span-orphans-moves-table.clips.txt 10
+fr-f7-span-orphans-moves-table.glyphs.txt 10
 fr-f7-span-orphans-moves-table.lines.txt 11
+fr-f7-span-orphans-moves-table.order.txt 21
 fr-f7-span-orphans-moves-table.print.txt 23
 fr-f7-span-orphans-moves-table.words.txt 10

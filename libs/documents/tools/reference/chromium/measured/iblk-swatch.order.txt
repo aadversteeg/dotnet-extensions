@@ -1,0 +1,17 @@
+word 1 Red 0 0 0
+word 1 square. 2 2 2 2 2 2 2
+word 1 Box 3 3 3
+word 1 drawn. 5 5 5 5 5 5
+word 1 Pad 6 6 6
+word 1 only. 7 7 7 7 7
+word 1 Swatches 8 8 8 8 8 8 8 8
+word 1 blue 10 10 10 10
+word 1 orange 12 12 12 12 12 12
+word 1 Last 13 13 13 13
+word 1 line 13 13 13 13
+word 1 of 13 13
+word 1 text. 13 13 13 13 13
+paint 1 1 32.250 15.000 39.750 22.500 #ff0000
+paint 1 4 32.250 27.750 39.750 35.250 #000000
+paint 1 9 58.500 51.750 67.500 60.750 #0000ff
+paint 1 11 93.000 51.750 102.000 60.750 #ffa000

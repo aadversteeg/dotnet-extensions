@@ -1,5 +1,9 @@
 va-sub.boxes.txt 1
+va-sub.clips.txt 15
+va-sub.destinations.txt 2
+va-sub.glyphs.txt 15
 va-sub.lines.txt 4
 va-sub.links.txt 2
+va-sub.order.txt 19
 va-sub.print.txt 20
 va-sub.words.txt 15

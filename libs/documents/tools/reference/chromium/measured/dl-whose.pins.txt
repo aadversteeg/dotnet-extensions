@@ -1,4 +1,7 @@
 dl-whose.boxes.txt 1
+dl-whose.clips.txt 48
+dl-whose.glyphs.txt 48
 dl-whose.lines.txt 48
+dl-whose.order.txt 96
 dl-whose.print.txt 97
 dl-whose.words.txt 48

@@ -1,4 +1,7 @@
 h-page-a4-zero-lines.boxes.txt 1
+h-page-a4-zero-lines.clips.txt 64
+h-page-a4-zero-lines.glyphs.txt 64
 h-page-a4-zero-lines.lines.txt 0
+h-page-a4-zero-lines.order.txt 64
 h-page-a4-zero-lines.print.txt 65
 h-page-a4-zero-lines.words.txt 64

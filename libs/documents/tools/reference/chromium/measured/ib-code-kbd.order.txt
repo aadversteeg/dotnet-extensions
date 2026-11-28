@@ -1,0 +1,9 @@
+word 1 Run 0 0 0
+word 1 code 2 2 2 2
+word 1 here. 3 3 3 3 3
+word 1 Press 4 4 4 4 4
+word 1 Ctrl 7 7 7 7
+word 1 now. 8 8 8 8
+paint 1 1 39.000 18.000 66.750 30.750 #eeeeee
+paint 1 5 45.000 36.000 69.750 50.250 #f0f0f0
+paint 1 6 45.000 36.000 69.750 50.250 #000000

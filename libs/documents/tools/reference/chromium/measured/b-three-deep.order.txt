@@ -1,0 +1,11 @@
+word 1 p0 0 0
+word 1 p1 1 1
+word 1 p2 2 2
+word 1 p3 3 3
+word 1 p4 4 4
+word 1 p5 5 5
+word 1 p6 6 6
+word 1 p7 7 7
+word 2 head 0 0 0 0
+word 2 q0 1 1
+word 2 q1 2 2

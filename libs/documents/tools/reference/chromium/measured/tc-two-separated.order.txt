@@ -1,0 +1,10 @@
+word 1 First 3 3 3 3 3
+word 1 caption 3 3 3 3 3 3
+word 1 Second 4 4 4 4 4 4
+word 1 caption 5 5 5 5 5 5
+word 1 one 6 6 6
+word 1 two 7 7 7
+word 1 after 8 8 8 8
+paint 1 0 12.000 50.250 81.000 80.250 #ff0000
+paint 1 1 18.000 56.250 45.000 74.250 #0000ff
+paint 1 2 48.000 56.250 75.000 74.250 #0000ff

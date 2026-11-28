@@ -68,11 +68,6 @@ td 43.383 17.484 third
 td 60.000 17.484 one
 td 195.867 17.484 two
 td 43.383 17.484 x
-div 150.000 35.719 w-span-min
-table 157.805 35.719 span-min
-td 157.055 17.484 Supercalifragilisticexpi
-td 60.000 17.484 a
-td 97.055 17.484 b
 div 300.000 48.469 w-span-pref
 table 157.805 48.469 span-pref
 td 157.055 30.234 Supercalifragilisticexpi

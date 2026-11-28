@@ -1,1 +1,9 @@
-ws-soft listed A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them: page 1 reads 'aabbcc aa­ bb cc aabbcc aa­ bb cc x', Chromium 'aa­bb​cc aa­‐ bb​ cc aa­bb​cc aa­‐ bb​ cc x' (print.txt)
+ws-soft listed A_soft_hyphen_and_a_zero_width_space_break_by_the_white_space_mode_like_Chromium_whose_text_keeps_them: page 1 reads 'aabbcc aa­ bb cc aabbcc aa­ bb cc x', Chromium 'aa­bb​cc aa­‐ bb​ cc aa­bb​cc aa­‐ bb​ cc x'; the engine's page 1: digest 7648f8687af35164 (print.txt)
+7 differences:
+- page 1 reads 'aabbcc aa­ bb cc aabbcc aa­ bb cc x', Chromium 'aa­bb​cc aa­‐ bb​ cc aa­bb​cc aa­‐ bb​ cc x'; the engine's page 1: digest 7648f8687af35164 (print.txt)
+- page 1 has no word 'aa­bb​cc'; the engine's words inside page 1: digest 740eac5b90ba20d5 (words.txt)
+- page 1 has no word 'aa­‐'; the engine's words inside page 1: digest 740eac5b90ba20d5 (words.txt)
+- page 1 has no word 'bb​'; the engine's words inside page 1: digest 740eac5b90ba20d5 (words.txt)
+- page 1 has no word 'aa­bb​cc'; the engine's words inside page 1: digest 740eac5b90ba20d5 (words.txt)
+- page 1 has no word 'aa­‐'; the engine's words inside page 1: digest 740eac5b90ba20d5 (words.txt)
+- page 1 has no word 'bb​'; the engine's words inside page 1: digest 740eac5b90ba20d5 (words.txt)

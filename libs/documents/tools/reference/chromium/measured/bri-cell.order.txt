@@ -1,0 +1,17 @@
+word 1 Cells 6 6 6 6 6
+word 1 below. 6 6 6 6 6 6
+word 1 Filled 7 7 7 7 7 7
+word 1 Ringed 8 8 8 8 8 8
+word 1 Empty 9 9 9 9 9
+word 1 Plain 10 10 10 10 10
+word 1 Second 11 11 11 11 11 11
+word 1 Last 12 12 12 12
+word 1 End 13 13 13
+word 1 of 13 13
+word 1 table. 13 13 13 13 13 13
+paint 1 0 12.000 33.000 142.500 84.000 #2060a0
+paint 1 1 15.750 36.750 49.500 57.750 #f0e0a0
+paint 1 2 52.875 37.125 94.875 57.375 #e0f0d0
+paint 1 2 52.500 36.750 95.250 57.750 #c03020
+paint 1 4 98.250 36.750 138.750 57.750 #c03020
+paint 1 5 52.500 60.750 95.250 80.250 #f0e0a0

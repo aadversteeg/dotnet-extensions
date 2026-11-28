@@ -1,4 +1,7 @@
 a2-row-end-span-after.boxes.txt 3
+a2-row-end-span-after.clips.txt 24
+a2-row-end-span-after.glyphs.txt 24
 a2-row-end-span-after.lines.txt 17
+a2-row-end-span-after.order.txt 41
 a2-row-end-span-after.print.txt 44
 a2-row-end-span-after.words.txt 24

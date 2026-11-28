@@ -1,4 +1,7 @@
 ib-origin-cell.boxes.txt 4
+ib-origin-cell.clips.txt 15
+ib-origin-cell.glyphs.txt 15
 ib-origin-cell.lines.txt 5
+ib-origin-cell.order.txt 20
 ib-origin-cell.print.txt 21
 ib-origin-cell.words.txt 15

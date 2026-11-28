@@ -1,0 +1,146 @@
+word 1 Filler 1 1 1 1 1 1
+word 1 one 1 1 1
+word 1 Filler 2 2 2 2 2 2
+word 1 two 2 2 2
+word 1 Filler 3 3 3 3 3 3
+word 1 three 3 3 3 3 3
+word 1 Filler 4 4 4 4 4 4
+word 1 four 4 4 4 4
+word 1 Filler 5 5 5 5 5 5
+word 1 five 6 7 7
+word 1 1. 8 8
+word 1 Long 9 9 9 9
+word 1 item 9 9 9 9
+word 1 text 9 9 9 9
+word 1 long 9 9 9 9
+word 1 item 9 9 9 9
+word 1 text 9 9 9 9
+word 1 long 9 9 9 9
+word 1 item 9 9 9 9
+word 1 text 9 9 9 9
+word 1 long 9 9 9 9
+word 1 item 9 9 9 9
+word 1 text 10 10 10 10
+word 1 long 10 10 10 10
+word 1 item 10 10 10 10
+word 1 text 10 10 10 10
+word 1 long 10 10 10 10
+word 1 item 10 10 10 10
+word 1 text 10 10 10 10
+word 1 long 10 10 10 10
+word 1 item 10 10 10 10
+word 1 text 10 10 10 10
+word 1 long 10 10 10 10
+word 1 item 11 11 11 11
+word 1 text 11 11 11 11
+word 1 long 11 11 11 11
+word 1 item 11 11 11 11
+word 1 text 11 11 11 11
+word 1 long 11 11 11 11
+word 1 item 11 11 11 11
+word 1 text 11 11 11 11
+word 1 long 11 11 11 11
+word 1 item 11 11 11 11
+word 1 text 11 11 11 11
+word 1 more 12 12 12 12
+word 1 words 12 12 12 12 12
+word 1 here 12 12 12 12
+word 1 more 12 12 12 12
+word 1 words 12 12 12 12 12
+word 1 here 12 12 12 12
+word 1 more 12 12 12 12
+word 1 words 12 12 12 12 12
+word 1 here 12 12 12 12
+word 1 more 13 13 13 13
+word 1 words 13 13 13 13 13
+word 1 here 13 13 13 13
+word 1 more 13 13 13 13
+word 1 words 13 13 13 13 13
+word 1 here 13 13 13 13
+word 1 more 13 13 13 13
+word 1 words 13 13 13 13 13
+word 1 here 13 13 13 13
+word 1 more 14 14 14 14
+word 1 words 14 14 14 14 14
+word 1 here 14 14 14 14
+word 1 more 14 14 14 14
+word 1 words 14 14 14 14 14
+word 1 here 14 14 14 14
+word 1 more 14 14 14 14
+word 1 words 14 14 14 14 14
+word 1 here 14 14 14 14
+word 1 more 15 15 15 15
+word 1 words 15 15 15 15 15
+word 1 here 15 15 15 15
+word 1 more 15 15 15 15
+word 1 words 15 15 15 15 15
+word 1 here 15 15 15 15
+word 1 more 15 15 15 15
+word 1 words 15 15 15 15 15
+word 1 here 15 15 15 15
+word 1 more 16 16 16 16
+word 1 words 16 16 16 16 16
+word 1 here 16 16 16 16
+word 1 more 16 16 16 16
+word 1 words 16 16 16 16 16
+word 1 here 16 16 16 16
+word 1 more 16 16 16 16
+word 1 words 16 16 16 16 16
+word 1 here 16 16 16 16
+paint 1 0 42.000 75.750 288.000 189.000 #eeeeee
+word 2 more 3 3 3 3
+word 2 words 3 3 3 3 3
+word 2 here 3 3 3 3
+word 2 more 3 3 3 3
+word 2 words 3 3 3 3 3
+word 2 here 3 3 3 3
+word 2 more 3 3 3 3
+word 2 words 3 3 3 3 3
+word 2 here 3 3 3 3
+word 2 more 4 4 4 4
+word 2 words 4 4 4 4 4
+word 2 here 4 4 4 4
+word 2 more 4 4 4 4
+word 2 words 4 4 4 4 4
+word 2 here 4 4 4 4
+word 2 more 4 4 4 4
+word 2 words 4 4 4 4 4
+word 2 here 4 4 4 4
+word 2 more 5 5 5 5
+word 2 words 5 5 5 5 5
+word 2 here 5 5 5 5
+word 2 more 5 5 5 5
+word 2 words 5 5 5 5 5
+word 2 here 5 5 5 5
+word 2 more 5 5 5 5
+word 2 words 5 5 5 5 5
+word 2 here 5 5 5 5
+word 2 more 6 6 6 6
+word 2 words 6 6 6 6 6
+word 2 here 6 6 6 6
+word 2 more 6 6 6 6
+word 2 words 6 6 6 6 6
+word 2 here 6 6 6 6
+word 2 more 6 6 6 6
+word 2 words 6 6 6 6 6
+word 2 here 6 6 6 6
+word 2 more 7 7 7 7
+word 2 words 7 7 7 7 7
+word 2 here 7 7 7 7
+word 2 more 7 7 7 7
+word 2 words 7 7 7 7 7
+word 2 here 7 7 7 7
+word 2 more 7 7 7 7
+word 2 words 7 7 7 7 7
+word 2 here 7 7 7 7
+word 2 2. 8 8
+word 2 Next 9 9 9 9
+word 2 item 9 9 9 9
+word 2 Filler 10 10 10 10 10 10
+word 2 again 10 10 10 10 10
+word 2 Block 12 12 12 12 12
+word 2 one 12 12 12
+paint 2 0 42.000 12.000 288.000 75.750 #eeeeee
+paint 2 1 42.000 75.750 288.000 88.500 #eeeeee
+paint 2 2 42.000 101.250 288.000 114.000 #eeeeee
+paint 2 11 30.000 106.500 33.750 110.250 #000000

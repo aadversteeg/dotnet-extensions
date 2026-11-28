@@ -1,0 +1,48 @@
+word 1 Wave 0 0 0 0
+word 1 To 0 0
+word 1 AVA 0 0 0
+word 1 fix 1 2
+word 1 office 2 3 4 4
+word 1 Wave 5 5 5 5
+word 1 To 5 5
+word 1 AVA 5 5 5
+word 1 fix 5 5 5
+word 1 office 5 5 5 5 5 5
+word 1 Word 6 6 6 6
+word 1 ab 7 7
+word 1 c 8
+word 1 d 8
+word 1 e 9
+word 1 Word 10 10 10 10
+word 1 abc 10 11 11
+word 1 d 12
+word 1 e 12
+word 1 f 13
+word 1 Word 14 14 14 14
+word 1 12 14 14
+word 1 i 14
+word 1 j 16
+word 1 Wave 17 17 17 17
+word 1 To 17 17
+word 1 AVA 17 17 17
+word 1 fix 18 19
+word 1 office 19 20 21 21
+word 1 Wave 22 22 22 22
+word 1 To 22 22
+word 1 AVA 22 22 22
+word 1 fix 22 22 22
+word 1 office 22 22 22 22 22 22
+word 1 Word 23 23 23 23
+word 1 ab 24 24
+word 1 c 25
+word 1 d 25
+word 1 e 26
+word 1 Word 27 27 27 27
+word 1 abc 27 28 28
+word 1 d 29
+word 1 e 29
+word 1 f 30
+word 1 Word 31 31 31 31
+word 1 12 31 31
+word 1 i 31
+word 1 j 33

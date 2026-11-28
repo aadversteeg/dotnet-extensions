@@ -1,4 +1,7 @@
 fr-old-header-quarter-240-over.boxes.txt 15
+fr-old-header-quarter-240-over.clips.txt 15
+fr-old-header-quarter-240-over.glyphs.txt 15
 fr-old-header-quarter-240-over.lines.txt 47
+fr-old-header-quarter-240-over.order.txt 62
 fr-old-header-quarter-240-over.print.txt 64
 fr-old-header-quarter-240-over.words.txt 15

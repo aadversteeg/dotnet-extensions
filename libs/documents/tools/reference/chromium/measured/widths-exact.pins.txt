@@ -1,4 +1,7 @@
-widths-exact.boxes.txt 19
+widths-exact.boxes.txt 10
+widths-exact.clips.txt 24
+widths-exact.glyphs.txt 24
 widths-exact.lines.txt 20
-widths-exact.print.txt 53
-widths-exact.words.txt 32
+widths-exact.order.txt 44
+widths-exact.print.txt 45
+widths-exact.words.txt 24

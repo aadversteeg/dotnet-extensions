@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -170,17 +171,17 @@ internal static class HtmlCases
 
     /// <summary>
     /// The status a case's committed status line names (<see cref="CaseFolder.Committed"/>, its second field) and, where it
-    /// is <c>listed</c>, the test that pins the difference: a listed limit of layout, pinned by name in the code front-end's
-    /// tests (<c>ListedDifferenceTests</c>, <c>PinnedDifferenceTests</c>, <c>PageBreakProgressTests</c>,
-    /// <c>LineBoxReferenceTests</c> and <c>FontMetricRoundingTests</c> of <c>UnitTests.Extensions.Documents.Fluent</c>) or in
-    /// <see cref="HtmlListedDifferenceTests"/> (docs/architecture.md, "Known limits"). The line says <c>listed</c>, the test
-    /// name and the first difference, so the case must still differ, and differ first in the same fact by the same amount.
+    /// is <c>listed</c>, the test that pins the difference: a listed limit of layout (docs/architecture.md, "Known limits"),
+    /// pinned by a test of this project that lays out the case (<see cref="HtmlListedDifferenceTests"/>,
+    /// <see cref="HtmlListedBreakTests"/>; <c>CaseStatusTests</c> checks that it names the case). The first line says
+    /// <c>listed</c>, the test name and the first difference, and the lines after it every difference
+    /// (<see cref="DifferenceList"/>), so the case must still differ, in the same facts by the same amounts.
     /// </summary>
     /// <param name="committed">The committed status line without the case's name, or null.</param>
     /// <returns>The committed status (empty where there is none) and the test of a listed case, or null.</returns>
     private static (string Status, string? Listed) CommittedStatus(string? committed)
     {
-        var fields = (committed ?? string.Empty).Split(' ', 2);
+        var fields = (committed ?? string.Empty).Split('\n', 2)[0].Split(' ', 2);
         return (fields[0], fields[0] == "listed" ? (fields.Length > 1 ? fields[1] : string.Empty).Split(": ", 2)[0] : null);
     }
 
@@ -222,25 +223,200 @@ internal static class HtmlCases
 
         var engine = PrintedPages.Engine(pages.Value);
         var clips = Clips(folder, name);
-        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt"));
+        var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt")).WithGlyphs(File.ReadAllText(Measured(folder, name) + ".glyphs.txt"))
+            .WithOrder(File.ReadAllText(Measured(folder, name) + ".order.txt")).WithClips(File.ReadAllText(Measured(folder, name) + ".clips.txt"))
+            .WithImages(File.Exists(Measured(folder, name) + ".images.txt") ? File.ReadAllText(Measured(folder, name) + ".images.txt") : string.Empty);
         var unused = clips.ToList();
         chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
         var lines = Cut(Rows(folder, name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
-        var missed = unused.Count > 0 ? $"page {unused[0].Line.Page} the line clipped at y {Of(unused[0].Line.Y0)} is no rectangle of the print (ink.txt)" : null;
-        var difference = missed ?? Difference(engine, chromium, LineTops(boxes.Value))
-            ?? RectangleDifference(engine, chromium, lines)
-            ?? PopplerDifference(pages.Value, engine, Rows(folder, name, "words"), LineTops(boxes.Value))
-            ?? BoxDifference(folder, name, boxes.Value, Rows(folder, name, "boxes"))
-            ?? LinkDifference(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points);
+        var lineTops = LineTops(boxes.Value);
+        var differences = unused.Select(clip => $"page {clip.Line.Page} the line clipped at y {Of(clip.Line.Y0)} is no rectangle of the print (ink.txt)")
+            .Concat(Differences(engine, chromium, lineTops, Links(pages.Value)))
+            .Concat(RectangleDifferences(engine, chromium, lines))
+            .Concat(PopplerDifferences(pages.Value, engine, Rows(folder, name, "words"), lineTops))
+            .Concat(BoxDifferences(folder, name, boxes.Value, Rows(folder, name, "boxes")))
+            .Concat(LinkDifferences(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points))
+            .Concat(GlyphDifferences(engine, chromium))
+            .Concat(OrderDifferences(engine, chromium))
+            .Concat(ClipDifferences(engine, chromium))
+            .Concat(ImageDifferences(engine, chromium))
+            .Concat(DestinationDifferences(pages.Value, Destinations(folder, name), boxes.Value.Document.Page.Margins.Left.Points))
+            .Concat(LinkPixelDifferences(pages.Value, Links(folder, name)))
+            .Take(DifferenceBound + 1).ToList();
         var (status, listed) = CommittedStatus(committed);
-        return (difference, listed) switch
+        if (differences.Count == 0)
         {
-            (null, null) => "equal",
-            (null, _) => "different equal to Chromium, but listed as a difference",
-            ({ } found, { } test) => $"listed {test}: {found}",
-            ({ } found, null) => status == "open" ? $"open {found}" : $"different {found}",
-        };
+            return listed is null ? "equal" : "different equal to Chromium, but listed as a difference";
+        }
+
+        if (listed is null && status != "open")
+        {
+            return $"different {differences[0]}";
+        }
+
+        if (differences.Count > DifferenceBound)
+        {
+            return $"different more than {DifferenceBound} differences, too many to be {status}: {differences[0]}";
+        }
+
+        return (listed is null ? $"open {differences[0]}" : $"listed {listed}: {differences[0]}") + "\n" + DifferenceList(differences);
     }
+
+    /// <summary>The most differences a <c>listed</c> or <c>open</c> case may have: a case with more is <c>different</c>.
+    /// Every listed case has fewer than a tenth of this; a larger count says the case is compared out of step (a page or a
+    /// line moved), and that is not a limit the list can name.</summary>
+    public const int DifferenceBound = 500;
+
+    /// <summary>How many differences a status file writes out one by one; past this it writes the first ones, the count and
+    /// a SHA-256 of the whole list (<see cref="DifferenceList"/>).</summary>
+    public const int ShownDifferences = 60;
+
+    /// <summary>
+    /// The differences of a <c>listed</c> or <c>open</c> case as its status file holds them, after its first line: the count,
+    /// then one difference per line (<c>- </c> and the difference) in the order the comparison finds them. A list longer than
+    /// <see cref="ShownDifferences"/> writes the first of them and, on the count's line, the SHA-256 (lowercase hexadecimal)
+    /// of the whole list in UTF-8, the differences joined by line feeds. Every number in a difference is rounded as the
+    /// comparison prints it (three decimals at most), so the list is the same on every platform the tests run on; a change in
+    /// any difference, or one more or one fewer, changes the file.
+    /// </summary>
+    /// <param name="differences">The differences, at least one.</param>
+    /// <returns>The lines, joined by line feeds.</returns>
+    public static string DifferenceList(IReadOnlyList<string> differences)
+    {
+        var count = differences.Count == 1 ? "1 difference" : $"{differences.Count} differences";
+        if (differences.Count <= ShownDifferences)
+        {
+            return $"{count}:\n" + string.Join("\n", differences.Select(difference => "- " + difference));
+        }
+
+        var hash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", differences))));
+        return $"{count}, SHA-256 {hash} of all of them; the first {ShownDifferences}:\n" + string.Join("\n", differences.Take(ShownDifferences).Select(difference => "- " + difference));
+    }
+
+    /// <summary>How many hexadecimal digits of a digest a difference writes (<see cref="Digest"/>): 16, the first 64 bits of
+    /// the SHA-256.</summary>
+    public const int DigestDigits = 16;
+
+    /// <summary>
+    /// The digest of what the engine has where the comparison cannot pair it with Chromium's print and so compares none of
+    /// it one by one: the first <see cref="DigestDigits"/> lowercase hexadecimal digits of the SHA-256 of the lines in UTF-8,
+    /// joined by line feeds. A difference that skips such content carries the digest of the engine's side
+    /// (<see cref="PageLines"/>, <see cref="WordLine"/>, <see cref="DigestNumber"/>), so a change of the engine there changes
+    /// the status file even though nothing is compared with Chromium.
+    /// </summary>
+    /// <param name="lines">The engine's content, one item per line (<see cref="PageLines"/>).</param>
+    /// <returns>The digest.</returns>
+    internal static string Digest(IEnumerable<string> lines) =>
+        Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", lines))))[..DigestDigits];
+
+    /// <summary>
+    /// A number as a digest holds it: as every difference writes it (<see cref="Of"/>, three decimals at most, invariant),
+    /// so the digest is the same on every platform the tests run on. .NET rounds the number's 15 significant digits to three
+    /// decimals, so a number a few units in the last place off on another platform writes the same, unless it lies on the
+    /// edge between two roundings. That is checked, not assumed: a number whose written form changes when it is moved
+    /// <see cref="DigestSteps"/> units in the last place up or down throws, so a digest can never differ by platform unseen.
+    /// The one exception is a number exactly on such an edge, an odd multiple of 1/16 pt (0.0625, 64.6875): it is exact in
+    /// binary, the result of exact sums and products of binary fractions (the layout's 1/64 px), which every platform with
+    /// IEEE 754 doubles computes alike, and it is written as it is. Zero is written <c>0</c> whatever its sign, and so is a
+    /// number that rounds to it.
+    /// </summary>
+    /// <param name="value">The number, in points.</param>
+    /// <returns>The number as written.</returns>
+    internal static string DigestNumber(double value)
+    {
+        static string Written(double number) => Of(number) is "-0" ? "0" : Of(number);
+        var written = Written(value);
+        var (down, up) = (value, value);
+        for (var step = 0; step < DigestSteps; step++)
+        {
+            (down, up) = (Math.BitDecrement(down), Math.BitIncrement(up));
+        }
+
+        var sixteenths = value * 16;
+        var tie = sixteenths == Math.Floor(sixteenths) && Math.Abs(sixteenths % 2) == 1;
+        if (!tie && (Written(down) != written || Written(up) != written))
+        {
+            throw new InvalidOperationException($"The number {value.ToString("R", CultureInfo.InvariantCulture)} writes {written}, and {Written(down)} or {Written(up)} {DigestSteps} units in the last place away; its digest could differ by platform.");
+        }
+
+        return written;
+    }
+
+    /// <summary>How many units in the last place a number of a digest may differ by platform and still write the same
+    /// (<see cref="DigestNumber"/>): 2. Sums, products and quotients of doubles round alike on every platform; only a library
+    /// function may differ, by a unit in the last place (the layout's <c>Math.Sin</c> and <c>Math.Cos</c> of rounded corners,
+    /// <c>Math.Pow</c> of a border's shade).</summary>
+    public const int DigestSteps = 2;
+
+    private static string DigestBox(double x0, double y0, double x1, double y1) => $"{DigestNumber(x0)} {DigestNumber(y0)} {DigestNumber(x1)} {DigestNumber(y1)}";
+
+    /// <summary>
+    /// The lines of an engine's page for its digest (<see cref="Digest"/>), in this order: the page (number, width, height);
+    /// each word in the page's order (baseline, then x0; <see cref="WordLine"/>); each painted rectangle in drawing order
+    /// (box, colour); each image area in drawing order (box) and then each picture (<c>width height sha256</c>); each painted
+    /// path in drawing order (box, colour, rows); each paint in drawing order (its rank in the page's drawing sequence, box,
+    /// colour or <c>image</c>); each link area on the page in drawing order (box, target). Every box is <c>x0 y0 x1 y1</c>,
+    /// every number as <see cref="DigestNumber"/> writes it.
+    /// </summary>
+    /// <param name="page">The engine's page (<see cref="PrintedPages.Engine"/>).</param>
+    /// <param name="links">The engine's link areas (<see cref="Links(PageDocument)"/>); those of other pages are left out.</param>
+    /// <returns>The lines.</returns>
+    internal static IEnumerable<string> PageLines(PrintedPage page, IReadOnlyList<PrintedLink> links)
+    {
+        var ranks = Ranks(page);
+        yield return $"page {page.Number} {DigestNumber(page.Width)} {DigestNumber(page.Height)}";
+        foreach (var word in page.Words)
+        {
+            yield return WordLine(word, ranks);
+        }
+
+        foreach (var box in page.Rectangles)
+        {
+            yield return $"rectangle {DigestBox(box.X0, box.Y0, box.X1, box.Y1)} {box.Colour}{(box.Stroked ? " stroked" : string.Empty)}";
+        }
+
+        foreach (var lines in new[] { page.Images.Select(box => $"image {DigestBox(box.X0, box.Y0, box.X1, box.Y1)}"), page.Pictures.Select(picture => $"picture {picture}"), PathLines(page) })
+        {
+            foreach (var line in lines)
+            {
+                yield return line;
+            }
+        }
+
+        foreach (var paint in page.Paints)
+        {
+            yield return $"paint {ranks[paint.Place]} {DigestBox(paint.X0, paint.Y0, paint.X1, paint.Y1)} {paint.Paint}";
+        }
+
+        foreach (var link in links.Where(link => link.Page == page.Number))
+        {
+            yield return $"link {DigestBox(link.X0, link.Y0, link.X1, link.Y1)} {link.Target}";
+        }
+    }
+
+    /// <summary>The lines of the painted paths of a page for a digest, in drawing order: box, colour and rows.</summary>
+    private static IEnumerable<string> PathLines(PrintedPage page) =>
+        page.Paths.Select(path => $"path {DigestBox(path.X0, path.Y0, path.X1, path.Y1)} {path.Colour} {string.Join('/', path.Rows)}");
+
+    /// <summary>The rank of each place of a page's drawing sequence that draws a word or a paint, from 0: the order of what is
+    /// drawn, without the places of items that draw nothing (structure, clips, anchors).</summary>
+    private static Dictionary<int, int> Ranks(PrintedPage page) =>
+        page.Words.Select(word => word.Place).OfType<int>().Concat(page.Paints.Select(paint => paint.Place)).Distinct().Order()
+            .Select((place, rank) => (place, rank)).ToDictionary(pair => pair.place, pair => pair.rank);
+
+    /// <summary>The line of a word for a digest (<see cref="PageLines"/>): its text, x0, x1, baseline, font size, colour and
+    /// face; its rank in the page's drawing sequence (<c>-</c> where there is none); the box its clips leave, or <c>none</c>;
+    /// and each glyph as <c>id x below end</c>.</summary>
+    /// <param name="word">The engine's word.</param>
+    /// <param name="ranks">The ranks of the page's places (<see cref="Ranks"/>), or null to leave the rank out.</param>
+    /// <returns>The line.</returns>
+    internal static string WordLine(PrintedWord word, IReadOnlyDictionary<int, int>? ranks = null) =>
+        $"word {word.Text} {DigestNumber(word.X0)} {DigestNumber(word.X1)} {DigestNumber(word.Baseline)} {DigestNumber(word.FontSize)} {word.Colour} {word.Face}" +
+        $" at {(ranks is not null && word.Place is { } place ? $"{ranks[place]}" : "-")} clip {(word.Clip is { } clip ? DigestBox(clip.X0, clip.Y0, clip.X1, clip.Y1) : "none")}" +
+        $" glyphs {string.Join(", ", word.Glyphs.Select(glyph => $"{glyph.Glyph} {DigestNumber(glyph.X)} {DigestNumber(glyph.Below)} {DigestNumber(glyph.End)}"))}";
+
+    /// <summary>The digest of an engine's page (<see cref="PageLines"/>), as a difference writes it.</summary>
+    private static string PageDigest(PrintedPage page, IReadOnlyList<PrintedLink> links) => $"the engine's page {page.Number}: digest {Digest(PageLines(page, links))}";
 
     /// <summary>Chromium's print of a case as <see cref="Status(CaseFolder, string, string?)"/> compares it: <c>print.txt</c>
     /// with each line that Chromium clips around the glyphs' ink replaced by its pieces (<see cref="Clips"/>).</summary>
@@ -359,7 +535,8 @@ internal static class HtmlCases
     /// <summary>One CSS pixel in points: how far an edge of a link area may be from Chromium's. Chromium writes each edge of
     /// a link's rectangle at a whole CSS pixel (measured, case <c>lk-one-line</c>: the word "link" from 45.703 to 61.894 pt
     /// gets the rectangle 45.75 to 62.25 pt), the engine at its exact place (ISO 32000-1 §12.5.2: <c>/Rect</c> is any rectangle), so
-    /// an edge may differ by up to half a pixel each way of the rounding; the bound is one pixel.</summary>
+    /// an edge may differ by up to half a pixel each way of the rounding; the bound is one pixel. The rounding itself is
+    /// compared after it (<see cref="LinkPixelDifferences"/>).</summary>
     public const double LinkBound = 0.75;
 
     /// <summary>
@@ -382,7 +559,13 @@ internal static class HtmlCases
     /// <param name="pages">The engine's pages.</param>
     /// <param name="chromium">Chromium's links.</param>
     /// <param name="marginTop">The page's top margin, in points: Chromium's offset of every destination's top.</param>
-    public static string? LinkDifference(PageDocument pages, IReadOnlyList<PrintedLink> chromium, double marginTop = 0)
+    public static string? LinkDifference(PageDocument pages, IReadOnlyList<PrintedLink> chromium, double marginTop = 0) =>
+        LinkDifferences(pages, chromium, marginTop).FirstOrDefault();
+
+    /// <summary>Every difference between the engine's link areas and Chromium's link annotations, by the rules of
+    /// <see cref="LinkDifference"/>, link by link in order: a link one side has and the other does not, or of a pair its
+    /// page, each edge and its target.</summary>
+    public static IEnumerable<string> LinkDifferences(PageDocument pages, IReadOnlyList<PrintedLink> chromium, double marginTop = 0)
     {
         var engine = Links(pages);
         for (var index = 0; index < Math.Max(engine.Count, chromium.Count); index++)
@@ -390,30 +573,116 @@ internal static class HtmlCases
             if (index >= engine.Count)
             {
                 var missing = chromium[index];
-                return $"link {index + 1}: Chromium's rectangle on page {missing.Page} at ({Of(missing.X0)}, {Of(missing.Y0)}) to {missing.Target} has none in the engine, which has {engine.Count} (links.txt)";
+                yield return $"link {index + 1}: Chromium's rectangle on page {missing.Page} at ({Of(missing.X0)}, {Of(missing.Y0)}) to {missing.Target} has none in the engine, which has {engine.Count} (links.txt)";
+                continue;
             }
 
             var ours = engine[index];
             if (index >= chromium.Count)
             {
-                return $"link {index + 1}: the engine's rectangle on page {ours.Page} at ({Of(ours.X0)}, {Of(ours.Y0)}) to {ours.Target} is not in Chromium's print, which has {chromium.Count} (links.txt)";
+                yield return $"link {index + 1}: the engine's rectangle on page {ours.Page} at ({Of(ours.X0)}, {Of(ours.Y0)}) to {ours.Target} is not in Chromium's print, which has {chromium.Count} (links.txt)";
+                continue;
             }
 
             var theirs = chromium[index];
             var at = $"link {index + 1} on page {ours.Page}";
-            var found = (ours.Page != theirs.Page ? $"link {index + 1} is on page {ours.Page}, Chromium's on page {theirs.Page}" : null)
-                ?? Edge(at, "x0", ours.X0, theirs.X0) ?? Edge(at, "y0", ours.Y0, theirs.Y0) ?? Edge(at, "x1", ours.X1, theirs.X1) ?? Edge(at, "y1", ours.Y1, theirs.Y1)
-                ?? TargetDifference(at, ours.Target, theirs.Target, marginTop);
-            if (found is not null)
+            var found = new[]
             {
-                return found + " (links.txt)";
+                ours.Page != theirs.Page ? $"link {index + 1} is on page {ours.Page}, Chromium's on page {theirs.Page}" : null,
+                Edge(at, "x0", ours.X0, theirs.X0), Edge(at, "y0", ours.Y0, theirs.Y0), Edge(at, "x1", ours.X1, theirs.X1), Edge(at, "y1", ours.Y1, theirs.Y1),
+                TargetDifference(at, ours.Target, theirs.Target, marginTop),
+            };
+            foreach (var difference in found.OfType<string>())
+            {
+                yield return difference + " (links.txt)";
             }
         }
 
-        return null;
-
         static string? Edge(string at, string what, double ours, double theirs) =>
             Math.Abs(ours - theirs) > LinkBound + 1e-9 ? $"{at}: {what} {Of(ours)}, Chromium {Of(theirs)}" : null;
+    }
+
+    /// <summary>The left edge of each link's destination in Chromium's print, from <c>&lt;case&gt;.destinations.txt</c>
+    /// (<c>destinations.py</c>): per link of <c>links.txt</c>, in its order, the page and the left of a destination inside the
+    /// document, or null for a link to a URI; none for a case without the file, whose print has no annotation.</summary>
+    internal static List<(int Page, double Left)?> Destinations(CaseFolder folder, string name)
+    {
+        var path = Measured(folder, name) + ".destinations.txt";
+        return File.Exists(path)
+            ? [.. File.ReadAllLines(path).Where(line => line.Length > 0).Select(line => line.Split(' ')).Select(parts => parts switch
+            {
+                [_, "uri"] => ((int Page, double Left)?)null,
+                [_, "dest", var page, var left] => (int.Parse(page, CultureInfo.InvariantCulture), Number(left)),
+                _ => throw new FormatException($"Not a line of destinations.py: '{string.Join(' ', parts)}'."),
+            })]
+            : [];
+    }
+
+    /// <summary>
+    /// Every difference between the left edge of the engine's link destinations and Chromium's (<c>destinations.txt</c>),
+    /// link by link in the order <see cref="LinkDifferences"/> pairs them, for each pair of links that both lead to a place
+    /// in the document: Chromium's left plus the page's left margin within <see cref="DestinationBound"/> of the engine's.
+    /// Chromium writes the left as it writes the top (<see cref="DestinationBound"/>): in the coordinates of the page area,
+    /// one page margin left of where the target stands (measured: case <c>lk-later-heading</c>, a heading at the left of the
+    /// page area, 18 pt from the page's left, gets the left 0), at a whole CSS pixel. The page and the top are compared there.
+    /// </summary>
+    /// <param name="pages">The engine's pages.</param>
+    /// <param name="chromium">Chromium's destinations, per link (<see cref="Destinations"/>).</param>
+    /// <param name="marginLeft">The page's left margin, in points: Chromium's offset of every destination's left.</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> DestinationDifferences(PageDocument pages, IReadOnlyList<(int Page, double Left)?> chromium, double marginLeft)
+    {
+        var lefts = pages.Pages.SelectMany(page => page.Items.OfType<Anchor>()).ToDictionary(anchor => anchor.Node, anchor => anchor.At.X);
+        var engine = new List<double?>();
+        var links = new Dictionary<NodeId, double?>();
+        foreach (var item in pages.Pages.SelectMany(page => page.Items))
+        {
+            switch (item)
+            {
+                case StructureStart { Role: SemanticRole.LinkRole { Target: var target } } start:
+                    links[start.Node] = target is LinkTarget.NodeTarget node && lefts.TryGetValue(node.Value, out var left) ? left : null;
+                    break;
+                case LinkArea area:
+                    engine.Add(links[area.Link]);
+                    break;
+            }
+        }
+
+        foreach (var (ours, theirs, number) in engine.Zip(chromium).Select((pair, index) => (pair.First, pair.Second, index + 1)))
+        {
+            if (ours is { } x && theirs is { } place && Math.Abs(x - (place.Left + marginLeft)) > DestinationBound + 1e-9)
+            {
+                yield return $"link {number} leads to the left {Of(x)}, Chromium's to {Of(place.Left + marginLeft)} (its {Of(place.Left)} plus the left margin {Of(marginLeft)}) (destinations.txt)";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every difference between the edges of the engine's link areas and those of Chromium's link annotations
+    /// (<c>links.txt</c>) on Chromium's grid of whole CSS pixels, link by link in the order <see cref="LinkDifferences"/>
+    /// pairs them, for each pair on the same page: each edge of the engine's area taken to the nearest whole pixel
+    /// (<see cref="WholePixel"/>) within <see cref="Bound"/> of Chromium's, as an image's edges are compared. Chromium writes
+    /// each edge of a link's rectangle at the whole pixel nearest to the place it lays the link out at (measured: 256 edges
+    /// of the cases whose links agree otherwise, every one exactly the engine's edge so rounded); the engine writes the
+    /// exact place. So <see cref="LinkBound"/>, one pixel either way, is the width of the rounding, and this is the rounding
+    /// itself: an area a pixel off differs (case <c>lk-image</c>: moved 1 pt, 1.33 px, it was within the pixel either way).
+    /// </summary>
+    /// <param name="pages">The engine's pages.</param>
+    /// <param name="chromium">Chromium's links.</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> LinkPixelDifferences(PageDocument pages, IReadOnlyList<PrintedLink> chromium)
+    {
+        foreach (var (ours, theirs, number) in Links(pages).Zip(chromium).Select((pair, index) => (pair.First, pair.Second, index + 1)).Where(link => link.First.Page == link.Second.Page))
+        {
+            var at = $"link {number} on page {ours.Page}";
+            foreach (var difference in new[] { Edge("x0", ours.X0, theirs.X0), Edge("y0", ours.Y0, theirs.Y0), Edge("x1", ours.X1, theirs.X1), Edge("y1", ours.Y1, theirs.Y1) }.OfType<string>())
+            {
+                yield return $"{at}: {difference} (links.txt)";
+            }
+        }
+
+        static string? Edge(string what, double ours, double theirs) =>
+            Math.Abs(WholePixel(ours) - theirs) > Bound ? $"{what} {Of(ours)} lies on the pixel {Of(WholePixel(ours))}, Chromium's on {Of(theirs)}" : null;
     }
 
     private static string? TargetDifference(string at, string ours, string theirs, double marginTop)
@@ -473,40 +742,58 @@ internal static class HtmlCases
     /// within <see cref="Bound"/>, its baseline where Chromium paints it (<see cref="BaselineDifference"/>) within <see cref="Bound"/>, and the same
     /// colour and face (<see cref="PrintedWord.Colour"/>, <see cref="PrintedWord.Face"/>: the PostScript name, which names
     /// the font file and with it the weight and the style); the same area painted in each colour by the rectangles,
-    /// filled or stroked (<see cref="PaintedDifference"/>); the same image areas in drawing order, each edge after
+    /// filled or stroked (<see cref="PaintedDifferences"/>); the same image areas in drawing order, each edge after
     /// <see cref="WholePixel"/> within <see cref="Bound"/>; the same areas painted by paths that are not rectangles
-    /// (<see cref="PathDifference"/>).
+    /// (<see cref="PathDifferences"/>).
     /// </summary>
-    public static string? Difference(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null)
+    public static string? Difference(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null) =>
+        Differences(engine, chromium, lineTops).FirstOrDefault();
+
+    /// <summary>
+    /// Every difference between the engine's pages and Chromium's print as <c>print.txt</c> holds it, by the rules of
+    /// <see cref="Difference"/>, in one fixed order: the number of pages, then page by page (the pages both have, in turn) its
+    /// size, its text or else each word's start, end, baseline, font size, colour and face, the painted area
+    /// (<see cref="PaintedDifferences"/>), the images and the paths. A page whose text differs is one difference: its words
+    /// are not compared one by one, since they cannot be paired, and the difference carries the digest of the engine's page
+    /// (<see cref="PageLines"/>); so does the difference of the number of pages, for each page of the engine past Chromium's
+    /// last, and a different number of images or of paths, with the digest of the engine's images or paths.
+    /// </summary>
+    public static IEnumerable<string> Differences(PrintedPages engine, PrintedPages chromium, IReadOnlyDictionary<(int Page, double Baseline), double>? lineTops = null, IReadOnlyList<PrintedLink>? links = null)
     {
+        links ??= [];
         if (engine.Pages.Length != chromium.Pages.Length)
         {
-            return $"{engine.Pages.Length} pages, Chromium {chromium.Pages.Length} (print.txt)";
+            yield return $"{engine.Pages.Length} pages, Chromium {chromium.Pages.Length}{string.Concat(engine.Pages.Skip(chromium.Pages.Length).Select(page => "; " + PageDigest(page, links)))} (print.txt)";
         }
 
         foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
         {
             if (Math.Abs(ours.Width - theirs.Width) > 0.001 || Math.Abs(ours.Height - theirs.Height) > 0.001)
             {
-                return $"page {ours.Number} is {Of(ours.Width)}x{Of(ours.Height)}, Chromium {Of(theirs.Width)}x{Of(theirs.Height)} (print.txt)";
+                yield return $"page {ours.Number} is {Of(ours.Width)}x{Of(ours.Height)}, Chromium {Of(theirs.Width)}x{Of(theirs.Height)} (print.txt)";
             }
 
             var words = Joined(ours.Words);
             var text = string.Join(" ", words.Select(word => word.Text));
             if (text != theirs.Text)
             {
-                return $"page {ours.Number} reads '{text}', Chromium '{theirs.Text}' (print.txt)";
+                yield return $"page {ours.Number} reads '{text}', Chromium '{theirs.Text}'; {PageDigest(ours, links)} (print.txt)";
             }
-
-            foreach (var (word, measured) in words.Zip(theirs.Words))
+            else
             {
-                var at = $"page {ours.Number} '{word.Text}'";
-                var found = Far(at, "x0", word.X0, measured.X0) ?? Far(at, "x1", word.X1, measured.X1)
-                    ?? BaselineDifference(at, word.Baseline, measured.Baseline, LineTop(lineTops, ours.Number, word.Baseline)) ?? Far(at, "font size", word.FontSize, measured.FontSize)
-                    ?? Same(at, "colour", word.Colour, measured.Colour) ?? Same(at, "face", word.Face, measured.Face);
-                if (found is not null)
+                foreach (var (word, measured) in words.Zip(theirs.Words))
                 {
-                    return found + " (print.txt)";
+                    var at = $"page {ours.Number} '{word.Text}'";
+                    var found = new[]
+                    {
+                        Far(at, "x0", word.X0, measured.X0), Far(at, "x1", word.X1, measured.X1),
+                        BaselineDifference(at, word.Baseline, measured.Baseline, LineTop(lineTops, ours.Number, word.Baseline)), Far(at, "font size", word.FontSize, measured.FontSize),
+                        Same(at, "colour", word.Colour, measured.Colour), Same(at, "face", word.Face, measured.Face),
+                    };
+                    foreach (var difference in found.OfType<string>())
+                    {
+                        yield return difference + " (print.txt)";
+                    }
                 }
             }
 
@@ -514,26 +801,268 @@ internal static class HtmlCases
             var (ourRectangles, theirRectangles) = (Outside(ours.Rectangles, shapes, ours: true), Outside(theirs.Rectangles, shapes, ours: false));
             var (ourPaths, theirPaths) = (ours with { Paths = [.. ours.Paths.Where(path => !shapes.Exists(shape => shape.InOurs && ReferenceEquals(shape.Path, path)))] },
                 theirs with { Paths = [.. theirs.Paths.Where(path => !shapes.Exists(shape => !shape.InOurs && ReferenceEquals(shape.Path, path)))] });
-            if ((PaintedDifference(ours, ourRectangles, theirRectangles) ?? Areas($"page {ours.Number} image", ours.Images, theirs.Images) ?? PathDifference(ourPaths, theirPaths)) is { } area)
+            foreach (var area in PaintedDifferences(ours, ourRectangles, theirRectangles).Concat(Areas($"page {ours.Number} image", ours.Images, theirs.Images)).Concat(PathDifferences(ourPaths, theirPaths)))
             {
-                return area + " (print.txt)";
+                yield return area + " (print.txt)";
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every difference between the glyphs inside the engine's words and those of Chromium's print (<c>glyphs.txt</c>,
+    /// <see cref="PrintedWord.Glyphs"/>), on each page whose text is the same (<see cref="Differences"/> names a page whose
+    /// text differs), word by word as <see cref="Differences"/> pairs them: the same number of glyphs; the same glyph id
+    /// for each (Chromium embeds subsets of the fonts that keep the font program's glyph ids); each glyph's x as its
+    /// distance from the word's first glyph within <see cref="Bound"/>, the bound of a word's x0 and x1 (the word's own x0
+    /// is compared there); and each glyph's distance below the baseline within <see cref="Bound"/>. At most one difference
+    /// per word and kind, the first glyph that differs, with how many differ. A word drawn with another number of glyphs is
+    /// that one difference, with the digest of the engine's word and its glyphs (<see cref="WordLine"/>).
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with the glyphs of its words.</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> GlyphDifferences(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
+        {
+            var words = Joined(ours.Words);
+            if (string.Join(" ", words.Select(word => word.Text)) != theirs.Text)
+            {
+                continue;
+            }
+
+            foreach (var (word, measured) in words.Zip(theirs.Words))
+            {
+                var at = $"page {ours.Number} '{word.Text}'";
+                if (word.Glyphs.Length != measured.Glyphs.Length)
+                {
+                    yield return $"{at} is drawn with {word.Glyphs.Length} glyphs, Chromium's with {measured.Glyphs.Length}; the engine's word: digest {Digest([WordLine(word)])} (glyphs.txt)";
+                    continue;
+                }
+
+                var pairs = word.Glyphs.Zip(measured.Glyphs, (glyph, other) => (Ours: glyph, Theirs: other)).Select((pair, index) => (pair.Ours, pair.Theirs, Number: index + 1)).ToList();
+                var found = new[]
+                {
+                    Glyphs(at, "is ", pairs.Where(pair => pair.Ours.Glyph != pair.Theirs.Glyph).ToList(), pairs.Count, (glyph, first) => $"{glyph.Glyph}"),
+                    Glyphs(at, "lies at +", pairs.Where(pair => Math.Abs(pair.Ours.X - word.Glyphs[0].X - (pair.Theirs.X - measured.Glyphs[0].X)) > Bound).ToList(), pairs.Count,
+                        (glyph, first) => Of(glyph.X - first!.X), word.Glyphs[0], measured.Glyphs[0]),
+                    Glyphs(at, "lies below the baseline by ", pairs.Where(pair => Math.Abs(pair.Ours.Below - pair.Theirs.Below) > Bound).ToList(), pairs.Count, (glyph, first) => Of(glyph.Below)),
+                };
+                foreach (var difference in found.OfType<string>())
+                {
+                    yield return difference + " (glyphs.txt)";
+                }
             }
         }
 
-        return null;
+        static string? Glyphs(string at, string what, List<(PrintedGlyph Ours, PrintedGlyph Theirs, int Number)> differ, int count, Func<PrintedGlyph, PrintedGlyph?, string> value,
+            PrintedGlyph? ourFirst = null, PrintedGlyph? theirFirst = null) =>
+            differ.Count == 0 ? null
+                : $"{at} glyph {differ[0].Number} {what}{value(differ[0].Ours, ourFirst)}, Chromium's {what}{value(differ[0].Theirs, theirFirst)}" + (differ.Count > 1 ? $" ({differ.Count} of {count} glyphs)" : string.Empty);
+    }
+
+    /// <summary>One CSS pixel in points: how far two things must overlap each way to be painted one over the other
+    /// (<see cref="OrderDifferences"/>), and how far the part of a word its clips cut off may differ from Chromium's
+    /// (<see cref="ClipDifferences"/>); the grid the comparison counts painted areas on.</summary>
+    public const double PixelBound = 0.75;
+
+    /// <summary>The box of a word that the comparisons of paint order and clips use, the same on both sides: its advances
+    /// across (x0 to x1) and its font size high, from 0.8 of the size above the baseline to 0.2 below it (where the glyphs
+    /// of Latin text have their ink; an ascent or descent of the font would differ between the font program and a PDF
+    /// reader's reading of it).</summary>
+    /// <param name="word">The word.</param>
+    /// <returns>Its box.</returns>
+    public static PrintedBox WordBox(PrintedWord word)
+    {
+        ArgumentNullException.ThrowIfNull(word);
+        return new(word.Page, word.X0, word.Baseline - (0.8 * word.FontSize), word.X1, word.Baseline + (0.2 * word.FontSize));
+    }
+
+    private static PrintedBox? Union(PrintedBox? one, PrintedBox? other) =>
+        one is null ? other : other is null ? one : one with { X0 = Math.Min(one.X0, other.X0), Y0 = Math.Min(one.Y0, other.Y0), X1 = Math.Max(one.X1, other.X1), Y1 = Math.Max(one.Y1, other.Y1) };
+
+    /// <summary>
+    /// A page with what is painted over each of its words (<see cref="PrintedWord.Over"/>) and the part of each word its
+    /// clips leave (<see cref="PrintedWord.Shown"/>). A paint is over a word where it comes later in the drawing sequence
+    /// and its box overlaps the word's box (<see cref="WordBox"/>) by more than <see cref="PixelBound"/> across and down. The
+    /// paints are put in bands of 12 pt by their rows, so each word is set against the paints of its own bands, not every
+    /// paint of the page.
+    /// </summary>
+    internal static PrintedPage PaintedOver(PrintedPage page)
+    {
+        const double Band = 12;
+        var bands = new Dictionary<int, List<PrintedPaint>>();
+        foreach (var paint in page.Paints)
+        {
+            for (var band = (int)Math.Floor(paint.Y0 / Band); band <= (int)Math.Floor(paint.Y1 / Band); band++)
+            {
+                if (!bands.TryGetValue(band, out var list))
+                {
+                    bands[band] = list = [];
+                }
+
+                list.Add(paint);
+            }
+        }
+
+        return page with
+        {
+            Words = [.. page.Words.Select(word =>
+            {
+                var box = WordBox(word);
+                var over = new SortedSet<string>(StringComparer.Ordinal);
+                foreach (var (part, place) in Parts(word, box))
+                {
+                    for (var band = (int)Math.Floor(part.Y0 / Band); band <= (int)Math.Floor(part.Y1 / Band); band++)
+                    {
+                        foreach (var paint in bands.TryGetValue(band, out var list) ? list : [])
+                        {
+                            if (paint.Place > place && Math.Min(part.X1, paint.X1) - Math.Max(part.X0, paint.X0) > PixelBound && Math.Min(part.Y1, paint.Y1) - Math.Max(part.Y0, paint.Y0) > PixelBound)
+                            {
+                                over.Add(paint.Paint);
+                            }
+                        }
+                    }
+                }
+
+                var clip = word.Clip is { } around ? new Rect(new Point(around.X0, around.Y0), new Size(Math.Max(0, around.X1 - around.X0), Math.Max(0, around.Y1 - around.Y0))) : (Rect?)null;
+                return word with { Over = [.. over], Shown = PrintedPages.Visible(box, clip) };
+            })],
+        };
+    }
+
+    /// <summary>The parts of a word's box that one text draws, each with its place: the whole box at the word's place for
+    /// an engine word (one glyph run); for a word of Chromium's print each run of glyphs of one place (<see cref="PrintedWord.Places"/>),
+    /// from its first glyph's origin to the end of its last glyph's advance (<see cref="PrintedGlyph.End"/>), the last run
+    /// to the word's end (case <c>ib-kerning</c>: a border drawn between two texts of one word is over neither).</summary>
+    private static IEnumerable<(PrintedBox Part, int Place)> Parts(PrintedWord word, PrintedBox box)
+    {
+        if (word.Places.IsEmpty || word.Places.Length != word.Glyphs.Length)
+        {
+            yield return (box, word.Place ?? int.MaxValue);
+            yield break;
+        }
+
+        var start = 0;
+        for (var index = 1; index <= word.Places.Length; index++)
+        {
+            if (index == word.Places.Length || word.Places[index] != word.Places[start])
+            {
+                var x0 = start == 0 ? box.X0 : word.Glyphs[start].X;
+                var x1 = index == word.Places.Length ? box.X1 : word.Glyphs[index - 1].End;
+                yield return (box with { X0 = x0, X1 = x1 }, word.Places[start]);
+                start = index;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every difference in what is painted over the engine's words and over Chromium's (<c>order.txt</c>), on each page whose
+    /// text is the same, word by word as <see cref="Differences"/> pairs them: of every fill or image whose box overlaps a
+    /// word's box by more than a pixel each way (<see cref="PaintedOver"/>), the one painted after the word on one side must be
+    /// painted after it on the other, compared by its colour (a background drawn over its text) or as an image. The places
+    /// themselves are not compared: Chromium batches its drawings in a sequence of its own. Text over text is not compared.
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with its places (<see cref="PrintedPages.WithOrder"/>).</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> OrderDifferences(PrintedPages engine, PrintedPages chromium) =>
+        PairedWords(engine, chromium).Select(pair => pair.Ours.Over.SequenceEqual(pair.Theirs.Over) ? null
+            : $"page {pair.Ours.Page} '{pair.Ours.Text}' is painted over by {Paints(pair.Ours.Over)}, Chromium's by {Paints(pair.Theirs.Over)} (order.txt)").OfType<string>();
+
+    private static string Paints(ImmutableArray<string> paints) => paints.IsEmpty ? "nothing" : string.Join(", ", paints);
+
+    /// <summary>
+    /// Every difference in how the clips cut the engine's words and Chromium's (<c>clips.txt</c>), on each page whose text is
+    /// the same, word by word as <see cref="Differences"/> pairs them: a word its clips hide wholly on one side and not on the
+    /// other; otherwise how much the clips cut off its box (<see cref="WordBox"/>) at each edge, within <see cref="PixelBound"/>.
+    /// A clip is taken as its box on both sides (the engine clips by rectangles only).
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with the clips of its words (<see cref="PrintedPages.WithClips"/>).</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> ClipDifferences(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in PairedWords(engine, chromium))
+        {
+            var at = $"page {ours.Page} '{ours.Text}'";
+            if ((ours.Shown is null) != (theirs.Shown is null))
+            {
+                yield return $"{at} is {(ours.Shown is null ? "hidden" : "shown")} by its clips, Chromium's is {(theirs.Shown is null ? "hidden" : "shown")} (clips.txt)";
+                continue;
+            }
+
+            if (ours.Shown is { } shown && theirs.Shown is { } other)
+            {
+                var (box, measured) = (WordBox(ours), WordBox(theirs));
+                double[] cut = [shown.X0 - box.X0, shown.Y0 - box.Y0, box.X1 - shown.X1, box.Y1 - shown.Y1];
+                double[] chromiumCut = [other.X0 - measured.X0, other.Y0 - measured.Y0, measured.X1 - other.X1, measured.Y1 - other.Y1];
+                if (cut.Zip(chromiumCut).Any(pair => Math.Abs(pair.First - pair.Second) > PixelBound))
+                {
+                    yield return $"{at} is cut by its clips by {string.Join(" ", cut.Select(Of))} (left top right bottom), Chromium's by {string.Join(" ", chromiumCut.Select(Of))} (clips.txt)";
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every difference between the pictures the engine's images show and those of Chromium's print (<c>images.txt</c>,
+    /// <see cref="PrintedPage.Pictures"/>), image by image in drawing order on each page where both have as many pictures,
+    /// else that page's one difference with the digest of the engine's pictures (<see cref="Digest"/>): the same size in
+    /// pixels and the same pixels, exactly.
+    /// Chromium writes a picture it was given as a PNG losslessly at its own size, and both sides decode to 8-bit RGBA, so
+    /// there is no bound.
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with its pictures (<see cref="PrintedPages.WithImages"/>).</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> ImageDifferences(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
+        {
+            if (ours.Pictures.Length != theirs.Pictures.Length)
+            {
+                yield return $"page {ours.Number} shows {ours.Pictures.Length} pictures, Chromium's {theirs.Pictures.Length}; the engine's pictures: digest {Digest(ours.Pictures)} (images.txt)";
+                continue;
+            }
+
+            foreach (var (picture, number) in ours.Pictures.Zip(theirs.Pictures).Select((pair, index) => (pair, index + 1)).Where(item => item.pair.First != item.pair.Second))
+            {
+                yield return $"page {ours.Number} image {number} shows {Short(picture.First)}, Chromium's {Short(picture.Second)} (images.txt)";
+            }
+        }
+
+        static string Short(string picture) => picture.Split(' ') is [var width, var height, var hash] ? $"{width}x{height} px {hash[..Math.Min(16, hash.Length)]}" : picture;
+    }
+
+    /// <summary>The engine's words, joined as Chromium's print reads them (<see cref="Joined"/>), paired with Chromium's, on
+    /// each page whose text is the same, each with what is painted over it and the part its clips leave (<see cref="PaintedOver"/>).</summary>
+    private static IEnumerable<(PrintedWord Ours, PrintedWord Theirs)> PairedWords(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
+        {
+            var words = Joined(PaintedOver(ours).Words);
+            if (string.Join(" ", words.Select(word => word.Text)) == theirs.Text)
+            {
+                foreach (var pair in words.Zip(PaintedOver(theirs).Words))
+                {
+                    yield return pair;
+                }
+            }
+        }
     }
 
     /// <summary>The first difference between the area the engine's rectangles paint and the area of the rectangles
     /// <c>lines.txt</c> holds (<c>page x0 y0 x1 y1 height</c>, read back by <c>rectangles.py</c>; the height is y1 less y0
-    /// of the same line, nothing of its own), page by page as <see cref="PaintedDifference"/> compares them. The file
+    /// of the same line, nothing of its own), page by page as <see cref="PaintedDifferences"/> compares them. The file
     /// holds no colour, so the area is one for every colour; and it holds fills only, so the bands that Chromium's strokes
     /// paint (<c>print.txt</c>, <see cref="PrintedBox.Stroked"/>: Chromium strokes a border of one colour and style on
     /// all four sides as one rectangle) are added to it.</summary>
-    private static string? RectangleDifference(PrintedPages engine, PrintedPages chromium, List<PrintedBox> measured)
+    private static IEnumerable<string> RectangleDifferences(PrintedPages engine, PrintedPages chromium, List<PrintedBox> measured)
     {
-        if (measured.FirstOrDefault(box => box.Page < 1 || box.Page > engine.Pages.Length) is { } beyond)
+        foreach (var beyond in measured.Where(box => box.Page < 1 || box.Page > engine.Pages.Length).Select(box => box.Page).Distinct())
         {
-            return $"a rectangle on page {beyond.Page}, the engine has {engine.Pages.Length} pages (lines.txt)";
+            yield return $"rectangles on page {beyond}, the engine has {engine.Pages.Length} pages (lines.txt)";
         }
 
         static PrintedBox Colourless(PrintedBox box) => box with { Colour = null, Stroked = false };
@@ -543,13 +1072,11 @@ internal static class HtmlCases
             // path's box by print.txt; lines.txt holds no colour, so Chromium's rectangles there are cut whatever colour.
             var shapes = ShapesOfRectangles(page, print);
             var filled = Outside(measured.Where(box => box.Page == page.Number).Concat(print.Rectangles.Where(box => box.Stroked).Select(Colourless)), shapes, ours: false);
-            if (PaintedDifference(page, [.. Outside(page.Rectangles, shapes, ours: true).Select(Colourless)], [.. filled]) is { } found)
+            foreach (var found in PaintedDifferences(page, [.. Outside(page.Rectangles, shapes, ours: true).Select(Colourless)], [.. filled]))
             {
-                return found + " (lines.txt)";
+                yield return found + " (lines.txt)";
             }
         }
-
-        return null;
     }
 
     /// <summary>A path of one side whose area the other side paints with rectangles of its colour (<see cref="ShapesOfRectangles"/>).</summary>
@@ -603,53 +1130,71 @@ internal static class HtmlCases
 
     /// <summary>The first difference between the areas the paths that are not rectangles (curves: a list marker's disc or
     /// circle) paint on a page (<see cref="PrintedPath"/>): the same number, and each in drawing order the same box of
-    /// whole pixels, colour and painted share per pixel. Both sides are sampled by one rule: the engine's filled paths by
+    /// whole pixels, colour and painted share per pixel; a different number is the one difference, with the digest of the
+    /// engine's paths (<see cref="Digest"/>). Both sides are sampled by one rule: the engine's filled paths by
     /// <see cref="PathSampler"/>, Chromium's curves by <c>paths.py</c>.</summary>
-    private static string? PathDifference(PrintedPage ours, PrintedPage theirs)
+    private static IEnumerable<string> PathDifferences(PrintedPage ours, PrintedPage theirs)
     {
         if (ours.Paths.Length != theirs.Paths.Length)
         {
-            return $"page {ours.Number} has {ours.Paths.Length} painted paths, Chromium {theirs.Paths.Length}";
+            return [$"page {ours.Number} has {ours.Paths.Length} painted paths, Chromium {theirs.Paths.Length}; the engine's paths: digest {Digest(PathLines(ours))}"];
         }
 
         return ours.Paths.Zip(theirs.Paths).Where(pair => !pair.First.Paints(pair.Second)).Select(pair =>
             $"page {ours.Number} path at ({Of(pair.First.X0)}, {Of(pair.First.Y0)}) paints {string.Join('/', pair.First.Rows)} {pair.First.Colour}, " +
-            $"Chromium at ({Of(pair.Second.X0)}, {Of(pair.Second.Y0)}) {string.Join('/', pair.Second.Rows)} {pair.Second.Colour}").FirstOrDefault();
+            $"Chromium at ({Of(pair.Second.X0)}, {Of(pair.Second.Y0)}) {string.Join('/', pair.Second.Rows)} {pair.Second.Colour}");
     }
 
     /// <summary>
-    /// The first difference between what two sets of painted rectangles show on a page: for each whole pixel of the page
+    /// The differences between what two sets of painted rectangles show on a page: for each whole pixel of the page
     /// (0.75 pt), the colour of the last rectangle in drawing order that covers it, each edge after
     /// <see cref="WholePixel"/>, so an edge within <see cref="Bound"/> of Chromium's after snapping covers the same pixels.
     /// The area of each colour is compared, not each rectangle: Chromium cuts a border into other rectangles than the
     /// engine, which paint the same pixels (case <c>fr-f9-padded-box-orphans3</c>: Chromium's side borders run over the
     /// top border, from 93 pt down, the engine's start below it, at 93.75 pt), and strokes a border of one colour on all
     /// four sides as one rectangle where the engine fills four. The number of the rectangles is not compared; their order
-    /// only where two colours overlap.
+    /// only where two colours overlap. One difference for each pair of colours (the engine's, Chromium's) that a pixel
+    /// differs by, in the order of its first such pixel, row by row: that pixel, the area of its colour on each side, and
+    /// how many pixels differ so and the box of whole pixels around them.
     /// </summary>
-    private static string? PaintedDifference(PrintedPage page, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
+    private static IEnumerable<string> PaintedDifferences(PrintedPage page, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
     {
         var (engine, chromium) = (Painted(page, ours), Painted(page, theirs));
         var columns = ChromiumLayout.Pixel(page.Width);
+        var pairs = new List<(string? Engine, string? Chromium, int First, int Count, int Left, int Top, int Right, int Bottom)>();
         for (var cell = 0; cell < engine.Length; cell++)
         {
-            if (engine[cell] != chromium[cell])
+            if (engine[cell] == chromium[cell])
             {
-                var (x, y) = (cell % columns * 0.75, cell / columns * 0.75);
-                var who = (engine[cell], chromium[cell]) switch
-                {
-                    (null, _) => "Chromium paints it and the engine does not",
-                    (_, null) => "the engine paints it and Chromium does not",
-                    _ => $"the engine paints it {engine[cell]}, Chromium {chromium[cell]}",
-                };
-                var colour = engine[cell] ?? chromium[cell];
-                var area = colour is null or "" ? string.Empty : $" {colour}";
-                return $"page {page.Number} painted area: the pixel at ({Of(x)}, {Of(y)}): {who}; the engine paints {engine.Count(painted => painted == colour)} px{area}, " +
-                    $"Chromium {chromium.Count(painted => painted == colour)} px";
+                continue;
             }
+
+            var (x, y) = (cell % columns, cell / columns);
+            var index = pairs.FindIndex(pair => pair.Engine == engine[cell] && pair.Chromium == chromium[cell]);
+            if (index < 0)
+            {
+                pairs.Add((engine[cell], chromium[cell], cell, 1, x, y, x, y));
+                continue;
+            }
+
+            var found = pairs[index];
+            pairs[index] = found with { Count = found.Count + 1, Left = Math.Min(found.Left, x), Right = Math.Max(found.Right, x), Bottom = y };
         }
 
-        return null;
+        foreach (var pair in pairs)
+        {
+            var (x, y) = (pair.First % columns * 0.75, pair.First / columns * 0.75);
+            var who = (pair.Engine, pair.Chromium) switch
+            {
+                (null, _) => "Chromium paints it and the engine does not",
+                (_, null) => "the engine paints it and Chromium does not",
+                _ => $"the engine paints it {pair.Engine}, Chromium {pair.Chromium}",
+            };
+            var colour = pair.Engine ?? pair.Chromium;
+            var area = colour is null or "" ? string.Empty : $" {colour}";
+            yield return $"page {page.Number} painted area: the pixel at ({Of(x)}, {Of(y)}): {who}; the engine paints {engine.Count(painted => painted == colour)} px{area}, " +
+                $"Chromium {chromium.Count(painted => painted == colour)} px; {pair.Count} px differ so, from ({Of(pair.Left * 0.75)}, {Of(pair.Top * 0.75)}) to ({Of((pair.Right + 1) * 0.75)}, {Of((pair.Bottom + 1) * 0.75)})";
+        }
     }
 
     /// <summary>The whole pixels of a page, row by row from the top left: the colour of the last rectangle that covers it
@@ -686,16 +1231,24 @@ internal static class HtmlCases
     /// ascender and plus the descender of the face's line metrics (<see cref="FontMetrics.Line"/>: the typographic ones
     /// where the face sets USE_TYPO_METRICS, as Chromium writes them into the PDF's font descriptor; measured with Theano
     /// Didot, case <c>f-theano-13-ab</c>) at the word's size, is within <see cref="Bound"/> of <c>yMin</c> and <c>yMax</c>.
+    /// Where the numbers differ, or a word of the file has no partner, some of the engine's words are compared with nothing:
+    /// those differences carry the digest of the engine's words inside the page (<see cref="WordLine"/>, <see cref="Digest"/>).
     /// </summary>
-    private static string? PopplerDifference(PageDocument document, PrintedPages engine, List<string[]> rows, IReadOnlyDictionary<(int Page, double Baseline), double> lineTops)
+    private static IEnumerable<string> PopplerDifferences(PageDocument document, PrintedPages engine, List<string[]> rows, IReadOnlyDictionary<(int Page, double Baseline), double> lineTops)
     {
+        foreach (var beyond in rows.Select(row => int.Parse(row[0], CultureInfo.InvariantCulture)).Where(page => page < 1 || page > engine.Pages.Length).Distinct())
+        {
+            yield return $"words on page {beyond}, the engine has {engine.Pages.Length} pages (words.txt)";
+        }
+
         foreach (var page in engine.Pages)
         {
             var inside = page.JoinedWords.Select(joined => joined.Word).Where(word => WholePixel(word.Baseline) <= page.Height && WholePixel(word.Baseline) - word.FontSize >= 0).ToList();
             var poppler = rows.Where(row => int.Parse(row[0], CultureInfo.InvariantCulture) == page.Number).ToList();
+            var digest = $"the engine's words inside page {page.Number}: digest {Digest(inside.Select(word => WordLine(word)))}";
             if (inside.Count != poppler.Count)
             {
-                return $"page {page.Number} has {inside.Count} words inside the page, Chromium {poppler.Count} (words.txt)";
+                yield return $"page {page.Number} has {inside.Count} words inside the page, Chromium {poppler.Count}; {digest} (words.txt)";
             }
 
             foreach (var row in poppler)
@@ -704,24 +1257,26 @@ internal static class HtmlCases
                 var word = inside.Where(word => word.Text == text).OrderBy(word => Math.Abs(word.X0 - Number(row[1])) + Math.Abs(WholePixel(word.Baseline) - Number(row[4]))).FirstOrDefault();
                 if (word is null)
                 {
-                    return $"page {page.Number} has no word '{text}' (words.txt)";
+                    yield return $"page {page.Number} has no word '{text}'; {digest} (words.txt)";
+                    continue;
                 }
 
                 inside.Remove(word);
                 var at = $"page {page.Number} '{text}'";
                 var metrics = Face(document.Pages[page.Number - 1], word);
                 var baseline = PaintedBaseline(word.Baseline, LineTop(lineTops, page.Number, word.Baseline));
-                var found = Far(at, "xMin", word.X0, Number(row[1])) ?? Far(at, "xMax", word.X1, Number(row[3]))
-                    ?? Far(at, "yMin", baseline - metrics.ToPoints(metrics.Line.Ascender, word.FontSize), Number(row[2]))
-                    ?? Far(at, "yMax", baseline - metrics.ToPoints(metrics.Line.Descender, word.FontSize), Number(row[4]));
-                if (found is not null)
+                var found = new[]
                 {
-                    return found + " (words.txt)";
+                    Far(at, "xMin", word.X0, Number(row[1])), Far(at, "xMax", word.X1, Number(row[3])),
+                    Far(at, "yMin", baseline - metrics.ToPoints(metrics.Line.Ascender, word.FontSize), Number(row[2])),
+                    Far(at, "yMax", baseline - metrics.ToPoints(metrics.Line.Descender, word.FontSize), Number(row[4])),
+                };
+                foreach (var difference in found.OfType<string>())
+                {
+                    yield return difference + " (words.txt)";
                 }
             }
         }
-
-        return null;
     }
 
     /// <summary>
@@ -746,11 +1301,11 @@ internal static class HtmlCases
     /// among the elements of its kind on its line. A row the file names that is not one element of that tag, or whose box
     /// the rule does not find on a page, is a difference: the comparison does not skip it.</para>
     /// </summary>
-    private static string? BoxDifference(CaseFolder folder, string name, HtmlBoxes boxes, List<string[]> rows) =>
-        BoxDifference(Parsed(folder, name).Value.Document, boxes, rows);
+    private static IEnumerable<string> BoxDifferences(CaseFolder folder, string name, HtmlBoxes boxes, List<string[]> rows) =>
+        BoxDifferences(Parsed(folder, name).Value.Document, boxes, rows);
 
     /// <summary>The first difference between the boxes of a case of a folder and the given rows of a <c>boxes.txt</c>
-    /// (<see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>), or null; the refusal where the case
+    /// (<see cref="BoxDifferences(CaseFolder, string, HtmlBoxes, List{string[]})"/>), or null; the refusal where the case
     /// has no boxes.</summary>
     public static string? BoxDifference(CaseFolder folder, string name, IReadOnlyList<string> rows)
     {
@@ -779,16 +1334,23 @@ internal static class HtmlCases
     public static IReadOnlyList<string> BoxRows(CaseFolder folder, string name) => File.ReadAllLines(Measured(folder, name) + ".boxes.txt");
 
     /// <summary>The first difference between the boxes of a document and the rows of its <c>boxes.txt</c>, by the rules of
-    /// <see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>, or null.</summary>
+    /// <see cref="BoxDifferences(CaseFolder, string, HtmlBoxes, List{string[]})"/>, or null.</summary>
     /// <param name="document">The parsed document.</param>
     /// <param name="boxes">Its boxes.</param>
     /// <param name="rows">The rows of the file, split at spaces.</param>
     /// <returns>The difference, ending in <c>(boxes.txt)</c>, or null.</returns>
-    public static string? BoxDifference(HtmlDocument document, HtmlBoxes boxes, IReadOnlyList<string[]> rows)
+    public static string? BoxDifference(HtmlDocument document, HtmlBoxes boxes, IReadOnlyList<string[]> rows) => BoxDifferences(document, boxes, rows).FirstOrDefault();
+
+    /// <summary>Every difference between the boxes of a document and the rows of its <c>boxes.txt</c>, by the rules of
+    /// <see cref="BoxDifferences(CaseFolder, string, HtmlBoxes, List{string[]})"/>, row by row in the file's order: of each
+    /// row the box not found, or its height and its width. Where the number of cells differs the rows cannot be paired
+    /// with the cells, and that is the one difference, with the digest of the engine's boxes it leaves uncompared
+    /// (<see cref="SkippedBoxLines"/>).</summary>
+    public static IEnumerable<string> BoxDifferences(HtmlDocument document, HtmlBoxes boxes, IReadOnlyList<string[]> rows)
     {
         if (rows.Count == 0)
         {
-            return null;
+            yield break;
         }
 
         var elements = Elements(document).ToList();
@@ -796,14 +1358,16 @@ internal static class HtmlCases
         var pages = Paginator.Paginate(environment, boxes.Document);
         if (pages.IsFailure)
         {
-            return $"the pages for the boxes failed: {pages.Error.Code} (boxes.txt)";
+            yield return $"the pages for the boxes failed: {pages.Error.Code} (boxes.txt)";
+            yield break;
         }
 
         var cells = elements.Where(IsCell).ToList();
         var cellRows = rows.Count(row => row[0] is "td" or "th");
         if (cellRows != cells.Count)
         {
-            return $"{cellRows} cells, the document {cells.Count} (boxes.txt)";
+            yield return $"{cellRows} cells, the document {cells.Count}; the engine's boxes: digest {Digest(SkippedBoxLines(boxes.Document.Root, elements, cells, rows, pages.Value))} (boxes.txt)";
+            yield break;
         }
 
         var unbroken = new Lazy<Result<ValueList<PageFragment>, Error>>(() => Paginator.Paginate(environment, Unbroken(boxes.Document)));
@@ -811,19 +1375,46 @@ internal static class HtmlCases
         foreach (var row in rows)
         {
             var label = row.Length > 3 ? string.Join(' ', row[3..]) : string.Empty;
-            var (box, missing) = row[0] is "td" or "th" ? CellBox(boxes.Document.Root, cells, cells[cellIndex++], row, label) : IdBox(boxes.Document.Root, elements, row, label);
-            if ((missing ?? SizeDifference(box!, pages.Value, unbroken, row, label)) is { } different)
+            var (box, missing) = row[0] is "td" or "th" ? CellBox(boxes.Document.Root, cells, cells[cellIndex++], row, label) : IdBox(boxes.Document.Root, elements, row, label, pages.Value);
+            foreach (var different in missing is not null ? [missing] : SizeDifferences(box!, pages.Value, unbroken, row, label))
             {
-                return different + " (boxes.txt)";
+                yield return different + " (boxes.txt)";
             }
         }
-
-        return null;
     }
+
+    /// <summary>The lines of the engine's boxes that a different number of cells leaves uncompared, for a digest
+    /// (<see cref="Digest"/>): each cell element in document order (tag, id, source line) with its cell box found by its place
+    /// among the cells of its line (<see cref="CellBox"/>), then each row of the file that is no cell with the box its id
+    /// names (<see cref="IdBox"/>); each box as its parts on the pages (<see cref="FragmentLines"/>), or the reason it has
+    /// none.</summary>
+    private static IEnumerable<string> SkippedBoxLines(Box root, IReadOnlyList<HtmlElement> elements, List<HtmlElement> cells, IReadOnlyList<string[]> rows, IReadOnlyList<PageFragment> pages)
+    {
+        foreach (var cell in cells)
+        {
+            var line = cell.Position.Line;
+            var place = cells.Where(other => other.Position.Line == line).ToList().IndexOf(cell);
+            var box = Boxes(root).Where(box => box.Source.Line == line && (box.Role == SemanticRole.TableCell || box.Role is SemanticRole.TableHeaderCellRole)).ElementAtOrDefault(place);
+            yield return $"cell {cell.LocalName} {cell.Attribute("id")} {line}: {(box is null ? "no box" : FragmentLines(box, pages))}";
+        }
+
+        foreach (var row in rows.Where(row => row[0] is not ("td" or "th")))
+        {
+            var label = row.Length > 3 ? string.Join(' ', row[3..]) : string.Empty;
+            var (box, missing) = IdBox(root, elements, row, label);
+            yield return $"{row[0]} {label}: {missing ?? FragmentLines(box!, pages)}";
+        }
+    }
+
+    /// <summary>A box as a digest holds it: for each page it is on, the page, the height and the width of its first part
+    /// there, and whether that part is in a repeated copy.</summary>
+    private static string FragmentLines(Box box, IReadOnlyList<PageFragment> pages) =>
+        string.Join("; ", pages.Select((page, index) => (Part: Part(page.Root.Fragment, box.Id), Number: index + 1)).Where(found => found.Part is not null)
+            .Select(found => $"page {found.Number} {DigestNumber(found.Part!.Value.Fragment.Size.Height)} {DigestNumber(found.Part.Value.Fragment.Size.Width)}{(found.Part.Value.Repeated ? " repeated" : string.Empty)}"));
 
     private static bool IsCell(HtmlElement element) => element.Namespace == ElementNamespace.Html && element.LocalName is "td" or "th";
 
-    /// <summary>The cell box of one cell row of <c>boxes.txt</c> (<see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>):
+    /// <summary>The cell box of one cell row of <c>boxes.txt</c> (<see cref="BoxDifferences(CaseFolder, string, HtmlBoxes, List{string[]})"/>):
     /// the same tag and, where the element has an id, the same label; the cell box in the same place among the cells
     /// written on the element's line. Else the difference.</summary>
     private static (Box? Box, string? Difference) CellBox(Box root, List<HtmlElement> cells, HtmlElement cell, string[] row, string label)
@@ -848,11 +1439,12 @@ internal static class HtmlCases
     /// <c>&lt;div&gt;&lt;table id="t"&gt;</c> on one line, the table's box is the line's one table box, not the div's box
     /// before it). A box carries its source line only, so where the line holds more or fewer boxes of the role than
     /// elements (an element of the role that makes no box, an inline element, an anonymous box of a block written on the
-    /// line) the place is not known, and that is the difference. Else the difference. Column elements and a <c>br</c>
+    /// line) the place is not known, and that is the difference, with the digest of the engine's boxes of that role on the
+    /// line where the pages are given (<see cref="Digest"/>). Else the difference. Column elements and a <c>br</c>
     /// are no peers: they never make a box of their own (a column is read by its table, a <c>br</c> is a line break in
     /// the text; case <c>tw-col</c>: <c>&lt;div id="w"&gt;&lt;table&gt;&lt;colgroup&gt;&lt;col&gt;</c> on one line).
     /// </summary>
-    internal static (Box? Box, string? Difference) IdBox(Box root, IReadOnlyList<HtmlElement> elements, string[] row, string label)
+    internal static (Box? Box, string? Difference) IdBox(Box root, IReadOnlyList<HtmlElement> elements, string[] row, string label, IReadOnlyList<PageFragment>? pages = null)
     {
         var at = $"box {row[0]} '{label}'";
         var named = elements.Where(element => element.Attribute("id") == label).ToList();
@@ -867,7 +1459,8 @@ internal static class HtmlCases
         var candidates = Boxes(root).Where(box => box.Source.Line == line && (box.Role == role || (box.Role is SemanticRole.TableHeaderCellRole && role is SemanticRole.TableHeaderCellRole))).ToList();
         return candidates.Count == peers.Count
             ? (candidates[peers.IndexOf(element)], null)
-            : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role");
+            : (null, $"{at} is not found: line {line} has {candidates.Count} boxes of role {role.GetType().Name} for {peers.Count} elements of that role" +
+                (pages is null ? string.Empty : $"; the engine's boxes of the line: digest {Digest(candidates.Select(candidate => FragmentLines(candidate, pages)))}"));
     }
 
     /// <summary>An element the HTML front-end never makes a box for: a column, a column group, a line break.</summary>
@@ -890,50 +1483,54 @@ internal static class HtmlCases
     };
 
     /// <summary>
-    /// The size difference of one box, its height and then its width (<see cref="BoxDifference(CaseFolder, string, HtmlBoxes, List{string[]})"/>): its
+    /// The size difference of one box, its height and then its width (<see cref="BoxDifferences(CaseFolder, string, HtmlBoxes, List{string[]})"/>): its
     /// parts on the pages, a copy in a repeated header row not counted as a part. One part: that part and every copy.
     /// More than one: the box in the layout without breaks (<see cref="Unbroken"/>), which must be one page, and every
     /// copy. Else the difference.
     /// </summary>
-    internal static string? SizeDifference(Box box, IReadOnlyList<PageFragment> pages, Lazy<Result<ValueList<PageFragment>, Error>> unbroken, string[] row, string label)
+    internal static string? SizeDifference(Box box, IReadOnlyList<PageFragment> pages, Lazy<Result<ValueList<PageFragment>, Error>> unbroken, string[] row, string label) =>
+        SizeDifferences(box, pages, unbroken, row, label).FirstOrDefault();
+
+    /// <summary>Every size difference of one box, by the rules of <see cref="SizeDifference"/>: of each part or copy it
+    /// compares, the height and then the width.</summary>
+    private static IEnumerable<string> SizeDifferences(Box box, IReadOnlyList<PageFragment> pages, Lazy<Result<ValueList<PageFragment>, Error>> unbroken, string[] row, string label)
     {
         var at = $"box {row[0]} '{label}'";
         var found = pages.Select(page => Part(page.Root.Fragment, box.Id)).Where(part => part is not null).Select(part => part!.Value).ToList();
         if (found.Count == 0)
         {
-            return $"{at} has no box on any page";
+            return [$"{at} has no box on any page"];
         }
 
         var copies = found.Where(part => part.Repeated).Select(part => part.Fragment).ToList();
         var parts = found.Where(part => !part.Repeated).Select(part => part.Fragment).ToList();
         if (parts.Count <= 1)
         {
-            return parts.Concat(copies).Select(fragment => Sized(at, string.Empty, fragment, row)).FirstOrDefault(difference => difference is not null);
+            return parts.Concat(copies).SelectMany(fragment => Sized(at, string.Empty, fragment, row));
         }
 
         if (unbroken.Value.IsFailure)
         {
-            return $"{at}: the layout without breaks failed: {unbroken.Value.Error.Code}";
+            return [$"{at}: the layout without breaks failed: {unbroken.Value.Error.Code}"];
         }
 
         if (unbroken.Value.Value.Count != 1)
         {
-            return $"{at}: the layout without breaks has {unbroken.Value.Value.Count} pages";
+            return [$"{at}: the layout without breaks has {unbroken.Value.Value.Count} pages"];
         }
 
         if (Part(unbroken.Value.Value[0].Root.Fragment, box.Id) is not { } whole)
         {
-            return $"{at} has no box in the layout without breaks";
+            return [$"{at} has no box in the layout without breaks"];
         }
 
-        return Sized(at, $" without breaks (in {parts.Count} parts)", whole.Fragment, row)
-            ?? copies.Select(fragment => Sized(at, string.Empty, fragment, row)).FirstOrDefault(difference => difference is not null);
+        return Sized(at, $" without breaks (in {parts.Count} parts)", whole.Fragment, row).Concat(copies.SelectMany(fragment => Sized(at, string.Empty, fragment, row)));
     }
 
     /// <summary>The height of a fragment against the row's height, then its width against the row's width (<c>tag width
-    /// height label</c>), each within <see cref="Bound"/>; or null.</summary>
-    private static string? Sized(string at, string where, BoxFragment fragment, string[] row) =>
-        Far(at, "height" + where, fragment.Size.Height, Number(row[2])) ?? Far(at, "width" + where, fragment.Size.Width, Number(row[1]));
+    /// height label</c>), each within <see cref="Bound"/>: the ones that differ.</summary>
+    private static IEnumerable<string> Sized(string at, string where, BoxFragment fragment, string[] row) =>
+        new[] { Far(at, "height" + where, fragment.Size.Height, Number(row[2])), Far(at, "width" + where, fragment.Size.Width, Number(row[1])) }.OfType<string>();
 
     /// <summary>
     /// The same boxes on one page tall enough that nothing in them breaks: the page as tall as the model allows
@@ -1018,27 +1615,26 @@ internal static class HtmlCases
         }
     }
 
-    /// <summary>The first image of a page whose edges after <see cref="WholePixel"/> are not within <see cref="Bound"/> of
-    /// Chromium's, in drawing order; or a different count.</summary>
-    private static string? Areas(string at, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
+    /// <summary>Every edge of the images of a page that after <see cref="WholePixel"/> is not within <see cref="Bound"/> of
+    /// Chromium's, image by image in drawing order; or a different count, the one difference, with the digest of the engine's
+    /// image areas (<see cref="Digest"/>).</summary>
+    private static IEnumerable<string> Areas(string at, IReadOnlyList<PrintedBox> ours, IReadOnlyList<PrintedBox> theirs)
     {
         if (ours.Count != theirs.Count)
         {
-            return $"{at}s: {ours.Count}, Chromium {theirs.Count}";
+            return [$"{at}s: {ours.Count}, Chromium {theirs.Count}; the engine's images: digest {Digest(ours.Select(box => $"image {DigestBox(box.X0, box.Y0, box.X1, box.Y1)}"))}"];
         }
 
-        foreach (var (box, (measured, index)) in ours.Zip(theirs.Select((box, index) => (box, index + 1))))
+        return ours.Zip(theirs.Select((box, index) => (box, index + 1))).SelectMany(pair =>
         {
+            var (box, (measured, index)) = pair;
             var where = $"{at} {index}";
-            var found = Snapped(where, "x0", box.X0, measured.X0) ?? Snapped(where, "y0", box.Y0, measured.Y0)
-                ?? Snapped(where, "x1", box.X1, measured.X1) ?? Snapped(where, "y1", box.Y1, measured.Y1);
-            if (found is not null)
+            return new[]
             {
-                return found;
-            }
-        }
-
-        return null;
+                Snapped(where, "x0", box.X0, measured.X0), Snapped(where, "y0", box.Y0, measured.Y0),
+                Snapped(where, "x1", box.X1, measured.X1), Snapped(where, "y1", box.Y1, measured.Y1),
+            }.OfType<string>();
+        });
     }
 
     private static string? Same(string at, string what, string? ours, string? chromium) =>
@@ -1166,7 +1762,11 @@ internal static class HtmlCases
             if (joined.Count > 0 && joined[^1] is var last && last.Baseline == word.Baseline && word.X0 - last.X1 < PrintedPage.PyMuPdfWordGap * word.FontSize
                 && last.FontSize == word.FontSize && last.Face == word.Face && last.Colour == word.Colour && word.IsDrawnRightAfter(last))
             {
-                joined[^1] = last with { X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn };
+                joined[^1] = last with
+                {
+                    X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn, Glyphs = last.Glyphs.AddRange(word.Glyphs),
+                    Over = [.. last.Over.Union(word.Over, StringComparer.Ordinal).Order(StringComparer.Ordinal)], Shown = Union(last.Shown, word.Shown),
+                };
                 continue;
             }
 
@@ -1201,10 +1801,23 @@ internal sealed record CaseFolder(string Html, string Measured)
     /// <returns>The path.</returns>
     public string StatusFile(string name) => Path.Combine(Measured, name + StatusEnding);
 
-    /// <summary>The committed status line of an HTML file without its name, where its status file holds one line that
-    /// starts with the name; otherwise null.</summary>
+    /// <summary>The committed status of an HTML file without its name, where its status file starts with the name: its
+    /// first line (<c>equal</c>, <c>refused …</c>, or <c>listed …</c> and <c>open …</c>, which the list of their
+    /// differences follows, <see cref="HtmlCases.DifferenceList"/>) and the lines after it, joined by line feeds; otherwise
+    /// null.</summary>
     /// <param name="name">The file, without its extension.</param>
     /// <returns>The status, or null.</returns>
     public string? Committed(string name) =>
-        File.Exists(StatusFile(name)) && File.ReadAllLines(StatusFile(name)) is [var line] && line.StartsWith(name + " ", StringComparison.Ordinal) ? line[(name.Length + 1)..] : null;
+        File.Exists(StatusFile(name)) && StatusText(File.ReadAllText(StatusFile(name))) is var text && text.StartsWith(name + " ", StringComparison.Ordinal) ? text[(name.Length + 1)..] : null;
+
+    /// <summary>The text of a status file as the status test compares it: every line ending a line feed, whatever the
+    /// checkout wrote (a Windows checkout writes carriage returns before them), and without the line feed that ends the
+    /// file.</summary>
+    /// <param name="file">The file's text.</param>
+    /// <returns>The lines joined by line feeds.</returns>
+    public static string StatusText(string file)
+    {
+        var text = file.ReplaceLineEndings("\n");
+        return text.EndsWith('\n') ? text[..^1] : text;
+    }
 }

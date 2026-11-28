@@ -1,0 +1,4 @@
+word 1 intro 0 0 0 0 0
+word 2 W 0
+word 3 W 0
+word 3 after 1 1 1 1

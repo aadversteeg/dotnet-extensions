@@ -69,10 +69,13 @@ public class ReadBackAgreementTests
             Number(box[1]).Should().BeGreaterThanOrEqualTo(0, $"{caseName}: the width of {box[0]}");
             Number(box[2]).Should().BeGreaterThanOrEqualTo(0, $"{caseName}: the height of {box[0]}");
             // A cell's text is its text content, line breaks removed ("b0b1b2" for b0<br>b1<br>b2): it starts with a word
-            // the print shows.
+            // the print shows. measure.mjs writes the first 24 characters of it, so a cut text may be the start of a
+            // longer word (case tw-pref-span-min: "Supercalifragilisticexpi" of "Supercalifragilisticexpialidocious").
             if (box.Length == 4 && box[0] is "td" or "th" && box[3].Replace(" ", string.Empty, StringComparison.Ordinal) is { Length: > 0 } text)
             {
-                words.Should().Contain(word => text.StartsWith(word, StringComparison.Ordinal), $"{caseName}: the cell {box[3]} starts with a word of the print");
+                var cut = box[3].Length == 24;
+                words.Should().Contain(word => text.StartsWith(word, StringComparison.Ordinal) || (cut && word.StartsWith(text, StringComparison.Ordinal)),
+                    $"{caseName}: the cell {box[3]} starts with a word of the print");
             }
         }
     }

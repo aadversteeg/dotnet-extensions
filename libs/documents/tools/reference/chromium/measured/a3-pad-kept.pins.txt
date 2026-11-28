@@ -1,4 +1,7 @@
 a3-pad-kept.boxes.txt 1
+a3-pad-kept.clips.txt 12
+a3-pad-kept.glyphs.txt 12
 a3-pad-kept.lines.txt 2
+a3-pad-kept.order.txt 14
 a3-pad-kept.print.txt 16
 a3-pad-kept.words.txt 12

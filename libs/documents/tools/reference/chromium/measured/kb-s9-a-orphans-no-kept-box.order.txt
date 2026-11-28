@@ -1,0 +1,26 @@
+word 1 a0 0 0
+word 1 a1 1 1
+word 1 a2 2 2
+word 1 b0 3 3
+word 1 b1 4 4
+word 1 b2 5 5
+word 2 c0 0 0
+word 2 c1 1 1
+word 2 c2 2 2
+word 2 d0 3 3
+word 2 d1 4 4
+word 2 d2 5 5
+word 2 d3 6 6
+word 2 y0 7 7
+word 2 y1 8 8
+word 2 y2 9 9
+word 3 y3 0 0
+word 3 y4 1 1
+word 3 y5 2 2
+word 3 y6 3 3
+word 3 y7 4 4
+word 3 y8 5 5
+word 3 y9 6 6
+word 3 y10 7 7 7
+word 3 y11 8 8 8
+word 3 z 9

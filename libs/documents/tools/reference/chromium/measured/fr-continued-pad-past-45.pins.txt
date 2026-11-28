@@ -1,4 +1,7 @@
 fr-continued-pad-past-45.boxes.txt 1
+fr-continued-pad-past-45.clips.txt 23
+fr-continued-pad-past-45.glyphs.txt 23
 fr-continued-pad-past-45.lines.txt 8
+fr-continued-pad-past-45.order.txt 31
 fr-continued-pad-past-45.print.txt 34
 fr-continued-pad-past-45.words.txt 23

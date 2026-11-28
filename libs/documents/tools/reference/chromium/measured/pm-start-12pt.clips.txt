@@ -1,0 +1,5 @@
+1 Aa none
+1 Bb none
+1 Ee 12.000 60.000 349.805 240.000 rect
+1 Cc none
+1 Dd none

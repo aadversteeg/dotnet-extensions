@@ -1,0 +1,10 @@
+word 2 l0 0 0
+word 2 l1 1 1
+word 2 l2 2 2
+word 2 l3 3 3
+word 2 l4 4 4
+word 2 l5 5 5
+word 2 l6 6 6
+word 2 l7 7 7
+word 2 l8 8 8
+word 2 next 9 9 9 9

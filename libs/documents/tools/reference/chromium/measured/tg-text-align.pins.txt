@@ -1,4 +1,7 @@
 tg-text-align.boxes.txt 5
+tg-text-align.clips.txt 6
+tg-text-align.glyphs.txt 6
 tg-text-align.lines.txt 10
+tg-text-align.order.txt 16
 tg-text-align.print.txt 18
 tg-text-align.words.txt 6

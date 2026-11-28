@@ -1,0 +1,7 @@
+word 1 Mark 0 0 0 0
+word 1 Ɑ 1
+word 1 : 2
+word 1 own 3 3 3
+word 1 ✔ 4
+word 1 text 5 5 5 5
+word 1 After 6 6 6 6

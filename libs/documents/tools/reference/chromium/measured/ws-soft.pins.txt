@@ -1,4 +1,7 @@
 ws-soft.boxes.txt 1
+ws-soft.clips.txt 9
+ws-soft.glyphs.txt 9
 ws-soft.lines.txt 0
+ws-soft.order.txt 9
 ws-soft.print.txt 10
 ws-soft.words.txt 9

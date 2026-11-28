@@ -1,4 +1,7 @@
 kb-t3-row-group-not-kept-control.boxes.txt 3
+kb-t3-row-group-not-kept-control.clips.txt 5
+kb-t3-row-group-not-kept-control.glyphs.txt 5
 kb-t3-row-group-not-kept-control.lines.txt 11
+kb-t3-row-group-not-kept-control.order.txt 16
 kb-t3-row-group-not-kept-control.print.txt 18
 kb-t3-row-group-not-kept-control.words.txt 5

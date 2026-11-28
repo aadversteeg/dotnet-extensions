@@ -1,0 +1,24 @@
+word 1 gjpqy 1 1 1 1 1
+word 1 Qx 1 1
+word 1 ab 1 1
+word 1 fy 1 1
+word 1 ÅÉÎÔ 3 3 3 3
+word 1 Ñx 3 3
+word 1 Hb 3 3
+word 1 gjpqy 4 4 4 4 4
+word 1 Qx 4 4
+word 1 gjpqy 7 7 7 7 7
+word 1 Qx 7 7
+word 1 ab 7 7
+word 1 fy 7 7
+word 1 ÅÉÎÔ 9 9 9 9
+word 1 Ñx 9 9
+word 1 Hb 9 9
+word 1 gjpqy 10 10 10 10 10
+word 1 Qx 10 10
+paint 1 0 12.000 27.750 89.391 28.500 #000000
+paint 1 2 12.000 41.250 81.059 42.000 #000000
+paint 1 5 12.000 71.250 60.574 72.000 #000000
+paint 1 6 12.000 116.250 166.781 118.500 #000000
+paint 1 8 12.000 141.750 150.117 144.000 #000000
+paint 1 11 12.000 203.250 109.148 205.500 #000000

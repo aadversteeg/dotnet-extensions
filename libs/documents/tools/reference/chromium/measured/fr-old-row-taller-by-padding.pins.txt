@@ -1,4 +1,7 @@
 fr-old-row-taller-by-padding.boxes.txt 1
+fr-old-row-taller-by-padding.clips.txt 2
+fr-old-row-taller-by-padding.glyphs.txt 2
 fr-old-row-taller-by-padding.lines.txt 6
+fr-old-row-taller-by-padding.order.txt 8
 fr-old-row-taller-by-padding.print.txt 11
 fr-old-row-taller-by-padding.words.txt 2

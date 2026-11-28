@@ -1,0 +1,5 @@
+word 1 ia0 0 0 0
+word 1 ib0 1 1 1
+word 2 p0 0 0
+word 2 p1 1 1
+word 3 z0 0 0

@@ -1,0 +1,7 @@
+tc-two-separated.boxes.txt 5
+tc-two-separated.clips.txt 7
+tc-two-separated.glyphs.txt 7
+tc-two-separated.lines.txt 0
+tc-two-separated.order.txt 10
+tc-two-separated.print.txt 20
+tc-two-separated.words.txt 7

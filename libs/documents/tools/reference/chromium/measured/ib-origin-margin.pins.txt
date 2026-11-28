@@ -1,4 +1,7 @@
 ib-origin-margin.boxes.txt 1
+ib-origin-margin.clips.txt 23
+ib-origin-margin.glyphs.txt 23
 ib-origin-margin.lines.txt 8
+ib-origin-margin.order.txt 32
 ib-origin-margin.print.txt 36
 ib-origin-margin.words.txt 23

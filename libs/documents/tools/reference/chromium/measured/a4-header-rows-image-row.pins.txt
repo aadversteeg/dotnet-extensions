@@ -1,4 +1,8 @@
 a4-header-rows-image-row.boxes.txt 14
+a4-header-rows-image-row.clips.txt 17
+a4-header-rows-image-row.glyphs.txt 17
+a4-header-rows-image-row.images.txt 3
 a4-header-rows-image-row.lines.txt 63
+a4-header-rows-image-row.order.txt 83
 a4-header-rows-image-row.print.txt 89
 a4-header-rows-image-row.words.txt 17

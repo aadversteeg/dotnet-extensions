@@ -1,0 +1,18 @@
+word 1 Pay 2 2 2
+word 1 now 2 2 2
+word 1 Press 0 0 0 0 0
+word 1 to 3 3
+word 1 settle. 3 3 3 3 3 3
+word 1 Open 4 4 4 4
+word 1 underlined 7 7 7 7 7 7 7 7 7 7
+word 1 button 7 7 7 7 7
+word 1 here. 8 8 8 8 8
+word 1 Then 9 9 9 9
+word 1 ends. 13 13 13 13 13
+word 1 Framed 12 12 12 12 12 12
+word 1 link 12 12 12 12
+paint 1 1 45.000 18.000 96.000 33.000 #0050a0
+paint 1 5 46.500 36.750 138.750 49.500 #ffd000
+paint 1 6 51.270 48.000 133.898 48.750 #0000ee
+paint 1 10 44.250 54.000 107.250 69.750 #e0e0e0
+paint 1 11 44.250 54.000 107.250 69.750 #0050a0

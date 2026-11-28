@@ -1,4 +1,7 @@
 fr-row-later-padding-under-header.boxes.txt 3
+fr-row-later-padding-under-header.clips.txt 16
+fr-row-later-padding-under-header.glyphs.txt 16
 fr-row-later-padding-under-header.lines.txt 15
+fr-row-later-padding-under-header.order.txt 31
 fr-row-later-padding-under-header.print.txt 33
 fr-row-later-padding-under-header.words.txt 16

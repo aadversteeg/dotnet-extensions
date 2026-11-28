@@ -1,0 +1,5 @@
+word 1 a0 0 0
+word 1 b0 1 1
+word 1 c0 2 2
+word 1 d0 3 3
+word 1 e0 4 4

@@ -1,6 +1,10 @@
 ib-link-span-inside.boxes.txt 1
+ib-link-span-inside.clips.txt 14
+ib-link-span-inside.destinations.txt 8
+ib-link-span-inside.glyphs.txt 14
 ib-link-span-inside.ink.txt 3
 ib-link-span-inside.lines.txt 11
 ib-link-span-inside.links.txt 8
+ib-link-span-inside.order.txt 26
 ib-link-span-inside.print.txt 30
 ib-link-span-inside.words.txt 14

@@ -1,4 +1,8 @@
 a4-header-nested-image-228.boxes.txt 3
+a4-header-nested-image-228.clips.txt 4
+a4-header-nested-image-228.glyphs.txt 4
+a4-header-nested-image-228.images.txt 2
 a4-header-nested-image-228.lines.txt 29
+a4-header-nested-image-228.order.txt 35
 a4-header-nested-image-228.print.txt 38
 a4-header-nested-image-228.words.txt 4

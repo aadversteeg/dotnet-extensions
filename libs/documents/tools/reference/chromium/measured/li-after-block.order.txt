@@ -1,0 +1,39 @@
+word 1 Thirteen 1 1 1 1 1 1 1 1
+word 1 points 1 1 1 1 1 1
+word 1 high 1 1 1 1
+word 1 Disc 3 3 3 3
+word 1 one 3 3 3
+word 1 Disc 5 5 5 5
+word 1 two 5 5 5
+word 1 Boxed 6 6 6 6 6
+word 1 text 6 6 6 6
+word 1 Circle 8 8 8 8 8 8
+word 1 one 8 8 8
+word 1 Before 9 9 9 9 9 9
+word 1 the 9 9 9
+word 1 image 9 9 9 9 9
+word 1 Square 12 12 12 12 12 12
+word 1 one 12 12 12
+word 1 Twelve 13 13 13 13 13 13
+word 1 and 13 13 13
+word 1 a 13
+word 1 bit 13 13 13
+word 1 1. 14 14
+word 1 Number 15 15 15 15 15 15
+word 1 one 15 15 15
+word 1 2. 16 16
+word 1 Number 17 17 17 17 17 17
+word 1 two 17 17 17
+word 1 Eleven 18 18 18 18 18 18
+word 1 and 18 18 18
+word 1 a 18
+word 1 bit 18 18 18
+word 1 Last 20 20 20 20
+word 1 one 20 20 20
+paint 1 0 12.000 50.250 288.000 69.000 #000000
+paint 1 2 24.000 30.000 27.750 33.750 #000000
+paint 1 4 24.000 42.750 27.750 46.500 #000000
+paint 1 7 23.625 73.875 28.125 78.375 #000000
+paint 1 11 24.000 108.000 27.750 111.750 #000000
+paint 1 19 24.000 170.250 27.750 174.000 #000000
+image 1 10 12.000 95.250 17.250 102.750

@@ -1,1 +1,9 @@
-fr-old-empty-box-past-end listed An_empty_box_whose_margin_carries_it_past_the_page_end_stays_on_the_page: page 1 reads 'a0 b0 head0', Chromium 'a0 b0' (print.txt)
+fr-old-empty-box-past-end listed An_empty_box_whose_margin_carries_it_past_the_page_end_stays_on_the_page: page 1 reads 'a0 b0 head0', Chromium 'a0 b0'; the engine's page 1: digest 42ca738ec41040d0 (print.txt)
+7 differences:
+- page 1 reads 'a0 b0 head0', Chromium 'a0 b0'; the engine's page 1: digest 42ca738ec41040d0 (print.txt)
+- page 2 reads 'z0', Chromium 'head0 z0'; the engine's page 2: digest 7a974e90353752b8 (print.txt)
+- page 1 has 3 words inside the page, Chromium 2; the engine's words inside page 1: digest 737f66fda5e16067 (words.txt)
+- page 2 has 1 words inside the page, Chromium 2; the engine's words inside page 2: digest 57ee6a5ad15b4c3d (words.txt)
+- page 2 has no word 'head0'; the engine's words inside page 2: digest 57ee6a5ad15b4c3d (words.txt)
+- page 2 'z0' yMin 13.656, Chromium 49.656 (words.txt)
+- page 2 'z0' yMax 28.056, Chromium 64.056 (words.txt)

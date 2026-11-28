@@ -1,4 +1,7 @@
 a2-row-end-first-row-half-page2.boxes.txt 1
+a2-row-end-first-row-half-page2.clips.txt 24
+a2-row-end-first-row-half-page2.glyphs.txt 24
 a2-row-end-first-row-half-page2.lines.txt 3
+a2-row-end-first-row-half-page2.order.txt 27
 a2-row-end-first-row-half-page2.print.txt 30
 a2-row-end-first-row-half-page2.words.txt 24

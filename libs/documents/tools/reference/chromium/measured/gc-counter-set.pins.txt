@@ -1,4 +1,7 @@
 gc-counter-set.boxes.txt 1
+gc-counter-set.clips.txt 12
+gc-counter-set.glyphs.txt 12
 gc-counter-set.lines.txt 0
+gc-counter-set.order.txt 12
 gc-counter-set.print.txt 13
 gc-counter-set.words.txt 12

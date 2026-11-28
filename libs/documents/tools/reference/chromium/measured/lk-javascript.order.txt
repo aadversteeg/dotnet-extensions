@@ -1,0 +1,4 @@
+word 1 Script 0 0 0 0 0 0
+word 1 link 2 2 2 2
+word 1 here. 3 3 3 3 3
+paint 1 1 47.297 29.250 63.492 30.000 #0000ee

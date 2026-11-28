@@ -1,4 +1,7 @@
 hr-default.boxes.txt 5
+hr-default.clips.txt 4
+hr-default.glyphs.txt 4
 hr-default.lines.txt 8
+hr-default.order.txt 21
 hr-default.print.txt 25
 hr-default.words.txt 4

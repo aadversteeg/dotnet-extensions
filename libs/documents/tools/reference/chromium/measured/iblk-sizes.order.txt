@@ -1,0 +1,45 @@
+word 1 Width 0 0 0 0 0
+word 1 Given 2 2 2 2 2
+word 1 end. 3 3 3 3
+word 1 Minimum 4 4 4 4 4 4 4
+word 1 Min 6 6 6
+word 1 end. 7 7 7 7
+word 1 Max 10 10 10
+word 1 width 11 11 11 11 11
+word 1 Maximum 8 8 8 8 8 8 8
+word 1 cuts 12 12 12 12
+word 1 it 12 12
+word 1 end. 13 13 13 13
+word 1 Larger 14 14 14 14 14 14
+word 1 Tall 16 16 16 16
+word 1 end. 17 17 17 17
+word 1 Smaller 18 18 18 18 18 18 18
+word 1 Short 20 20 20 20 20
+word 1 end. 21 21 21 21
+word 1 Content 22 22 22 22 22 22 22
+word 1 Content 25 25 25 25 25 25 25
+word 1 end. 26 26 26 26
+word 1 Border 27 27 27 27 27 27
+word 1 Border 30 30 30 30 30 30
+word 1 end. 31 31 31 31
+word 1 Both 34 34 34 34
+word 1 ends 35 35 35 35
+word 1 of 35 35
+word 1 Both 32 32 32 32
+word 1 the 36 36 36
+word 1 box 36 36 36
+word 1 end. 37 37 37 37
+word 1 Last 38 38 38 38
+word 1 line 38 38 38 38
+word 1 of 38 38
+word 1 text. 38 38 38 38 38
+paint 1 1 43.500 12.000 93.750 24.750 #c0e0ff
+paint 1 5 58.500 24.750 118.500 37.500 #c0e0ff
+paint 1 9 60.750 37.500 100.500 75.750 #c0e0ff
+paint 1 15 43.500 75.750 58.500 105.750 #c0e0ff
+paint 1 19 48.000 105.750 73.500 111.750 #c0e0ff
+paint 1 23 52.500 118.500 111.000 147.750 #c0e0ff
+paint 1 24 52.500 118.500 111.000 147.750 #000000
+paint 1 28 45.750 147.750 96.000 167.250 #c0e0ff
+paint 1 29 45.750 147.750 96.000 167.250 #000000
+paint 1 33 36.750 167.250 81.750 205.500 #c0e0ff

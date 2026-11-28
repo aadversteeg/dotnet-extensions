@@ -1,0 +1,13 @@
+word 1 Table 0 0 0 0 0
+word 1 below. 0 0 0 0 0 0
+word 1 Open 2 2 2 2
+word 1 it 2 2
+word 1 Second 3 3 3 3 3 3
+word 1 cell 3 3 3 3
+word 1 Third 4 4 4 4 4
+word 1 boxed 7 7 7 7 7
+word 1 Fourth 8 8 8 8 8 8
+word 1 cell 8 8 8 8
+paint 1 1 18.000 34.500 64.500 51.750 #0050a0
+paint 1 5 45.000 49.500 76.500 62.250 #ffd000
+paint 1 6 46.676 60.750 74.695 61.500 #0000ee

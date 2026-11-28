@@ -1,1 +1,7 @@
-h-wide-word-much listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 reads 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after', Chromium 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after' (print.txt)
+h-wide-word-much listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 reads 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after', Chromium 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after'; the engine's page 1: digest 0591ea0f1b0cc9c2 (print.txt)
+5 differences:
+- page 1 reads 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after', Chromium 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa after'; the engine's page 1: digest 0591ea0f1b0cc9c2 (print.txt)
+- page 1 has no word 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; the engine's words inside page 1: digest 9493c15c2787700f (words.txt)
+- page 1 'after' xMax 34.512, Chromium 26.258 (words.txt)
+- page 1 'after' yMin 24.156, Chromium 19.354 (words.txt)
+- page 1 'after' yMax 38.556, Chromium 28.954 (words.txt)

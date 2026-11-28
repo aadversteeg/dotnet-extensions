@@ -1,4 +1,7 @@
 va-shift.boxes.txt 1
+va-shift.clips.txt 40
+va-shift.glyphs.txt 40
 va-shift.lines.txt 0
+va-shift.order.txt 40
 va-shift.print.txt 41
 va-shift.words.txt 40

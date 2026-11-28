@@ -1,4 +1,7 @@
 bd-fraction.boxes.txt 4
+bd-fraction.clips.txt 6
+bd-fraction.glyphs.txt 6
 bd-fraction.lines.txt 0
+bd-fraction.order.txt 22
 bd-fraction.print.txt 23
 bd-fraction.words.txt 6

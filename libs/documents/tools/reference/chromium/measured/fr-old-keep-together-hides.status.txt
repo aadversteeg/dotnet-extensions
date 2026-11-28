@@ -1,1 +1,11 @@
-fr-old-keep-together-hides listed A_box_kept_together_does_not_hide_a_better_breakpoint_before_it: page 1 reads 'n0', Chromium 'n0 n1 o0 o1' (print.txt)
+fr-old-keep-together-hides listed A_box_kept_together_does_not_hide_a_better_breakpoint_before_it: page 1 reads 'n0', Chromium 'n0 n1 o0 o1'; the engine's page 1: digest ccb444d18fb252fe (print.txt)
+9 differences:
+- page 1 reads 'n0', Chromium 'n0 n1 o0 o1'; the engine's page 1: digest ccb444d18fb252fe (print.txt)
+- page 2 reads 'n1 o0 o1 p0', Chromium 'p0'; the engine's page 2: digest 765a47f10205ad83 (print.txt)
+- page 1 has 1 words inside the page, Chromium 4; the engine's words inside page 1: digest f0dba1b2ca15fcbf (words.txt)
+- page 1 has no word 'n1'; the engine's words inside page 1: digest f0dba1b2ca15fcbf (words.txt)
+- page 1 has no word 'o0'; the engine's words inside page 1: digest f0dba1b2ca15fcbf (words.txt)
+- page 1 has no word 'o1'; the engine's words inside page 1: digest f0dba1b2ca15fcbf (words.txt)
+- page 2 has 4 words inside the page, Chromium 1; the engine's words inside page 2: digest af4ce23805707c83 (words.txt)
+- page 2 'p0' yMin 67.656, Chromium 13.656 (words.txt)
+- page 2 'p0' yMax 82.056, Chromium 28.056 (words.txt)

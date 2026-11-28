@@ -1,4 +1,7 @@
 f-length-floor.boxes.txt 1
+f-length-floor.clips.txt 12
+f-length-floor.glyphs.txt 12
 f-length-floor.lines.txt 0
+f-length-floor.order.txt 12
 f-length-floor.print.txt 13
 f-length-floor.words.txt 12

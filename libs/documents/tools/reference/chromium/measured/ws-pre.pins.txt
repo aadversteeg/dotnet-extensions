@@ -1,4 +1,7 @@
 ws-pre.boxes.txt 1
+ws-pre.clips.txt 21
+ws-pre.glyphs.txt 21
 ws-pre.lines.txt 0
+ws-pre.order.txt 21
 ws-pre.print.txt 22
 ws-pre.words.txt 21

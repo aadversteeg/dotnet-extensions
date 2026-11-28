@@ -1,4 +1,7 @@
 bs-break.boxes.txt 1
+bs-break.clips.txt 14
+bs-break.glyphs.txt 14
 bs-break.lines.txt 4
+bs-break.order.txt 20
 bs-break.print.txt 22
 bs-break.words.txt 14

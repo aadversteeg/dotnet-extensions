@@ -1,0 +1,8 @@
+word 1 1. 0 0
+word 1 LI-first 1 1 1 2 3 3 3
+word 1 item 3 3 3 3
+word 1 end 4 4 4
+word 1 2. 5 5
+word 1 LI-second 6 6 6 7 7 7 7 7 7
+word 1 item 7 7 7 7
+word 1 end 8 8 8

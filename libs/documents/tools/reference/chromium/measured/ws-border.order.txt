@@ -1,0 +1,39 @@
+word 1 a 0
+word 1 b 1
+word 1 a 2
+word 1 b 3
+word 1 a 4
+word 1 b 6
+word 1 aa 7 7
+word 1 bb 8 8
+word 1 aa 9 9
+word 1 bb 10 10
+word 1 aa 11 11
+word 1 bb 12 12
+word 1 aa 13 13
+word 1 bb 14 14
+word 1 aa- 15 15 15
+word 1 bb 16 16
+word 1 aa- 17 17 17
+word 1 bb 18 18
+word 1 aa 19 19
+word 1 bb 19 19
+word 1 cc 20 20
+word 1 dd 21 21
+word 1 aa 22 22
+word 1 bb 23 23
+word 1 aa 24 24
+word 1 bb 25 25
+word 1 aa 26 26
+word 1 bb 27 27
+word 1 aa 28 28
+word 1 bb 29 29
+word 1 aa- 30 30 30
+word 1 bb 31 31
+word 1 aa- 32 32 32
+word 1 bb 33 33
+word 1 aa 34 34
+word 1 bb 35 35
+word 1 cc 36 36
+word 1 dd 37 37
+word 1 x 38

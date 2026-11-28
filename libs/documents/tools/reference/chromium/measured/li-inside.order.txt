@@ -1,0 +1,37 @@
+word 1 Outside 4 4 4 4 4 4 4
+word 1 Words 6 6 6 6 6
+word 1 that 6 6 6 6
+word 1 wrap 6 6 6 6
+word 1 onto 6 6 6 6
+word 1 a 6
+word 1 second 7 7 7 7 7 7
+word 1 line 7 7 7 7
+word 1 here 7 7 7 7
+word 1 Inside 8 8 8 8 8 8
+word 1 Words 10 10 10 10 10
+word 1 that 10 10 10 10
+word 1 wrap 10 10 10 10
+word 1 onto 10 10 10 10
+word 1 a 11
+word 1 second 11 11 11 11 11 11
+word 1 line 11 11 11 11
+word 1 here 11 11 11 11
+word 1 Inside 12 12 12 12 12 12
+word 1 ol 12 12
+word 1 1. 13 13
+word 1 Words 14 14 14 14 14
+word 1 that 14 14 14 14
+word 1 wrap 14 14 14 14
+word 1 onto 14 14 14 14
+word 1 a 15
+word 1 second 15 15 15 15 15 15
+word 1 line 15 15 15 15
+word 1 here 15 15 15 15
+word 1 10. 16 16 16
+word 1 Ten 17 17 17
+paint 1 0 42.000 35.250 162.000 60.750 #eeeeee
+paint 1 1 42.000 94.500 162.000 120.000 #eeeeee
+paint 1 2 42.000 153.750 162.000 179.250 #eeeeee
+paint 1 3 42.000 179.250 162.000 192.000 #eeeeee
+paint 1 5 30.000 40.500 33.750 44.250 #000000
+paint 1 9 42.000 99.750 45.750 103.500 #000000

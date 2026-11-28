@@ -1,0 +1,7 @@
+tw-pref-span-min.boxes.txt 5
+tw-pref-span-min.clips.txt 3
+tw-pref-span-min.glyphs.txt 3
+tw-pref-span-min.lines.txt 11
+tw-pref-span-min.order.txt 14
+tw-pref-span-min.print.txt 15
+tw-pref-span-min.words.txt 3

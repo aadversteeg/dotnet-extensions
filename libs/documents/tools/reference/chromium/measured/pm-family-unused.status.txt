@@ -1,1 +1,10 @@
 pm-family-unused listed A_face_that_only_a_margin_box_uses_is_drawn_where_Chromium_prints_its_fallback_face: page 1 'Cc' x1 61.32, Chromium 61.65 (print.txt)
+8 differences:
+- page 1 'Cc' x1 61.32, Chromium 61.65 (print.txt)
+- page 1 'Cc' baseline 273.75 (laid out at 273.75), Chromium 273 (print.txt)
+- page 1 'Cc' face Lato-Bold, Chromium LiberationSerif-Bold (print.txt)
+- page 1 'Cc' xMax 61.32, Chromium 61.648 (words.txt)
+- page 1 'Cc' yMin 263.88, Chromium 264.091 (words.txt)
+- page 1 'Cc' yMax 275.88, Chromium 275.163 (words.txt)
+- page 1 'Cc' glyph 1 is 7, Chromium's is 38 (2 of 2 glyphs) (glyphs.txt)
+- page 1 'Cc' glyph 2 lies at +6.507, Chromium's lies at +7.219 (glyphs.txt)

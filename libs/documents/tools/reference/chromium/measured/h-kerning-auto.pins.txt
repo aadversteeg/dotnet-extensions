@@ -1,4 +1,7 @@
 h-kerning-auto.boxes.txt 1
+h-kerning-auto.clips.txt 3
+h-kerning-auto.glyphs.txt 3
 h-kerning-auto.lines.txt 0
+h-kerning-auto.order.txt 3
 h-kerning-auto.print.txt 4
 h-kerning-auto.words.txt 3

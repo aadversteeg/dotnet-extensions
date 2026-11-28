@@ -1,4 +1,7 @@
 mx-gen-block-hosts.boxes.txt 4
+mx-gen-block-hosts.clips.txt 15
+mx-gen-block-hosts.glyphs.txt 15
 mx-gen-block-hosts.lines.txt 9
+mx-gen-block-hosts.order.txt 26
 mx-gen-block-hosts.print.txt 27
 mx-gen-block-hosts.words.txt 15

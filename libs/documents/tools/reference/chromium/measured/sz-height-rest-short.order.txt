@@ -1,0 +1,9 @@
+word 1 first 1 2 2 2
+word 1 inside 3 3 3 3 3 3
+word 1 the 3 3 3
+word 1 box 3 3 3
+paint 1 0 12.000 24.750 288.000 192.000 #dddddd
+word 2 after 1 1 1 1
+word 2 the 1 1 1
+word 2 box 1 1 1
+paint 2 0 12.000 12.000 288.000 15.000 #dddddd

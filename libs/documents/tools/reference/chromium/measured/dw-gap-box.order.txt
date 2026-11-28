@@ -1,0 +1,28 @@
+word 1 Boxed 0 0 0 0 0
+word 1 by. 4 4 4
+word 1 gappy 3 3 3 3 3
+word 1 yaks 3 3 3 3
+word 1 jog 3 3 3
+word 1 gappy 8 8 8 8 8
+word 1 yaks 8 8 8 8
+word 1 jog 8 8 8
+word 1 Thin 5 5 5 5
+word 1 by. 9 9 9
+word 1 gappy 13 13 13 13 13
+word 1 yaks 13 13 13 13
+word 1 jog 13 13 13
+word 1 Boxed 10 10 10 10 10
+word 1 by. 14 14 14
+word 1 gappy 18 18 18 18 18
+word 1 yaks 18 18 18 18
+word 1 jog 18 18 18
+word 1 Thin 15 15 15 15
+word 1 by. 19 19 19
+paint 1 1 43.500 12.000 110.250 24.750 #ffc0c0
+paint 1 2 43.535 23.250 110.438 24.000 #000000
+paint 1 6 35.250 24.000 102.000 37.500 #c0ffc0
+paint 1 7 35.039 36.000 101.941 36.750 #000000
+paint 1 11 43.500 35.250 110.250 51.000 #ffc0c0
+paint 1 12 43.535 49.500 110.438 50.250 #000000
+paint 1 16 35.250 50.250 102.000 63.750 #c0ffc0
+paint 1 17 35.039 62.250 101.941 63.000 #000000

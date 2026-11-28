@@ -1,4 +1,8 @@
 a4-slice4-cell-row-after.boxes.txt 4
+a4-slice4-cell-row-after.clips.txt 3
+a4-slice4-cell-row-after.glyphs.txt 3
+a4-slice4-cell-row-after.images.txt 4
 a4-slice4-cell-row-after.lines.txt 27
+a4-slice4-cell-row-after.order.txt 34
 a4-slice4-cell-row-after.print.txt 39
 a4-slice4-cell-row-after.words.txt 3

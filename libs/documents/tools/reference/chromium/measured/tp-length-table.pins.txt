@@ -1,4 +1,7 @@
 tp-length-table.boxes.txt 5
+tp-length-table.clips.txt 5
+tp-length-table.glyphs.txt 5
 tp-length-table.lines.txt 12
+tp-length-table.order.txt 17
 tp-length-table.print.txt 18
 tp-length-table.words.txt 5

@@ -1,4 +1,7 @@
 tp-sum-100.boxes.txt 8
+tp-sum-100.clips.txt 9
+tp-sum-100.glyphs.txt 9
 tp-sum-100.lines.txt 22
+tp-sum-100.order.txt 31
 tp-sum-100.print.txt 32
 tp-sum-100.words.txt 9

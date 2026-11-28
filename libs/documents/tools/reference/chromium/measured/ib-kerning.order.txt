@@ -1,0 +1,17 @@
+word 1 Kern 0 0 0 0
+word 1 AVAV 0 0 0 0
+word 1 and 0 0 0
+word 1 A 0
+word 1 VAV 2 3 5
+word 1 A 6
+word 1 end. 6 6 6 6
+word 1 Plain 7 7 7 7 7
+word 1 AVA 7 9 10
+word 1 end. 10 10 10 10
+word 1 Wide 11 11 11 11
+word 1 TooT 11 11 13 14
+word 1 end. 14 14 14 14
+paint 1 1 97.500 18.000 107.250 30.750 #ff0000
+paint 1 4 114.000 18.000 123.750 30.750 #00a000
+paint 1 8 49.500 36.750 55.500 49.500 #0000ff
+paint 1 12 56.250 55.500 57.750 68.250 #ff00ff

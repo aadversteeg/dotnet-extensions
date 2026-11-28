@@ -1,0 +1,25 @@
+word 1 aa 0 0
+word 1 bb 0 0
+word 1 cc 0 0
+word 1 dd 0 0
+word 1 ee 0 0
+word 1 ff 1
+word 1 gg 2 2
+word 1 hh 2 2
+word 1 ii 2 2
+word 1 jj 2 2
+word 1 kk 2 2
+word 1 ll 2 2
+word 1 mm 2 2
+word 1 nn 2 2
+word 1 oo 2 2
+word 1 pp 2 2
+word 1 qq 2 2
+word 1 rr 2 2
+word 1 ss 2 2
+word 1 tt 2
+word 1 uu 2 2
+word 1 vv 2 2
+word 1 ww 2 2
+word 1 xx 2 2
+word 1 z0 3 3

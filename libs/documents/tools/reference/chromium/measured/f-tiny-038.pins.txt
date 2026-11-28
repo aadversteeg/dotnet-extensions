@@ -1,4 +1,7 @@
 f-tiny-038.boxes.txt 1
+f-tiny-038.clips.txt 1
+f-tiny-038.glyphs.txt 1
 f-tiny-038.lines.txt 0
+f-tiny-038.order.txt 1
 f-tiny-038.print.txt 2
 f-tiny-038.words.txt 1

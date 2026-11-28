@@ -1,4 +1,7 @@
 tf-head.boxes.txt 8
+tf-head.clips.txt 9
+tf-head.glyphs.txt 9
 tf-head.lines.txt 22
+tf-head.order.txt 31
 tf-head.print.txt 32
 tf-head.words.txt 9

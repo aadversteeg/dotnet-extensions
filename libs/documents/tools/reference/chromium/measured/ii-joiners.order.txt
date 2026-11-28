@@ -1,0 +1,13 @@
+word 1 abc⁠ 0 0 0
+word 1 ⁠def 4 4 4
+word 1 abc‍ 5 5 6
+word 1 ‍def 9 9 9
+word 1 abc 10 10 10
+word 1 def 12 12 12
+word 1 abc 13 13 13
+word 1 def 15 15 15
+word 1 x 16
+image 1 2 12.000 31.500 20.250 43.500
+image 1 7 12.000 85.500 20.250 97.500
+image 1 11 12.000 139.500 20.250 151.500
+image 1 14 12.000 193.500 20.250 205.500

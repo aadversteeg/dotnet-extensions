@@ -1,0 +1,7 @@
+iblk-align-middle.boxes.txt 1
+iblk-align-middle.clips.txt 4
+iblk-align-middle.glyphs.txt 4
+iblk-align-middle.lines.txt 1
+iblk-align-middle.order.txt 5
+iblk-align-middle.print.txt 6
+iblk-align-middle.words.txt 4

@@ -1,5 +1,8 @@
 lk-missing.boxes.txt 1
+lk-missing.clips.txt 8
+lk-missing.glyphs.txt 8
 lk-missing.ink.txt 3
 lk-missing.lines.txt 1
+lk-missing.order.txt 9
 lk-missing.print.txt 10
 lk-missing.words.txt 8

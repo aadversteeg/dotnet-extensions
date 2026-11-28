@@ -1,4 +1,7 @@
 tk-table-break.boxes.txt 28
+tk-table-break.clips.txt 30
+tk-table-break.glyphs.txt 30
 tk-table-break.lines.txt 78
+tk-table-break.order.txt 108
 tk-table-break.print.txt 110
 tk-table-break.words.txt 30

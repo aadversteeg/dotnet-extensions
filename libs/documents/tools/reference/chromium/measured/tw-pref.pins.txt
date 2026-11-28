@@ -1,4 +1,7 @@
-tw-pref.boxes.txt 90
-tw-pref.lines.txt 179
-tw-pref.print.txt 277
-tw-pref.words.txt 97
+tw-pref.boxes.txt 85
+tw-pref.clips.txt 94
+tw-pref.glyphs.txt 94
+tw-pref.lines.txt 168
+tw-pref.order.txt 262
+tw-pref.print.txt 263
+tw-pref.words.txt 94

@@ -1,4 +1,7 @@
 fr-header-cell-margin.boxes.txt 2
+fr-header-cell-margin.clips.txt 2
+fr-header-cell-margin.glyphs.txt 2
 fr-header-cell-margin.lines.txt 14
+fr-header-cell-margin.order.txt 17
 fr-header-cell-margin.print.txt 24
 fr-header-cell-margin.words.txt 2

@@ -1,0 +1,4 @@
+word 1 Golf 0 0 0 0
+word 1 Alpha 2 2 2 2 2
+word 1 Bravo 3 3 3 3 3
+word 1 Hotel 1 1 1 1 1

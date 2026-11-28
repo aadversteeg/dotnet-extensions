@@ -1,4 +1,7 @@
 dl-space.boxes.txt 1
+dl-space.clips.txt 66
+dl-space.glyphs.txt 66
 dl-space.lines.txt 35
+dl-space.order.txt 101
 dl-space.print.txt 102
 dl-space.words.txt 66

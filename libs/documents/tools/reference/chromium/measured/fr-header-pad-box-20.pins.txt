@@ -1,4 +1,7 @@
 fr-header-pad-box-20.boxes.txt 2
+fr-header-pad-box-20.clips.txt 3
+fr-header-pad-box-20.glyphs.txt 3
 fr-header-pad-box-20.lines.txt 6
+fr-header-pad-box-20.order.txt 9
 fr-header-pad-box-20.print.txt 13
 fr-header-pad-box-20.words.txt 3

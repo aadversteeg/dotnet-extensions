@@ -1,5 +1,10 @@
 iblk-inside.boxes.txt 1
+iblk-inside.clips.txt 33
+iblk-inside.destinations.txt 1
+iblk-inside.glyphs.txt 33
+iblk-inside.images.txt 1
 iblk-inside.lines.txt 9
 iblk-inside.links.txt 1
+iblk-inside.order.txt 45
 iblk-inside.print.txt 46
 iblk-inside.words.txt 33

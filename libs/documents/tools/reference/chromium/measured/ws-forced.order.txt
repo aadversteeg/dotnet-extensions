@@ -1,0 +1,16 @@
+word 1 aa 0 0
+word 1 bb 1 1
+word 1 aa 2 2
+word 1 bb 4 4
+word 1 aa 5 5
+word 1 aa 7 7
+word 1 bb 9 9
+word 1 aa 10 10
+word 1 bb 11 11
+word 1 aa 12 12
+word 1 bb 13 13
+word 1 aa 14 14
+word 1 bb 15 15
+word 1 aa 16 16
+word 1 bb 17 17
+word 1 x 18

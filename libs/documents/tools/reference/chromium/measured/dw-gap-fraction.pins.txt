@@ -1,6 +1,10 @@
 dw-gap-fraction.boxes.txt 1
+dw-gap-fraction.clips.txt 66
+dw-gap-fraction.destinations.txt 6
+dw-gap-fraction.glyphs.txt 66
 dw-gap-fraction.ink.txt 224
 dw-gap-fraction.lines.txt 12
 dw-gap-fraction.links.txt 6
+dw-gap-fraction.order.txt 78
 dw-gap-fraction.print.txt 79
 dw-gap-fraction.words.txt 66

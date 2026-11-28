@@ -1,1 +1,1 @@
-tpa-colgroup refused Documents.Html.Unsupported.Value width: 30% at 20:1
+tpa-colgroup equal

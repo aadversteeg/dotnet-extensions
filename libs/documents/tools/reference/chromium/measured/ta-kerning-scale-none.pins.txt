@@ -1,0 +1,7 @@
+ta-kerning-scale-none.boxes.txt 1
+ta-kerning-scale-none.clips.txt 3
+ta-kerning-scale-none.glyphs.txt 3
+ta-kerning-scale-none.lines.txt 0
+ta-kerning-scale-none.order.txt 3
+ta-kerning-scale-none.print.txt 4
+ta-kerning-scale-none.words.txt 3

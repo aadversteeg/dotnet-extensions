@@ -1,4 +1,7 @@
 kb-t1-kept-row-group-in-padded-box.boxes.txt 3
+kb-t1-kept-row-group-in-padded-box.clips.txt 5
+kb-t1-kept-row-group-in-padded-box.glyphs.txt 5
 kb-t1-kept-row-group-in-padded-box.lines.txt 10
+kb-t1-kept-row-group-in-padded-box.order.txt 15
 kb-t1-kept-row-group-in-padded-box.print.txt 17
 kb-t1-kept-row-group-in-padded-box.words.txt 5

@@ -1,1 +1,9 @@
 fr-row-later-page-padding-overflows-three-cells listed Beside_a_cell_whose_bottom_padding_passes_the_page_end_the_cells_that_ended_give_the_next_page_no_padding_where_Chromium_gives_it_theirs_again: page 3 'z' baseline 26.25 (laid out at 25.875), Chromium 44.25 (print.txt)
+7 differences:
+- page 3 'z' baseline 26.25 (laid out at 25.875), Chromium 44.25 (print.txt)
+- page 3 painted area: the pixel at (12.75, 12.75): the engine paints it and Chromium does not; the engine paints 372 px #000000, Chromium 468 px; 364 px differ so, from (12.75, 12.75) to (287.25, 13.5) (print.txt)
+- page 3 painted area: the pixel at (12, 13.5): Chromium paints it and the engine does not; the engine paints 372 px #000000, Chromium 468 px; 460 px differ so, from (12, 13.5) to (288, 31.5) (print.txt)
+- page 3 painted area: the pixel at (12.75, 12.75): the engine paints it and Chromium does not; the engine paints 372 px, Chromium 468 px; 364 px differ so, from (12.75, 12.75) to (287.25, 13.5) (lines.txt)
+- page 3 painted area: the pixel at (12, 13.5): Chromium paints it and the engine does not; the engine paints 372 px, Chromium 468 px; 460 px differ so, from (12, 13.5) to (288, 31.5) (lines.txt)
+- page 3 'z' yMin 15.887, Chromium 33.886 (words.txt)
+- page 3 'z' yMax 28.487, Chromium 46.486 (words.txt)

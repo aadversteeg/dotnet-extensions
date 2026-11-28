@@ -1,0 +1,2 @@
+word 1 a 0
+word 2 b 0

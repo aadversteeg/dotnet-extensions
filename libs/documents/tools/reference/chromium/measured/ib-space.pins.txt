@@ -1,4 +1,7 @@
 ib-space.boxes.txt 1
+ib-space.clips.txt 14
+ib-space.glyphs.txt 14
 ib-space.lines.txt 5
+ib-space.order.txt 19
 ib-space.print.txt 20
 ib-space.words.txt 14

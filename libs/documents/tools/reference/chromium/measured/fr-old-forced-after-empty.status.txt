@@ -1,1 +1,6 @@
 fr-old-forced-after-empty listed A_forced_break_after_only_empty_boxes_is_not_taken: 1 pages, Chromium 2 (print.txt)
+4 differences:
+- 1 pages, Chromium 2 (print.txt)
+- page 1 reads 's0', Chromium ''; the engine's page 1: digest f09d21a090a6b2f4 (print.txt)
+- words on page 2, the engine has 1 pages (words.txt)
+- page 1 has 1 words inside the page, Chromium 0; the engine's words inside page 1: digest 4c43f6ab6f2c7ab0 (words.txt)

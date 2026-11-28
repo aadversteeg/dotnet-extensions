@@ -1,4 +1,7 @@
 ws-table.boxes.txt 20
+ws-table.clips.txt 40
+ws-table.glyphs.txt 40
 ws-table.lines.txt 70
+ws-table.order.txt 110
 ws-table.print.txt 111
 ws-table.words.txt 40

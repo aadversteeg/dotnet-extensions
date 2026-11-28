@@ -1,4 +1,7 @@
 h-page-landscape.boxes.txt 1
+h-page-landscape.clips.txt 2
+h-page-landscape.glyphs.txt 2
 h-page-landscape.lines.txt 0
+h-page-landscape.order.txt 2
 h-page-landscape.print.txt 3
 h-page-landscape.words.txt 2

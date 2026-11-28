@@ -1,0 +1,29 @@
+word 1 First 0 0 0 0 0
+word 1 one 3 3 3
+word 1 plain 5 5 5 5 5
+word 1 end. 6 6 6 6
+word 1 padded 2 2 2 2 2 2
+word 1 padded 9 9 9 9 9 9
+word 1 Second 7 7 7 7 7 7
+word 1 two 10 10 10
+paint 1 1 35.250 9.750 73.500 25.500 #ff0000
+paint 1 4 96.000 10.500 117.750 23.250 #00a000
+paint 1 8 48.750 27.750 88.500 41.250 #0000ff
+word 2 Page 0 0 0 0
+word 2 padded 2 2 2 2 2 2
+word 2 one 3 3 3
+word 2 plain 5 5 5 5 5
+word 2 end. 6 6 6 6
+word 2 boxed 12 12 12 12 12
+word 2 padded 9 9 9 9 9 9
+word 2 Next 7 7 7 7
+word 2 two 10 10 10
+word 2 end. 13 13 13 13
+word 2 wide 16 16 16 16
+word 2 Then 14 14 14 14
+word 2 three 17 17 17 17 17
+paint 2 1 37.500 10.500 75.000 23.250 #ff0000
+paint 2 4 97.500 10.500 119.250 23.250 #00a000
+paint 2 8 37.500 27.750 77.250 41.250 #0000ff
+paint 2 11 100.500 27.000 129.750 42.000 #ff00ff
+paint 2 15 38.250 42.000 63.000 62.250 #00a0a0

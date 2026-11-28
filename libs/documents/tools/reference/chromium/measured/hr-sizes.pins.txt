@@ -1,4 +1,7 @@
 hr-sizes.boxes.txt 4
+hr-sizes.clips.txt 5
+hr-sizes.glyphs.txt 5
 hr-sizes.lines.txt 8
+hr-sizes.order.txt 21
 hr-sizes.print.txt 22
 hr-sizes.words.txt 5

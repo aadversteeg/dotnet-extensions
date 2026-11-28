@@ -1,0 +1,9 @@
+word 1 A 0
+word 1 link 0 0 0 0
+word 1 to 0 0
+word 1 nothing 2 2 2 2 2 2 2
+word 1 that 3 3 3 3
+word 1 has 3 3 3
+word 1 no 3 3
+word 1 target. 3 3 3 3 3 3 3
+paint 1 1 58.711 29.250 93.902 30.000 #0000ee

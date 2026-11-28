@@ -1,4 +1,7 @@
 tj-top-edge.boxes.txt 7
+tj-top-edge.clips.txt 7
+tj-top-edge.glyphs.txt 7
 tj-top-edge.lines.txt 17
+tj-top-edge.order.txt 24
 tj-top-edge.print.txt 25
 tj-top-edge.words.txt 7

@@ -1,4 +1,7 @@
 tp-col-span.boxes.txt 6
+tp-col-span.clips.txt 7
+tp-col-span.glyphs.txt 7
 tp-col-span.lines.txt 17
+tp-col-span.order.txt 24
 tp-col-span.print.txt 25
 tp-col-span.words.txt 7

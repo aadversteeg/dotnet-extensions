@@ -1,4 +1,8 @@
 pm-snap-image.boxes.txt 1
+pm-snap-image.clips.txt 1
+pm-snap-image.glyphs.txt 1
+pm-snap-image.images.txt 6
 pm-snap-image.lines.txt 6
+pm-snap-image.order.txt 13
 pm-snap-image.print.txt 14
 pm-snap-image.words.txt 1

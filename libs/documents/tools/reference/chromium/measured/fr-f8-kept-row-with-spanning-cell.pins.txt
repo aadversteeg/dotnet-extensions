@@ -1,4 +1,7 @@
 fr-f8-kept-row-with-spanning-cell.boxes.txt 3
+fr-f8-kept-row-with-spanning-cell.clips.txt 7
+fr-f8-kept-row-with-spanning-cell.glyphs.txt 7
 fr-f8-kept-row-with-spanning-cell.lines.txt 11
+fr-f8-kept-row-with-spanning-cell.order.txt 18
 fr-f8-kept-row-with-spanning-cell.print.txt 20
 fr-f8-kept-row-with-spanning-cell.words.txt 7

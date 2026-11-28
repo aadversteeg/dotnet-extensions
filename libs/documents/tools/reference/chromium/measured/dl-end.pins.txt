@@ -1,4 +1,7 @@
 dl-end.boxes.txt 1
+dl-end.clips.txt 21
+dl-end.glyphs.txt 21
 dl-end.lines.txt 8
+dl-end.order.txt 29
 dl-end.print.txt 30
 dl-end.words.txt 21

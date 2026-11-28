@@ -1,6 +1,10 @@
 ib-link-button-break.boxes.txt 1
+ib-link-button-break.clips.txt 26
+ib-link-button-break.destinations.txt 4
+ib-link-button-break.glyphs.txt 26
 ib-link-button-break.ink.txt 4
 ib-link-button-break.lines.txt 10
 ib-link-button-break.links.txt 4
+ib-link-button-break.order.txt 36
 ib-link-button-break.print.txt 37
 ib-link-button-break.words.txt 26

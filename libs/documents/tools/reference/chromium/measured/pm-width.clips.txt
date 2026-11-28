@@ -1,0 +1,36 @@
+1 Eeeeeee none
+1 Eeeeeee none
+1 Dd none
+1 one 50.250 60.000 350.262 240.000 rect
+1 Wide none
+1 centre none
+1 text none
+1 that none
+1 takes none
+1 much none
+1 Right none
+1 side none
+1 text none
+1 L none
+1 more none
+1 room none
+1 than none
+1 the none
+1 sides none
+1 that none
+1 is none
+1 longer none
+2 Aaaa none
+2 Bbbbbbbbbbbbbbbb none
+2 Bbbbbbbbbbbbbbbb none
+2 Bbbbbbbbbbbbbbbb none
+2 two 50.250 60.000 350.262 240.000 rect
+2 L none
+2 Centre none
+2 text none
+2 Right none
+2 side none
+2 text none
+2 that none
+2 is none
+2 longer none
