@@ -53,7 +53,8 @@ public static class ErrorMetadataKeys
     /// quotes it too.</summary>
     public const string FirstRefusal = "FirstRefusal";
 
-    /// <summary>The image an error is about: its <c>ImageId</c> digest (string). The raster back-end sets it on the
-    /// refusal of an image it cannot decode to pixels, so that a caller that has the document can name the image.</summary>
+    /// <summary>The image an error is about, as a content digest: its <c>ImageId</c> digest (string), not a name or URL,
+    /// so not for people to read. The raster back-end sets it on the refusal of an image it cannot decode to pixels, so
+    /// that a caller that has the document can find the image and name it.</summary>
     public const string Image = "Image";
 }

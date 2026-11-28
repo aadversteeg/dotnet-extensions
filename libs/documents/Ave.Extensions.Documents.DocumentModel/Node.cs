@@ -165,8 +165,9 @@ public enum PageCounter
 /// <param name="Source">Where the image was written.</param>
 public sealed record ImageNode(NodeId Id, ImageData Image, Length? Width, Length? Height, SourceLocation Source) : Node(Id, Source)
 {
-    /// <summary>The name of the image's file where the front-end has one (the HTML front-end: its URL), for messages;
-    /// null otherwise.</summary>
+    /// <summary>A label for messages: the name of the image's file where the front-end has one (the HTML front-end: its
+    /// URL), null otherwise. It may be a URL from untrusted input, of any length and with any characters; quote it as
+    /// such, never use it to open a file.</summary>
     public string? Name { get; init; }
 }
 
