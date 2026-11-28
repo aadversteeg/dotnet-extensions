@@ -185,7 +185,7 @@ public class HtmlListedDifferenceTests
 
     /// <summary>
     /// A link around generated text (case <c>mx-gen-link</c>: <c>a::before { content: "see " }</c> and
-    /// <c>a::after { content: " more" }</c>; case <c>tt-groups</c>: <c>a::before { content: "xy" }</c> on a line whose top
+    /// <c>a::after { content: " more" }</c>; case <c>mx-link-gen-after</c>: the second alone; case <c>tt-groups</c>: <c>a::before { content: "xy" }</c> on a line whose top
     /// lies between pixels): Chromium's print writes two link annotations for each such link, one around the generated text
     /// and one around the element's own (33.75 to 52.5 pt and 52.5 to 74.25 pt for "see page"; 84 to 96 pt and 96 to 105 pt
     /// for "xyef"), where the engine writes one area for the link's part on the line, from its first piece to its last (THE
@@ -198,6 +198,7 @@ public class HtmlListedDifferenceTests
     /// <param name="areas">How many link areas the engine writes: one for each pair of Chromium's and each other link.</param>
     [Theory]
     [InlineData("mx-gen-link", 4, 2)]
+    [InlineData("mx-link-gen-after", 2, 1)]
     [InlineData("tt-groups", 6, 5)]
     public void A_link_around_generated_text_has_one_area_where_Chromium_writes_one_for_the_generated_text_and_one_for_the_rest(string name, int written, int areas)
     {

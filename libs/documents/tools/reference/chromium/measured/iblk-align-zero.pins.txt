@@ -1,0 +1,7 @@
+iblk-align-zero.boxes.txt 1
+iblk-align-zero.clips.txt 3
+iblk-align-zero.glyphs.txt 3
+iblk-align-zero.lines.txt 3
+iblk-align-zero.order.txt 6
+iblk-align-zero.print.txt 7
+iblk-align-zero.words.txt 3

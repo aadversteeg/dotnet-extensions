@@ -1,0 +1,5 @@
+page 1 300.000 300.000
+word 1 12.000 34.543 22.500 10.500 Span #000000 Lato-Regular
+word 1 37.242 59.124 22.500 10.500 from #000000 Lato-Regular
+word 1 61.816 84.748 22.500 10.500 tekst #000000 Lato-Regular
+word 1 87.438 104.721 22.500 10.500 end #000000 Lato-Regular

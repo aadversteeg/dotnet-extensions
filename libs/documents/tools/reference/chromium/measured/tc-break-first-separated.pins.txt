@@ -1,0 +1,7 @@
+tc-break-first-separated.boxes.txt 5
+tc-break-first-separated.clips.txt 5
+tc-break-first-separated.glyphs.txt 5
+tc-break-first-separated.lines.txt 0
+tc-break-first-separated.order.txt 8
+tc-break-first-separated.print.txt 19
+tc-break-first-separated.words.txt 5

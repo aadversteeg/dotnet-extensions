@@ -1,0 +1,55 @@
+word 1 Seven 1 1 1 1 1
+word 1 eight 2 2 2 2 2
+word 1 nine 3 3 3 3
+word 1 ten 4 4 4
+word 1 eleven 5 5 5 5 5 5
+word 1 twelve 6 6 6 6 6 6
+word 1 thirteen 7 7 7 7 7 7 7 7
+word 1 fourteen 8 8 8 8 8 8 8 8
+word 1 fifteen 9 10 10 10 10
+word 1 sixteen 11 11 11 11 11 11 11
+word 1 Seven 12 12 12 12 12
+word 1 eight 13 13 13 13 13
+word 1 nine 14 14 14 14
+word 1 ten 15 15 15
+word 1 eleven 16 16 16 16 16 16
+word 1 twelve 17 17 17 17 17 17
+word 1 thirteen 18 18 18 18 18 18 18 18
+word 1 fourteen 19 19 19 19 19 19 19 19
+word 1 fifteen 20 21 21 21 21
+word 1 sixteen 22 22 22 22 22 22 22
+word 1 Seven 23 23 23 23 23
+word 1 eight 24 24 24 24 24
+word 1 nine 25 25 25 25
+word 1 ten 26 26 26
+word 1 eleven 27 27 27 27 27 27
+word 1 twelve 28 28 28 28 28 28
+word 1 thirteen 29 29 29 29 29 29 29 29
+word 1 fourteen 30 30 30 30 30 30 30 30
+word 1 fifteen 31 32 32 32 32
+word 1 sixteen 33 33 33 33 33 33 33
+paint 1 0 39.000 12.000 69.000 387.996 #ffe0a0
+word 2 sixteen 2 2 2 2 2 2 2
+word 2 Seven 3 3 3 3 3
+word 2 eight 4 4 4 4 4
+word 2 nine 5 5 5 5
+word 2 ten 6 6 6
+word 2 eleven 7 7 7 7 7 7
+word 2 twelve 8 8 8 8 8 8
+word 2 thirteen 9 9 9 9 9 9 9 9
+word 2 fourteen 10 10 10 10 10 10 10 10
+word 2 fifteen 11 12 12 12 12
+word 2 sixteen 13 13 13 13 13 13 13
+word 2 Seven 14 14 14 14 14
+word 2 eight 15 15 15 15 15
+word 2 nine 16 16 16 16
+word 2 ten 17 17 17
+word 2 eleven 18 18 18 18 18 18
+word 2 twelve 19 19 19 19 19 19
+word 2 thirteen 20 20 20 20 20 20 20 20
+word 2 fourteen 21 21 21 21 21 21 21 21
+word 2 fifteen 22 23 23 23 23
+word 2 Taller 0 0 0 0 0 0
+word 2 sixteen 24 24 24 24 24 24 24
+word 2 end. 25 25 25 25
+paint 2 1 39.000 12.000 69.000 273.000 #ffe0a0

@@ -1,0 +1,1 @@
+tg-min-max-row refused Documents.Html.Unsupported.Value max-height: 6pt at 5:1

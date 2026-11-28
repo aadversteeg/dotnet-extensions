@@ -1,0 +1,1 @@
+tg-min-cell refused Documents.Html.Unsupported.Value min-height: 40pt at 5:5

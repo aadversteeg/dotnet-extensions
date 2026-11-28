@@ -1,0 +1,7 @@
+tg-min-cell.boxes.txt 3
+tg-min-cell.clips.txt 3
+tg-min-cell.glyphs.txt 3
+tg-min-cell.lines.txt 7
+tg-min-cell.order.txt 10
+tg-min-cell.print.txt 11
+tg-min-cell.words.txt 3

@@ -1,0 +1,7 @@
+mx-link-gen-lang.boxes.txt 1
+mx-link-gen-lang.clips.txt 4
+mx-link-gen-lang.glyphs.txt 4
+mx-link-gen-lang.lines.txt 0
+mx-link-gen-lang.order.txt 4
+mx-link-gen-lang.print.txt 5
+mx-link-gen-lang.words.txt 4

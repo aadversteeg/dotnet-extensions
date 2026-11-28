@@ -1,0 +1,7 @@
+tg-percent-table.boxes.txt 3
+tg-percent-table.clips.txt 3
+tg-percent-table.glyphs.txt 3
+tg-percent-table.lines.txt 7
+tg-percent-table.order.txt 10
+tg-percent-table.print.txt 11
+tg-percent-table.words.txt 3
