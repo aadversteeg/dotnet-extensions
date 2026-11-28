@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="common.css">
+<!-- The grids of widths-exact at 10.5pt = 14px, a font size Chromium keeps exact (see ../README.md, "Where Chromium is not exact"). The layout tests pin these numbers. -->
+<style>body { font-size: 10.5pt; }</style></head><body>
+<div id="w3" style="width:300pt; display:grid; grid-template-columns: 1fr 2fr 1fr;">
+<div>one</div><div>two words</div><div>Supercalifragilisticexpialidocious</div>
+</div>
+<div id="w4" style="width:300pt; display:grid; grid-template-columns: 2.5fr 3fr 10fr 2fr;">
+<div>a</div><div>b</div><div>c</div><div>Duration</div>
+</div>
+</body></html>

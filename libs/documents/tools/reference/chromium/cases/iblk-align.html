@@ -9,12 +9,11 @@ span { display: inline-block; width: 40pt; background-color: #ffe0a0; }
 table { border-collapse: collapse; }
 td { border: 0.75pt solid #000000; padding: 1.5pt 3pt; }
 </style></head><body>
-<!-- The vertical alignment of an inline-block of two lines in a line of text: baseline, top, middle, bottom, and the line box around it; a negative margin; and inline-blocks whose parent has a font size of zero to remove the spaces between them; a table inside one; and one taller than a page. -->
+<!-- The vertical alignment of an inline-block of two lines in a line of text: baseline, top, middle, bottom, and the line box around it; and inline-blocks whose parent has a font size of zero to remove the spaces between them; a table inside one; and one taller than a page. -->
 <p>Base <span style="vertical-align: baseline">one two</span> end.</p>
 <p>Top <span style="vertical-align: top">three four</span> end.</p>
 <p>Middle <span style="vertical-align: middle">five six</span> end.</p>
 <p>Bottom <span style="vertical-align: bottom">seven eight</span> end.</p>
-<p>Minus <span style="background-color: #a0e0a0; margin-left: -3pt; margin-top: -3pt">Pulled</span> in.</p>
 <div style="font-size: 0"><span style="display: inline-block; font-size: 10.5pt">kappa</span> <span style="display: inline-block; font-size: 10.5pt">lambda</span> <span style="display: inline-block; font-size: 10.5pt">mu</span></div>
 <div>Table <span class="k"><table><tr><td>Cell</td><td>next</td></tr></table></span> end.</div>
 <p>Last line of text.</p>

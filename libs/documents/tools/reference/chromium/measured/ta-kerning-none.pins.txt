@@ -1,0 +1,4 @@
+ta-kerning-none.boxes.txt 1
+ta-kerning-none.lines.txt 0
+ta-kerning-none.print.txt 31
+ta-kerning-none.words.txt 30

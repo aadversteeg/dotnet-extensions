@@ -1,1 +1,1 @@
-ta-kerning-scale refused Documents.Css.Unsupported.Value font-kerning: none at 5:31
+ta-kerning-scale equal

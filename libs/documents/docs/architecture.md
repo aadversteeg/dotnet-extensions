@@ -713,7 +713,8 @@ with no counter in scope, whose scope runs on through the following siblings (ca
 `div` items after a disc one); `ol start`, `ol reversed` (from the number of items down) and `li value`; the text in the
 item's `list-style-type` with the suffix ". " (CSS Counter Styles 3 §6.1: `decimal` with "-" before a negative number,
 `decimal-leading-zero` padded to two with the sign counted, the alphabetic styles from 1 and the roman ones from 1 to
-3999, `decimal` outside those ranges; cases `li-counter-styles`, `li-types`, `li-ol-attrs`); a disc, circle or square
+3999, `decimal` outside those ranges; cases `li-counter-styles`, `li-types`, `li-ol-attrs`; `li-types` is equal to Chromium's
+print, its two widest upper-roman labels a case of their own, `li-types-wide`); a disc, circle or square
 for the symbols, whose tag carries U+2022, U+25E6 or U+25AA; no label for `none` (the item still counts, case
 `li-none`). The label is in the item's own font, size and colour, not its first line's (case `li-font`). An item
 outside a list element (a bare `li`, case `li-bare`, or a `div` of `display: list-item`) draws as in a list; each run
@@ -726,7 +727,7 @@ continue the counter of an item with another parent; the marker of an item with 
 16 or longer than 10 000 items fail under both policies. The style sheet refuses `list-style-position: inside`
 (case `li-inside`), `list-style-image`, the `::marker` declarations the marker does not draw (below) and writes to the
 `list-item` counter (**Counters**); layout
-refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types`).
+refuses a label left of the sheet (`Documents.Layout.MarkerOutsideSheet`, cases `li-marker-sheet`, `li-types-wide`).
 
 **Generated text** (`Css/Cascade/StyleComputer.PseudoElements.cs`, `HtmlStyleResolver.Generated`; CSS Pseudo 4 §4.1, CSS
 Generated Content 3 §1). A rule whose selector ends in `::before` or `::after` (or `:before`, `:after`) matches the
@@ -871,7 +872,7 @@ columns to what the percentages leave, `tp-beside-length`), and percentages of 1
 width (Chromium gives that column no width); in the automatic layout, not measured, percentages of 100 or more beside
 other columns, a percentage beside another width in one column, a percentage on a cell over several columns and a cell
 over several columns beside a percent column; a percentage on a cell in the fixed layout; a width on a column group with
-column elements (one table of `tpa-colgroup` shows it unused, not enough for a rule). A percent column, like a fill column, is never narrower than its
+column elements (case `tpa-colgroup-cols` shows it unused, not enough for a rule). A percent column, like a fill column, is never narrower than its
 content's min-content width (the limit above). Refused (`Documents.Html.Unsupported.Table`,
 or `Value` for a computed value): a table part outside its parent part, which CSS would wrap in anonymous table boxes
 (§17.2.1); a table part on another element than its HTML element; a second caption, a block inside a caption, a width on
