@@ -125,7 +125,8 @@ public class HtmlRenderingTests
     [Fact]
     public void The_resolver_is_asked_at_most_once_per_URL_in_one_render()
     {
-        // The same font file, style sheet and image named many times, by style resolution and by box generation.
+        // The same font file, style sheet and image named many times; style resolution asks for a sized image too (to
+        // know whether its alt text would be shown), and box generation asks for it again for its bytes.
         var asked = new List<string>();
         var options = Options with
         {
@@ -138,7 +139,7 @@ public class HtmlRenderingTests
                 },
             },
         };
-        var html = Html.Replace("<p>Hello</p>", string.Concat(Enumerable.Repeat("<p>x<img alt=x src=one.png></p>", 50)), StringComparison.Ordinal)
+        var html = Html.Replace("<p>Hello</p>", string.Concat(Enumerable.Repeat("<p>x<img alt=x width=10 height=10 src=one.png></p>", 50)), StringComparison.Ordinal)
             .Replace("<title>T</title>", "<title>T</title><link rel=stylesheet href=a.css><link rel=stylesheet href=a.css><style>@import \"a.css\";</style>", StringComparison.Ordinal);
 
         HtmlRendering.ToPages(html, options with { Style = options.Style with { Unsupported = UnsupportedPolicy.Warn } });
