@@ -944,7 +944,7 @@ public static class HtmlStyleResolver
                         sheets.Add(sheet);
                     }
                 }
-                else if (element.Attribute("href") is { } href && href.Trim().Length > 0)
+                else if (element.Attribute("href") is { } attribute && Urls.Cleaned(attribute) is { Length: > 0 } href)
                 {
                     var at = element.Attributes.First(attribute => attribute.LocalName == "href").Position;
                     if (element.Attributes.FirstOrDefault(attribute => attribute.LocalName == "integrity" && attribute.Value.Trim().Length > 0) is { } integrity)
@@ -956,7 +956,7 @@ public static class HtmlStyleResolver
                             .WithSource(_sourceName, integrity.Position));
                     }
 
-                    if (Fetch(href.Trim(), _documentBase, _sourceName, at) is { } linked)
+                    if (Fetch(href, _documentBase, _sourceName, at) is { } linked)
                     {
                         sheets.Add(linked);
                     }

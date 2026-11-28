@@ -134,7 +134,7 @@ internal static class Urls
     /// document's URL, the caller's (HTML Standard §4.2.3, the frozen base URL: the fallback base URL when parsing fails). One rule for the style
     /// resolver and box generation. The tree is walked with an explicit stack.</summary>
     internal static string? DocumentBase(HtmlDocument document, string? documentUrl, bool allowBaseElement) =>
-        allowBaseElement && BaseElement(document)?.Attribute("href") is { } href && Resolved(href.Trim(), documentUrl).Url is { } url && HasScheme(url) ? url : documentUrl;
+        allowBaseElement && BaseElement(document)?.Attribute("href") is { } href && Resolved(href, documentUrl).Url is { } url && HasScheme(url) ? url : documentUrl;
 
     /// <summary>The first <c>base</c> element with an <c>href</c> in tree order, or null.</summary>
     internal static HtmlElement? BaseElement(HtmlDocument document)

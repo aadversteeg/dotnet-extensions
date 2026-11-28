@@ -91,6 +91,20 @@ public class ResourceUrlTests
         }
     }
 
+    [Fact]
+    public void A_link_and_a_base_element_are_cleaned_as_every_other_URL()
+    {
+        // The URL Standard trims C0 controls and space only (§4.4); a no-break space is part of the URL.
+        Asked("link", "https://e.test/x.css\u00a0", null).Should().Equal("https://e.test/x.css%C2%A0");
+        Asked("img", "https://e.test/x.png\u00a0", null).Should().Equal("https://e.test/x.png%C2%A0");
+
+        var asked = new List<string>();
+        var html = "<!doctype html><html lang=\"en\"><head><title>T</title><base href=\"\u00a0https://e.test/b/\"><style>@font-face { font-family: Body; src: url(lato.ttf) } body { font-family: Body }</style></head><body><p>x<img alt=x width=10 src=\"a.png\"></p></body></html>";
+        HtmlRendering.ToPages(html, new HtmlRenderOptions { Style = HtmlStyleOptions.Default with { AllowBaseElement = true, Unsupported = UnsupportedPolicy.Warn, Resources = Recorder(asked) } });
+
+        asked.Distinct().Should().Equal("a.png");
+    }
+
     [Theory]
     [InlineData(@"\\host\share\", Https, "has a backslash before its query or fragment", "https://e.test/d/a.png")]
     [InlineData("//host/d/", null, "names a host", "a.png")]
