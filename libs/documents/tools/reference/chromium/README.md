@@ -309,9 +309,10 @@ the comparison of clips cuts the same box (`HtmlCases.WordBox`).
 
 The same file gives the order of what is painted besides text, and the case comparison compares it for every image and
 every path (a curve: a list marker, a border with rounded corners): each one paired with the one of the same number in
-drawing order, what is painted after it and overlaps it by two whole pixels across and down, each edge on the pixel it
-is painted on, must be the same colours (or images) on both sides (`HtmlCases.PaintOrderDifferences`). A later path
-overlaps by the pixels it paints, not by its box (a table's rounded border around its cells has the cells in its box); a
+drawing order, what is painted after it over a whole pixel of it, each edge on the pixel it is painted on, must be the
+same colours (or images) on both sides (`HtmlCases.PaintOrderDifferences`). One row or one column of pixels is enough:
+a collapsed border painted over the edge row of an image breaks the image's edge where Chromium paints the image over
+the border. A later path overlaps by the pixels it paints, not by its box (a table's rounded border around its cells has the cells in its box); a
 later paint in the path's own opaque colour is not counted, as it changes no pixel (the engine draws a border with
 rounded corners as a path per corner and rectangles between them, Chromium as one path). `order.txt` lists every fill
 and stroke and then every image; in drawing order they go by place, and the stroke of a drawing that fills and strokes

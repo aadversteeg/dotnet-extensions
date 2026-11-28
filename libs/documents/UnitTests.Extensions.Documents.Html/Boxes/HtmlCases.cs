@@ -1053,9 +1053,11 @@ internal static class HtmlCases
     /// by page: each image paired with the image of the same number in drawing order, and each path that is not a shape the
     /// other side paints with rectangles (<see cref="ShapesOfRectangles"/>) with the path of the same number, on a page where
     /// both sides have as many (otherwise <see cref="Differences"/> names the count, with the digest of the engine's side).
-    /// Of every fill, stroke or image whose box overlaps the image's box (the part its clips leave) or the path's box of whole
-    /// pixels by more than a pixel each way (<see cref="PixelBound"/>), the one painted after it on one side must be painted
-    /// after it on the other, compared by its colour or as an image, as over a word (<see cref="OrderDifferences"/>): a
+    /// Of every fill, stroke or image that paints a whole pixel of the image's box (the part its clips leave) or of the
+    /// path's box of whole pixels, the one painted after it on one side must be painted after it on the other: a rectangle
+    /// or an image by its box, a path by the pixels it paints, each edge on the pixel it is painted on
+    /// (<see cref="ChromiumLayout.Pixel"/>), so a paint over one row or one column of pixels counts. It is compared by its
+    /// colour or as an image, as over a word (<see cref="OrderDifferences"/>): a
     /// background painted over its own image, or over a list item's bullet or a border drawn as a path, differs. Two
     /// rectangles are compared by the area each colour paints (<see cref="PaintedDifferences"/>).
     /// </summary>
@@ -1118,29 +1120,27 @@ internal static class HtmlCases
         static Dictionary<int, PrintedPath> PathsByPaint(PrintedPage page) => page.Paths.ToDictionary(path => Drawn(page, path));
 
         // What is painted after the paint of the given index (the paints are in drawing order; a stroke written after the
-        // fill of the same drawing is painted after it, ISO 32000-1 §8.5.3) and overlaps the box by more than a pixel each
-        // way: a rectangle or an image by its box, a path by the pixels it paints (a ring's box holds its hole: case
-        // bri-collapse, a table's rounded border around its cells), two by two of them inside the box.
+        // fill of the same drawing is painted after it, ISO 32000-1 §8.5.3) and paints a whole pixel of the box: a
+        // rectangle or an image by its box, a path by the pixels it paints (a ring's box holds its hole: case
+        // bri-collapse, a table's rounded border around its cells).
         static List<string> Over(PrintedPage page, int drawn, PrintedPaint box, Dictionary<int, PrintedPath> paths) =>
             [.. page.Paints.Select((paint, index) => (paint, index)).Skip(drawn + 1)
                 .Where(item => paths.TryGetValue(item.index, out var path) ? PaintsInside(path, box) : Overlap(box, item.paint))
                 .Select(item => item.paint.Paint).Distinct().Order(StringComparer.Ordinal)];
 
-        // Whether two boxes share two by two whole pixels, each edge on the pixel it is painted on (WholePixel), as the
-        // painted area is compared: one side's edges lie on whole pixels and the other's where layout puts them, so an
-        // overlap of one pixel row (a collapsed border's half in the next row, cases a4-header-line2-25-image-228) is not
-        // a paint over the other on one side only.
+        // Whether two boxes share a whole pixel, each edge on the pixel it is painted on (ChromiumLayout.Pixel), as the
+        // painted area is compared: one side's edges lie on whole pixels and the other's where layout puts them, so each is
+        // taken where it is painted. A paint over one row or one column of pixels of the other is seen.
         static bool Overlap(PrintedPaint box, PrintedPaint paint) =>
-            Math.Min(Pixel(box.X1), Pixel(paint.X1)) - Math.Max(Pixel(box.X0), Pixel(paint.X0)) >= 2 && Math.Min(Pixel(box.Y1), Pixel(paint.Y1)) - Math.Max(Pixel(box.Y0), Pixel(paint.Y0)) >= 2;
+            Math.Min(Pixel(box.X1), Pixel(paint.X1)) - Math.Max(Pixel(box.X0), Pixel(paint.X0)) >= 1 && Math.Min(Pixel(box.Y1), Pixel(paint.Y1)) - Math.Max(Pixel(box.Y0), Pixel(paint.Y0)) >= 1;
 
-        // Whether a path paints two by two whole pixels that lie inside the box (its rows, PrintedPath).
+        // Whether a path paints a pixel that lies inside the box (its rows, PrintedPath).
         static bool PaintsInside(PrintedPath path, PrintedPaint box)
         {
             var (left, top) = (Pixel(path.X0), Pixel(path.Y0));
-            bool Painted(int column, int row) => row < path.Rows.Length && column < path.Rows[row].Length && path.Rows[row][column] != '0'
+            bool Painted(int column, int row) => path.Rows[row][column] != '0'
                 && left + column >= Pixel(box.X0) && left + column + 1 <= Pixel(box.X1) && top + row >= Pixel(box.Y0) && top + row + 1 <= Pixel(box.Y1);
-            return Enumerable.Range(0, path.Rows.Length).Any(row => Enumerable.Range(0, path.Rows[row].Length)
-                .Any(column => Painted(column, row) && Painted(column + 1, row) && Painted(column, row + 1) && Painted(column + 1, row + 1)));
+            return Enumerable.Range(0, path.Rows.Length).Any(row => Enumerable.Range(0, path.Rows[row].Length).Any(column => Painted(column, row)));
         }
     }
 

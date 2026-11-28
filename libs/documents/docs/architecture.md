@@ -1058,8 +1058,8 @@ through the whole HTML path unchanged and its pages are compared with every file
   chosen one for "does this word's ink overlap that item", the same on both sides, not a measured one. A background
   painted over its own text differs; the places themselves are not compared, as Chromium batches its drawings in a
   sequence of its own. The same holds for every image and every path (`HtmlCases.PaintOrderDifferences`), each paired
-  with the one of the same number in drawing order: what is painted after it and overlaps it by two whole pixels across
-  and down (a later path by the pixels it paints; a later paint of the path's own opaque colour not counted) is the same
+  with the one of the same number in drawing order: what is painted after it over a whole pixel of it, one row or one
+  column being enough, each edge on the pixel it is painted on (a later path by the pixels it paints; a later paint of the path's own opaque colour not counted) is the same
   on both sides, so a background painted over its own image or over a list marker differs.
 - `<case>.clips.txt`, the clip around each word's text (`clips.py`: the rectangle the clips leave, and whether each of
   them is one rectangle): a word its clips hide wholly on one side and not on the other differs; otherwise how much the

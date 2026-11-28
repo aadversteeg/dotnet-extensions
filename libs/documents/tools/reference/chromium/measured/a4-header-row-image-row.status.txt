@@ -1,5 +1,5 @@
 a4-header-row-image-row listed A_repeated_header_is_drawn_above_a_slice_where_Chromium_draws_it_over_the_slice: page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
-13 differences:
+14 differences:
 - page 4 image 1 y0 28.5 (laid out at 28.125), Chromium 12 (print.txt)
 - page 5 'r3' baseline 120.75 (laid out at 120.75), Chromium 88.5 (print.txt)
 - page 5 'after' baseline 136.5 (laid out at 136.5), Chromium 104.25 (print.txt)
@@ -13,3 +13,4 @@ a4-header-row-image-row listed A_repeated_header_is_drawn_above_a_slice_where_Ch
 - page 5 'r3' yMax 123.306, Chromium 91.056 (words.txt)
 - page 5 'after' yMin 124.656, Chromium 92.406 (words.txt)
 - page 5 'after' yMax 139.056, Chromium 106.806 (words.txt)
+- page 5 image 1 at (12.75, 28.125) is painted over by #000000, Chromium's by nothing (order.txt)
