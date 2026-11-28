@@ -1,4 +1,5 @@
 h-page-area-bottom.boxes.txt 1
+h-page-area-bottom.clips.txt 29
 h-page-area-bottom.glyphs.txt 29
 h-page-area-bottom.lines.txt 0
 h-page-area-bottom.order.txt 29

@@ -1,4 +1,5 @@
 hb-two-three.boxes.txt 1
+hb-two-three.clips.txt 4
 hb-two-three.glyphs.txt 4
 hb-two-three.lines.txt 0
 hb-two-three.order.txt 4

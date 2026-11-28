@@ -1,4 +1,5 @@
 tg-cell.boxes.txt 18
+tg-cell.clips.txt 23
 tg-cell.glyphs.txt 23
 tg-cell.lines.txt 28
 tg-cell.order.txt 57

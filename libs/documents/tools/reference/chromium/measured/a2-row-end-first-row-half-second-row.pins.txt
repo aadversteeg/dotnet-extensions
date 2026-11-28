@@ -1,4 +1,5 @@
 a2-row-end-first-row-half-second-row.boxes.txt 2
+a2-row-end-first-row-half-second-row.clips.txt 12
 a2-row-end-first-row-half-second-row.glyphs.txt 12
 a2-row-end-first-row-half-second-row.lines.txt 7
 a2-row-end-first-row-half-second-row.order.txt 19

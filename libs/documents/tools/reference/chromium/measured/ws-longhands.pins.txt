@@ -1,4 +1,5 @@
 ws-longhands.boxes.txt 1
+ws-longhands.clips.txt 29
 ws-longhands.glyphs.txt 29
 ws-longhands.lines.txt 0
 ws-longhands.order.txt 29

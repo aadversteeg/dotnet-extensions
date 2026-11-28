@@ -1,4 +1,5 @@
 fr-row-later-padding-beside-line.boxes.txt 4
+fr-row-later-padding-beside-line.clips.txt 23
 fr-row-later-padding-beside-line.glyphs.txt 23
 fr-row-later-padding-beside-line.lines.txt 14
 fr-row-later-padding-beside-line.order.txt 37

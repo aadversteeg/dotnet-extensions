@@ -1,4 +1,5 @@
 ws-image.boxes.txt 1
+ws-image.clips.txt 9
 ws-image.glyphs.txt 9
 ws-image.lines.txt 0
 ws-image.order.txt 15

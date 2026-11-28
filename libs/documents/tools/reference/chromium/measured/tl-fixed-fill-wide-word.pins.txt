@@ -1,4 +1,5 @@
 tl-fixed-fill-wide-word.boxes.txt 7
+tl-fixed-fill-wide-word.clips.txt 6
 tl-fixed-fill-wide-word.glyphs.txt 6
 tl-fixed-fill-wide-word.lines.txt 17
 tl-fixed-fill-wide-word.order.txt 23

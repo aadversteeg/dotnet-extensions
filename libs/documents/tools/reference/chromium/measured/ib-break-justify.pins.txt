@@ -1,4 +1,5 @@
 ib-break-justify.boxes.txt 1
+ib-break-justify.clips.txt 20
 ib-break-justify.glyphs.txt 20
 ib-break-justify.lines.txt 3
 ib-break-justify.order.txt 24

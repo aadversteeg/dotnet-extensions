@@ -1,4 +1,5 @@
 br-boxes-inside.boxes.txt 6
+br-boxes-inside.clips.txt 6
 br-boxes-inside.glyphs.txt 6
 br-boxes-inside.lines.txt 9
 br-boxes-inside.order.txt 23

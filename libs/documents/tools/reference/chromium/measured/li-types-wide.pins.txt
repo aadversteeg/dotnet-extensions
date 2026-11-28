@@ -1,4 +1,5 @@
 li-types-wide.boxes.txt 1
+li-types-wide.clips.txt 6
 li-types-wide.glyphs.txt 6
 li-types-wide.lines.txt 0
 li-types-wide.order.txt 6

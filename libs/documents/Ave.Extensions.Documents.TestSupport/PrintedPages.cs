@@ -43,10 +43,23 @@ public sealed record PrintedWord(int Page, double X0, double X1, double Baseline
     /// of its own). Empty for the engine's words, whose glyph run has one place (<see cref="Place"/>).</summary>
     public ImmutableArray<int> Places { get; init; } = [];
 
+    /// <summary>The rectangle the clips open around the word's text leave (<see cref="PrintedPages.Visible"/>), or null where
+    /// none is open: in the engine's pages from its clip items, in a print read back from its PDF from <c>clips.txt</c>
+    /// (<see cref="PrintedPages.WithClips"/>), a clip taken as its box. Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
+    public PrintedBox? Clip { get; init; }
+
     /// <summary>What is painted over the word: the paints of <see cref="PrintedPage.Paints"/> after it in the drawing
     /// sequence whose box overlaps its box by more than a pixel each way, by colour (or <c>image</c>), in ordinal order, once
     /// each; set by the comparison of paint order, empty before. Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
     public ImmutableArray<string> Over { get; init; } = [];
+
+    /// <summary>The part of the word's box its clips leave (<see cref="Clip"/>), or null where they leave nothing of it;
+    /// set by the comparison of clips, the whole box before. Not part of <see cref="Equals(PrintedWord?)"/>.</summary>
+    public PrintedBox? Shown { get; init; }
+
+    /// <summary>Whether every clip around the word is one rectangle (<see cref="Clip"/> is then exact); false where one of
+    /// them is another path, which <see cref="Clip"/> holds as its box.</summary>
+    public bool ClipIsRectangle { get; init; } = true;
 
     /// <summary>Whether two words print the same: their places in drawing order are not compared, so an engine word equals
     /// the word read back from Chromium's print.</summary>
@@ -361,6 +374,40 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
     }
 
     /// <summary>
+    /// The print with the clips around each word (<see cref="PrintedWord.Clip"/>, <see cref="PrintedWord.ClipIsRectangle"/>),
+    /// from the text <c>clips.py</c> writes (<c>clips.txt</c>): per word of <c>print.txt</c> in its order <c>page text x0 y0 x1
+    /// y1 rect|path</c>, or <c>page text none</c> where no clip is open around it.
+    /// </summary>
+    /// <param name="text">The file's text.</param>
+    /// <returns>The pages with the clips of their words.</returns>
+    /// <exception cref="FormatException">A line is not of that form, or does not belong to the word of its place.</exception>
+    public PrintedPages WithClips(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(line => line.Split(' ')).ToList();
+        static double Number(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+        return new([.. Pages.Select(page =>
+        {
+            var rows = lines.Where(fields => fields[0] == page.Number.ToString(CultureInfo.InvariantCulture)).ToList();
+            if (rows.Count != page.Words.Length)
+            {
+                throw new FormatException($"Page {page.Number} has {page.Words.Length} words and {rows.Count} lines of clips.txt.");
+            }
+
+            return page with
+            {
+                Words = [.. page.Words.Zip(rows).Select(pair => pair.Second switch
+                {
+                    [_, var word, "none"] when word == pair.First.Text => pair.First with { Clip = null },
+                    [_, var word, var x0, var y0, var x1, var y1, "rect" or "path"] when word == pair.First.Text =>
+                        pair.First with { Clip = new PrintedBox(page.Number, Number(x0), Number(y0), Number(x1), Number(y1)), ClipIsRectangle = pair.Second[6] == "rect" },
+                    _ => throw new FormatException($"Not the clips of page {page.Number}'s word '{pair.First.Text}': '{string.Join(' ', pair.Second)}'."),
+                })],
+            };
+        })]);
+    }
+
+    /// <summary>
     /// The engine's page model in the same form. A word is a run of glyphs whose text has no white space; a glyph with no
     /// text of its own continues the word before it (the later glyphs of a one-to-many substitution). Its baseline is its
     /// run's, its extent runs from its first glyph's origin to its last glyph's origin plus that glyph's advance; its colour
@@ -379,7 +426,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             var (rectangles, images) = (ImmutableArray.CreateBuilder<PrintedBox>(), ImmutableArray.CreateBuilder<PrintedBox>());
             var paths = ImmutableArray.CreateBuilder<PrintedPath>();
             var paints = ImmutableArray.CreateBuilder<PrintedPaint>();
-            var runs = new System.Collections.Generic.List<(GlyphRun Run, int Place)>();
+            var runs = new System.Collections.Generic.List<(GlyphRun Run, int Place, PrintedBox? Clip)>();
             var clips = new System.Collections.Generic.Stack<Core.Rect>();
             foreach (var (item, place) in page.Items.Select((item, place) => (item, place)))
             {
@@ -387,7 +434,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
                 switch (item)
                 {
                     case GlyphRun run:
-                        runs.Add((run, place));
+                        runs.Add((run, place, clip is { } open ? Box(number, open) : null));
                         break;
                     case FillRectangle fill when Visible(Box(number, fill.Area), clip) is { } shown:
                         paints.Add(new PrintedPaint(place, shown.X0, shown.Y0, shown.X1, shown.Y1, Hex(fill.Color)));
@@ -421,7 +468,7 @@ public sealed record PrintedPages(ImmutableArray<PrintedPage> Pages)
             }
 
             return new PrintedPage(number, page.Size.Width, page.Size.Height,
-                Sorted(runs.SelectMany(run => Words(number, run.Run).Select(word => word is null ? null : word with { Place = run.Place }))
+                Sorted(runs.SelectMany(run => Words(number, run.Run).Select(word => word is null ? null : word with { Place = run.Place, Clip = run.Clip }))
                     .Select((word, place) => word is null ? null : word with { Drawn = place }).OfType<PrintedWord>()), rectangles.ToImmutable(), images.ToImmutable(), paths.ToImmutable())
             {
                 Paints = paints.ToImmutable(),

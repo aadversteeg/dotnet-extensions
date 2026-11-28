@@ -1,4 +1,5 @@
 fr-kwn-pad-then-kept-para.boxes.txt 1
+fr-kwn-pad-then-kept-para.clips.txt 6
 fr-kwn-pad-then-kept-para.glyphs.txt 6
 fr-kwn-pad-then-kept-para.lines.txt 0
 fr-kwn-pad-then-kept-para.order.txt 6

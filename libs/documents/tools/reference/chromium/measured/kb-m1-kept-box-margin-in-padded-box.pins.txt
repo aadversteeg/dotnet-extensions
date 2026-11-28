@@ -1,4 +1,5 @@
 kb-m1-kept-box-margin-in-padded-box.boxes.txt 1
+kb-m1-kept-box-margin-in-padded-box.clips.txt 5
 kb-m1-kept-box-margin-in-padded-box.glyphs.txt 5
 kb-m1-kept-box-margin-in-padded-box.lines.txt 0
 kb-m1-kept-box-margin-in-padded-box.order.txt 5

@@ -1,4 +1,5 @@
 tc-side.boxes.txt 16
+tc-side.clips.txt 19
 tc-side.glyphs.txt 19
 tc-side.lines.txt 14
 tc-side.order.txt 39

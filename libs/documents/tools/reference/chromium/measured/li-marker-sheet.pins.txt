@@ -1,4 +1,5 @@
 li-marker-sheet.boxes.txt 1
+li-marker-sheet.clips.txt 22
 li-marker-sheet.glyphs.txt 22
 li-marker-sheet.lines.txt 4
 li-marker-sheet.order.txt 27

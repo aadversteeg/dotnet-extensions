@@ -1,4 +1,5 @@
 tw-span.boxes.txt 14
+tw-span.clips.txt 22
 tw-span.glyphs.txt 22
 tw-span.lines.txt 32
 tw-span.order.txt 54

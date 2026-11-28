@@ -1,4 +1,5 @@
 te-left-first.boxes.txt 7
+te-left-first.clips.txt 7
 te-left-first.glyphs.txt 7
 te-left-first.lines.txt 17
 te-left-first.order.txt 24

@@ -1042,6 +1042,9 @@ through the whole HTML path unchanged and its pages are compared with every file
   by more than one pixel (0.75 pt, `HtmlCases.PixelBound`) across and down are the same on both sides. A background
   painted over its own text differs; the places themselves are not compared, as Chromium batches its drawings in a
   sequence of its own.
+- `<case>.clips.txt`, the clip around each word's text (`clips.py`: the rectangle the clips leave, and whether each of
+  them is one rectangle): a word its clips hide wholly on one side and not on the other differs; otherwise how much the
+  clips cut off the word's box at each edge within one pixel (0.75 pt). A clip is taken as its box on both sides.
 
 Both sides are compared as they show. A PDF paints each fill, stroke and image only inside the clips around it
 (ISO 32000-1 §8.5.4), and Chromium draws each page's body under one clip, the page area (its start rounded to a whole
@@ -1050,8 +1053,8 @@ clip. It still draws what passes that clip: a grid line past the page end, a cut
 drawn again offset up by the page area's height. So the read-backs (`visible.py`, used by `positions.py`,
 `rectangles.py` and `ink.py`) write each rectangle and image area cut to the clips it is drawn under, and leave out what
 lies wholly outside them; the engine's pages are read through their page-model clips by the same rule
-(`PrintedPages.Engine`, `PrintedPages.Visible`). Words are compared whole: no word of a measured print lies wholly
-outside its clip. The engine clips the body to its area under `LayoutProfile.BodyClip` (`BodyArea`, the HTML front-end's
+(`PrintedPages.Engine`, `PrintedPages.Visible`). Words are compared whole in `print.txt`, and how their clips cut
+them in `clips.txt`. The engine clips the body to its area under `LayoutProfile.BodyClip` (`BodyArea`, the HTML front-end's
 value; `None`, the code front-end's default, clips nothing); the header and footer areas, where the HTML front-end puts
 the page-margin boxes, are not clipped, as Chromium draws tall margin-box content over the body (`pm-tall-over`).
 

@@ -1,4 +1,5 @@
 tpa-colgroup.boxes.txt 12
+tpa-colgroup.clips.txt 25
 tpa-colgroup.glyphs.txt 25
 tpa-colgroup.lines.txt 20
 tpa-colgroup.order.txt 49

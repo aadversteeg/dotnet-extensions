@@ -1,4 +1,5 @@
 pm-len-padding.boxes.txt 1
+pm-len-padding.clips.txt 7
 pm-len-padding.glyphs.txt 7
 pm-len-padding.lines.txt 6
 pm-len-padding.order.txt 19

@@ -1,4 +1,5 @@
 kb-n1c-kept-box-padding-fits-control.boxes.txt 1
+kb-n1c-kept-box-padding-fits-control.clips.txt 5
 kb-n1c-kept-box-padding-fits-control.glyphs.txt 5
 kb-n1c-kept-box-padding-fits-control.lines.txt 0
 kb-n1c-kept-box-padding-fits-control.order.txt 5

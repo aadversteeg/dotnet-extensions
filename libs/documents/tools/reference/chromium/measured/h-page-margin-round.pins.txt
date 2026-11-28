@@ -1,4 +1,5 @@
 h-page-margin-round.boxes.txt 1
+h-page-margin-round.clips.txt 2
 h-page-margin-round.glyphs.txt 2
 h-page-margin-round.lines.txt 1
 h-page-margin-round.order.txt 3

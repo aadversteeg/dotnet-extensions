@@ -1,4 +1,5 @@
 f-lato-9.boxes.txt 1
+f-lato-9.clips.txt 40
 f-lato-9.glyphs.txt 40
 f-lato-9.lines.txt 0
 f-lato-9.order.txt 40

@@ -1,4 +1,5 @@
 h-page-a4-zero-justify.boxes.txt 1
+h-page-a4-zero-justify.clips.txt 38
 h-page-a4-zero-justify.glyphs.txt 38
 h-page-a4-zero-justify.lines.txt 0
 h-page-a4-zero-justify.order.txt 38

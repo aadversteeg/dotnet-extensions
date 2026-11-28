@@ -1,4 +1,5 @@
 ts-plain.boxes.txt 5
+ts-plain.clips.txt 5
 ts-plain.glyphs.txt 5
 ts-plain.lines.txt 0
 ts-plain.order.txt 9

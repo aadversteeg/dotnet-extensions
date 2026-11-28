@@ -1,4 +1,5 @@
 a4-two-image-rows.boxes.txt 2
+a4-two-image-rows.clips.txt 1
 a4-two-image-rows.glyphs.txt 1
 a4-two-image-rows.lines.txt 20
 a4-two-image-rows.order.txt 27

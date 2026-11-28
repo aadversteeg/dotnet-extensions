@@ -1,4 +1,5 @@
 f-letter-number.boxes.txt 1
+f-letter-number.clips.txt 60
 f-letter-number.glyphs.txt 60
 f-letter-number.lines.txt 0
 f-letter-number.order.txt 60

@@ -1,4 +1,5 @@
 kb-s7-perfect-break-before-kept-box.boxes.txt 1
+kb-s7-perfect-break-before-kept-box.clips.txt 26
 kb-s7-perfect-break-before-kept-box.glyphs.txt 26
 kb-s7-perfect-break-before-kept-box.lines.txt 0
 kb-s7-perfect-break-before-kept-box.order.txt 26

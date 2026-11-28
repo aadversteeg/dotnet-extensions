@@ -1,4 +1,5 @@
 a2-row-end-thick-less-after.boxes.txt 1
+a2-row-end-thick-less-after.clips.txt 13
 a2-row-end-thick-less-after.glyphs.txt 13
 a2-row-end-thick-less-after.lines.txt 4
 a2-row-end-thick-less-after.order.txt 17

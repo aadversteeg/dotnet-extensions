@@ -1,4 +1,5 @@
 ii-joiners.boxes.txt 1
+ii-joiners.clips.txt 9
 ii-joiners.glyphs.txt 9
 ii-joiners.lines.txt 0
 ii-joiners.order.txt 13

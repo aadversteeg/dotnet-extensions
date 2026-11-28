@@ -1,4 +1,5 @@
 bri-broken.boxes.txt 1
+bri-broken.clips.txt 21
 bri-broken.glyphs.txt 21
 bri-broken.lines.txt 1
 bri-broken.order.txt 26

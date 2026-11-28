@@ -1,4 +1,5 @@
 sz-height-rest-short.boxes.txt 2
+sz-height-rest-short.clips.txt 7
 sz-height-rest-short.glyphs.txt 7
 sz-height-rest-short.lines.txt 2
 sz-height-rest-short.order.txt 9

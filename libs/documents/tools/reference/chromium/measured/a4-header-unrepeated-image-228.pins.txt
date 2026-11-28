@@ -1,4 +1,5 @@
 a4-header-unrepeated-image-228.boxes.txt 2
+a4-header-unrepeated-image-228.clips.txt 4
 a4-header-unrepeated-image-228.glyphs.txt 4
 a4-header-unrepeated-image-228.lines.txt 12
 a4-header-unrepeated-image-228.order.txt 18

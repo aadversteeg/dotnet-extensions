@@ -1,4 +1,5 @@
 pm-overflow-tall.boxes.txt 1
+pm-overflow-tall.clips.txt 10
 pm-overflow-tall.glyphs.txt 10
 pm-overflow-tall.lines.txt 2
 pm-overflow-tall.order.txt 12

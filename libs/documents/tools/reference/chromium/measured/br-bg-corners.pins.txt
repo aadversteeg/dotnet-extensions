@@ -1,4 +1,5 @@
 br-bg-corners.boxes.txt 4
+br-bg-corners.clips.txt 6
 br-bg-corners.glyphs.txt 6
 br-bg-corners.lines.txt 0
 br-bg-corners.order.txt 10

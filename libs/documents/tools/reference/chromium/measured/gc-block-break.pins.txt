@@ -1,4 +1,5 @@
 gc-block-break.boxes.txt 5
+gc-block-break.clips.txt 17
 gc-block-break.glyphs.txt 17
 gc-block-break.lines.txt 0
 gc-block-break.order.txt 17

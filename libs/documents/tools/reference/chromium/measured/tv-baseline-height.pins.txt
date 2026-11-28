@@ -1,4 +1,5 @@
 tv-baseline-height.boxes.txt 10
+tv-baseline-height.clips.txt 13
 tv-baseline-height.glyphs.txt 13
 tv-baseline-height.lines.txt 13
 tv-baseline-height.order.txt 31

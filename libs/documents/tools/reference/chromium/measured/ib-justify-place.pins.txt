@@ -1,4 +1,5 @@
 ib-justify-place.boxes.txt 1
+ib-justify-place.clips.txt 43
 ib-justify-place.glyphs.txt 43
 ib-justify-place.lines.txt 6
 ib-justify-place.order.txt 49

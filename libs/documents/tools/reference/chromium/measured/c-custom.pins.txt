@@ -1,4 +1,5 @@
 c-custom.boxes.txt 1
+c-custom.clips.txt 12
 c-custom.glyphs.txt 12
 c-custom.lines.txt 0
 c-custom.order.txt 12

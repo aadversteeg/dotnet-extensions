@@ -1,4 +1,5 @@
 li-after-edge.boxes.txt 3
+li-after-edge.clips.txt 26
 li-after-edge.glyphs.txt 26
 li-after-edge.lines.txt 6
 li-after-edge.order.txt 39

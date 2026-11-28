@@ -1,4 +1,5 @@
 pm-start-25mm.boxes.txt 1
+pm-start-25mm.clips.txt 5
 pm-start-25mm.glyphs.txt 5
 pm-start-25mm.lines.txt 4
 pm-start-25mm.order.txt 9

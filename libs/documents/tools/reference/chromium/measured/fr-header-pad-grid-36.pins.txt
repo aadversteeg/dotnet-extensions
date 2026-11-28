@@ -1,4 +1,5 @@
 fr-header-pad-grid-36.boxes.txt 2
+fr-header-pad-grid-36.clips.txt 3
 fr-header-pad-grid-36.glyphs.txt 3
 fr-header-pad-grid-36.lines.txt 20
 fr-header-pad-grid-36.order.txt 23

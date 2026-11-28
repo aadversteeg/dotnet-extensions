@@ -1,4 +1,5 @@
 fr-f5-continued-table.boxes.txt 10
+fr-f5-continued-table.clips.txt 13
 fr-f5-continued-table.glyphs.txt 13
 fr-f5-continued-table.lines.txt 32
 fr-f5-continued-table.order.txt 45

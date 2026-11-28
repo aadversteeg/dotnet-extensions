@@ -1,4 +1,5 @@
 kb-s0-base.boxes.txt 1
+kb-s0-base.clips.txt 26
 kb-s0-base.glyphs.txt 26
 kb-s0-base.lines.txt 0
 kb-s0-base.order.txt 26

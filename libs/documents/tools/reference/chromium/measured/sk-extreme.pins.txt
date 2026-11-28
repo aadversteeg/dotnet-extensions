@@ -1,4 +1,5 @@
 sk-extreme.boxes.txt 1
+sk-extreme.clips.txt 22
 sk-extreme.glyphs.txt 22
 sk-extreme.ink.txt 148
 sk-extreme.lines.txt 11

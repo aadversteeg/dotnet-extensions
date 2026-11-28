@@ -1,4 +1,5 @@
 gm-spaces-roboto.boxes.txt 1
+gm-spaces-roboto.clips.txt 20
 gm-spaces-roboto.glyphs.txt 20
 gm-spaces-roboto.lines.txt 0
 gm-spaces-roboto.order.txt 20

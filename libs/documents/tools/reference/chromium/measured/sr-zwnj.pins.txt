@@ -1,4 +1,5 @@
 sr-zwnj.boxes.txt 1
+sr-zwnj.clips.txt 6
 sr-zwnj.glyphs.txt 6
 sr-zwnj.lines.txt 0
 sr-zwnj.order.txt 6

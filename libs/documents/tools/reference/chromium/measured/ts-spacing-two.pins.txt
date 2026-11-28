@@ -1,4 +1,5 @@
 ts-spacing-two.boxes.txt 5
+ts-spacing-two.clips.txt 5
 ts-spacing-two.glyphs.txt 5
 ts-spacing-two.lines.txt 0
 ts-spacing-two.order.txt 10

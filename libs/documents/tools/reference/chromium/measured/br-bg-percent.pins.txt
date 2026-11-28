@@ -1,4 +1,5 @@
 br-bg-percent.boxes.txt 3
+br-bg-percent.clips.txt 5
 br-bg-percent.glyphs.txt 5
 br-bg-percent.lines.txt 0
 br-bg-percent.order.txt 8

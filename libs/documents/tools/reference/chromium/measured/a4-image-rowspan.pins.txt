@@ -1,4 +1,5 @@
 a4-image-rowspan.boxes.txt 5
+a4-image-rowspan.clips.txt 4
 a4-image-rowspan.glyphs.txt 4
 a4-image-rowspan.lines.txt 22
 a4-image-rowspan.order.txt 29

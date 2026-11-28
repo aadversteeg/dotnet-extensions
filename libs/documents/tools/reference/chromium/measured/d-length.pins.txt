@@ -1,4 +1,5 @@
 d-length.boxes.txt 1
+d-length.clips.txt 12
 d-length.glyphs.txt 12
 d-length.lines.txt 0
 d-length.order.txt 12

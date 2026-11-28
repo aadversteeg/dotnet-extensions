@@ -1,4 +1,5 @@
 ts-width-100.boxes.txt 3
+ts-width-100.clips.txt 4
 ts-width-100.glyphs.txt 4
 ts-width-100.lines.txt 0
 ts-width-100.order.txt 7

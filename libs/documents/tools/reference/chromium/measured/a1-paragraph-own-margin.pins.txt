@@ -1,4 +1,5 @@
 a1-paragraph-own-margin.boxes.txt 1
+a1-paragraph-own-margin.clips.txt 1
 a1-paragraph-own-margin.glyphs.txt 1
 a1-paragraph-own-margin.lines.txt 0
 a1-paragraph-own-margin.order.txt 1

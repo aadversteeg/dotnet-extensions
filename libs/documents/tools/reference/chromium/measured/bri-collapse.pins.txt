@@ -1,4 +1,5 @@
 bri-collapse.boxes.txt 4
+bri-collapse.clips.txt 9
 bri-collapse.glyphs.txt 9
 bri-collapse.lines.txt 12
 bri-collapse.order.txt 23

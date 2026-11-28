@@ -1,4 +1,5 @@
 c-cell-first-line.boxes.txt 2
+c-cell-first-line.clips.txt 3
 c-cell-first-line.glyphs.txt 3
 c-cell-first-line.lines.txt 8
 c-cell-first-line.order.txt 11

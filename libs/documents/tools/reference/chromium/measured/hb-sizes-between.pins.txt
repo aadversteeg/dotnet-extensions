@@ -1,4 +1,5 @@
 hb-sizes-between.boxes.txt 1
+hb-sizes-between.clips.txt 5
 hb-sizes-between.glyphs.txt 5
 hb-sizes-between.lines.txt 0
 hb-sizes-between.order.txt 5

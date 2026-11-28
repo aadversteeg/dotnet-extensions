@@ -1,4 +1,5 @@
 bs-corners.boxes.txt 6
+bs-corners.clips.txt 8
 bs-corners.glyphs.txt 8
 bs-corners.lines.txt 12
 bs-corners.order.txt 32

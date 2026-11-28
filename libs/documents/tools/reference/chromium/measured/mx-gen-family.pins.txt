@@ -1,4 +1,5 @@
 mx-gen-family.boxes.txt 1
+mx-gen-family.clips.txt 7
 mx-gen-family.glyphs.txt 7
 mx-gen-family.lines.txt 0
 mx-gen-family.order.txt 7

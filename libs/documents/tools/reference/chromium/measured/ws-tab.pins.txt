@@ -1,4 +1,5 @@
 ws-tab.boxes.txt 1
+ws-tab.clips.txt 9
 ws-tab.glyphs.txt 9
 ws-tab.lines.txt 0
 ws-tab.order.txt 9

@@ -1,4 +1,5 @@
 fr-keep-inside-box.boxes.txt 1
+fr-keep-inside-box.clips.txt 7
 fr-keep-inside-box.glyphs.txt 7
 fr-keep-inside-box.lines.txt 0
 fr-keep-inside-box.order.txt 7

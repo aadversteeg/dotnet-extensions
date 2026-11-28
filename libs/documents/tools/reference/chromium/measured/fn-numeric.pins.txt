@@ -1,4 +1,5 @@
 fn-numeric.boxes.txt 1
+fn-numeric.clips.txt 120
 fn-numeric.glyphs.txt 120
 fn-numeric.lines.txt 0
 fn-numeric.order.txt 120

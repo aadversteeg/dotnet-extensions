@@ -1,4 +1,5 @@
 sz-width-percent-parent.boxes.txt 4
+sz-width-percent-parent.clips.txt 6
 sz-width-percent-parent.glyphs.txt 6
 sz-width-percent-parent.lines.txt 3
 sz-width-percent-parent.order.txt 9

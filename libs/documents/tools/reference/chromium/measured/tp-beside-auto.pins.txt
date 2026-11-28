@@ -1,4 +1,5 @@
 tp-beside-auto.boxes.txt 6
+tp-beside-auto.clips.txt 7
 tp-beside-auto.glyphs.txt 7
 tp-beside-auto.lines.txt 17
 tp-beside-auto.order.txt 24

@@ -1,4 +1,5 @@
 fr-old-cut-cell-bottom.boxes.txt 2
+fr-old-cut-cell-bottom.clips.txt 14
 fr-old-cut-cell-bottom.glyphs.txt 14
 fr-old-cut-cell-bottom.lines.txt 10
 fr-old-cut-cell-bottom.order.txt 24

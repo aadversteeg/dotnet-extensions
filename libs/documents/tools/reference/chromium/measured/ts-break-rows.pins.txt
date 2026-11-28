@@ -1,4 +1,5 @@
 ts-break-rows.boxes.txt 17
+ts-break-rows.clips.txt 25
 ts-break-rows.glyphs.txt 25
 ts-break-rows.lines.txt 8
 ts-break-rows.order.txt 49

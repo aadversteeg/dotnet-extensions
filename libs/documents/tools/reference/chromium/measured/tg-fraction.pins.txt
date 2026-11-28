@@ -1,4 +1,5 @@
 tg-fraction.boxes.txt 11
+tg-fraction.clips.txt 13
 tg-fraction.glyphs.txt 13
 tg-fraction.lines.txt 14
 tg-fraction.order.txt 32

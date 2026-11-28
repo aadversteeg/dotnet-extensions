@@ -1,4 +1,5 @@
 tt-inline.boxes.txt 1
+tt-inline.clips.txt 54
 tt-inline.glyphs.txt 54
 tt-inline.lines.txt 0
 tt-inline.order.txt 54

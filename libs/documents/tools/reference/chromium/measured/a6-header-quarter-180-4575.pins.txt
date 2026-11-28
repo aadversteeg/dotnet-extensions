@@ -1,4 +1,5 @@
 a6-header-quarter-180-4575.boxes.txt 61
+a6-header-quarter-180-4575.clips.txt 61
 a6-header-quarter-180-4575.glyphs.txt 61
 a6-header-quarter-180-4575.lines.txt 189
 a6-header-quarter-180-4575.order.txt 250

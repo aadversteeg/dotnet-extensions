@@ -1,4 +1,5 @@
 ta-kerning-none.boxes.txt 1
+ta-kerning-none.clips.txt 30
 ta-kerning-none.glyphs.txt 30
 ta-kerning-none.lines.txt 0
 ta-kerning-none.order.txt 30

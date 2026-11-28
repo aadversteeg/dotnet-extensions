@@ -1,4 +1,5 @@
 tg-break-rows-separated.boxes.txt 20
+tg-break-rows-separated.clips.txt 24
 tg-break-rows-separated.glyphs.txt 24
 tg-break-rows-separated.lines.txt 20
 tg-break-rows-separated.order.txt 64

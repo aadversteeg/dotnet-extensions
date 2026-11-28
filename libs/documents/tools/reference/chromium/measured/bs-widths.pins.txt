@@ -1,4 +1,5 @@
 bs-widths.boxes.txt 10
+bs-widths.clips.txt 12
 bs-widths.glyphs.txt 12
 bs-widths.lines.txt 20
 bs-widths.order.txt 52

@@ -1,4 +1,5 @@
 ta-items-right.boxes.txt 1
+ta-items-right.clips.txt 120
 ta-items-right.glyphs.txt 120
 ta-items-right.lines.txt 0
 ta-items-right.order.txt 120

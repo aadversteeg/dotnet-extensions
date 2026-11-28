@@ -1,4 +1,5 @@
 fr-kwn-pad-orphans1.boxes.txt 1
+fr-kwn-pad-orphans1.clips.txt 6
 fr-kwn-pad-orphans1.glyphs.txt 6
 fr-kwn-pad-orphans1.lines.txt 0
 fr-kwn-pad-orphans1.order.txt 6

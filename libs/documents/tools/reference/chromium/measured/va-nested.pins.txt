@@ -1,4 +1,5 @@
 va-nested.boxes.txt 1
+va-nested.clips.txt 41
 va-nested.glyphs.txt 41
 va-nested.lines.txt 5
 va-nested.order.txt 46

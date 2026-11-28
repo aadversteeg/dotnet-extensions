@@ -1,4 +1,5 @@
 f-theano-13-ab.boxes.txt 1
+f-theano-13-ab.clips.txt 1
 f-theano-13-ab.glyphs.txt 1
 f-theano-13-ab.lines.txt 0
 f-theano-13-ab.order.txt 1

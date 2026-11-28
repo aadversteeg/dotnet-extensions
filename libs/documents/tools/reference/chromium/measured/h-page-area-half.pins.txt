@@ -1,4 +1,5 @@
 h-page-area-half.boxes.txt 1
+h-page-area-half.clips.txt 2
 h-page-area-half.glyphs.txt 2
 h-page-area-half.lines.txt 1
 h-page-area-half.order.txt 3

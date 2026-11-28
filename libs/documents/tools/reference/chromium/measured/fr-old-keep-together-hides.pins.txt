@@ -1,4 +1,5 @@
 fr-old-keep-together-hides.boxes.txt 1
+fr-old-keep-together-hides.clips.txt 5
 fr-old-keep-together-hides.glyphs.txt 5
 fr-old-keep-together-hides.lines.txt 0
 fr-old-keep-together-hides.order.txt 5

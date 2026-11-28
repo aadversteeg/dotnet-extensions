@@ -1,4 +1,5 @@
 a4-header-image-228-beside-two-pages.boxes.txt 4
+a4-header-image-228-beside-two-pages.clips.txt 21
 a4-header-image-228-beside-two-pages.glyphs.txt 21
 a4-header-image-228-beside-two-pages.lines.txt 35
 a4-header-image-228-beside-two-pages.order.txt 58

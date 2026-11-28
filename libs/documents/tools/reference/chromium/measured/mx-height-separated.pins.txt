@@ -1,4 +1,5 @@
 mx-height-separated.boxes.txt 20
+mx-height-separated.clips.txt 24
 mx-height-separated.glyphs.txt 24
 mx-height-separated.lines.txt 34
 mx-height-separated.order.txt 78

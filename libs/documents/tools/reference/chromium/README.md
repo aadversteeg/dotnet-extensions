@@ -71,6 +71,8 @@ The Chromium version comes from the Playwright version pinned in `package.json` 
 - `<case>.order.txt`: per word of `print.txt`, in its order, `word page text place…` (the place in the page's drawing
   sequence of the text that draws each of its glyphs), then `paint page place x0 y0 x1 y1 colour` per fill or stroke
   and `image page place x0 y0 x1 y1` per image, cut to their clips (`order.py`, `sequence.py`, PyMuPDF);
+- `<case>.clips.txt`: per word of `print.txt`, in its order, `page text x0 y0 x1 y1 rect|path` (the rectangle the clips
+  around its text leave, and whether each of them is one rectangle) or `page text none` (`clips.py`, PyMuPDF);
 - `versions.txt`: the Chromium, poppler and PyMuPDF versions.
 
 `measured/` holds the text files of the last run, so a change in a new Chromium shows up as a diff. Copy
@@ -251,6 +253,10 @@ what is painted over it: every fill or image after a text that draws part of the
 box (its advances across, from its first glyph's origin to its last glyph's end, 0.8 of the font size above the baseline
 to 0.2 below) by more than one pixel across and down
 (`HtmlCases.OrderDifferences`, `PixelBound`). A thin line (one pixel or less) is never over a word by this rule.
+
+`clips.txt` gives the clip around each word's text, as its box; no word of a case is drawn under a clip that is not one
+rectangle. The case comparison takes a word as hidden where its clips leave nothing of its box, and otherwise compares
+how much they cut off at each edge within one pixel (`HtmlCases.ClipDifferences`).
 
 ## Whole documents
 

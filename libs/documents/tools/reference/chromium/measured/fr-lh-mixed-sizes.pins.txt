@@ -1,4 +1,5 @@
 fr-lh-mixed-sizes.boxes.txt 1
+fr-lh-mixed-sizes.clips.txt 20
 fr-lh-mixed-sizes.glyphs.txt 20
 fr-lh-mixed-sizes.lines.txt 0
 fr-lh-mixed-sizes.order.txt 20

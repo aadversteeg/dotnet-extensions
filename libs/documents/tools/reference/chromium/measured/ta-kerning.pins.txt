@@ -1,4 +1,5 @@
 ta-kerning.boxes.txt 1
+ta-kerning.clips.txt 60
 ta-kerning.glyphs.txt 60
 ta-kerning.lines.txt 0
 ta-kerning.order.txt 60

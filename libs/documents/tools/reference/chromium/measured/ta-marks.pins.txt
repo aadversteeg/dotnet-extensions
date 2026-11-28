@@ -1,4 +1,5 @@
 ta-marks.boxes.txt 1
+ta-marks.clips.txt 24
 ta-marks.glyphs.txt 24
 ta-marks.lines.txt 0
 ta-marks.order.txt 24

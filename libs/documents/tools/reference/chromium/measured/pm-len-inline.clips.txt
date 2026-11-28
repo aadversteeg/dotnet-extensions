@@ -1,0 +1,7 @@
+1 Aa none
+1 Bb none
+1 Cc none
+1 Body 50.250 60.000 350.262 240.000 rect
+1 Aa none
+1 Bb none
+1 Cc none

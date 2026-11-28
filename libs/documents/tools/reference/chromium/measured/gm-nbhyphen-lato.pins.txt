@@ -1,4 +1,5 @@
 gm-nbhyphen-lato.boxes.txt 1
+gm-nbhyphen-lato.clips.txt 12
 gm-nbhyphen-lato.glyphs.txt 12
 gm-nbhyphen-lato.lines.txt 0
 gm-nbhyphen-lato.order.txt 12

@@ -1,4 +1,5 @@
 ib-only-boxes.boxes.txt 1
+ib-only-boxes.clips.txt 5
 ib-only-boxes.glyphs.txt 5
 ib-only-boxes.lines.txt 5
 ib-only-boxes.order.txt 10

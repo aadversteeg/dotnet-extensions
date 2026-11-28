@@ -1,4 +1,5 @@
 a1-paragraph-own-margin-fits.boxes.txt 1
+a1-paragraph-own-margin-fits.clips.txt 1
 a1-paragraph-own-margin-fits.glyphs.txt 1
 a1-paragraph-own-margin-fits.lines.txt 0
 a1-paragraph-own-margin-fits.order.txt 1

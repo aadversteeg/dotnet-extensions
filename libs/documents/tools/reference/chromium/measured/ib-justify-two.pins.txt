@@ -1,4 +1,5 @@
 ib-justify-two.boxes.txt 1
+ib-justify-two.clips.txt 23
 ib-justify-two.glyphs.txt 23
 ib-justify-two.lines.txt 5
 ib-justify-two.order.txt 28

@@ -1,4 +1,5 @@
 pm-inherit-family.boxes.txt 1
+pm-inherit-family.clips.txt 4
 pm-inherit-family.glyphs.txt 4
 pm-inherit-family.lines.txt 0
 pm-inherit-family.order.txt 4

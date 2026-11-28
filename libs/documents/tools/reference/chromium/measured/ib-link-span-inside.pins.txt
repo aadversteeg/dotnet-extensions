@@ -1,4 +1,5 @@
 ib-link-span-inside.boxes.txt 1
+ib-link-span-inside.clips.txt 14
 ib-link-span-inside.glyphs.txt 14
 ib-link-span-inside.ink.txt 3
 ib-link-span-inside.lines.txt 11

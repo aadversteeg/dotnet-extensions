@@ -1,5 +1,5 @@
 font-sizes open page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
-79 differences, SHA-256 16e0ca5a9abb9592fbdf5a91de8eb4c16f9a40b734d985bfdc22674a0dff509a of all of them; the first 60:
+81 differences, SHA-256 4a682ae41cf50c60d1f869c8be88af4a18536e64920d1b3d13edf0c033e2612d of all of them; the first 60:
 - page 1 'nnnnnnnnnn' x1 50.22, Chromium 45.9 (print.txt)
 - page 1 'nnnnnnnnnn' baseline 9.75 (laid out at 9.75), Chromium 8.911 (print.txt)
 - page 1 'nnnnnnnnnn' font size 9, Chromium 8.226 (print.txt)

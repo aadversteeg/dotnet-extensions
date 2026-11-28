@@ -1,4 +1,5 @@
 tj-cell-table.boxes.txt 5
+tj-cell-table.clips.txt 5
 tj-cell-table.glyphs.txt 5
 tj-cell-table.lines.txt 12
 tj-cell-table.order.txt 17

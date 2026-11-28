@@ -1,4 +1,5 @@
 mf4-line-150.boxes.txt 40
+mf4-line-150.clips.txt 60
 mf4-line-150.glyphs.txt 60
 mf4-line-150.lines.txt 106
 mf4-line-150.order.txt 166

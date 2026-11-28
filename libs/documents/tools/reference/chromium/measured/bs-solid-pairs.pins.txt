@@ -1,4 +1,5 @@
 bs-solid-pairs.boxes.txt 3
+bs-solid-pairs.clips.txt 5
 bs-solid-pairs.glyphs.txt 5
 bs-solid-pairs.lines.txt 6
 bs-solid-pairs.order.txt 15

@@ -1,4 +1,5 @@
 kb-n10-kept-para-padding-bottom.boxes.txt 1
+kb-n10-kept-para-padding-bottom.clips.txt 5
 kb-n10-kept-para-padding-bottom.glyphs.txt 5
 kb-n10-kept-para-padding-bottom.lines.txt 0
 kb-n10-kept-para-padding-bottom.order.txt 5

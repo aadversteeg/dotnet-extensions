@@ -1,4 +1,5 @@
 tg-percent.boxes.txt 9
+tg-percent.clips.txt 11
 tg-percent.glyphs.txt 11
 tg-percent.lines.txt 21
 tg-percent.order.txt 32

@@ -1,4 +1,5 @@
 ws-intrinsic.boxes.txt 14
+ws-intrinsic.clips.txt 25
 ws-intrinsic.glyphs.txt 25
 ws-intrinsic.lines.txt 49
 ws-intrinsic.order.txt 74

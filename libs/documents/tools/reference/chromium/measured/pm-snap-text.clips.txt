@@ -1,0 +1,7 @@
+1 Centre none
+1 Left none
+1 Right none
+1 Body 50.250 60.000 350.262 240.000 rect
+1 Centre none
+1 Left none
+1 Right none

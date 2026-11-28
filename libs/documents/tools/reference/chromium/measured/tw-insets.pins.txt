@@ -1,4 +1,5 @@
 tw-insets.boxes.txt 9
+tw-insets.clips.txt 9
 tw-insets.glyphs.txt 9
 tw-insets.lines.txt 17
 tw-insets.order.txt 26

@@ -1,4 +1,5 @@
 ls-align.boxes.txt 1
+ls-align.clips.txt 40
 ls-align.glyphs.txt 40
 ls-align.lines.txt 0
 ls-align.order.txt 40

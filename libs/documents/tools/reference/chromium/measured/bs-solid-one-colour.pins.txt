@@ -1,4 +1,5 @@
 bs-solid-one-colour.boxes.txt 1
+bs-solid-one-colour.clips.txt 3
 bs-solid-one-colour.glyphs.txt 3
 bs-solid-one-colour.lines.txt 0
 bs-solid-one-colour.order.txt 4

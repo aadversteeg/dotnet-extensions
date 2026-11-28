@@ -1,4 +1,5 @@
 tp-colgroup.boxes.txt 6
+tp-colgroup.clips.txt 7
 tp-colgroup.glyphs.txt 7
 tp-colgroup.lines.txt 17
 tp-colgroup.order.txt 24

@@ -1,4 +1,5 @@
 pm-snap-text.boxes.txt 1
+pm-snap-text.clips.txt 7
 pm-snap-text.glyphs.txt 7
 pm-snap-text.lines.txt 6
 pm-snap-text.order.txt 13

@@ -1,4 +1,5 @@
 h-page-size-a4-landscape.boxes.txt 1
+h-page-size-a4-landscape.clips.txt 2
 h-page-size-a4-landscape.glyphs.txt 2
 h-page-size-a4-landscape.lines.txt 0
 h-page-size-a4-landscape.order.txt 2

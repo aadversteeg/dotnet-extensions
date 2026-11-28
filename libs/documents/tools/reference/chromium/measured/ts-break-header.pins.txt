@@ -1,4 +1,5 @@
 ts-break-header.boxes.txt 27
+ts-break-header.clips.txt 43
 ts-break-header.glyphs.txt 43
 ts-break-header.lines.txt 11
 ts-break-header.order.txt 84

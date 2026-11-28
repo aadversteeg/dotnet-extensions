@@ -1,4 +1,5 @@
 tk-empty.boxes.txt 20
+tk-empty.clips.txt 19
 tk-empty.glyphs.txt 19
 tk-empty.lines.txt 20
 tk-empty.order.txt 52

@@ -1,4 +1,5 @@
 tc-two.boxes.txt 10
+tc-two.clips.txt 15
 tc-two.glyphs.txt 15
 tc-two.lines.txt 7
 tc-two.order.txt 25

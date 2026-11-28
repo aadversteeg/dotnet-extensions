@@ -1,4 +1,5 @@
 a6-nested-late-d3-h2125.boxes.txt 37
+a6-nested-late-d3-h2125.clips.txt 41
 a6-nested-late-d3-h2125.glyphs.txt 41
 a6-nested-late-d3-h2125.lines.txt 151
 a6-nested-late-d3-h2125.order.txt 192

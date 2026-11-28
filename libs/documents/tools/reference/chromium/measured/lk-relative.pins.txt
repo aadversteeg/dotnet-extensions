@@ -1,4 +1,5 @@
 lk-relative.boxes.txt 1
+lk-relative.clips.txt 3
 lk-relative.glyphs.txt 3
 lk-relative.lines.txt 1
 lk-relative.links.txt 1

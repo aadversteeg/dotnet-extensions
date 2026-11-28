@@ -1,4 +1,5 @@
 a2-row-break-line-2-25pt.boxes.txt 14
+a2-row-break-line-2-25pt.clips.txt 15
 a2-row-break-line-2-25pt.glyphs.txt 15
 a2-row-break-line-2-25pt.lines.txt 44
 a2-row-break-line-2-25pt.order.txt 59

@@ -1,4 +1,5 @@
 fr-forced-table-in-box.boxes.txt 1
+fr-forced-table-in-box.clips.txt 3
 fr-forced-table-in-box.glyphs.txt 3
 fr-forced-table-in-box.lines.txt 6
 fr-forced-table-in-box.order.txt 9

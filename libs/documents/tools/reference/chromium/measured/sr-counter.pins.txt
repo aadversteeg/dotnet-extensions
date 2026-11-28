@@ -1,4 +1,5 @@
 sr-counter.boxes.txt 1
+sr-counter.clips.txt 22
 sr-counter.glyphs.txt 22
 sr-counter.lines.txt 0
 sr-counter.order.txt 22

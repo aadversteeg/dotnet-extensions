@@ -1,4 +1,5 @@
 sk-lato-italic.boxes.txt 1
+sk-lato-italic.clips.txt 18
 sk-lato-italic.glyphs.txt 18
 sk-lato-italic.ink.txt 28
 sk-lato-italic.lines.txt 6

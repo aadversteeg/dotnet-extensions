@@ -1,4 +1,5 @@
 kb-s5-perfect-break-two-before.boxes.txt 1
+kb-s5-perfect-break-two-before.clips.txt 26
 kb-s5-perfect-break-two-before.glyphs.txt 26
 kb-s5-perfect-break-two-before.lines.txt 0
 kb-s5-perfect-break-two-before.order.txt 26

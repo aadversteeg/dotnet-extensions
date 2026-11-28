@@ -1,4 +1,5 @@
 gc-counter-order.boxes.txt 1
+gc-counter-order.clips.txt 30
 gc-counter-order.glyphs.txt 30
 gc-counter-order.lines.txt 0
 gc-counter-order.order.txt 30

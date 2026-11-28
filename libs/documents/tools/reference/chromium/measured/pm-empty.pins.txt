@@ -1,4 +1,5 @@
 pm-empty.boxes.txt 1
+pm-empty.clips.txt 6
 pm-empty.glyphs.txt 6
 pm-empty.lines.txt 9
 pm-empty.order.txt 15

@@ -1,4 +1,5 @@
 lk-page-break.boxes.txt 1
+lk-page-break.clips.txt 41
 lk-page-break.glyphs.txt 41
 lk-page-break.lines.txt 3
 lk-page-break.links.txt 3

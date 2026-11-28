@@ -1,4 +1,5 @@
 iblk-sizes.boxes.txt 1
+iblk-sizes.clips.txt 35
 iblk-sizes.glyphs.txt 35
 iblk-sizes.lines.txt 8
 iblk-sizes.order.txt 45

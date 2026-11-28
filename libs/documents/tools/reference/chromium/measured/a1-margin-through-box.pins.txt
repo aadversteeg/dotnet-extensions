@@ -1,4 +1,5 @@
 a1-margin-through-box.boxes.txt 1
+a1-margin-through-box.clips.txt 1
 a1-margin-through-box.glyphs.txt 1
 a1-margin-through-box.lines.txt 2
 a1-margin-through-box.order.txt 3

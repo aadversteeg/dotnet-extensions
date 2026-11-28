@@ -1,4 +1,5 @@
 twd-cell-two.boxes.txt 15
+twd-cell-two.clips.txt 35
 twd-cell-two.glyphs.txt 35
 twd-cell-two.lines.txt 24
 twd-cell-two.order.txt 64

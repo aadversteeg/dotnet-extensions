@@ -1,4 +1,5 @@
 fr-forced-padded.boxes.txt 1
+fr-forced-padded.clips.txt 3
 fr-forced-padded.glyphs.txt 3
 fr-forced-padded.lines.txt 0
 fr-forced-padded.order.txt 3

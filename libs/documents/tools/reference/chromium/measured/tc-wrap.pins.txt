@@ -1,4 +1,5 @@
 tc-wrap.boxes.txt 24
+tc-wrap.clips.txt 49
 tc-wrap.glyphs.txt 49
 tc-wrap.lines.txt 21
 tc-wrap.order.txt 79

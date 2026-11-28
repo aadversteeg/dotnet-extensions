@@ -1,4 +1,5 @@
 mx-caption-percent.boxes.txt 6
+mx-caption-percent.clips.txt 17
 mx-caption-percent.glyphs.txt 17
 mx-caption-percent.lines.txt 17
 mx-caption-percent.order.txt 34

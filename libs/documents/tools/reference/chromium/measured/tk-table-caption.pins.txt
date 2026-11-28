@@ -1,4 +1,5 @@
 tk-table-caption.boxes.txt 10
+tk-table-caption.clips.txt 13
 tk-table-caption.glyphs.txt 13
 tk-table-caption.lines.txt 21
 tk-table-caption.order.txt 34

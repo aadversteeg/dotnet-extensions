@@ -1,4 +1,5 @@
 li-inside.boxes.txt 1
+li-inside.clips.txt 31
 li-inside.glyphs.txt 31
 li-inside.lines.txt 4
 li-inside.order.txt 37

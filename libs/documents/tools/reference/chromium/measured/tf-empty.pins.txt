@@ -1,4 +1,5 @@
 tf-empty.boxes.txt 4
+tf-empty.clips.txt 5
 tf-empty.glyphs.txt 5
 tf-empty.lines.txt 12
 tf-empty.order.txt 17

@@ -1,4 +1,5 @@
 h-page-area-continued.boxes.txt 1
+h-page-area-continued.clips.txt 2
 h-page-area-continued.glyphs.txt 2
 h-page-area-continued.lines.txt 1
 h-page-area-continued.order.txt 3

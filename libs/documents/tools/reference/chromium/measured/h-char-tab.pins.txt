@@ -1,4 +1,5 @@
 h-char-tab.boxes.txt 1
+h-char-tab.clips.txt 5
 h-char-tab.glyphs.txt 5
 h-char-tab.lines.txt 0
 h-char-tab.order.txt 5

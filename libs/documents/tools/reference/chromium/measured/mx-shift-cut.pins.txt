@@ -1,4 +1,5 @@
 mx-shift-cut.boxes.txt 2
+mx-shift-cut.clips.txt 30
 mx-shift-cut.glyphs.txt 30
 mx-shift-cut.lines.txt 10
 mx-shift-cut.order.txt 40

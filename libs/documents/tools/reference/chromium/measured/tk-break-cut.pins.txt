@@ -1,4 +1,5 @@
 tk-break-cut.boxes.txt 7
+tk-break-cut.clips.txt 12
 tk-break-cut.glyphs.txt 12
 tk-break-cut.lines.txt 36
 tk-break-cut.order.txt 48

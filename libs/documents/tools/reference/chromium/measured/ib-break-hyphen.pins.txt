@@ -1,4 +1,5 @@
 ib-break-hyphen.boxes.txt 1
+ib-break-hyphen.clips.txt 10
 ib-break-hyphen.glyphs.txt 10
 ib-break-hyphen.lines.txt 5
 ib-break-hyphen.order.txt 15

@@ -1,4 +1,5 @@
 ta-sizes.boxes.txt 1
+ta-sizes.clips.txt 70
 ta-sizes.glyphs.txt 70
 ta-sizes.lines.txt 0
 ta-sizes.order.txt 70

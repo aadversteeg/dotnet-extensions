@@ -1,4 +1,5 @@
 mx-gen-spacing.boxes.txt 1
+mx-gen-spacing.clips.txt 16
 mx-gen-spacing.glyphs.txt 16
 mx-gen-spacing.lines.txt 0
 mx-gen-spacing.order.txt 16

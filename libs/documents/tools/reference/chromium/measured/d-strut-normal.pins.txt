@@ -1,4 +1,5 @@
 d-strut-normal.boxes.txt 1
+d-strut-normal.clips.txt 8
 d-strut-normal.glyphs.txt 8
 d-strut-normal.lines.txt 0
 d-strut-normal.order.txt 8

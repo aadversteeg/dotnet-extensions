@@ -1,4 +1,5 @@
 a1-kept-row.boxes.txt 2
+a1-kept-row.clips.txt 10
 a1-kept-row.glyphs.txt 10
 a1-kept-row.lines.txt 0
 a1-kept-row.order.txt 10

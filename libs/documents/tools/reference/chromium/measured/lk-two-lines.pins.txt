@@ -1,4 +1,5 @@
 lk-two-lines.boxes.txt 1
+lk-two-lines.clips.txt 19
 lk-two-lines.glyphs.txt 19
 lk-two-lines.lines.txt 2
 lk-two-lines.links.txt 2

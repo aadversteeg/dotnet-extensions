@@ -1,4 +1,5 @@
 te-top.boxes.txt 7
+te-top.clips.txt 7
 te-top.glyphs.txt 7
 te-top.lines.txt 17
 te-top.order.txt 24

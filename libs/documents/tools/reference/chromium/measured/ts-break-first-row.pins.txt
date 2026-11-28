@@ -1,4 +1,5 @@
 ts-break-first-row.boxes.txt 5
+ts-break-first-row.clips.txt 28
 ts-break-first-row.glyphs.txt 28
 ts-break-first-row.lines.txt 1
 ts-break-first-row.order.txt 34

@@ -1,4 +1,5 @@
 fr-moved-para-widows-3-control.boxes.txt 1
+fr-moved-para-widows-3-control.clips.txt 7
 fr-moved-para-widows-3-control.glyphs.txt 7
 fr-moved-para-widows-3-control.lines.txt 0
 fr-moved-para-widows-3-control.order.txt 7

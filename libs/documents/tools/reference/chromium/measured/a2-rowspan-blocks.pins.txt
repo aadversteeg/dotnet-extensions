@@ -1,4 +1,5 @@
 a2-rowspan-blocks.boxes.txt 7
+a2-rowspan-blocks.clips.txt 5
 a2-rowspan-blocks.glyphs.txt 5
 a2-rowspan-blocks.lines.txt 24
 a2-rowspan-blocks.order.txt 29

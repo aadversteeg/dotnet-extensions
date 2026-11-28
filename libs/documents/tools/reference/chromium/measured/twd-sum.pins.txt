@@ -1,4 +1,5 @@
 twd-sum.boxes.txt 12
+twd-sum.clips.txt 27
 twd-sum.glyphs.txt 27
 twd-sum.lines.txt 14
 twd-sum.order.txt 47

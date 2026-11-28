@@ -1,4 +1,5 @@
 dw-gap-box.boxes.txt 1
+dw-gap-box.clips.txt 20
 dw-gap-box.glyphs.txt 20
 dw-gap-box.ink.txt 59
 dw-gap-box.lines.txt 8

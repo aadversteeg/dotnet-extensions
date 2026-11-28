@@ -1,4 +1,5 @@
 fs-none-regular-only.boxes.txt 1
+fs-none-regular-only.clips.txt 17
 fs-none-regular-only.glyphs.txt 17
 fs-none-regular-only.lines.txt 0
 fs-none-regular-only.order.txt 17

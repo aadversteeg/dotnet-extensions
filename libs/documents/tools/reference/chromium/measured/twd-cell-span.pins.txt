@@ -1,4 +1,5 @@
 twd-cell-span.boxes.txt 12
+twd-cell-span.clips.txt 14
 twd-cell-span.glyphs.txt 14
 twd-cell-span.lines.txt 11
 twd-cell-span.order.txt 33

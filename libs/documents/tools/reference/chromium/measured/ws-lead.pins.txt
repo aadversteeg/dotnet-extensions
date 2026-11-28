@@ -1,4 +1,5 @@
 ws-lead.boxes.txt 1
+ws-lead.clips.txt 9
 ws-lead.glyphs.txt 9
 ws-lead.lines.txt 0
 ws-lead.order.txt 9

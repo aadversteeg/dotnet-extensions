@@ -1,4 +1,5 @@
 a6-nested-late-clone-h2525.boxes.txt 37
+a6-nested-late-clone-h2525.clips.txt 39
 a6-nested-late-clone-h2525.glyphs.txt 39
 a6-nested-late-clone-h2525.lines.txt 132
 a6-nested-late-clone-h2525.order.txt 171

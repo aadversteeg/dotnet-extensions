@@ -1,4 +1,5 @@
 bri-iblk.boxes.txt 1
+bri-iblk.clips.txt 16
 bri-iblk.glyphs.txt 16
 bri-iblk.lines.txt 0
 bri-iblk.order.txt 22

@@ -1,4 +1,5 @@
 a1-table-own-margin.boxes.txt 1
+a1-table-own-margin.clips.txt 1
 a1-table-own-margin.glyphs.txt 1
 a1-table-own-margin.lines.txt 0
 a1-table-own-margin.order.txt 1

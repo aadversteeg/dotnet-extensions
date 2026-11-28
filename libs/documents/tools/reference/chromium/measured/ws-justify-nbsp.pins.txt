@@ -1,4 +1,5 @@
 ws-justify-nbsp.boxes.txt 1
+ws-justify-nbsp.clips.txt 13
 ws-justify-nbsp.glyphs.txt 13
 ws-justify-nbsp.lines.txt 0
 ws-justify-nbsp.order.txt 13

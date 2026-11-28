@@ -1,4 +1,5 @@
 lk-header-row.boxes.txt 9
+lk-header-row.clips.txt 20
 lk-header-row.glyphs.txt 20
 lk-header-row.lines.txt 2
 lk-header-row.links.txt 4

@@ -1,4 +1,5 @@
 gc-string-inline.boxes.txt 1
+gc-string-inline.clips.txt 4
 gc-string-inline.glyphs.txt 4
 gc-string-inline.lines.txt 0
 gc-string-inline.order.txt 4

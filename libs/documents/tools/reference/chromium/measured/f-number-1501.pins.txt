@@ -1,4 +1,5 @@
 f-number-1501.boxes.txt 1
+f-number-1501.clips.txt 12
 f-number-1501.glyphs.txt 12
 f-number-1501.lines.txt 0
 f-number-1501.order.txt 12

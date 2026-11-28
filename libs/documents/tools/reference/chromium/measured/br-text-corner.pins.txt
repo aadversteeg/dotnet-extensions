@@ -1,4 +1,5 @@
 br-text-corner.boxes.txt 2
+br-text-corner.clips.txt 22
 br-text-corner.glyphs.txt 22
 br-text-corner.lines.txt 0
 br-text-corner.order.txt 24

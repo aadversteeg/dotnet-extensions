@@ -1,4 +1,5 @@
 ib-image-span.boxes.txt 1
+ib-image-span.clips.txt 8
 ib-image-span.glyphs.txt 8
 ib-image-span.lines.txt 2
 ib-image-span.order.txt 13

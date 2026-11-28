@@ -1,4 +1,5 @@
 va-link.boxes.txt 1
+va-link.clips.txt 19
 va-link.glyphs.txt 19
 va-link.lines.txt 4
 va-link.links.txt 4

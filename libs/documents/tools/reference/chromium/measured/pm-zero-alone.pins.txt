@@ -1,4 +1,5 @@
 pm-zero-alone.boxes.txt 1
+pm-zero-alone.clips.txt 2
 pm-zero-alone.glyphs.txt 2
 pm-zero-alone.lines.txt 6
 pm-zero-alone.order.txt 8

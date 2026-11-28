@@ -1,4 +1,5 @@
 d-percent-inherits.boxes.txt 1
+d-percent-inherits.clips.txt 12
 d-percent-inherits.glyphs.txt 12
 d-percent-inherits.lines.txt 0
 d-percent-inherits.order.txt 12

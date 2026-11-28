@@ -1,4 +1,5 @@
 hb-white-space.boxes.txt 1
+hb-white-space.clips.txt 5
 hb-white-space.glyphs.txt 5
 hb-white-space.lines.txt 0
 hb-white-space.order.txt 5

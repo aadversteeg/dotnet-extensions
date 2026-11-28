@@ -1,4 +1,5 @@
 br-break.boxes.txt 2
+br-break.clips.txt 4
 br-break.glyphs.txt 4
 br-break.lines.txt 0
 br-break.order.txt 6

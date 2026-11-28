@@ -1,4 +1,5 @@
 a4-header-image-180.boxes.txt 2
+a4-header-image-180.clips.txt 3
 a4-header-image-180.glyphs.txt 3
 a4-header-image-180.lines.txt 15
 a4-header-image-180.order.txt 20

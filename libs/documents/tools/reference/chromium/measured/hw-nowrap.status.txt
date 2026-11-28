@@ -1,5 +1,5 @@
 hw-nowrap listed Content_wider_than_the_page_area_is_not_shrunk_as_Chromium_shrinks_the_page: page 1 'aa' x1 23.928, Chromium 21.335 (print.txt)
-195 differences, SHA-256 8aaa00b989d4cd976c35c18df4e377cadb95ebda02c5e9c4713b56077dc662e2 of all of them; the first 60:
+200 differences, SHA-256 fb6e5229dbf55d0c87feb8448d94be24ec14c15e4ff2f1b5a12f8068eef72eed of all of them; the first 60:
 - page 1 'aa' x1 23.928, Chromium 21.335 (print.txt)
 - page 1 'aa' baseline 24 (laid out at 24), Chromium 21.391 (print.txt)
 - page 1 'aa' font size 12, Chromium 9.391 (print.txt)

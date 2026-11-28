@@ -1,4 +1,5 @@
 pm-image-middle.boxes.txt 1
+pm-image-middle.clips.txt 3
 pm-image-middle.glyphs.txt 3
 pm-image-middle.lines.txt 1
 pm-image-middle.order.txt 5

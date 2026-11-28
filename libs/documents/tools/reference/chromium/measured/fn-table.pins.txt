@@ -1,4 +1,5 @@
 fn-table.boxes.txt 24
+fn-table.clips.txt 24
 fn-table.glyphs.txt 24
 fn-table.lines.txt 62
 fn-table.order.txt 86

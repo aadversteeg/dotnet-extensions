@@ -1,4 +1,5 @@
 ts-break-cut-bottom.boxes.txt 10
+ts-break-cut-bottom.clips.txt 36
 ts-break-cut-bottom.glyphs.txt 36
 ts-break-cut-bottom.lines.txt 26
 ts-break-cut-bottom.order.txt 68

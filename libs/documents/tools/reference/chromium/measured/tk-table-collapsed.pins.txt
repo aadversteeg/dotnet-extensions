@@ -1,4 +1,5 @@
 tk-table-collapsed.boxes.txt 15
+tk-table-collapsed.clips.txt 17
 tk-table-collapsed.glyphs.txt 17
 tk-table-collapsed.lines.txt 41
 tk-table-collapsed.order.txt 58

@@ -1,4 +1,5 @@
 fr-f4-one-line-cell-beside-cut-cell-control.boxes.txt 2
+fr-f4-one-line-cell-beside-cut-cell-control.clips.txt 5
 fr-f4-one-line-cell-beside-cut-cell-control.glyphs.txt 5
 fr-f4-one-line-cell-beside-cut-cell-control.lines.txt 10
 fr-f4-one-line-cell-beside-cut-cell-control.order.txt 15

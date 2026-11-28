@@ -1,4 +1,5 @@
 bd-sides.boxes.txt 5
+bd-sides.clips.txt 19
 bd-sides.glyphs.txt 19
 bd-sides.lines.txt 5
 bd-sides.order.txt 36

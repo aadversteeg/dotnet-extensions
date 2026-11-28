@@ -1,4 +1,5 @@
 bs-colour-bands.boxes.txt 19
+bs-colour-bands.clips.txt 21
 bs-colour-bands.glyphs.txt 21
 bs-colour-bands.lines.txt 38
 bs-colour-bands.order.txt 97

@@ -1,4 +1,5 @@
 hb-display-none.boxes.txt 1
+hb-display-none.clips.txt 2
 hb-display-none.glyphs.txt 2
 hb-display-none.lines.txt 0
 hb-display-none.order.txt 2

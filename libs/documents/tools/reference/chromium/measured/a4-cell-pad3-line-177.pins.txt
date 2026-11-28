@@ -1,4 +1,5 @@
 a4-cell-pad3-line-177.boxes.txt 1
+a4-cell-pad3-line-177.clips.txt 2
 a4-cell-pad3-line-177.glyphs.txt 2
 a4-cell-pad3-line-177.lines.txt 8
 a4-cell-pad3-line-177.order.txt 10

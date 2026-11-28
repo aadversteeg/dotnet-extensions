@@ -1,4 +1,5 @@
 fs-none-regular-bold.boxes.txt 1
+fs-none-regular-bold.clips.txt 16
 fs-none-regular-bold.glyphs.txt 16
 fs-none-regular-bold.lines.txt 0
 fs-none-regular-bold.order.txt 16

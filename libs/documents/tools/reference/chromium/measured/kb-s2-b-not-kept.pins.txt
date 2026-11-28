@@ -1,4 +1,5 @@
 kb-s2-b-not-kept.boxes.txt 1
+kb-s2-b-not-kept.clips.txt 26
 kb-s2-b-not-kept.glyphs.txt 26
 kb-s2-b-not-kept.lines.txt 0
 kb-s2-b-not-kept.order.txt 26

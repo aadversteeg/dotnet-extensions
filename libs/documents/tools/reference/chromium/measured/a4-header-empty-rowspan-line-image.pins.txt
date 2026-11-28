@@ -1,4 +1,5 @@
 a4-header-empty-rowspan-line-image.boxes.txt 5
+a4-header-empty-rowspan-line-image.clips.txt 1
 a4-header-empty-rowspan-line-image.glyphs.txt 1
 a4-header-empty-rowspan-line-image.lines.txt 36
 a4-header-empty-rowspan-line-image.order.txt 39

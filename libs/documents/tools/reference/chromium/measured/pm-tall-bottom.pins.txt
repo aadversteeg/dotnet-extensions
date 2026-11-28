@@ -1,4 +1,5 @@
 pm-tall-bottom.boxes.txt 1
+pm-tall-bottom.clips.txt 13
 pm-tall-bottom.glyphs.txt 13
 pm-tall-bottom.lines.txt 3
 pm-tall-bottom.order.txt 16

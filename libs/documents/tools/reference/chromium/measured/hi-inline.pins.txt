@@ -1,4 +1,5 @@
 hi-inline.boxes.txt 1
+hi-inline.clips.txt 2
 hi-inline.glyphs.txt 2
 hi-inline.lines.txt 0
 hi-inline.order.txt 3

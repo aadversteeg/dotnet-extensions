@@ -1,4 +1,5 @@
 a1-empty-block-then-table.boxes.txt 1
+a1-empty-block-then-table.clips.txt 1
 a1-empty-block-then-table.glyphs.txt 1
 a1-empty-block-then-table.lines.txt 0
 a1-empty-block-then-table.order.txt 1

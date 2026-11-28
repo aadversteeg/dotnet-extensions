@@ -1,4 +1,5 @@
 hw-tab.boxes.txt 1
+hw-tab.clips.txt 6
 hw-tab.glyphs.txt 6
 hw-tab.lines.txt 0
 hw-tab.order.txt 6

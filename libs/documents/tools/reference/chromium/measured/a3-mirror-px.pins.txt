@@ -1,4 +1,5 @@
 a3-mirror-px.boxes.txt 8
+a3-mirror-px.clips.txt 5
 a3-mirror-px.glyphs.txt 5
 a3-mirror-px.lines.txt 25
 a3-mirror-px.order.txt 30

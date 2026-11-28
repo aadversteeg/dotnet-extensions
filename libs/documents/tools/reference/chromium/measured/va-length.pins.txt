@@ -1,4 +1,5 @@
 va-length.boxes.txt 1
+va-length.clips.txt 44
 va-length.glyphs.txt 44
 va-length.lines.txt 0
 va-length.order.txt 44

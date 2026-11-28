@@ -1,4 +1,5 @@
 pm-defaults.boxes.txt 1
+pm-defaults.clips.txt 11
 pm-defaults.glyphs.txt 11
 pm-defaults.lines.txt 9
 pm-defaults.order.txt 20

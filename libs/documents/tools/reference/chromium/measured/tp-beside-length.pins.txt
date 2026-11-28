@@ -1,4 +1,5 @@
 tp-beside-length.boxes.txt 6
+tp-beside-length.clips.txt 7
 tp-beside-length.glyphs.txt 7
 tp-beside-length.lines.txt 17
 tp-beside-length.order.txt 24

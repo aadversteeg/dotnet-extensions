@@ -1,4 +1,5 @@
 kb-s1-outer-box-not-kept.boxes.txt 1
+kb-s1-outer-box-not-kept.clips.txt 26
 kb-s1-outer-box-not-kept.glyphs.txt 26
 kb-s1-outer-box-not-kept.lines.txt 0
 kb-s1-outer-box-not-kept.order.txt 26

@@ -224,7 +224,7 @@ internal static class HtmlCases
         var engine = PrintedPages.Engine(pages.Value);
         var clips = Clips(folder, name);
         var chromium = PrintedPages.Parse(File.ReadAllText(Measured(folder, name) + ".print.txt")).WithGlyphs(File.ReadAllText(Measured(folder, name) + ".glyphs.txt"))
-            .WithOrder(File.ReadAllText(Measured(folder, name) + ".order.txt"));
+            .WithOrder(File.ReadAllText(Measured(folder, name) + ".order.txt")).WithClips(File.ReadAllText(Measured(folder, name) + ".clips.txt"));
         var unused = clips.ToList();
         chromium = new([.. chromium.Pages.Select(page => page with { Rectangles = [.. Cut(page.Rectangles, unused)] })]);
         var lines = Cut(Rows(folder, name, "lines").Select(row => new PrintedBox(int.Parse(row[0], CultureInfo.InvariantCulture), Number(row[1]), Number(row[2]), Number(row[3]), Number(row[4]))), clips.ToList());
@@ -237,6 +237,7 @@ internal static class HtmlCases
             .Concat(LinkDifferences(pages.Value, Links(folder, name), boxes.Value.Document.Page.Margins.Top.Points))
             .Concat(GlyphDifferences(engine, chromium))
             .Concat(OrderDifferences(engine, chromium))
+            .Concat(ClipDifferences(engine, chromium))
             .Take(DifferenceBound + 1).ToList();
         var (status, listed) = CommittedStatus(committed);
         if (differences.Count == 0)
@@ -644,10 +645,11 @@ internal static class HtmlCases
     }
 
     /// <summary>One CSS pixel in points: how far two things must overlap each way to be painted one over the other
-    /// (<see cref="OrderDifferences"/>); the grid the comparison counts painted areas on.</summary>
+    /// (<see cref="OrderDifferences"/>), and how far the part of a word its clips cut off may differ from Chromium's
+    /// (<see cref="ClipDifferences"/>); the grid the comparison counts painted areas on.</summary>
     public const double PixelBound = 0.75;
 
-    /// <summary>The box of a word that the comparison of paint order uses, the same on both sides: its advances
+    /// <summary>The box of a word that the comparisons of paint order and clips use, the same on both sides: its advances
     /// across (x0 to x1) and its font size high, from 0.8 of the size above the baseline to 0.2 below it (where the glyphs
     /// of Latin text have their ink; an ascent or descent of the font would differ between the font program and a PDF
     /// reader's reading of it).</summary>
@@ -659,8 +661,12 @@ internal static class HtmlCases
         return new(word.Page, word.X0, word.Baseline - (0.8 * word.FontSize), word.X1, word.Baseline + (0.2 * word.FontSize));
     }
 
+    private static PrintedBox? Union(PrintedBox? one, PrintedBox? other) =>
+        one is null ? other : other is null ? one : one with { X0 = Math.Min(one.X0, other.X0), Y0 = Math.Min(one.Y0, other.Y0), X1 = Math.Max(one.X1, other.X1), Y1 = Math.Max(one.Y1, other.Y1) };
+
     /// <summary>
-    /// A page with what is painted over each of its words (<see cref="PrintedWord.Over"/>). A paint is over a word where it comes later in the drawing sequence
+    /// A page with what is painted over each of its words (<see cref="PrintedWord.Over"/>) and the part of each word its
+    /// clips leave (<see cref="PrintedWord.Shown"/>). A paint is over a word where it comes later in the drawing sequence
     /// and its box overlaps the word's box (<see cref="WordBox"/>) by more than <see cref="PixelBound"/> across and down. The
     /// paints are put in bands of 12 pt by their rows, so each word is set against the paints of its own bands, not every
     /// paint of the page.
@@ -702,7 +708,8 @@ internal static class HtmlCases
                     }
                 }
 
-                return word with { Over = [.. over] };
+                var clip = word.Clip is { } around ? new Rect(new Point(around.X0, around.Y0), new Size(Math.Max(0, around.X1 - around.X0), Math.Max(0, around.Y1 - around.Y0))) : (Rect?)null;
+                return word with { Over = [.. over], Shown = PrintedPages.Visible(box, clip) };
             })],
         };
     }
@@ -748,8 +755,41 @@ internal static class HtmlCases
 
     private static string Paints(ImmutableArray<string> paints) => paints.IsEmpty ? "nothing" : string.Join(", ", paints);
 
+    /// <summary>
+    /// Every difference in how the clips cut the engine's words and Chromium's (<c>clips.txt</c>), on each page whose text is
+    /// the same, word by word as <see cref="Differences"/> pairs them: a word its clips hide wholly on one side and not on the
+    /// other; otherwise how much the clips cut off its box (<see cref="WordBox"/>) at each edge, within <see cref="PixelBound"/>.
+    /// A clip is taken as its box on both sides (the engine clips by rectangles only).
+    /// </summary>
+    /// <param name="engine">The engine's pages.</param>
+    /// <param name="chromium">Chromium's print, with the clips of its words (<see cref="PrintedPages.WithClips"/>).</param>
+    /// <returns>The differences.</returns>
+    public static IEnumerable<string> ClipDifferences(PrintedPages engine, PrintedPages chromium)
+    {
+        foreach (var (ours, theirs) in PairedWords(engine, chromium))
+        {
+            var at = $"page {ours.Page} '{ours.Text}'";
+            if ((ours.Shown is null) != (theirs.Shown is null))
+            {
+                yield return $"{at} is {(ours.Shown is null ? "hidden" : "shown")} by its clips, Chromium's is {(theirs.Shown is null ? "hidden" : "shown")} (clips.txt)";
+                continue;
+            }
+
+            if (ours.Shown is { } shown && theirs.Shown is { } other)
+            {
+                var (box, measured) = (WordBox(ours), WordBox(theirs));
+                double[] cut = [shown.X0 - box.X0, shown.Y0 - box.Y0, box.X1 - shown.X1, box.Y1 - shown.Y1];
+                double[] chromiumCut = [other.X0 - measured.X0, other.Y0 - measured.Y0, measured.X1 - other.X1, measured.Y1 - other.Y1];
+                if (cut.Zip(chromiumCut).Any(pair => Math.Abs(pair.First - pair.Second) > PixelBound))
+                {
+                    yield return $"{at} is cut by its clips by {string.Join(" ", cut.Select(Of))} (left top right bottom), Chromium's by {string.Join(" ", chromiumCut.Select(Of))} (clips.txt)";
+                }
+            }
+        }
+    }
+
     /// <summary>The engine's words, joined as Chromium's print reads them (<see cref="Joined"/>), paired with Chromium's, on
-    /// each page whose text is the same, each with what is painted over it (<see cref="PaintedOver"/>).</summary>
+    /// each page whose text is the same, each with what is painted over it and the part its clips leave (<see cref="PaintedOver"/>).</summary>
     private static IEnumerable<(PrintedWord Ours, PrintedWord Theirs)> PairedWords(PrintedPages engine, PrintedPages chromium)
     {
         foreach (var (ours, theirs) in engine.Pages.Zip(chromium.Pages))
@@ -1441,7 +1481,7 @@ internal static class HtmlCases
                 joined[^1] = last with
                 {
                     X1 = word.X1, Text = last.Text + word.Text, Drawn = word.Drawn, Glyphs = last.Glyphs.AddRange(word.Glyphs),
-                    Over = [.. last.Over.Union(word.Over, StringComparer.Ordinal).Order(StringComparer.Ordinal)],
+                    Over = [.. last.Over.Union(word.Over, StringComparer.Ordinal).Order(StringComparer.Ordinal)], Shown = Union(last.Shown, word.Shown),
                 };
                 continue;
             }

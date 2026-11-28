@@ -1,4 +1,5 @@
 ta-kerning-scale.boxes.txt 1
+ta-kerning-scale.clips.txt 3
 ta-kerning-scale.glyphs.txt 3
 ta-kerning-scale.lines.txt 0
 ta-kerning-scale.order.txt 3

@@ -1,4 +1,5 @@
 widths-exact-grid.boxes.txt 9
+widths-exact-grid.clips.txt 8
 widths-exact-grid.glyphs.txt 8
 widths-exact-grid.lines.txt 0
 widths-exact-grid.order.txt 8

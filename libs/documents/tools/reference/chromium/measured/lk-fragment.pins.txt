@@ -1,4 +1,5 @@
 lk-fragment.boxes.txt 1
+lk-fragment.clips.txt 3
 lk-fragment.glyphs.txt 3
 lk-fragment.lines.txt 1
 lk-fragment.links.txt 1

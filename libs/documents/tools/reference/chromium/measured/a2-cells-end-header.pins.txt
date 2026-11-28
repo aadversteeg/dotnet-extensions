@@ -1,4 +1,5 @@
 a2-cells-end-header.boxes.txt 12
+a2-cells-end-header.clips.txt 10
 a2-cells-end-header.glyphs.txt 10
 a2-cells-end-header.lines.txt 41
 a2-cells-end-header.order.txt 51

@@ -1,4 +1,5 @@
 ib-break-nested.boxes.txt 1
+ib-break-nested.clips.txt 17
 ib-break-nested.glyphs.txt 17
 ib-break-nested.lines.txt 14
 ib-break-nested.order.txt 31

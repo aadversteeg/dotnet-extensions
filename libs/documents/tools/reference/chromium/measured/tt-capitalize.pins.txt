@@ -1,4 +1,5 @@
 tt-capitalize.boxes.txt 1
+tt-capitalize.clips.txt 70
 tt-capitalize.glyphs.txt 70
 tt-capitalize.lines.txt 0
 tt-capitalize.order.txt 70

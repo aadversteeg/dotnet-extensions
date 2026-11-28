@@ -1,4 +1,5 @@
 tc-break-first.boxes.txt 15
+tc-break-first.clips.txt 13
 tc-break-first.glyphs.txt 13
 tc-break-first.lines.txt 14
 tc-break-first.order.txt 30

@@ -1,4 +1,5 @@
 f-length-nine.boxes.txt 1
+f-length-nine.clips.txt 9
 f-length-nine.glyphs.txt 9
 f-length-nine.lines.txt 0
 f-length-nine.order.txt 9

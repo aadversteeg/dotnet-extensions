@@ -1,4 +1,5 @@
 ii-breaks.boxes.txt 1
+ii-breaks.clips.txt 10
 ii-breaks.glyphs.txt 10
 ii-breaks.lines.txt 0
 ii-breaks.order.txt 20

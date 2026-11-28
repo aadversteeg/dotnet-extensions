@@ -1,4 +1,5 @@
 br-bg-radii.boxes.txt 4
+br-bg-radii.clips.txt 6
 br-bg-radii.glyphs.txt 6
 br-bg-radii.lines.txt 0
 br-bg-radii.order.txt 10

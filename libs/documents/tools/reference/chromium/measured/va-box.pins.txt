@@ -1,4 +1,5 @@
 va-box.boxes.txt 1
+va-box.clips.txt 30
 va-box.glyphs.txt 30
 va-box.lines.txt 7
 va-box.order.txt 39

@@ -1,4 +1,5 @@
 tv-baseline-sizes.boxes.txt 10
+tv-baseline-sizes.clips.txt 13
 tv-baseline-sizes.glyphs.txt 13
 tv-baseline-sizes.lines.txt 13
 tv-baseline-sizes.order.txt 31

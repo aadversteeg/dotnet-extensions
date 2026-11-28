@@ -1,4 +1,5 @@
 tpa-sum.boxes.txt 12
+tpa-sum.clips.txt 27
 tpa-sum.glyphs.txt 27
 tpa-sum.lines.txt 14
 tpa-sum.order.txt 47

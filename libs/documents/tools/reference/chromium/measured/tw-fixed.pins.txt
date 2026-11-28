@@ -1,4 +1,5 @@
 tw-fixed.boxes.txt 13
+tw-fixed.clips.txt 11
 tw-fixed.glyphs.txt 11
 tw-fixed.lines.txt 22
 tw-fixed.order.txt 33

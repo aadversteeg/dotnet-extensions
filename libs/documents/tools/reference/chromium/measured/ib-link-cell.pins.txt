@@ -1,4 +1,5 @@
 ib-link-cell.boxes.txt 4
+ib-link-cell.clips.txt 10
 ib-link-cell.glyphs.txt 10
 ib-link-cell.lines.txt 3
 ib-link-cell.links.txt 2

@@ -1,4 +1,5 @@
 tk-span.boxes.txt 10
+tk-span.clips.txt 11
 tk-span.glyphs.txt 11
 tk-span.lines.txt 25
 tk-span.order.txt 41

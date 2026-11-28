@@ -1,4 +1,5 @@
 a6-nested-first-h2525.boxes.txt 23
+a6-nested-first-h2525.clips.txt 26
 a6-nested-first-h2525.glyphs.txt 26
 a6-nested-first-h2525.lines.txt 93
 a6-nested-first-h2525.order.txt 119

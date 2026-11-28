@@ -1,4 +1,5 @@
 h-kern-span.boxes.txt 1
+h-kern-span.clips.txt 2
 h-kern-span.glyphs.txt 2
 h-kern-span.lines.txt 0
 h-kern-span.order.txt 2

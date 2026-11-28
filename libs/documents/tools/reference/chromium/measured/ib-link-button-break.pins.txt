@@ -1,4 +1,5 @@
 ib-link-button-break.boxes.txt 1
+ib-link-button-break.clips.txt 26
 ib-link-button-break.glyphs.txt 26
 ib-link-button-break.ink.txt 4
 ib-link-button-break.lines.txt 10

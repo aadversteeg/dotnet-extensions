@@ -1,4 +1,5 @@
 tj-order.boxes.txt 10
+tj-order.clips.txt 10
 tj-order.glyphs.txt 10
 tj-order.lines.txt 23
 tj-order.order.txt 33

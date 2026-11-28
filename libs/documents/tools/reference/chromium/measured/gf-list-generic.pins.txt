@@ -1,4 +1,5 @@
 gf-list-generic.boxes.txt 1
+gf-list-generic.clips.txt 17
 gf-list-generic.glyphs.txt 17
 gf-list-generic.lines.txt 0
 gf-list-generic.order.txt 17

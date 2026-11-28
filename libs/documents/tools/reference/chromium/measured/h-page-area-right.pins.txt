@@ -1,4 +1,5 @@
 h-page-area-right.boxes.txt 1
+h-page-area-right.clips.txt 5
 h-page-area-right.glyphs.txt 5
 h-page-area-right.lines.txt 1
 h-page-area-right.order.txt 6

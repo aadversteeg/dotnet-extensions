@@ -1,4 +1,5 @@
 f-mixed-lato.boxes.txt 1
+f-mixed-lato.clips.txt 120
 f-mixed-lato.glyphs.txt 120
 f-mixed-lato.lines.txt 0
 f-mixed-lato.order.txt 120

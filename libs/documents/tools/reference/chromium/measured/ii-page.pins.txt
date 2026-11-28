@@ -1,4 +1,5 @@
 ii-page.boxes.txt 1
+ii-page.clips.txt 11
 ii-page.glyphs.txt 11
 ii-page.lines.txt 0
 ii-page.order.txt 12

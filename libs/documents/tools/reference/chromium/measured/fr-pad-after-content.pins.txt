@@ -1,4 +1,5 @@
 fr-pad-after-content.boxes.txt 1
+fr-pad-after-content.clips.txt 3
 fr-pad-after-content.glyphs.txt 3
 fr-pad-after-content.lines.txt 0
 fr-pad-after-content.order.txt 3

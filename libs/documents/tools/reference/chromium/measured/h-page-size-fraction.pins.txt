@@ -1,4 +1,5 @@
 h-page-size-fraction.boxes.txt 1
+h-page-size-fraction.clips.txt 2
 h-page-size-fraction.glyphs.txt 2
 h-page-size-fraction.lines.txt 0
 h-page-size-fraction.order.txt 2

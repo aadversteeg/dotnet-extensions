@@ -1,4 +1,5 @@
 kb-s3-d-kept-only.boxes.txt 1
+kb-s3-d-kept-only.clips.txt 26
 kb-s3-d-kept-only.glyphs.txt 26
 kb-s3-d-kept-only.lines.txt 0
 kb-s3-d-kept-only.order.txt 26

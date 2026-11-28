@@ -1,4 +1,5 @@
 a4-header-image-174.boxes.txt 2
+a4-header-image-174.clips.txt 3
 a4-header-image-174.glyphs.txt 3
 a4-header-image-174.lines.txt 15
 a4-header-image-174.order.txt 20

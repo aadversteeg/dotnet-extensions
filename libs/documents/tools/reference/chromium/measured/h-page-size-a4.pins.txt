@@ -1,4 +1,5 @@
 h-page-size-a4.boxes.txt 1
+h-page-size-a4.clips.txt 2
 h-page-size-a4.glyphs.txt 2
 h-page-size-a4.lines.txt 0
 h-page-size-a4.order.txt 2

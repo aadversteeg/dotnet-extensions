@@ -1,4 +1,5 @@
 bs-colours.boxes.txt 28
+bs-colours.clips.txt 30
 bs-colours.glyphs.txt 30
 bs-colours.lines.txt 56
 bs-colours.order.txt 142

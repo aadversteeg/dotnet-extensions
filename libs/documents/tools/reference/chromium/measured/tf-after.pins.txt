@@ -1,4 +1,5 @@
 tf-after.boxes.txt 6
+tf-after.clips.txt 7
 tf-after.glyphs.txt 7
 tf-after.lines.txt 17
 tf-after.order.txt 24

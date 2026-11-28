@@ -1,4 +1,5 @@
 a4-image-nested-table.boxes.txt 3
+a4-image-nested-table.clips.txt 2
 a4-image-nested-table.glyphs.txt 2
 a4-image-nested-table.lines.txt 25
 a4-image-nested-table.order.txt 30

@@ -1,4 +1,5 @@
 ib-border.boxes.txt 1
+ib-border.clips.txt 9
 ib-border.glyphs.txt 9
 ib-border.lines.txt 3
 ib-border.order.txt 13

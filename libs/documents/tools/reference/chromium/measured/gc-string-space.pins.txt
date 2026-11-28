@@ -1,4 +1,5 @@
 gc-string-space.boxes.txt 3
+gc-string-space.clips.txt 7
 gc-string-space.glyphs.txt 7
 gc-string-space.lines.txt 0
 gc-string-space.order.txt 7

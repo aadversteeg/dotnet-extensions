@@ -1,4 +1,5 @@
 ts-table-border.boxes.txt 5
+ts-table-border.clips.txt 5
 ts-table-border.glyphs.txt 5
 ts-table-border.lines.txt 0
 ts-table-border.order.txt 10

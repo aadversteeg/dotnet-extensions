@@ -1,4 +1,5 @@
 tg-table.boxes.txt 40
+tg-table.clips.txt 72
 tg-table.glyphs.txt 72
 tg-table.lines.txt 63
 tg-table.order.txt 149

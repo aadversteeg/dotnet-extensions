@@ -1,4 +1,5 @@
 sk-nest.boxes.txt 1
+sk-nest.clips.txt 9
 sk-nest.glyphs.txt 9
 sk-nest.ink.txt 69
 sk-nest.lines.txt 12

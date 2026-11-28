@@ -1,4 +1,5 @@
 lk-larger-run.boxes.txt 1
+lk-larger-run.clips.txt 5
 lk-larger-run.glyphs.txt 5
 lk-larger-run.lines.txt 4
 lk-larger-run.links.txt 1

@@ -1,4 +1,5 @@
 h-page-default-media.boxes.txt 1
+h-page-default-media.clips.txt 2
 h-page-default-media.glyphs.txt 2
 h-page-default-media.lines.txt 0
 h-page-default-media.order.txt 2

@@ -1,4 +1,5 @@
 li-font.boxes.txt 1
+li-font.clips.txt 20
 li-font.glyphs.txt 20
 li-font.lines.txt 11
 li-font.order.txt 37

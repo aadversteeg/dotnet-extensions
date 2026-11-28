@@ -1,4 +1,5 @@
 pm-overflow.boxes.txt 1
+pm-overflow.clips.txt 2
 pm-overflow.glyphs.txt 2
 pm-overflow.lines.txt 1
 pm-overflow.order.txt 3

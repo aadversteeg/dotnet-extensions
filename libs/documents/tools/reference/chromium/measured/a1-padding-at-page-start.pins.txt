@@ -1,4 +1,5 @@
 a1-padding-at-page-start.boxes.txt 1
+a1-padding-at-page-start.clips.txt 1
 a1-padding-at-page-start.glyphs.txt 1
 a1-padding-at-page-start.lines.txt 2
 a1-padding-at-page-start.order.txt 3

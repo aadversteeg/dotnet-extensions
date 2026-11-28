@@ -1,4 +1,5 @@
 pm-inherit.boxes.txt 1
+pm-inherit.clips.txt 7
 pm-inherit.glyphs.txt 7
 pm-inherit.lines.txt 0
 pm-inherit.order.txt 7
