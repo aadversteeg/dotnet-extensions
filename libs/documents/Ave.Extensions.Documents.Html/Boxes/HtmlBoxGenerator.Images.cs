@@ -128,7 +128,10 @@ public static partial class HtmlBoxGenerator
             var (bytes, url) = ImageBytes(source);
             if (bytes is null)
             {
-                Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, $"The image '{InputQuote.Of(source ?? string.Empty)}' of <img> is not there (no src, or neither a data: URL nor the resource resolver gives it), and what Chromium shows instead is not drawn in this version.",
+                var why = url is null ? null : ResourceTable.Refusal(options.Resources, url);
+                Refuse(HtmlStyleErrorCodes.Unsupported.Rendering, why is null
+                        ? $"The image '{InputQuote.Of(source ?? string.Empty)}' of <img> is not there (no src, or neither a data: URL nor the resource resolver gives it), and what Chromium shows instead is not drawn in this version."
+                        : $"The image '{InputQuote.Of(source!)}' of <img> {why}; what Chromium shows instead is not drawn in this version.",
                     "img", html.Position);
                 return null;
             }
@@ -166,7 +169,7 @@ public static partial class HtmlBoxGenerator
         /// <summary>The bytes of an image's file: the body of a <c>data:</c> URL, or what the resolver gives for the URL
         /// resolved against the document's base URL (HTML Standard §2.4.1: the first <c>base</c> element with an
         /// <c>href</c>, else the document's URL); null when there are none. With them the URL that names the image: the
-        /// <c>data:</c> URL itself or the absolute one.</summary>
+        /// <c>data:</c> URL itself or the absolute one (also when the resolver gives nothing for it).</summary>
         private (ReadOnlyMemory<byte>? Bytes, string? Url) ImageBytes(string? source)
         {
             if (string.IsNullOrEmpty(source))
@@ -179,7 +182,8 @@ public static partial class HtmlBoxGenerator
                 return (inline, source);
             }
 
-            return Urls.Absolute(source, DocumentBase()) is { } url && options.Resources?.Invoke(url) is { } resource ? (resource.Bytes, url) : (default(ReadOnlyMemory<byte>?), null);
+            var url = Urls.Absolute(source, DocumentBase());
+            return url is not null && options.Resources?.Invoke(url) is { } resource ? (resource.Bytes, url) : (default(ReadOnlyMemory<byte>?), url);
         }
 
         /// <summary>

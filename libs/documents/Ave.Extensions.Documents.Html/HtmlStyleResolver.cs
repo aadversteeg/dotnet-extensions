@@ -47,11 +47,15 @@ public static class HtmlStyleResolver
                 .With(ErrorMetadataKeys.SourceFile, parsed.SourceName));
         }
 
-        var run = new Run(parsed, options);
+        // The caller's resolver is asked at most once per URL in this resolution, and in the box generation of its result.
+        var resources = ResourceTable.Once(options.Resources);
+        var run = new Run(parsed, options with { Resources = resources });
         if (run.Resolve() is not { } styled)
         {
             return Result<StyledHtmlDocument, Error>.Failure(run.Limit!.Value);
         }
+
+        ResourceTable.Remember(styled, resources);
 
         var refusals = styled.Diagnostics.Where(error => HtmlStyleDiagnostics.ClassOf(error.Code) == DiagnosticClass.Refusal).ToList();
         return options.Unsupported == UnsupportedPolicy.Refuse && refusals.Count > 0
@@ -1036,7 +1040,8 @@ public static class HtmlStyleResolver
             }
             else
             {
-                var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given" : "was not found by the resource resolver";
+                var why = absolute is null ? "is not a valid URL" : options.Resources is null ? "cannot be loaded: no resource resolver was given"
+                    : ResourceTable.Refusal(options.Resources, absolute) ?? "was not found by the resource resolver";
                 Keep(new Error(HtmlStyleErrorCodes.Resource.NotFound, $"The style sheet '{InputQuote.Of(url)}' {why}.")
                     .With(ErrorMetadataKeys.Value, InputQuote.Of(absolute ?? url))
                     .WithSource(referrer, position));

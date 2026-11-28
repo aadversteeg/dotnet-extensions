@@ -281,7 +281,9 @@ internal sealed class FontMatcher(ValueList<FontFaceRule> faces, HtmlBoxOptions 
         var resource = url is null ? null : options.Resources?.Invoke(url);
         loaded = resource is null
             ? Result<TrueTypeFont, Error>.Failure(new Error(HtmlStyleErrorCodes.Resource.NotFound,
-                    source is null ? $"The @font-face rule of '{rule.Family}' has no TrueType source." : $"The font file '{url}' of '{rule.Family}' was not given by the resolver.")
+                    source is null ? $"The @font-face rule of '{rule.Family}' has no TrueType source."
+                    : ResourceTable.Refusal(options.Resources, url!) is { } why ? $"The font file '{InputQuote.Of(url!)}' of '{rule.Family}' {why}."
+                    : $"The font file '{url}' of '{rule.Family}' was not given by the resolver.")
                 .With(ErrorMetadataKeys.Value, url ?? rule.Family).WithSource(sourceName, rule.Position))
             : FontParser.Parse(resource.Bytes).MapError(error => error.WithSource(sourceName, rule.Position));
         _loaded[rule] = loaded;

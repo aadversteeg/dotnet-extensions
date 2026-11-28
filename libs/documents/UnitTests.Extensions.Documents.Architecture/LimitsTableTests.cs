@@ -86,6 +86,8 @@ public class LimitsTableTests
         ["points of one glyph outline, components included"] = ("65 536", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxPoints", 65_536)]),
         ["component references one glyph outline visits"] = ("65 536", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxComponents", 65_536)]),
         ["nesting of composite glyphs"] = ("64 levels", [C("Fonts", "Fonts.Tables.GlyphOutlineDecoder", "MaxDepth", 64)]),
+        ["resources one HTML render asks the resolver for"] = ("4 096 distinct URLs, each asked once per render (style resolution and the box generation of its result share one table); a URL of at most 32 767 characters, the bound of a link's URI",
+            [C("Html", "Html.ResourceTable", "MaxResources", 4_096), C("Html", "Html.ResourceTable", "MaxUrlLength", 32_767)]),
         ["characters without a glyph one HTML document is refused for"] = ("64, each pair of face and character once, in source order", [C("Html", "Html.Boxes.HtmlBoxGenerator", "MaxMissingGlyphs", 64)]),
     };
 
@@ -131,6 +133,7 @@ public class LimitsTableTests
         ["component references one glyph outline visits"] = ("`Fonts/Tables/GlyphOutlineDecoder.cs`", "`Documents.Font.Parse.InvalidValue`"),
         ["nesting of composite glyphs"] = ("`Fonts/Tables/GlyphOutlineDecoder.cs`", "`Documents.Font.Parse.InvalidValue`"),
         ["segments of one filled path, its contours together, for both back-ends"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel`"),
+        ["resources one HTML render asks the resolver for"] = ("`Html/ResourceTable.cs` (`MaxResources`, `MaxUrlLength`)", "not asked: the style sheet or font file is not found (`Documents.Html.Resource.NotFound`), the image is refused (`Documents.Html.Unsupported.Rendering`), each with the reason"),
         ["characters without a glyph one HTML document is refused for"] = ("`Html/Boxes/HtmlBoxGenerator.cs` (`MaxMissingGlyphs`)", "`Documents.Font.GlyphMissing`, in both modes; the characters past the limit are not reported"),
         ["clips open one inside the other on a page, for both back-ends"] = ("`PageModel/PageModelRules.cs`", "`Documents.Pdf.Write.InvalidPageModel`, `Documents.Raster.InvalidPageModel`"),
         ["pages of one document"] = ("`Layout/LayoutEnvironment.cs` (`DefaultMaxPages`), `Layout/Paginator.cs`", "`Documents.Layout.TooManyPages` (the message names the option)"),

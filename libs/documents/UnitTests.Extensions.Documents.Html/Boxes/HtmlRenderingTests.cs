@@ -121,4 +121,45 @@ public class HtmlRenderingTests
 
         refused.Error.Code.Should().Be(LayoutErrorCodes.TooManyPages);
     }
+
+    [Fact]
+    public void The_resolver_is_asked_at_most_once_per_URL_in_one_render()
+    {
+        // The same font file, style sheet and image named many times, by style resolution and by box generation.
+        var asked = new List<string>();
+        var options = Options with
+        {
+            Style = Options.Style with
+            {
+                Resources = url =>
+                {
+                    asked.Add(url);
+                    return url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : url == "a.css" ? new HtmlResource("p { margin: 0 }"u8.ToArray()) : null;
+                },
+            },
+        };
+        var html = Html.Replace("<p>Hello</p>", string.Concat(Enumerable.Repeat("<p>x<img alt=x src=one.png></p>", 50)), StringComparison.Ordinal)
+            .Replace("<title>T</title>", "<title>T</title><link rel=stylesheet href=a.css><link rel=stylesheet href=a.css><style>@import \"a.css\";</style>", StringComparison.Ordinal);
+
+        HtmlRendering.ToPages(html, options with { Style = options.Style with { Unsupported = UnsupportedPolicy.Warn } });
+
+        asked.Should().OnlyHaveUniqueItems().And.Contain(["lato.ttf", "a.css", "one.png"]);
+    }
+
+    [Fact]
+    public void A_URL_past_the_length_or_the_number_of_resources_of_a_document_is_not_asked()
+    {
+        var asked = new List<string>();
+        var options = Options with { Style = Options.Style with { Unsupported = UnsupportedPolicy.Warn, Resources = url => { asked.Add(url); return url == "lato.ttf" ? new HtmlResource(TestFonts.Bytes("Lato-Regular.ttf")) : null; } } };
+        string Images(int count, int length) => string.Concat(Enumerable.Range(0, count).Select(image => $"<img alt=x src=\"{image.ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(length, '0')}\">"));
+
+        var many = HtmlRendering.ToPages(Html.Replace("<p>Hello</p>", $"<p>{Images(4_096, 4)}</p>", StringComparison.Ordinal), options);
+        asked.Should().HaveCount(4_096, "the font file and 4 095 images");
+        many.Value.Diagnostics.Should().ContainSingle(error => error.Message.Contains("4096 distinct resources", StringComparison.Ordinal));
+
+        asked.Clear();
+        HtmlRendering.ToPages(Html.Replace("<p>Hello</p>", $"<p>{Images(1, 32_767)}{Images(1, 32_768)}</p>", StringComparison.Ordinal), options)
+            .Value.Diagnostics.Should().ContainSingle(error => error.Message.Contains("longer than the 32767 characters", StringComparison.Ordinal));
+        asked.Select(url => url.Length).Should().BeEquivalentTo([8, 32_767]);
+    }
 }

@@ -95,7 +95,8 @@ public static partial class HtmlBoxGenerator
             return Result<HtmlBoxes, Error>.Failure(Combined(problems));
         }
 
-        var run = new Run(styled, options);
+        // The caller's resolver is asked at most once per URL in this generation and the style resolution before it.
+        var run = new Run(styled, options with { Resources = ResourceTable.Once(options.Resources, styled) });
         var document = run.Generate();
         if (run.Failures.Count > 0)
         {
